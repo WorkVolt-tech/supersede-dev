@@ -4,45 +4,235 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperSede — Chapters</title>
-  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-0:     #05080c;
+      --bg-1:     #0a1018;
+      --panel:    #0d131c;
+      --ink:      #dfe7f2;
+      --ink-dim:  #6f7b8d;
+      --ink-faint:#3a4354;
+      --ice:      #8fd8f0;
+      --ice-hot:  #c8eeff;
+      --amber:    #ffb347;
+      --amber-hot:#ffd68a;
+      --warn:     #e05a44;
+      --line:     #1a2230;
+      --green:    #5ec45e;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    html, body {
+      background:var(--bg-0); color:var(--ink); min-height:100vh;
+      font-family:'Cormorant Garamond',serif;
+    }
+    body {
+      background:radial-gradient(ellipse at 50% 20%,#0e1a28 0%,#05080c 60%,#020406 100%);
+      overflow-x:hidden;
+    }
+    #nav { position:relative; z-index:100; }
+
+    .shell { max-width:1100px; margin:0 auto; padding:28px 32px 60px; }
+
+    /* topbar */
+    .topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding-bottom:16px; border-bottom:1px solid var(--line);
+      font-family:'JetBrains Mono',monospace;
+      font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--ink-dim);
+    }
+    .topbar .brand { display:flex; align-items:center; gap:12px; color:var(--ink); }
+    .topbar .brand .dot {
+      width:7px; height:7px; background:var(--ice);
+      transform:rotate(45deg); box-shadow:0 0 8px var(--ice);
+      animation:throb 2.4s ease-in-out infinite; flex-shrink:0;
+    }
+    @keyframes throb {
+      0%,100%{opacity:1;transform:rotate(45deg) scale(1)}
+      50%{opacity:.5;transform:rotate(45deg) scale(.85)}
+    }
+    .topbar .right { display:flex; gap:24px; }
+    .topbar .right span i { color:var(--ink); font-style:normal; margin-left:6px; }
+
+    /* zone header */
+    .zone {
+      padding:20px 0 14px;
+      display:flex; align-items:baseline; justify-content:space-between; gap:32px;
+    }
+    .z-kicker { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.42em; color:var(--ice); text-transform:uppercase; }
+    .z-title  { font-size:24px; font-weight:500; letter-spacing:.04em; color:var(--ink); margin-top:4px; }
+    .z-sub    { font-size:15px; color:var(--ink-dim); font-style:italic; text-align:right; line-height:1.5; max-width:380px; }
+
+    /* grid */
+    .page-grid { display:grid; grid-template-columns:1fr 340px; gap:28px; margin-top:20px; align-items:start; }
+    @media(max-width:820px){ .page-grid{grid-template-columns:1fr} }
+
+    /* mod block */
+    .mod { border:1px solid var(--line); background:var(--panel); padding:18px 20px 20px; margin-bottom:16px; position:relative; }
+    .mod::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--ice); border-left:1px solid var(--ice); }
+    .mod::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--ice); border-right:1px solid var(--ice); }
+    .m-head { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.38em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:10px; }
+    .m-head i { flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); }
+
+    /* chapter entries */
+    .chapter-entry { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); }
+    .chapter-entry:last-child { border-bottom:none; }
+    .ch-num { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.34em; color:var(--ink-dim); text-transform:uppercase; min-width:80px; flex-shrink:0; }
+    .ch-title { font-size:19px; font-weight:500; color:var(--ink); letter-spacing:.03em; }
+    .ch-sub   { font-style:italic; font-size:14px; color:var(--ink-dim); margin-top:2px; }
+    .ch-btn {
+      font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.28em;
+      text-transform:uppercase; color:var(--ink); background:transparent;
+      border:1px solid var(--line); padding:6px 14px; text-decoration:none;
+      transition:border-color .2s,color .2s; white-space:nowrap; cursor:pointer;
+    }
+    .ch-btn:hover, .ch-btn.active { border-color:var(--ice); color:var(--ice); background:rgba(143,216,240,.05); }
+    .ch-sealed { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.28em; color:var(--ink-faint); text-transform:uppercase; }
+    .chapter-entry.locked { opacity:.4; }
+
+    /* stat grid */
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 8px; margin-bottom:16px; }
+    .stat-cell { display:flex; flex-direction:column; }
+    .stat-k { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.3em; color:var(--ink-dim); text-transform:uppercase; margin-bottom:2px; }
+    .stat-v { font-size:20px; font-weight:500; color:var(--ink); letter-spacing:.04em; }
+    .stat-v.ice   { color:var(--ice); }
+    .stat-v.amber { color:var(--amber); }
+    .stat-v.green { color:var(--green); }
+
+    /* action buttons */
+    .action-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:4px; }
+    .action-btn {
+      font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.28em;
+      text-transform:uppercase; color:var(--ink); background:transparent;
+      border:1px solid var(--line); padding:7px 14px; text-decoration:none;
+      transition:all .2s; cursor:pointer;
+    }
+    .action-btn:hover { border-color:var(--ice); color:var(--ice); background:rgba(143,216,240,.04); }
+
+    /* boot terminal */
+    .boot {
+      border:1px solid var(--ice); background:rgba(10,20,30,.7);
+      padding:14px 16px; font-family:'JetBrains Mono',monospace;
+      font-size:10.5px; letter-spacing:.06em; color:var(--ice-hot); line-height:1.7;
+      margin-bottom:16px;
+    }
+    .boot .bline { opacity:0; animation:pop .3s ease forwards; }
+    @keyframes pop { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
+    .boot .bline:nth-child(1){animation-delay:.2s}
+    .boot .bline:nth-child(2){animation-delay:.8s}
+    .boot .bline:nth-child(3){animation-delay:1.4s}
+    .boot .bline:nth-child(4){animation-delay:2.0s}
+    .boot .bline:nth-child(5){animation-delay:2.6s;color:var(--amber);font-weight:700;letter-spacing:.12em}
+    .boot .bline:nth-child(6){animation-delay:3.2s;color:var(--ink-dim)}
+    .cursor { display:inline-block; width:7px; height:12px; background:var(--ice-hot); vertical-align:middle; animation:blink 1s steps(2) infinite; margin-left:2px; }
+    @keyframes blink{50%{opacity:0}}
+
+    /* quote */
+    .ink-quote {
+      padding:14px 16px; border-left:2px solid var(--ice); background:var(--panel);
+      font-style:italic; font-size:17px; line-height:1.45; color:#c5cedb; margin-bottom:16px;
+    }
+    .ink-quote .attr {
+      display:block; margin-top:8px; font-style:normal;
+      font-family:'JetBrains Mono',monospace;
+      font-size:9px; letter-spacing:.32em; color:var(--ink-dim); text-transform:uppercase;
+    }
+
+    /* scan overlay */
+    body::after {
+      content:""; position:fixed; inset:0; pointer-events:none; z-index:9999;
+      background-image:repeating-linear-gradient(180deg,rgba(143,216,240,.012) 0px,rgba(143,216,240,.012) 1px,transparent 1px,transparent 4px);
+    }
+
+    /* chapter nav */
+    .chapnav {
+      display:flex; justify-content:space-between;
+      padding:12px 0 0; margin-top:16px;
+      border-top:1px solid var(--line);
+      font-family:'JetBrains Mono',monospace;
+      font-size:10px; letter-spacing:.3em; text-transform:uppercase;
+    }
+    .chapnav a { color:var(--ink-dim); text-decoration:none; transition:color .2s; }
+    .chapnav a:hover { color:var(--ice); }
+    .chapnav .cur { color:var(--ink); }
+
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:var(--bg-0)}
+    ::-webkit-scrollbar-thumb{background:var(--line)}
+    ::-webkit-scrollbar-thumb:hover{background:var(--ink-faint)}
+  </style>
 </head>
 <body>
-<div class="book-wrap">
-  <div id="nav"></div>
+<div id="nav"></div>
 
-  <div class="book" style="margin-top:.75rem">
-    <!-- Left page: chapter list -->
-    <div class="page-left parchment">
-      <div class="page-inner">
-        <p class="chapter-label">SuperSede</p>
-        <h1 class="page-title">Table of Contents</h1>
-        <hr class="ink-divider">
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#1a1208;line-height:1.7;margin-bottom:1.5rem">
-          Choose a chapter. Restarting a chapter does not erase your progress or inventory.
-        </p>
+<div class="shell">
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span><span>SuperSede · Archive</span></div>
+    <div class="right">
+      <span>Module <i>Chapters</i></span>
+      <span>Status <i>Active</i></span>
+    </div>
+  </div>
+
+  <div class="zone">
+    <div>
+      <div class="z-kicker">SuperSede · Table of Contents</div>
+      <div class="z-title">Choose your chapter.</div>
+    </div>
+    <div class="z-sub">
+      Restarting a chapter does not erase<br>your progress or inventory.
+    </div>
+  </div>
+
+  <div class="page-grid">
+
+    <!-- LEFT — Chapter list -->
+    <div>
+      <div class="mod">
+        <div class="m-head">Chapters <i></i></div>
         <div id="chapter-list"></div>
+      </div>
+
+      <div class="boot">
+        <div class="bline">&gt; archive loaded... ok</div>
+        <div class="bline">&gt; player record... verified</div>
+        <div class="bline">&gt; chapter index... unlocked</div>
+        <div class="bline">&gt; overlay injected.</div>
+        <div class="bline">&gt;&gt; SELECT CHAPTER TO PROCEED</div>
+        <div class="bline">&gt; the system observes<span class="cursor"></span></div>
+      </div>
+
+      <div class="ink-quote">
+        "Every path you walked. Every player you helped — or abandoned."
+        <span class="attr">— The Watcher · Chapter 1 Finale</span>
       </div>
     </div>
 
-    <div class="spine"></div>
-
-    <!-- Right page: player record -->
-    <div class="page-right parchment">
-      <div class="page-inner">
-        <p class="chapter-label">Player Record</p>
-        <h2 class="page-title" id="rec-username">—</h2>
-        <hr class="ink-divider">
-        <div id="rec-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .25rem;margin-bottom:1rem"></div>
-        <hr class="ink-divider">
-        <div style="display:flex;flex-wrap:wrap;gap:.5rem">
-          <a href="inventory.html" class="end-btn">🎒 Inventory</a>
-          <a href="trader.html"    class="end-btn">🛒 Trader</a>
-          <a href="lobby.html"     class="end-btn">⚔ Lobby</a>
-          <a href="badges.html"    class="end-btn">🏅 Badges</a>
+    <!-- RIGHT — Player record -->
+    <div>
+      <div class="mod">
+        <div class="m-head">Player Record <i></i></div>
+        <p id="rec-username" style="font-size:26px;font-weight:500;letter-spacing:.06em;color:var(--ink);margin-bottom:14px">—</p>
+        <div class="stat-grid" id="rec-stats"></div>
+        <div class="action-row">
+          <a href="inventory.html" class="action-btn">🎒 Inventory</a>
+          <a href="trader.html"    class="action-btn">🛒 Trader</a>
+          <a href="lobby.html"     class="action-btn">⚔ Lobby</a>
+          <a href="badges.html"    class="action-btn">🏅 Badges</a>
         </div>
       </div>
     </div>
+
   </div>
+
+  <nav class="chapnav">
+    <span class="cur">Archive · Chapters</span>
+    <span style="color:var(--ink-faint)">SuperSede · System</span>
+  </nav>
+
 </div>
 
 <script type="module">
@@ -67,40 +257,45 @@
       ['Gold',    `◈ ${player.gold}`],
       ['Rep',     player.reputation || 'neutral'],
       ['Element', player.element || '—'],
-    ].map(([k, v]) => `
-      <div>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#1a1208;letter-spacing:.08em;display:block">${k}</span>
-        <span style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">${v}</span>
-      </div>
-    `).join('')
+    ].map(([k, v]) => {
+      const colorMap = { HP:'ice', Gold:'amber', Element:'ice', Rep:'green' }
+      return `
+        <div class="stat-cell">
+          <span class="stat-k">${k}</span>
+          <span class="stat-v ${colorMap[k]||''}">${v}</span>
+        </div>`
+    }).join('')
 
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
       const isCurrent  = player.current_chapter === ch.number
+      if (!isUnlocked) {
+        return `
+          <div class="chapter-entry locked">
+            <span class="ch-num">🔒 Ch.${String(ch.number).padStart(2,'0')}</span>
+            <div>
+              <div class="ch-title">${ch.title}</div>
+              <div class="ch-sub">${ch.sub}</div>
+            </div>
+            <span class="ch-sealed">Sealed</span>
+          </div>`
+      }
+      const isReplay  = unlocked.includes(ch.number + 1)
+      const isCh1     = ch.number === 1
+      const alreadyIn = (player.current_node || '').startsWith(`ch${ch.number}_`)
+      const href = isReplay || isCh1 || alreadyIn
+        ? `chapter${ch.number}.html`
+        : `garage.html?dest=${ch.number}`
+      const label = isCurrent ? 'Continue ›' : isReplay ? 'Replay ›' : alreadyIn ? 'Continue ›' : 'Drive ›'
       return `
-        <div style="display:flex;align-items:center;gap:.75rem;padding:.9rem 0;border-bottom:1px solid rgba(139,106,32,.18);opacity:${isUnlocked ? 1 : .45}">
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;min-width:70px">
-            ${isUnlocked ? '' : '🔒 '}Chapter ${ch.number}
-          </span>
-          <div style="flex:1">
-            <p style="font-family:'Cinzel',serif;font-size:.88rem;color:#1a1208;margin:0 0 1px">${ch.title}</p>
-            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${ch.sub}</p>
+        <div class="chapter-entry">
+          <span class="ch-num">Ch.${String(ch.number).padStart(2,'0')}</span>
+          <div>
+            <div class="ch-title">${ch.title}</div>
+            <div class="ch-sub">${ch.sub}</div>
           </div>
-          ${isUnlocked
-            ? (() => {
-                const isReplay  = unlocked.includes(ch.number + 1) // beaten already
-                const isCh1     = ch.number === 1
-                const alreadyIn = (player.current_node || '').startsWith(`ch${ch.number}_`)
-                const href = isReplay || isCh1 || alreadyIn
-                  ? `chapter${ch.number}.html`
-                  : `garage.html?dest=${ch.number}`
-                const label = isCurrent ? 'Continue ›' : isReplay ? 'Replay ›' : alreadyIn ? 'Continue ›' : 'Drive ›'
-                return `<a href="${href}" style="font-family:'Cinzel',serif;font-size:.72rem;color:#1a1208;background:rgba(200,184,128,.3);border:1px solid rgba(139,106,32,.4);padding:.3rem .8rem;text-decoration:none;border-radius:2px;white-space:nowrap">${label}</a>`
-              })()
-            : `<span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208">Sealed</span>`
-          }
-        </div>
-      `
+          <a href="${href}" class="ch-btn ${isCurrent?'active':''}">${label}</a>
+        </div>`
     }).join('')
   })()
 </script>
