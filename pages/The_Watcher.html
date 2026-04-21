@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Watcher — Chapter 1: Awakening Protocol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #05080c;
+    --bg-1: #0a1018;
+    --panel: #0d131c;
+    --ink: #dfe7f2;
+    --ink-dim: #6f7b8d;
+    --ink-faint: #3a4354;
+    --ice: #8fd8f0;
+    --ice-hot: #c8eeff;
+    --amber: #ffb347;
+    --amber-hot: #ffd68a;
+    --warn: #e05a44;
+    --line: #1a2230;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg-0);
+    color: var(--ink);
+    min-height: 100vh;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at 50% 20%, #0e1a28 0%, #05080c 60%, #020406 100%);
+    overflow-x: hidden;
+  }
+
+  .shell { max-width: 1480px; margin: 0 auto; padding: 36px 40px 60px; }
+
+  .zone {
+    padding: 22px 0 16px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 40px;
+  }
+  .zone .z-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.42em;
+    color: var(--ice); text-transform: uppercase;
+  }
+  .zone .z-title {
+    font-size: 26px; font-weight: 500;
+    letter-spacing: 0.04em; color: var(--ink); margin-top: 4px;
+  }
+  .zone .z-sub {
+    font-size: 16px; color: var(--ink-dim); font-style: italic;
+    max-width: 440px; text-align: right; line-height: 1.45;
+  }
+
+  .grid { display: grid; grid-template-columns: 300px 1fr 340px; gap: 28px; margin-top: 22px; }
+  @media (max-width: 1180px) { .grid { grid-template-columns: 1fr; } }
+
+  .col { padding: 4px 0; }
+  .mod {
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 18px 18px 20px; margin-bottom: 16px; position: relative;
+  }
+  .mod::before {
+    content: ""; position: absolute; top: -1px; left: -1px;
+    width: 16px; height: 16px;
+    border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
+  }
+  .mod::after {
+    content: ""; position: absolute; bottom: -1px; right: -1px;
+    width: 16px; height: 16px;
+    border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
+  }
+  .mod .m-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mod .m-head i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+  .mod p { font-size: 17px; line-height: 1.5; color: var(--ink); }
+  .mod .lede { font-size: 19px; }
+  .mod .truth { font-size: 19px; font-style: italic; color: var(--ice); line-height: 1.45; }
+  .bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .bullets li {
+    display: grid; grid-template-columns: 18px 1fr; gap: 10px;
+    font-size: 15.5px; line-height: 1.4;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em; color: var(--ink);
+  }
+  .bullets li::before {
+    content: ""; width: 6px; height: 6px;
+    background: var(--ice); transform: rotate(45deg); margin-top: 8px;
+  }
+
+  /* Fake system boot terminal */
+  .boot {
+    border: 1px solid var(--ice);
+    background: rgba(10, 20, 30, 0.7);
+    padding: 14px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--ice-hot);
+    line-height: 1.7;
+    position: relative;
+  }
+  .boot .line { opacity: 0; animation: pop 0.3s ease forwards; }
+  @keyframes pop { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }
+  .boot .line:nth-child(1) { animation-delay: 0.2s; }
+  .boot .line:nth-child(2) { animation-delay: 0.8s; }
+  .boot .line:nth-child(3) { animation-delay: 1.4s; }
+  .boot .line:nth-child(4) { animation-delay: 2.0s; }
+  .boot .line:nth-child(5) { animation-delay: 2.6s; color: var(--amber); font-weight: 700; letter-spacing: 0.14em; }
+  .boot .line:nth-child(6) { animation-delay: 3.2s; color: var(--ink-dim); }
+  .boot .cursor {
+    display: inline-block; width: 8px; height: 13px;
+    background: var(--ice-hot); vertical-align: middle;
+    animation: blink 1s steps(2) infinite;
+    margin-left: 2px;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ====== PORTRAIT ====== */
+  .portrait {
+    position: relative;
+    aspect-ratio: 1 / 1.12;
+    background:
+      radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 160px rgba(0,0,0,0.85),
+      0 0 80px rgba(143, 216, 240, 0.05);
+  }
+  .portrait .corner { position: absolute; width: 60px; height: 60px; pointer-events: none; opacity: 0.5; }
+  .portrait .corner.tl { top: 10px; left: 10px; border-top: 1px solid var(--ice); border-left: 1px solid var(--ice); }
+  .portrait .corner.tr { top: 10px; right: 10px; border-top: 1px solid var(--ice); border-right: 1px solid var(--ice); }
+  .portrait .corner.bl { bottom: 10px; left: 10px; border-bottom: 1px solid var(--ice); border-left: 1px solid var(--ice); }
+  .portrait .corner.br { bottom: 10px; right: 10px; border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice); }
+
+  /* frozen city silhouette behind */
+  .city {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 42%;
+    background:
+      linear-gradient(180deg, transparent, rgba(2,4,6,0.9) 80%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 400' preserveAspectRatio='none'><rect x='40' y='180' width='90' height='220' fill='%23080e16'/><rect x='145' y='130' width='70' height='270' fill='%230a1420'/><rect x='228' y='220' width='40' height='180' fill='%23060a12'/><rect x='282' y='80' width='110' height='320' fill='%230b1624'/><rect x='405' y='170' width='60' height='230' fill='%23080e18'/><rect x='480' y='220' width='55' height='180' fill='%23060a10'/><rect x='550' y='60' width='130' height='340' fill='%230c1828'/><rect x='695' y='200' width='50' height='200' fill='%23080e18'/><rect x='760' y='150' width='90' height='250' fill='%230a1422'/><rect x='865' y='220' width='45' height='180' fill='%23060a12'/><rect x='925' y='110' width='100' height='290' fill='%230b1624'/><rect x='1040' y='190' width='70' height='210' fill='%23080e18'/><rect x='1125' y='230' width='55' height='170' fill='%23060a10'/></svg>") center bottom / cover no-repeat;
+    opacity: 0.65;
+  }
+  /* broken windows (tiny sparse lights) */
+  .windows {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 24% 78%, rgba(255,179,71,0.8), transparent 60%),
+      radial-gradient(1px 1px at 58% 72%, rgba(255,179,71,0.6), transparent 60%),
+      radial-gradient(1px 1px at 79% 80%, rgba(255,179,71,0.7), transparent 60%),
+      radial-gradient(1px 1px at 36% 84%, rgba(224,90,68,0.55), transparent 60%),
+      radial-gradient(1px 1px at 68% 88%, rgba(255,179,71,0.4), transparent 60%);
+  }
+
+  /* snowfall */
+  .snow {
+    position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+  }
+  .snow::before, .snow::after {
+    content: ""; position: absolute; inset: -20% 0 0 0;
+    background-image:
+      radial-gradient(1.2px 1.2px at 10% 10%, rgba(255,255,255,0.75), transparent 70%),
+      radial-gradient(1px 1px at 28% 22%, rgba(200,238,255,0.6), transparent 60%),
+      radial-gradient(1.5px 1.5px at 52% 8%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(1px 1px at 68% 18%, rgba(255,255,255,0.7), transparent 60%),
+      radial-gradient(1.2px 1.2px at 82% 5%, rgba(200,238,255,0.55), transparent 60%),
+      radial-gradient(1px 1px at 18% 40%, rgba(255,255,255,0.6), transparent 60%),
+      radial-gradient(1px 1px at 44% 55%, rgba(255,255,255,0.5), transparent 60%),
+      radial-gradient(1.3px 1.3px at 72% 48%, rgba(200,238,255,0.6), transparent 60%),
+      radial-gradient(1px 1px at 92% 62%, rgba(255,255,255,0.55), transparent 60%);
+    animation: snowfall 16s linear infinite;
+  }
+  .snow::after {
+    animation-duration: 28s;
+    opacity: 0.55;
+    transform: translateY(-30%);
+  }
+  @keyframes snowfall {
+    from { transform: translateY(-20%); }
+    to   { transform: translateY(120%); }
+  }
+
+  /* breath mist at bottom */
+  .mist {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 30%;
+    background: linear-gradient(180deg, transparent, rgba(143, 216, 240, 0.12) 70%, rgba(143, 216, 240, 0.22));
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  /* the watcher group */
+  .watcher-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  svg.watcher { width: 92%; height: 92%; display: block; }
+
+  .float { animation: float 6s ease-in-out infinite; transform-origin: 50% 50%; }
+  @keyframes float {
+    0%,100% { transform: translateY(0) scale(1); }
+    50%     { transform: translateY(-14px) scale(1.01); }
+  }
+  .slow-rot { animation: srot 30s linear infinite; transform-origin: 50% 42%; }
+  @keyframes srot {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .eye-main { animation: pulseMain 3.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pulseMain {
+    0%,100% { filter: drop-shadow(0 0 6px #ffd68a) drop-shadow(0 0 18px #ffb347); }
+    50%     { filter: drop-shadow(0 0 14px #ffd68a) drop-shadow(0 0 32px #ffb347); }
+  }
+  .eye-small { animation: pulseSmall 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pulseSmall {
+    0%,100% { filter: drop-shadow(0 0 4px #c8eeff) drop-shadow(0 0 10px #8fd8f0); }
+    50%     { filter: drop-shadow(0 0 8px #c8eeff) drop-shadow(0 0 18px #8fd8f0); }
+  }
+
+  /* beam sweep */
+  .beam { transform-origin: 400px 420px; animation: beamSweep 5s ease-in-out infinite; }
+  @keyframes beamSweep {
+    0%,100% { transform: rotate(-8deg); opacity: 0.6; }
+    50%     { transform: rotate(8deg);  opacity: 1; }
+  }
+
+  /* scanline overlay */
+  .scan {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(143, 216, 240, 0.025) 0px,
+      rgba(143, 216, 240, 0.025) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    mix-blend-mode: screen;
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 200px 50px rgba(0,0,0,0.9);
+  }
+
+  /* nameplate */
+  .nameplate {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 18px 40px 22px;
+    background: linear-gradient(180deg, transparent, rgba(5,8,12,0.95) 55%);
+    text-align: center;
+    z-index: 2;
+  }
+  .nameplate .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.48em;
+    color: var(--ice); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .nameplate h1 {
+    font-weight: 500; font-size: 46px;
+    letter-spacing: 0.24em;
+    color: var(--ink); text-transform: uppercase;
+    text-shadow: 0 0 24px rgba(143,216,240,0.3);
+  }
+  .nameplate .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.36em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* HUD overlay */
+  .hud {
+    position: absolute; top: 14px; left: 50%;
+    transform: translateX(-50%);
+    width: 60%; min-width: 340px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink); z-index: 2;
+  }
+  .hud .labels {
+    display: flex; justify-content: space-between;
+    font-size: 9.5px; letter-spacing: 0.34em;
+    text-transform: uppercase; margin-bottom: 6px;
+    color: var(--ink-dim);
+  }
+  .hud .labels b { color: var(--ice); font-weight: 500; }
+  .hud .labels .warn { color: var(--warn); }
+  .hud .bar {
+    position: relative; height: 6px;
+    background: #050a10; border: 1px solid var(--line); overflow: hidden;
+  }
+  .hud .bar i {
+    position: absolute; top: 0; left: 0; bottom: 0;
+    background: linear-gradient(90deg, var(--ice), var(--amber), var(--warn));
+    width: 18%;
+    animation: observe 8s ease-in-out infinite;
+  }
+  @keyframes observe {
+    0%   { width: 10%; }
+    30%  { width: 18%; }
+    60%  { width: 42%; }
+    100% { width: 22%; }
+  }
+  .hud .foot {
+    margin-top: 6px; font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    display: flex; justify-content: space-between; color: var(--ink-dim);
+  }
+  .hud .foot b { color: var(--ink); font-weight: 500; }
+  .hud .foot .rec { color: var(--warn); }
+
+  /* ====== RIGHT COLUMN ====== */
+  .item {
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 14px 16px; margin-bottom: 10px;
+    display: grid; grid-template-columns: 40px 1fr auto; gap: 12px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .item .glyph {
+    width: 40px; height: 40px; border: 1px solid var(--ice);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ice);
+    font-size: 20px;
+  }
+  .item .label {
+    font-size: 10px; letter-spacing: 0.32em;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+  .item .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 19px; color: var(--ink);
+    letter-spacing: 0.02em; margin-top: 2px;
+  }
+  .item .qty { font-size: 10px; color: var(--ink-dim); letter-spacing: 0.24em; }
+
+  .choice {
+    margin-top: 14px;
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 16px 18px;
+  }
+  .choice h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .choice .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .choice .opt {
+    border: 1px solid var(--line);
+    padding: 12px; cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+  }
+  .choice .opt:hover { border-color: var(--ice); background: #101824; }
+  .choice .opt .g {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; color: var(--ice);
+    margin-bottom: 6px;
+  }
+  .choice .opt .n {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 17px; color: var(--ink);
+    letter-spacing: 0.02em;
+  }
+  .choice .opt .t {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 0.28em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .choice .opt.fight .g { color: var(--warn); }
+
+  .moves {
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 16px 18px; margin-top: 12px;
+  }
+  .moves .head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .moves .head i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+  .moves ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .moves li {
+    display: grid; grid-template-columns: 22px 1fr auto;
+    gap: 12px; align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px dashed #141c28;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px; letter-spacing: 0.04em;
+  }
+  .moves li:last-child { border-bottom: none; }
+  .moves li .n { color: var(--ink-faint); }
+  .moves li .nm { color: var(--ink); font-family: 'Cormorant Garamond', serif; font-size: 17px; letter-spacing: 0.02em; }
+  .moves li .tag {
+    font-size: 9px; letter-spacing: 0.32em;
+    color: var(--ice); text-transform: uppercase;
+  }
+  .moves li.w .tag { color: var(--warn); }
+  .moves li.a .tag { color: var(--amber); }
+
+  .quote {
+    margin-top: 14px;
+    padding: 16px 18px;
+    border-left: 2px solid var(--ice);
+    background: var(--panel);
+    font-size: 17px; line-height: 1.45;
+    font-style: italic; color: #c5cedb;
+  }
+  .quote .attr {
+    display: block; margin-top: 10px; font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.32em;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+
+  /* nav between chapters */
+  .chapternav {
+    display: flex; justify-content: space-between;
+    padding: 14px 0 0; margin-top: 18px;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px; letter-spacing: 0.32em;
+    text-transform: uppercase;
+  }
+  .chapternav a { color: var(--ink-dim); text-decoration: none; }
+  .chapternav a:hover { color: var(--ice); }
+  .chapternav .cur { color: var(--ink); }
+
+  /* ── Nav — identical placement to inventory ── */
+  #nav { position:relative; z-index:200; }
+  #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+  #nav a, #nav button {
+    font-family:'JetBrains Mono',monospace !important;
+    font-size:10px !important; letter-spacing:.28em !important;
+    text-transform:uppercase !important; color:var(--ink-dim) !important;
+    text-decoration:none !important; border:none !important; padding:0 !important;
+    transition:color .2s !important;
+  }
+  #nav a:hover, #nav button:hover { color:#c8a84a !important; }
+  #nav > *, #nav nav, #nav div {
+    border-bottom:1px solid var(--line) !important;
+    padding:14px 32px !important; display:flex !important;
+    align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
+  }
+
+  /* ── Start Chapter CTA ── */
+  .start-chapter-bar {
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 0 0; gap: 20px;
+  }
+  .start-chapter-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.38em; text-transform: uppercase;
+    color: var(--ink); background: transparent;
+    border: 1px solid var(--ice); padding: 12px 32px;
+    text-decoration: none; cursor: pointer;
+    transition: border-color .2s, color .2s, background .2s;
+  }
+  .start-chapter-btn:hover {
+    border-color: var(--amber); color: var(--amber);
+    background: rgba(255,179,71,.05);
+  }
+  .start-chapter-lbl {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.34em; text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+</style>
+</head>
+<body data-screen-label="Chapter 1 — Awakening Protocol · The Watcher">
+
+<div id="nav"></div>
+
+<div class="shell">
+
+  <div class="zone">
+    <div>
+      <div class="z-kicker">Chapter 1 · Awakening Protocol</div>
+      <div class="z-title">Your city, destroyed &amp; frozen.</div>
+    </div>
+    <div class="z-sub">
+      You wake up.<br/>
+      The interface appears.<br/>
+      Some are already killing.
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT COLUMN -->
+    <section class="col">
+      <div class="mod">
+        <div class="m-head">System Boot <i></i></div>
+        <div class="boot">
+          <div class="line">&gt; vitals... ok</div>
+          <div class="line">&gt; sensory link... ok</div>
+          <div class="line">&gt; locating subject...</div>
+          <div class="line">&gt; overlay injected.</div>
+          <div class="line">&gt;&gt; CHAPTER 01 INITIALIZED: SURVIVE</div>
+          <div class="line">&gt; observer deployed<span class="cursor"></span></div>
+        </div>
+      </div>
+
+      <div class="mod">
+        <div class="m-head">Zone Dynamics <i></i></div>
+        <ul class="bullets">
+          <li>First player encounters</li>
+          <li>Basic loot — knife, flashlight</li>
+          <li>Sub-zero exposure tick</li>
+          <li>First choice: trust or fight</li>
+        </ul>
+      </div>
+
+      <div class="mod">
+        <div class="m-head">Truth Unlocked <i></i></div>
+        <p class="truth">“The System observes behavior.”</p>
+      </div>
+    </section>
+
+    <!-- CENTER — PORTRAIT -->
+    <section class="col" style="position:relative;">
+      <div class="portrait">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <div class="city"></div>
+        <div class="windows"></div>
+        <div class="snow"></div>
+
+        <!-- HUD tracker -->
+        <div class="hud">
+          <div class="labels">
+            <span>◉ Observer · <b>Active</b></span>
+            <span>Proximity Protocol</span>
+            <span class="warn">Grouping ▲ Penalty</span>
+          </div>
+          <div class="bar"><i></i></div>
+          <div class="foot">
+            <span>Players scanned · <b>14</b></span>
+            <span class="rec">REC</span>
+          </div>
+        </div>
+
+        <div class="watcher-wrap">
+          <svg class="watcher" viewBox="0 0 800 880" xmlns="http://www.w3.org/2000/svg" aria-label="The Watcher">
+            <defs>
+              <radialGradient id="core" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#ffe9b8"/>
+                <stop offset="30%" stop-color="#ffb347"/>
+                <stop offset="100%" stop-color="#3a1f08"/>
+              </radialGradient>
+              <radialGradient id="satellite" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#f0fbff"/>
+                <stop offset="40%" stop-color="#8fd8f0"/>
+                <stop offset="100%" stop-color="#102530"/>
+              </radialGradient>
+              <radialGradient id="bodyAura" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#8fd8f0" stop-opacity="0.3"/>
+                <stop offset="60%" stop-color="#4a8fa8" stop-opacity="0.1"/>
+                <stop offset="100%" stop-color="#8fd8f0" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="wisp" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stop-color="#8fd8f0" stop-opacity="0.8"/>
+                <stop offset="70%" stop-color="#2a5a70" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#2a5a70" stop-opacity="0"/>
+              </linearGradient>
+              <filter id="blurA" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3"/>
+              </filter>
+            </defs>
+
+            <!-- big ambient aura behind -->
+            <ellipse cx="400" cy="400" rx="300" ry="340" fill="url(#bodyAura)"/>
+
+            <!-- sweeping gold beam from central eye -->
+            <g class="beam" opacity="0.4">
+              <polygon points="395,420 410,420 470,900 380,900" fill="url(#core)" opacity="0.35"/>
+            </g>
+
+            <g class="float">
+
+              <!-- Tattered wispy robe / ghost body -->
+              <g opacity="0.95">
+                <!-- main body wisp shape -->
+                <path d="
+                  M 400 180
+                  C 280 200, 220 290, 240 420
+                  C 225 500, 235 600, 260 700
+                  C 275 780, 300 830, 340 860
+                  L 360 870 L 370 830 L 390 870 L 400 820
+                  L 410 870 L 420 830 L 440 870 L 460 860
+                  C 500 830, 525 780, 540 700
+                  C 565 600, 575 500, 560 420
+                  C 580 290, 520 200, 400 180 Z"
+                  fill="url(#wisp)" stroke="#1a3a48" stroke-opacity="0.4" stroke-width="1"/>
+
+                <!-- inner wispy streaks -->
+                <g stroke="#c8eeff" stroke-opacity="0.35" stroke-width="1.2" fill="none">
+                  <path d="M 310 280 C 300 420, 300 580, 330 800"/>
+                  <path d="M 350 260 C 345 400, 345 570, 365 820"/>
+                  <path d="M 400 250 C 400 400, 398 580, 400 820"/>
+                  <path d="M 450 260 C 455 400, 455 570, 435 820"/>
+                  <path d="M 490 280 C 500 420, 500 580, 470 800"/>
+                </g>
+                <g stroke="#8fd8f0" stroke-opacity="0.22" stroke-width="0.8" fill="none">
+                  <path d="M 280 320 C 260 460, 250 620, 290 780"/>
+                  <path d="M 520 320 C 540 460, 550 620, 510 780"/>
+                </g>
+
+                <!-- frozen sparkles through body -->
+                <g fill="#c8eeff" opacity="0.85">
+                  <circle cx="320" cy="380" r="1.6"/>
+                  <circle cx="440" cy="460" r="1.2"/>
+                  <circle cx="360" cy="540" r="1.4"/>
+                  <circle cx="480" cy="600" r="1.2"/>
+                  <circle cx="340" cy="660" r="1.6"/>
+                  <circle cx="420" cy="720" r="1.3"/>
+                  <circle cx="300" cy="500" r="1.2"/>
+                  <circle cx="500" cy="520" r="1.4"/>
+                </g>
+
+                <!-- silver diagonal ribbon slashes -->
+                <path d="M 260 420 L 540 680" stroke="#c8eeff" stroke-opacity="0.3" stroke-width="2" fill="none"/>
+                <path d="M 540 420 L 260 680" stroke="#c8eeff" stroke-opacity="0.22" stroke-width="1.5" fill="none"/>
+              </g>
+
+              <!-- head dome (rhomboid) -->
+              <g class="slow-rot">
+                <!-- Central eye -->
+                <g class="eye-main">
+                  <ellipse cx="400" cy="370" rx="78" ry="54" fill="#0a0f16" stroke="#c07030" stroke-width="2"/>
+                  <ellipse cx="400" cy="370" rx="68" ry="44" fill="url(#core)"/>
+                  <circle cx="400" cy="370" r="16" fill="#ffe9b8"/>
+                  <circle cx="400" cy="370" r="6" fill="#fff6dc"/>
+                  <!-- eyelash corners -->
+                  <path d="M 322 370 L 310 360 M 322 370 L 310 380" stroke="#c07030" stroke-width="2"/>
+                  <path d="M 478 370 L 490 360 M 478 370 L 490 380" stroke="#c07030" stroke-width="2"/>
+                </g>
+
+                <!-- Satellite eyes (7, scattered around head) -->
+                <g class="eye-small">
+                  <!-- top -->
+                  <g transform="translate(370 250)">
+                    <circle cx="0" cy="0" r="14" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="8" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="3" fill="#f0fbff"/>
+                  </g>
+                  <g transform="translate(450 275)">
+                    <circle cx="0" cy="0" r="12" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="7" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2.5" fill="#f0fbff"/>
+                  </g>
+                  <!-- left side -->
+                  <g transform="translate(290 330)">
+                    <circle cx="0" cy="0" r="13" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="7.5" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2.8" fill="#f0fbff"/>
+                    <!-- beam -->
+                    <path d="M -14 0 L -46 2" stroke="#c8eeff" stroke-width="2" opacity="0.85"/>
+                    <circle cx="-46" cy="2" r="3" fill="#c8eeff" opacity="0.9" filter="url(#blurA)"/>
+                  </g>
+                  <g transform="translate(310 410)">
+                    <circle cx="0" cy="0" r="11" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="6" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2.2" fill="#f0fbff"/>
+                    <!-- beam -->
+                    <path d="M -11 3 L -50 12" stroke="#c8eeff" stroke-width="1.8" opacity="0.8"/>
+                    <circle cx="-50" cy="12" r="2.5" fill="#c8eeff" opacity="0.85" filter="url(#blurA)"/>
+                  </g>
+                  <!-- right side -->
+                  <g transform="translate(510 330)">
+                    <circle cx="0" cy="0" r="13" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="7.5" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2.8" fill="#f0fbff"/>
+                    <path d="M 14 0 L 46 2" stroke="#c8eeff" stroke-width="2" opacity="0.85"/>
+                    <circle cx="46" cy="2" r="3" fill="#c8eeff" opacity="0.9" filter="url(#blurA)"/>
+                  </g>
+                  <g transform="translate(490 410)">
+                    <circle cx="0" cy="0" r="11" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="6" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2.2" fill="#f0fbff"/>
+                    <path d="M 11 3 L 50 12" stroke="#c8eeff" stroke-width="1.8" opacity="0.8"/>
+                    <circle cx="50" cy="12" r="2.5" fill="#c8eeff" opacity="0.85" filter="url(#blurA)"/>
+                  </g>
+                  <!-- bottom small one -->
+                  <g transform="translate(400 460)">
+                    <circle cx="0" cy="0" r="10" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+                    <circle cx="0" cy="0" r="5.5" fill="url(#satellite)"/>
+                    <circle cx="0" cy="0" r="2" fill="#f0fbff"/>
+                  </g>
+                </g>
+
+                <!-- orbital ring -->
+                <ellipse cx="400" cy="370" rx="200" ry="28" fill="none" stroke="#8fd8f0" stroke-opacity="0.2" stroke-width="0.6" stroke-dasharray="1 6"/>
+              </g>
+
+              <!-- tattered hem at bottom -->
+              <g opacity="0.85">
+                <path d="
+                  M 300 790
+                  Q 310 840, 300 880
+                  Q 320 850, 325 830
+                  Q 340 870, 345 880
+                  Q 360 855, 365 835
+                  Q 380 875, 390 880
+                  Q 400 855, 405 830
+                  Q 420 875, 430 880
+                  Q 440 855, 450 830
+                  Q 465 875, 475 880
+                  Q 490 850, 495 830
+                  Q 505 870, 510 880
+                  L 510 790 Z"
+                  fill="url(#wisp)" opacity="0.8"/>
+              </g>
+            </g>
+
+            <!-- Scan crosshair following main eye -->
+            <g opacity="0.35" stroke="#ffb347" stroke-width="0.6" fill="none">
+              <circle cx="400" cy="370" r="110" stroke-dasharray="2 6"/>
+              <circle cx="400" cy="370" r="150" stroke-dasharray="1 10"/>
+              <line x1="220" y1="370" x2="260" y2="370"/>
+              <line x1="540" y1="370" x2="580" y2="370"/>
+              <line x1="400" y1="200" x2="400" y2="240"/>
+              <line x1="400" y1="500" x2="400" y2="540"/>
+            </g>
+
+          </svg>
+        </div>
+
+        <div class="mist"></div>
+        <div class="scan"></div>
+        <div class="vignette"></div>
+
+        <div class="nameplate">
+          <div class="kicker">Chapter 1 Boss · Surveillance</div>
+          <h1>The Watcher</h1>
+          <div class="sub">Punishes grouping. Remembers everything.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN -->
+    <section class="col">
+
+      <div class="item">
+        <div class="glyph">✦</div>
+        <div>
+          <div class="label">Starter Loot · 01</div>
+          <div class="name">Kitchen Knife</div>
+        </div>
+        <div class="qty">×1</div>
+      </div>
+      <div class="item">
+        <div class="glyph">◉</div>
+        <div>
+          <div class="label">Starter Loot · 02</div>
+          <div class="name">Flashlight</div>
+        </div>
+        <div class="qty">25%</div>
+      </div>
+
+      <div class="choice">
+        <h3>First Choice</h3>
+        <div class="opts">
+          <div class="opt trust">
+            <div class="g">⟐</div>
+            <div class="n">Trust</div>
+            <div class="t">Share warmth</div>
+          </div>
+          <div class="opt fight">
+            <div class="g">✕</div>
+            <div class="n">Fight</div>
+            <div class="t">Take the loot</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="moves">
+        <div class="head">Boss Behavior <i></i></div>
+        <ul>
+          <li><span class="n">01</span><span class="nm">Silent Pass</span><span class="tag">Observe</span></li>
+          <li class="a"><span class="n">02</span><span class="nm">Index of Faces</span><span class="tag">Mark</span></li>
+          <li class="w"><span class="n">03</span><span class="nm">Proximity Cull</span><span class="tag">Punish</span></li>
+          <li><span class="n">04</span><span class="nm">Frostburn Gaze</span><span class="tag">Debuff</span></li>
+          <li class="w"><span class="n">05</span><span class="nm">The Unblinking</span><span class="tag">Ward</span></li>
+        </ul>
+      </div>
+
+      <div class="quote">
+        “It doesn't kill. It counts. And if you stand too close to another, it begins to count faster.”
+        <span class="attr">— Anonymous · Day 1 log</span>
+      </div>
+    </section>
+  </div>
+
+  <nav class="chapternav">
+    <span class="cur">Ch. 01 · Awakening</span>
+    <a href="Twin Judges.html">Ch. 02 · Looted District</a>
+    <a href="The Echo Beast.html">Ch. 03 · Signal Hunters ▶</a>
+  </nav>
+
+  <div class="start-chapter-bar">
+    <span class="start-chapter-lbl">Ready?</span>
+    <a href="chapter1.html" class="start-chapter-btn" id="start-ch1-btn">▶ Begin Chapter 1</a>
+    <span class="start-chapter-lbl">· Awakening Protocol</span>
+  </div>
+
+</div>
+
+<script type="module">
+  import { renderNav } from '../components/nav.js'
+  renderNav('nav')
+</script>
+</body>
+</html>
