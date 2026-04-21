@@ -77,9 +77,9 @@
     .m-head i { flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); }
 
     /* chapter entries */
-    .chapter-entry { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--line); }
+    .chapter-entry { display:flex; align-items:center; gap:16px; padding:16px 0; border-bottom:1px solid var(--line); }
     .chapter-entry:last-child { border-bottom:none; }
-    .ch-num { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.34em; color:var(--ink-dim); text-transform:uppercase; min-width:80px; flex-shrink:0; }
+    .ch-num { font-family:'JetBrains Mono',monospace; font-size:9.5px; letter-spacing:.34em; color:var(--ink-dim); text-transform:uppercase; min-width:56px; flex-shrink:0; }
     .ch-title { font-size:19px; font-weight:500; color:var(--ink); letter-spacing:.03em; }
     .ch-sub   { font-style:italic; font-size:14px; color:var(--ink-dim); margin-top:2px; }
     .ch-btn {
@@ -91,6 +91,44 @@
     .ch-btn:hover, .ch-btn.active { border-color:var(--ice); color:var(--ice); background:rgba(143,216,240,.05); }
     .ch-sealed { font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.28em; color:var(--ink-faint); text-transform:uppercase; }
     .chapter-entry.locked { opacity:.4; }
+
+    /* ── Watcher thumbnail ── */
+    .watcher-thumb {
+      width: 72px; height: 72px; flex-shrink: 0;
+      border: 1px solid var(--line);
+      background: radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%);
+      overflow: hidden; position: relative;
+      transition: border-color .25s;
+    }
+    .chapter-entry:hover .watcher-thumb { border-color: var(--ice); }
+    .watcher-thumb svg { width: 100%; height: 100%; display: block; }
+
+    /* thumb-scoped animations — prefixed to avoid colliding with the page */
+    @keyframes wt-float {
+      0%,100% { transform: translateY(0) scale(1); }
+      50%      { transform: translateY(-5px) scale(1.01); }
+    }
+    @keyframes wt-srot {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    @keyframes wt-pulseMain {
+      0%,100% { filter: drop-shadow(0 0 4px #ffd68a) drop-shadow(0 0 10px #ffb347); }
+      50%     { filter: drop-shadow(0 0 8px #ffd68a) drop-shadow(0 0 20px #ffb347); }
+    }
+    @keyframes wt-pulseSmall {
+      0%,100% { filter: drop-shadow(0 0 2px #c8eeff) drop-shadow(0 0 6px #8fd8f0); }
+      50%     { filter: drop-shadow(0 0 5px #c8eeff) drop-shadow(0 0 12px #8fd8f0); }
+    }
+    @keyframes wt-beam {
+      0%,100% { transform: rotate(-8deg); opacity:.5; }
+      50%     { transform: rotate(8deg);  opacity:.9; }
+    }
+    .watcher-thumb .wt-float    { animation: wt-float 6s ease-in-out infinite; transform-origin: 50% 50%; }
+    .watcher-thumb .wt-srot     { animation: wt-srot 30s linear infinite; transform-origin: 400px 370px; }
+    .watcher-thumb .wt-eye-main { animation: wt-pulseMain 3.6s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .watcher-thumb .wt-eye-small{ animation: wt-pulseSmall 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .watcher-thumb .wt-beam     { transform-origin: 400px 420px; animation: wt-beam 5s ease-in-out infinite; }
 
     /* stat grid */
     .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px 8px; margin-bottom:16px; }
@@ -266,14 +304,136 @@
         </div>`
     }).join('')
 
+    // ── Watcher SVG thumbnail (inline, scoped animation classes) ──
+    const WATCHER_SVG = `<svg viewBox="100 200 600 560" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <radialGradient id="wt-core" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#ffe9b8"/>
+          <stop offset="30%" stop-color="#ffb347"/>
+          <stop offset="100%" stop-color="#3a1f08"/>
+        </radialGradient>
+        <radialGradient id="wt-sat" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#f0fbff"/>
+          <stop offset="40%" stop-color="#8fd8f0"/>
+          <stop offset="100%" stop-color="#102530"/>
+        </radialGradient>
+        <radialGradient id="wt-aura" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"  stop-color="#8fd8f0" stop-opacity="0.3"/>
+          <stop offset="60%" stop-color="#4a8fa8" stop-opacity="0.1"/>
+          <stop offset="100%" stop-color="#8fd8f0" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="wt-wisp" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"  stop-color="#8fd8f0" stop-opacity="0.8"/>
+          <stop offset="70%" stop-color="#2a5a70" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#2a5a70" stop-opacity="0"/>
+        </linearGradient>
+        <filter id="wt-blur" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="3"/>
+        </filter>
+      </defs>
+      <ellipse cx="400" cy="400" rx="300" ry="340" fill="url(#wt-aura)"/>
+      <g class="wt-beam" opacity="0.4">
+        <polygon points="395,420 410,420 470,900 380,900" fill="url(#wt-core)" opacity="0.35"/>
+      </g>
+      <g class="wt-float">
+        <g opacity="0.92">
+          <path d="M 400 180 C 280 200,220 290,240 420 C 225 500,235 600,260 700 C 275 780,300 830,340 860 L 360 870 L 370 830 L 390 870 L 400 820 L 410 870 L 420 830 L 440 870 L 460 860 C 500 830,525 780,540 700 C 565 600,575 500,560 420 C 580 290,520 200,400 180 Z"
+            fill="url(#wt-wisp)" stroke="#1a3a48" stroke-opacity="0.4" stroke-width="1"/>
+          <g stroke="#c8eeff" stroke-opacity="0.3" stroke-width="1.2" fill="none">
+            <path d="M 350 260 C 345 400,345 570,365 820"/>
+            <path d="M 400 250 C 400 400,398 580,400 820"/>
+            <path d="M 450 260 C 455 400,455 570,435 820"/>
+          </g>
+          <g fill="#c8eeff" opacity="0.8">
+            <circle cx="320" cy="380" r="1.6"/><circle cx="440" cy="460" r="1.2"/>
+            <circle cx="360" cy="540" r="1.4"/><circle cx="480" cy="600" r="1.2"/>
+            <circle cx="340" cy="660" r="1.6"/>
+          </g>
+        </g>
+        <g class="wt-srot">
+          <g class="wt-eye-main">
+            <ellipse cx="400" cy="370" rx="78" ry="54" fill="#0a0f16" stroke="#c07030" stroke-width="2"/>
+            <ellipse cx="400" cy="370" rx="68" ry="44" fill="url(#wt-core)"/>
+            <circle cx="400" cy="370" r="16" fill="#ffe9b8"/>
+            <circle cx="400" cy="370" r="6" fill="#fff6dc"/>
+            <path d="M 322 370 L 310 360 M 322 370 L 310 380" stroke="#c07030" stroke-width="2"/>
+            <path d="M 478 370 L 490 360 M 478 370 L 490 380" stroke="#c07030" stroke-width="2"/>
+          </g>
+          <g class="wt-eye-small">
+            <g transform="translate(370 250)">
+              <circle cx="0" cy="0" r="14" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="8" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="3" fill="#f0fbff"/>
+            </g>
+            <g transform="translate(450 275)">
+              <circle cx="0" cy="0" r="12" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="7" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2.5" fill="#f0fbff"/>
+            </g>
+            <g transform="translate(290 330)">
+              <circle cx="0" cy="0" r="13" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="7.5" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2.8" fill="#f0fbff"/>
+              <path d="M -14 0 L -46 2" stroke="#c8eeff" stroke-width="2" opacity="0.85"/>
+              <circle cx="-46" cy="2" r="3" fill="#c8eeff" opacity="0.9" filter="url(#wt-blur)"/>
+            </g>
+            <g transform="translate(510 330)">
+              <circle cx="0" cy="0" r="13" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="7.5" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2.8" fill="#f0fbff"/>
+              <path d="M 14 0 L 46 2" stroke="#c8eeff" stroke-width="2" opacity="0.85"/>
+              <circle cx="46" cy="2" r="3" fill="#c8eeff" opacity="0.9" filter="url(#wt-blur)"/>
+            </g>
+            <g transform="translate(310 410)">
+              <circle cx="0" cy="0" r="11" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="6" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2.2" fill="#f0fbff"/>
+              <path d="M -11 3 L -50 12" stroke="#c8eeff" stroke-width="1.8" opacity="0.8"/>
+            </g>
+            <g transform="translate(490 410)">
+              <circle cx="0" cy="0" r="11" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="6" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2.2" fill="#f0fbff"/>
+              <path d="M 11 3 L 50 12" stroke="#c8eeff" stroke-width="1.8" opacity="0.8"/>
+            </g>
+            <g transform="translate(400 460)">
+              <circle cx="0" cy="0" r="10" fill="#0a1018" stroke="#8fd8f0" stroke-width="1.5"/>
+              <circle cx="0" cy="0" r="5.5" fill="url(#wt-sat)"/>
+              <circle cx="0" cy="0" r="2" fill="#f0fbff"/>
+            </g>
+          </g>
+          <ellipse cx="400" cy="370" rx="200" ry="28" fill="none" stroke="#8fd8f0" stroke-opacity="0.2" stroke-width="0.6" stroke-dasharray="1 6"/>
+        </g>
+      </g>
+      <g opacity="0.3" stroke="#ffb347" stroke-width="0.6" fill="none">
+        <circle cx="400" cy="370" r="110" stroke-dasharray="2 6"/>
+        <circle cx="400" cy="370" r="150" stroke-dasharray="1 10"/>
+        <line x1="260" y1="370" x2="290" y2="370"/>
+        <line x1="510" y1="370" x2="540" y2="370"/>
+        <line x1="400" y1="220" x2="400" y2="250"/>
+        <line x1="400" y1="490" x2="400" y2="520"/>
+      </g>
+    </svg>`
+
+    const CH_COVERS = {
+      1: WATCHER_SVG,
+    }
+
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
       const isCurrent  = player.current_chapter === ch.number
+      const thumbSvg   = CH_COVERS[ch.number] || ''
+      const thumbHtml  = thumbSvg
+        ? `<div class="watcher-thumb">${thumbSvg}</div>`
+        : `<div class="watcher-thumb" style="display:flex;align-items:center;justify-content:center;opacity:.3">
+             <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#6f7b8d">Ch.${String(ch.number).padStart(2,'0')}</span>
+           </div>`
+
       if (!isUnlocked) {
         return `
           <div class="chapter-entry locked">
-            <span class="ch-num">🔒 Ch.${String(ch.number).padStart(2,'0')}</span>
-            <div>
+            ${thumbHtml}
+            <div style="flex:1">
               <div class="ch-title">${ch.title}</div>
               <div class="ch-sub">${ch.sub}</div>
             </div>
@@ -289,8 +449,8 @@
       const label = isCurrent ? 'Continue ›' : isReplay ? 'Replay ›' : alreadyIn ? 'Continue ›' : 'Drive ›'
       return `
         <div class="chapter-entry">
-          <span class="ch-num">Ch.${String(ch.number).padStart(2,'0')}</span>
-          <div>
+          ${thumbHtml}
+          <div style="flex:1">
             <div class="ch-title">${ch.title}</div>
             <div class="ch-sub">${ch.sub}</div>
           </div>
