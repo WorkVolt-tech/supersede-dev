@@ -412,15 +412,6 @@
         <hr class="ink-rule">
 
         <div id="chapter-list"></div>
-
-        <div class="boot">
-          <div class="bline">&gt; archive loaded... ok</div>
-          <div class="bline">&gt; player record... verified</div>
-          <div class="bline">&gt; chapter index... unlocked</div>
-          <div class="bline">&gt; overlay injected.</div>
-          <div class="bline">&gt;&gt; SELECT CHAPTER TO PROCEED</div>
-          <div class="bline">&gt; the system observes<span class="bcursor"></span></div>
-        </div>
       </div>
 
       <!-- SPINE -->
@@ -617,18 +608,27 @@
       </div>`
     }).join('')
 
+    // Chapter preview pages map (add entries as chapters get preview pages)
+    const CH_PREVIEW = { 1: 'The_Watcher.html' }
+
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
-      const thumbHtml  = CH_COVERS[ch.number]
-        ? `<div class="ch-thumb">${CH_COVERS[ch.number]}</div>`
-        : `<div class="ch-thumb" style="display:flex;align-items:center;justify-content:center">
-             <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#3a4354">Ch.${String(ch.number).padStart(2,'0')}</span>
-           </div>`
+      const previewHref = CH_PREVIEW[ch.number]
+      const chNumLabel = `<span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--gold);display:block;margin-bottom:3px;text-transform:uppercase">Ch.${String(ch.number).padStart(2,'0')}</span>`
+
+      const thumbInner = CH_COVERS[ch.number]
+        ? CH_COVERS[ch.number]
+        : `<div style="display:flex;align-items:center;justify-content:center;height:100%"><span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#3a4354">Ch.${String(ch.number).padStart(2,'0')}</span></div>`
+
+      const thumbHtml = previewHref && isUnlocked
+        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none" onclick="event.preventDefault();triggerPageTurn('${previewHref}')">${thumbInner}</a>`
+        : `<div class="ch-thumb">${thumbInner}</div>`
 
       if (!isUnlocked) {
         return `<div class="chapter-entry locked">
           ${thumbHtml}
           <div class="ch-info">
+            ${chNumLabel}
             <div class="ch-title">${ch.title}</div>
             <div class="ch-sub">${ch.sub}</div>
           </div>
@@ -645,6 +645,7 @@
       return `<div class="chapter-entry">
         ${thumbHtml}
         <div class="ch-info">
+          ${chNumLabel}
           <div class="ch-title">${ch.title}</div>
           <div class="ch-sub">${ch.sub}</div>
         </div>
