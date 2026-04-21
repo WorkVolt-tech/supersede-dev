@@ -32,6 +32,23 @@
       --purple:   #b06eff;
     }
 
+    /* ── Nav — same placement as inventory (gold accent on hover) ── */
+    #nav { position:relative; z-index:200; }
+    #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+    #nav a, #nav button {
+      font-family:'JetBrains Mono',monospace !important;
+      font-size:10px !important; letter-spacing:.28em !important;
+      text-transform:uppercase !important; color:#6f7b8d !important;
+      text-decoration:none !important; border:none !important; padding:0 !important;
+      transition:color .2s !important;
+    }
+    #nav a:hover, #nav button:hover { color:#c8a84a !important; }
+    #nav > *, #nav nav, #nav div {
+      border-bottom:1px solid #1a2230 !important;
+      padding:14px 32px !important; display:flex !important;
+      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
+    }
+
     /* ── Global reset for watcher look ── */
     html, body {
       background: var(--bg-0) !important;
