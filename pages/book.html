@@ -36,25 +36,48 @@
 
     .shell { max-width:1100px; margin:0 auto; padding:28px 32px 60px; }
 
-    /* topbar */
-    .topbar {
-      display:flex; align-items:center; justify-content:space-between;
-      padding-bottom:16px; border-bottom:1px solid var(--line);
-      font-family:'JetBrains Mono',monospace;
-      font-size:10px; letter-spacing:.34em; text-transform:uppercase; color:var(--ink-dim);
+    /* ── nav slot — override whatever main.css injects so it fits the dark theme ── */
+    #nav, #nav * {
+      background: transparent !important;
+      border-color: var(--line) !important;
+      color: var(--ink-dim) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      letter-spacing: .28em !important;
+      text-transform: uppercase !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
     }
-    .topbar .brand { display:flex; align-items:center; gap:12px; color:var(--ink); }
-    .topbar .brand .dot {
+    #nav a, #nav button {
+      color: var(--ink-dim) !important;
+      text-decoration: none !important;
+      transition: color .2s !important;
+      padding: 0 !important;
+      border: none !important;
+    }
+    #nav a:hover, #nav button:hover { color: var(--ice) !important; }
+    /* active / current page link */
+    #nav a[href="book.html"], #nav .active { color: var(--ink) !important; }
+    /* the nav container itself */
+    #nav > *, #nav nav, #nav div {
+      border-bottom: 1px solid var(--line) !important;
+      padding-bottom: 14px !important;
+      margin-bottom: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 28px !important;
+      flex-wrap: wrap !important;
+    }
+    /* brand dot */
+    .dot {
       width:7px; height:7px; background:var(--ice);
       transform:rotate(45deg); box-shadow:0 0 8px var(--ice);
-      animation:throb 2.4s ease-in-out infinite; flex-shrink:0;
+      animation:throb 2.4s ease-in-out infinite; flex-shrink:0; display:inline-block;
     }
     @keyframes throb {
       0%,100%{opacity:1;transform:rotate(45deg) scale(1)}
       50%{opacity:.5;transform:rotate(45deg) scale(.85)}
     }
-    .topbar .right { display:flex; gap:24px; }
-    .topbar .right span i { color:var(--ink); font-style:normal; margin-left:6px; }
 
     /* zone header */
     .zone {
@@ -207,14 +230,6 @@
 
 <div class="shell">
 
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span><span>SuperSede · Archive</span></div>
-    <div class="right">
-      <span>Module <i>Chapters</i></span>
-      <span>Status <i>Active</i></span>
-    </div>
-  </div>
-
   <div class="zone">
     <div>
       <div class="z-kicker">SuperSede · Table of Contents</div>
@@ -266,12 +281,7 @@
 
   </div>
 
-  <nav class="chapnav">
-    <span class="cur">Archive · Chapters</span>
-    <span style="color:var(--ink-faint)">SuperSede · System</span>
-  </nav>
-
-</div>
+</div><!-- /shell -->
 
 <script type="module">
   import { renderNav } from '../components/nav.js'
