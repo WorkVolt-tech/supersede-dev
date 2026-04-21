@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede</title>
+  <link rel="stylesheet" href="styles/main.css">
+</head>
+<body>
+  <div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:radial-gradient(ellipse at center,#1a1208,#0d0b07)">
+    <p id="sys-tag" style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#00ffe7;text-shadow:0 0 8px #00ffe7;letter-spacing:.2em;margin-bottom:1rem;opacity:0;transition:opacity 1s">SYSTEM ONLINE</p>
+    <h1 style="font-family:'Cinzel',serif;font-size:clamp(2.5rem,8vw,5rem);color:#c8b880;letter-spacing:.12em;margin-bottom:.5rem;font-weight:600">SuperSede</h1>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;color:#7a6435;font-size:1rem;margin-bottom:3rem">The world has stopped. The game has begun.</p>
+    <div id="cta"></div>
+  </div>
+
+  <script type="module">
+    import { supabase } from './supabase.js'
+
+    // Fade in system tag
+    setTimeout(() => document.getElementById('sys-tag').style.opacity = 1, 300)
+
+    // Check if already logged in
+    const { data: { session } } = await supabase.auth.getSession()
+    const cta = document.getElementById('cta')
+
+    if (session) {
+      cta.innerHTML = `<a href="pages/book.html" style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.1em;color:#1a1208;background:rgba(200,184,128,.9);border:1px solid #8b6a20;padding:.75rem 2rem;text-decoration:none;border-radius:2px">Continue Reading ›</a>`
+    } else {
+      cta.innerHTML = `<a href="pages/auth.html" style="font-family:'Cinzel',serif;font-size:.9rem;letter-spacing:.1em;color:#1a1208;background:rgba(200,184,128,.9);border:1px solid #8b6a20;padding:.75rem 2rem;text-decoration:none;border-radius:2px">Enter the System ›</a>`
+    }
+  </script>
+</body>
+</html>

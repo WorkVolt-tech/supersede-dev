@@ -1,0 +1,235 @@
+/* styles/main.css — global parchment + system overlay theme */
+@import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Cinzel:wght@400;600&family=Share+Tech+Mono&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --parchment:      #f2e8d0;
+  --ink:            #1a1208;
+  --ink-faded:      #1a1208;
+  --ink-light:      #3a2810;
+  --gold:           #c8b880;
+  --gold-dark:      #8b6a20;
+  --sys-cyan:       #00ffe7;
+  --sys-red:        #ff3a3a;
+  --page-bg:        #0d0b07;
+  --spine:          linear-gradient(to right, #8b6a20, #c8a843, #6b4c10);
+  --badge-neutral:  #c8b96e;
+  --badge-red:      #e05555;
+  --badge-green:    #5ec45e;
+  --badge-elite:    #a07de0;
+}
+
+html, body { min-height: 100vh; font-family: 'IM Fell English', Georgia, serif; }
+body { background: var(--page-bg); color: var(--ink); }
+
+/* ── Parchment surface ── */
+.parchment {
+  background:
+    radial-gradient(ellipse at top left,    rgba(40,18,0,.65) 0%, transparent 55%),
+    radial-gradient(ellipse at bottom right,rgba(40,18,0,.55) 0%, transparent 55%),
+    linear-gradient(160deg, #b8a570 0%, #aa9560 40%, #9e8850 70%, #927a42 100%);
+  box-shadow: inset 0 0 60px rgba(80,40,0,.1), 0 4px 40px rgba(0,0,0,.6);
+  position: relative;
+}
+.parchment::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(0,0,0,.05) 28px, rgba(0,0,0,.05) 29px);
+}
+
+/* ── Parchment text — enforce minimum contrast on all child elements ── */
+.parchment .page-inner p,
+.parchment .page-inner span,
+.parchment .page-inner label,
+.parchment .page-inner div {
+  /* Inline color overrides from JS templates may still override this */
+}
+/* Rarity colors — boost contrast on parchment */
+.parchment [style*="color:#888"],
+.parchment [style*="color: #888"] { color: #2a1208 !important; }
+.parchment [style*="color:#1a1208"],
+.parchment [style*="color: #1a1208"] { color: #1a1208 !important; }
+.parchment [style*="color:#1a1208"],
+.parchment [style*="color: #1a1208"] { color: #1a1208 !important; }
+.parchment [style*="color:#1a1208"],
+.parchment [style*="color: #1a1208"] { color: #1a1208 !important; }
+/* Item type text on dark cards — keep light */
+.item-card .item-type { color: #aaa; }
+.item-card .item-name { color: #d4c090; }
+
+/* ── Book wrap ── */
+.book-wrap {
+  min-height: 100vh; display: flex; flex-direction: column;
+  align-items: center; padding: 1rem 1rem 3rem;
+  background: radial-gradient(ellipse at center, #1a1208, #0d0b07);
+}
+.book {
+  display: flex; max-width: 1060px; width: 100%;
+  box-shadow: 0 20px 80px rgba(0,0,0,.8);
+  border-radius: 4px; margin-top: .75rem;
+  min-height: 620px;
+}
+.page-left  { flex: 1; border-radius: 4px 0 0 4px; position: relative; }
+.page-right { flex: 1; border-radius: 0 4px 4px 0; position: relative; }
+.page-inner { padding: 2rem 1.75rem; position: relative; z-index: 1; }
+.spine { width: 12px; flex-shrink: 0; background: var(--spine); }
+
+/* ── Nav ── */
+.nav {
+  width: 100%; max-width: 1060px; display: flex; align-items: center;
+  gap: .75rem; padding: .6rem 1.25rem;
+  background: rgba(13,11,7,.92); border: .5px solid rgba(200,184,128,.25);
+  border-radius: 4px; flex-wrap: wrap;
+}
+.nav-logo { font-family: 'Cinzel', serif; font-size: 1.1rem; font-weight: 600; color: var(--gold); text-decoration: none; letter-spacing: .1em; }
+.nav-links { display: flex; gap: .75rem; margin-left: auto; flex-wrap: wrap; }
+.nav-link { font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .08em; color: #7a6840; text-decoration: none; transition: color .2s; }
+.nav-link:hover { color: var(--gold); }
+.nav-player { font-family: 'Share Tech Mono', monospace; font-size: .65rem; color: #8a7850; margin-left: .5rem; }
+
+/* ── Typography ── */
+.chapter-label { font-family: 'Cinzel', serif; font-size: .7rem; letter-spacing: .18em; text-transform: uppercase; color: #1a1208; margin-bottom: .2rem; }
+.chapter-sub   { font-family: 'IM Fell English', serif; font-style: italic; font-size: .82rem; color: #1a1208; margin-bottom: .75rem; }
+.page-title    { font-family: 'Cinzel', serif; font-size: 1.5rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; letter-spacing: .04em; }
+.story-text    { font-size: 1.05rem; line-height: 1.9; color: #120e06; white-space: pre-line; }
+.story-text.drop-cap::first-letter { font-family: 'Cinzel', serif; font-size: 4.2rem; font-weight: 600; line-height: .75; float: left; margin: .05em .1em 0 0; color: var(--ink); }
+
+.ink-divider { border: none; border-top: 1px solid rgba(139,106,32,.25); margin: .75rem 0; }
+
+/* ── Choice buttons ── */
+.choices { margin-top: .5rem; }
+.choices-label { font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .12em; color: #1a1208; text-transform: uppercase; margin-bottom: .5rem; }
+.choice {
+  display: flex; align-items: flex-start; gap: .5rem; width: 100%;
+  background: none; border: none; border-bottom: 1px solid rgba(139,106,32,.2);
+  padding: .75rem .25rem; cursor: pointer; font-family: 'IM Fell English', serif;
+  font-size: 1rem; color: #1a1208; text-align: left; line-height: 1.5;
+  transition: all .2s;
+}
+.choice:last-child { border-bottom: none; }
+.choice:hover { color: var(--ink); padding-left: .75rem; background: linear-gradient(to right, rgba(200,180,100,.15), transparent); }
+.choice-arrow { color: #5a3a08; transition: all .2s; margin-top: 1px; flex-shrink: 0; }
+.choice:hover .choice-arrow { color: var(--gold-dark); transform: translateX(3px); }
+.choice-body { flex: 1; }
+.choice-sub  { display: block; font-size: .78rem; color: #1a1208; font-style: italic; margin-top: .15rem; }
+.choice.danger { color: #6b1a1a; }
+.choice.danger .choice-arrow { color: #c04040; }
+.choice.locked { opacity: .45; cursor: not-allowed; }
+
+/* ── System overlay ── */
+.sys-overlay {
+  position: fixed; top: 5rem; right: 1.5rem; z-index: 100;
+  display: flex; align-items: center; gap: .5rem;
+  padding: .5rem .9rem; border: 1px solid rgba(255,58,58,.5);
+  background: rgba(5,5,5,.9); font-family: 'Share Tech Mono', monospace;
+  font-size: .72rem; letter-spacing: .08em; color: #ff6060;
+  text-shadow: 0 0 8px #ff3a3a; max-width: 300px;
+  animation: slideIn .3s ease; border-radius: 2px;
+}
+.sys-overlay.info { border-color: rgba(0,255,231,.4); color: var(--sys-cyan); text-shadow: 0 0 8px var(--sys-cyan); }
+
+/* ── HUD ── */
+.hud { padding: .25rem 0; }
+.hud-badge-row { display: flex; align-items: center; gap: .75rem; margin-bottom: .75rem; }
+.hud-seal { font-size: 2rem; flex-shrink: 0; }
+.hud-seal-label { font-family: 'Cinzel', serif; font-size: .85rem; font-weight: 600; letter-spacing: .06em; margin-bottom: 2px; }
+.hud-chapter { font-family: 'Share Tech Mono', monospace; font-size: .62rem; color: #1a1208; letter-spacing: .06em; }
+.stat-row { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+.stat-key { font-family: 'Share Tech Mono', monospace; font-size: .62rem; color: #1a1208; letter-spacing: .08em; width: 22px; flex-shrink: 0; }
+.stat-bar-wrap { flex: 1; height: 5px; background: rgba(0,0,0,.15); border-radius: 3px; overflow: hidden; }
+.stat-bar { height: 100%; border-radius: 3px; transition: width .4s; }
+.stat-val { font-family: 'Share Tech Mono', monospace; font-size: .62rem; color: #1a1208; min-width: 50px; text-align: right; }
+.stat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .4rem; margin-top: .25rem; }
+.stat-box { background: rgba(0,0,0,.06); border: .5px solid rgba(139,106,32,.2); border-radius: 2px; padding: .4rem .3rem; text-align: center; }
+.stat-box-key { display: block; font-family: 'Share Tech Mono', monospace; font-size: .56rem; color: #1a1208; letter-spacing: .08em; margin-bottom: 2px; }
+.stat-box-val { display: block; font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--ink); }
+
+/* ── Combat ── */
+.combat-panel { border: 1px solid rgba(139,106,32,.35); border-radius: 3px; padding: 1.25rem; background: rgba(0,0,0,.05); margin: 1rem 0; }
+.combat-enemy-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.combat-enemy-icon { font-size: 2.5rem; flex-shrink: 0; }
+.combat-enemy-name { font-family: 'Cinzel', serif; font-size: 1rem; font-weight: 600; color: var(--ink); margin-bottom: .4rem; }
+.combat-log { background: rgba(0,0,0,.06); border-left: 2px solid rgba(139,106,32,.4); padding: .75rem; margin-bottom: 1rem; min-height: 60px; border-radius: 0 2px 2px 0; font-style: italic; font-size: .88rem; color: #120e06; line-height: 1.5; }
+.combat-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.combat-btn { font-family: 'IM Fell English', serif; font-size: .88rem; color: #1a1208; background: rgba(255,255,255,.25); border: 1px solid rgba(139,106,32,.3); padding: .5rem; cursor: pointer; border-radius: 2px; transition: all .15s; }
+.combat-btn:hover:not(:disabled) { background: rgba(200,184,128,.3); }
+.combat-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+/* ── Auth ── */
+.auth-outer { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; background: radial-gradient(ellipse at center,#1a1208,#0d0b07); }
+.auth-card { border: 1px solid var(--gold); border-radius: 4px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: 0 20px 80px rgba(0,0,0,.8); text-align: center; }
+.auth-sys  { font-family: 'Share Tech Mono', monospace; font-size: .65rem; letter-spacing: .16em; color: var(--sys-cyan); text-shadow: 0 0 8px var(--sys-cyan); margin-bottom: .5rem; }
+.auth-title{ font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 600; color: var(--ink); letter-spacing: .1em; margin-bottom: .4rem; }
+.auth-sub  { font-family: 'IM Fell English', serif; font-style: italic; color: #1a1208; font-size: .9rem; margin-bottom: 1.75rem; }
+.auth-form { display: flex; flex-direction: column; gap: .4rem; text-align: left; margin-bottom: 1rem; }
+.auth-label{ font-family: 'Cinzel', serif; font-size: .65rem; letter-spacing: .1em; color: #1a1208; text-transform: uppercase; margin-top: .4rem; }
+.auth-input{ font-family: 'IM Fell English', serif; font-size: .95rem; color: var(--ink); background: rgba(255,255,255,.4); border: 1px solid rgba(139,106,32,.4); border-radius: 2px; padding: .55rem .75rem; width: 100%; outline: none; }
+.auth-input:focus { border-color: rgba(139,106,32,.8); }
+.auth-btn  { font-family: 'Cinzel', serif; font-size: .9rem; letter-spacing: .08em; color: var(--ink); background: rgba(200,184,128,.7); border: 1px solid var(--gold-dark); border-radius: 2px; padding: .65rem; cursor: pointer; margin-top: .75rem; width: 100%; transition: all .2s; }
+.auth-btn:hover { background: rgba(200,184,128,.9); }
+.auth-toggle { font-family: 'IM Fell English', serif; font-style: italic; font-size: .82rem; color: #1a1208; background: none; border: none; cursor: pointer; }
+.auth-error { font-family: 'Share Tech Mono', monospace; font-size: .65rem; color: #c04040; margin-top: .25rem; }
+
+/* ── Inventory slots ── */
+.equip-slot { display: flex; align-items: center; gap: .6rem; border: 1px solid rgba(139,106,32,.25); border-radius: 2px; padding: .45rem .7rem; cursor: pointer; transition: all .15s; background: rgba(0,0,0,.04); margin-bottom: 4px; }
+.equip-slot:hover { background: rgba(200,184,128,.15); }
+.equip-slot.selected { border-color: var(--gold); background: rgba(200,184,128,.2); }
+.slot-icon  { font-size: 1.1rem; flex-shrink: 0; }
+.slot-label { font-size: .88rem; color: #1a1208; flex: 1; }
+.item-grid  { display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; margin-bottom: .75rem; }
+.item-card  { border-radius: 5px; border: .5px solid #1e1e1e; padding: 8px 7px; cursor: pointer; position: relative; transition: all .15s; min-height: 66px; background: #0f0f0f; }
+.item-card:hover { border-color: #3a3020; }
+.item-card.selected { border-color: var(--gold) !important; box-shadow: 0 0 0 1px var(--gold); }
+.item-icon  { font-size: 1.2rem; display: block; margin-bottom: 3px; }
+.item-name  { font-family: 'Share Tech Mono', monospace; font-size: .58rem; margin: 0 0 1px; line-height: 1.3; }
+.item-type  { font-family: 'Share Tech Mono', monospace; font-size: .5rem; color: #555; margin: 0; }
+.item-qty   { position: absolute; top: 4px; right: 4px; font-size: .5rem; background: rgba(255,255,255,.12); border-radius: 3px; padding: 1px 3px; color: #aaa; font-family: monospace; }
+.item-eq    { position: absolute; bottom: 4px; right: 4px; font-size: .48rem; color: var(--gold); font-family: 'Share Tech Mono', monospace; }
+
+/* ── Badges ── */
+.seal { display: flex; flex-direction: column; align-items: center; text-align: center; padding: .5rem; }
+.seal-wax { width: 64px; height: 64px; border-radius: 50%; border: 2px solid; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.08); position: relative; margin-bottom: .5rem; }
+.seal-emoji { font-size: 1.8rem; position: relative; z-index: 1; }
+.seal-ring  { position: absolute; inset: 4px; border-radius: 50%; border: 1px dashed; opacity: .5; }
+.seal-name  { font-family: 'Cinzel', serif; font-size: .82rem; font-weight: 600; margin: 0 0 2px; }
+.seal-desc  { font-family: 'IM Fell English', serif; font-style: italic; font-size: .72rem; color: #1a1208; margin: 0; line-height: 1.4; }
+
+/* ── Toasts ── */
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a150a; border: .5px solid rgba(200,184,128,.4); border-radius: 4px; padding: 8px 16px; font-family: 'Share Tech Mono', monospace; font-size: .65rem; color: var(--gold); letter-spacing: .06em; white-space: nowrap; z-index: 999; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+.toast.err  { border-color: rgba(224,85,85,.4); color: #e05555; }
+
+/* ── Misc ── */
+.notice-box { background: rgba(0,0,0,.06); border-left: 2px solid rgba(139,106,32,.4); padding: .75rem; margin: .75rem 0; border-radius: 0 2px 2px 0; font-size: .88rem; font-style: italic; color: #1a1208; }
+.end-box    { text-align: center; padding: 1.5rem 0; }
+.end-title  { font-family: 'Cinzel', serif; font-size: 1.2rem; font-weight: 600; color: var(--ink); margin-bottom: .5rem; letter-spacing: .06em; }
+.end-sub    { font-family: 'IM Fell English', serif; font-style: italic; font-size: .9rem; color: #1a1208; margin-bottom: 1.5rem; line-height: 1.6; }
+.end-btn    { font-family: 'Cinzel', serif; font-size: .85rem; letter-spacing: .08em; color: var(--ink); background: rgba(200,184,128,.25); border: 1px solid rgba(139,106,32,.5); padding: .65rem 1.8rem; cursor: pointer; border-radius: 2px; transition: all .2s; text-decoration: none; display: inline-block; }
+.end-btn:hover { background: rgba(200,184,128,.45); }
+
+/* ── Progress bar ── */
+.prog-bar  { height: 3px; background: rgba(0,0,0,.12); border-radius: 2px; overflow: hidden; margin-bottom: 3px; }
+.prog-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+
+
+.parchment [style*="color:#5a4a2a"],
+.parchment [style*="color: #5a4a2a"] { color: #1a1208 !important; }
+.parchment [style*="color:#9a8050"],
+.parchment [style*="color: #9a8050"] { color: #1a1208 !important; }
+.parchment [style*="color:#7a6435"],
+.parchment [style*="color: #7a6435"] { color: #1a1208 !important; }
+.parchment [style*="color:#6b5020"],
+.parchment [style*="color: #6b5020"] { color: #1a1208 !important; }
+@keyframes slideIn { from { opacity:0; transform: translateX(20px); } to { opacity:1; transform: translateX(0); } }
+@keyframes fadeIn  { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+@keyframes shake   { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-5px)} 40%{transform:translateX(5px)} 60%{transform:translateX(-3px)} 80%{transform:translateX(3px)} }
+.animate-in   { animation: fadeIn .4s ease; }
+.animate-shake{ animation: shake .35s ease; }
+
+@media(max-width:680px){
+  .book { flex-direction: column; }
+  .spine { width: 100%; height: 8px; background: linear-gradient(to bottom, #8b6a20, #c8a843); }
+  .page-left,.page-right { min-height: auto; border-radius: 4px; }
+  .nav-links { gap: .5rem; }
+  .item-grid { grid-template-columns: repeat(3,1fr); }
+}
