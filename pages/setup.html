@@ -5,6 +5,65 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperSede — Choose Your Name</title>
   <link rel="stylesheet" href="../styles/main.css">
+  <style>
+    :root {
+      --bg-0:#05080c; --panel:#0d1208; --ink:#e8dfc8;
+      --ink-dim:#7a7055; --gold:#c8a84a; --line:#1e1c0e; --warn:#e05a44;
+    }
+    *, *::before, *::after { box-sizing:border-box; }
+    html, body {
+      min-height:100vh;
+      background:radial-gradient(ellipse at 50% 10%,#0e1408 0%,#05080c 55%,#020401 100%);
+      color:var(--ink); font-family:"Cormorant Garamond",Georgia,serif; overflow-x:hidden;
+    }
+    body::after {
+      content:""; position:fixed; inset:0; pointer-events:none; z-index:9998;
+      background-image:repeating-linear-gradient(180deg,rgba(200,168,74,.010) 0px,rgba(200,168,74,.010) 1px,transparent 1px,transparent 4px);
+    }
+    /* centre the card */
+    .auth-outer { min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; }
+    .auth-card, .parchment {
+      width:100%; max-width:440px;
+      background:var(--panel) !important;
+      border:1px solid var(--line) !important;
+      border-radius:0 !important; box-shadow:none !important;
+      padding:2.5rem 2rem; position:relative;
+      filter:drop-shadow(0 20px 50px rgba(0,0,0,.8));
+    }
+    /* gold corner brackets */
+    .auth-card::before { content:""; position:absolute; top:-1px; left:-1px; width:16px; height:16px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
+    .auth-card::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:16px; height:16px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }
+    /* sys label */
+    .auth-sys { font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.42em; text-transform:uppercase; color:var(--gold); margin-bottom:5px; }
+    /* title */
+    .auth-title { font-family:"Cormorant Garamond",serif; font-size:26px; font-weight:500; letter-spacing:.04em; color:var(--ink); margin-bottom:6px; }
+    /* sub */
+    .auth-sub { font-style:italic; font-size:16px; color:var(--ink-dim); margin-bottom:20px; }
+    /* form */
+    .auth-form { display:flex; flex-direction:column; gap:0; }
+    .auth-label { font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.3em; text-transform:uppercase; color:var(--ink-dim); margin-bottom:6px; }
+    .auth-input {
+      width:100%; background:rgba(200,168,74,.06) !important;
+      border:1px solid var(--line) !important; border-radius:0 !important;
+      padding:.55rem .75rem; font-family:"JetBrains Mono",monospace;
+      font-size:.78rem; letter-spacing:.04em; color:var(--ink) !important;
+      margin-bottom:.85rem; outline:none; transition:border-color .2s;
+    }
+    .auth-input:focus { border-color:var(--gold) !important; }
+    .auth-input::placeholder { color:var(--ink-dim); opacity:1; }
+    .auth-error { font-family:"JetBrains Mono",monospace; font-size:.68rem; color:var(--warn); min-height:1rem; margin-bottom:.6rem; letter-spacing:.04em; }
+    .auth-btn {
+      width:100%; font-family:"JetBrains Mono",monospace;
+      font-size:.78rem; letter-spacing:.2em; text-transform:uppercase;
+      color:var(--ink); background:transparent;
+      border:1px solid var(--line); border-radius:0;
+      padding:.65rem 1rem; cursor:pointer;
+      transition:border-color .2s,color .2s,background .2s; margin-top:.25rem;
+    }
+    .auth-btn:hover { border-color:var(--gold); color:var(--gold); background:rgba(200,168,74,.05); }
+    .auth-btn:disabled { opacity:.4; cursor:not-allowed; }
+    ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:var(--bg-0)} ::-webkit-scrollbar-thumb{background:var(--line)}
+  </style>
 </head>
 <body>
 <div class="auth-outer">
