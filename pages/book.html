@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Chapters</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="book-wrap">
+  <div id="nav"></div>
+
+  <div class="book" style="margin-top:.75rem">
+    <!-- Left page: chapter list -->
+    <div class="page-left parchment">
+      <div class="page-inner">
+        <p class="chapter-label">SuperSede</p>
+        <h1 class="page-title">Table of Contents</h1>
+        <hr class="ink-divider">
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#1a1208;line-height:1.7;margin-bottom:1.5rem">
+          Choose a chapter. Restarting a chapter does not erase your progress or inventory.
+        </p>
+        <div id="chapter-list"></div>
+      </div>
+    </div>
+
+    <div class="spine"></div>
+
+    <!-- Right page: player record -->
+    <div class="page-right parchment">
+      <div class="page-inner">
+        <p class="chapter-label">Player Record</p>
+        <h2 class="page-title" id="rec-username">—</h2>
+        <hr class="ink-divider">
+        <div id="rec-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .25rem;margin-bottom:1rem"></div>
+        <hr class="ink-divider">
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem">
+          <a href="inventory.html" class="end-btn">🎒 Inventory</a>
+          <a href="trader.html"    class="end-btn">🛒 Trader</a>
+          <a href="lobby.html"     class="end-btn">⚔ Lobby</a>
+          <a href="badges.html"    class="end-btn">🏅 Badges</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { renderNav } from '../components/nav.js'
+
+  const CHAPTERS = [
+    { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
+    { number: 2, title: 'The Element Awakens',   sub: 'Choose your path. Choose your power.' },
+  ]
+
+  ;(async () => {
+    const player = await renderNav('nav')
+    if (!player) return  // nav.js already redirected — just stop
+
+    const unlocked = player.chapters_unlocked || [1]
+
+    document.getElementById('rec-username').textContent = player.username
+    document.getElementById('rec-stats').innerHTML = [
+      ['Level',   player.level],
+      ['XP',      player.xp],
+      ['HP',      `${player.hp}/${player.max_hp}`],
+      ['Gold',    `◈ ${player.gold}`],
+      ['Rep',     player.reputation || 'neutral'],
+      ['Element', player.element || '—'],
+    ].map(([k, v]) => `
+      <div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#1a1208;letter-spacing:.08em;display:block">${k}</span>
+        <span style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">${v}</span>
+      </div>
+    `).join('')
+
+    document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
+      const isUnlocked = unlocked.includes(ch.number)
+      const isCurrent  = player.current_chapter === ch.number
+      return `
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.9rem 0;border-bottom:1px solid rgba(139,106,32,.18);opacity:${isUnlocked ? 1 : .45}">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;min-width:70px">
+            ${isUnlocked ? '' : '🔒 '}Chapter ${ch.number}
+          </span>
+          <div style="flex:1">
+            <p style="font-family:'Cinzel',serif;font-size:.88rem;color:#1a1208;margin:0 0 1px">${ch.title}</p>
+            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${ch.sub}</p>
+          </div>
+          ${isUnlocked
+            ? (() => {
+                const isReplay  = unlocked.includes(ch.number + 1) // beaten already
+                const isCh1     = ch.number === 1
+                const alreadyIn = (player.current_node || '').startsWith(`ch${ch.number}_`)
+                const href = isReplay || isCh1 || alreadyIn
+                  ? `chapter${ch.number}.html`
+                  : `garage.html?dest=${ch.number}`
+                const label = isCurrent ? 'Continue ›' : isReplay ? 'Replay ›' : alreadyIn ? 'Continue ›' : 'Drive ›'
+                return `<a href="${href}" style="font-family:'Cinzel',serif;font-size:.72rem;color:#1a1208;background:rgba(200,184,128,.3);border:1px solid rgba(139,106,32,.4);padding:.3rem .8rem;text-decoration:none;border-radius:2px;white-space:nowrap">${label}</a>`
+              })()
+            : `<span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208">Sealed</span>`
+          }
+        </div>
+      `
+    }).join('')
+  })()
+</script>
+</body>
+</html>

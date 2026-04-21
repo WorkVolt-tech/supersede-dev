@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Garage</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rust:   #c8512a;
+      --steel:  #8fa3b1;
+      --gold:   #c8b96e;
+      --smoke:  #1a1510;
+      --panel:  #0f0c09;
+      --glow-r: rgba(200,81,42,.35);
+      --glow-g: rgba(94,196,94,.3);
+    }
+    * { box-sizing: border-box; margin:0; padding:0; }
+    body { background:#0a0805; color:#c8b96e; font-family:'Share Tech Mono',monospace; min-height:100vh; }
+
+    /* ── Road texture bg ── */
+    body::before {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+      background: repeating-linear-gradient(180deg,
+        transparent 0px, transparent 38px,
+        rgba(200,184,128,.03) 38px, rgba(200,184,128,.03) 40px);
+    }
+
+    .garage-wrap { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:0 0 4rem; }
+
+    /* ── Header ── */
+    .garage-header {
+      background:linear-gradient(180deg,#1a1208,#0f0c09);
+      border-bottom:2px solid var(--rust);
+      padding:1rem 1.25rem .75rem;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .garage-title { font-family:'Orbitron',monospace; font-size:1.1rem; font-weight:800; color:var(--rust); letter-spacing:.15em; }
+    .garage-sub   { font-size:.52rem; color:#7a6435; letter-spacing:.08em; margin-top:2px; }
+    .materials-strip {
+      display:flex; gap:8px; flex-wrap:wrap;
+      padding:.6rem 1.25rem; background:rgba(0,0,0,.4);
+      border-bottom:.5px solid rgba(200,184,128,.1);
+    }
+    .mat-chip {
+      font-family:'Share Tech Mono',monospace; font-size:.52rem;
+      padding:2px 8px; border-radius:12px;
+      border:.5px solid rgba(200,184,128,.25); color:#9a8050;
+      background:rgba(0,0,0,.3);
+    }
+    .mat-chip span { color:#c8b96e; }
+
+    /* ── Section ── */
+    .section { padding:1rem 1.25rem; border-bottom:.5px solid rgba(200,184,128,.08); }
+    .section-label {
+      font-family:'Orbitron',monospace; font-size:.55rem; font-weight:600;
+      color:var(--rust); letter-spacing:.12em; margin-bottom:.75rem;
+      display:flex; align-items:center; gap:.5rem;
+    }
+    .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--rust),transparent); }
+
+    /* ── Vehicle cards ── */
+    .vehicle-grid { display:flex; flex-direction:column; gap:.75rem; }
+    .vehicle-card {
+      border:1.5px solid rgba(200,184,128,.2); border-radius:6px;
+      padding:.85rem 1rem; cursor:pointer; transition:all .2s; position:relative;
+      background:rgba(0,0,0,.3);
+    }
+    .vehicle-card:hover { border-color:rgba(200,184,128,.45); background:rgba(200,184,128,.04); }
+    .vehicle-card.selected {
+      border-color:var(--rust); background:rgba(200,81,42,.06);
+      box-shadow:0 0 20px rgba(200,81,42,.2);
+    }
+    .vehicle-card.owned { border-color:rgba(94,196,94,.5); background:rgba(94,196,94,.04); }
+    .vehicle-icon { font-size:2.5rem; margin-bottom:.4rem; display:block; text-align:center; }
+    .vehicle-name { font-family:'Orbitron',monospace; font-size:.85rem; font-weight:700; color:#c8b96e; margin-bottom:.2rem; }
+    .vehicle-tagline { font-family:'IM Fell English',serif; font-style:italic; font-size:.72rem; color:#7a6435; margin-bottom:.6rem; }
+
+    .stat-bars { display:flex; flex-direction:column; gap:4px; }
+    .stat-row-v { display:flex; align-items:center; gap:.5rem; }
+    .stat-lbl { font-size:.48rem; color:#9a8050; width:52px; letter-spacing:.06em; }
+    .stat-track { flex:1; height:5px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
+    .stat-fill { height:100%; border-radius:3px; transition:width .4s; }
+    .stat-val-v { font-size:.5rem; color:#c8b96e; width:24px; text-align:right; }
+
+    .vehicle-cost {
+      position:absolute; top:.75rem; right:.75rem;
+      font-family:'Share Tech Mono',monospace; font-size:.5rem; color:#7a6435;
+      text-align:right; line-height:1.5;
+    }
+    .vehicle-cost .cost-item { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
+    .owned-badge {
+      position:absolute; top:.75rem; right:.75rem;
+      font-family:'Orbitron',monospace; font-size:.45rem; color:#5ec45e;
+      border:.5px solid #5ec45e55; padding:2px 6px; border-radius:10px; letter-spacing:.08em;
+    }
+    .active-badge {
+      position:absolute; top:.75rem; right:.75rem;
+      font-family:'Orbitron',monospace; font-size:.45rem; color:var(--rust);
+      border:.5px solid var(--rust); padding:2px 6px; border-radius:10px; letter-spacing:.08em;
+      animation:pulse 2s infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    /* ── Upgrade slots ── */
+    .upgrade-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .upgrade-slot {
+      border:.5px solid rgba(200,184,128,.2); border-radius:5px; padding:.65rem .7rem;
+      background:rgba(0,0,0,.3); cursor:pointer; transition:all .2s;
+    }
+    .upgrade-slot:hover { border-color:rgba(200,184,128,.4); }
+    .upgrade-slot.installed { border-color:var(--rust); background:rgba(200,81,42,.06); }
+    .slot-type { font-size:.45rem; color:#7a6435; letter-spacing:.08em; margin-bottom:3px; }
+    .slot-name { font-family:'Orbitron',monospace; font-size:.6rem; color:#c8b96e; margin-bottom:4px; }
+    .slot-effect { font-size:.48rem; color:#9a8050; line-height:1.4; }
+    .slot-cost-row { display:flex; gap:6px; margin-top:5px; flex-wrap:wrap; }
+    .slot-mat { font-size:.44rem; color:#7a6435; background:rgba(200,184,128,.06); padding:1px 5px; border-radius:8px; border:.5px solid rgba(200,184,128,.15); }
+
+    /* ── Action buttons ── */
+    .action-row { display:flex; gap:.6rem; margin-top:1rem; flex-wrap:wrap; }
+    .btn-primary {
+      flex:1; font-family:'Orbitron',monospace; font-size:.65rem; font-weight:600;
+      letter-spacing:.1em; padding:.65rem 1rem; border-radius:4px; cursor:pointer;
+      background:linear-gradient(135deg,#8b2000,var(--rust));
+      border:1px solid var(--rust); color:#fff; transition:all .2s;
+    }
+    .btn-primary:hover { box-shadow:0 0 20px var(--glow-r); transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-secondary {
+      font-family:'Share Tech Mono',monospace; font-size:.6rem; padding:.6rem 1rem;
+      border:.5px solid rgba(200,184,128,.3); background:none; color:#9a8050;
+      border-radius:4px; cursor:pointer; transition:all .2s;
+    }
+    .btn-secondary:hover { border-color:var(--gold); color:var(--gold); }
+
+    /* ── Drive button ── */
+    .drive-section {
+      padding:1.25rem; text-align:center;
+      background:linear-gradient(180deg,transparent,rgba(200,81,42,.05));
+    }
+    .drive-btn {
+      width:100%; font-family:'Orbitron',monospace; font-size:.9rem; font-weight:800;
+      letter-spacing:.2em; padding:1rem; border-radius:6px; cursor:pointer;
+      background:linear-gradient(135deg,#5a1000,#c8512a,#e06030);
+      border:2px solid var(--rust); color:#fff;
+      box-shadow:0 0 30px rgba(200,81,42,.3); transition:all .25s;
+    }
+    .drive-btn:hover { box-shadow:0 0 50px rgba(200,81,42,.6); transform:scale(1.02); }
+    .drive-btn:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
+    .drive-label { font-size:.5rem; color:#7a6435; letter-spacing:.1em; margin-top:.4rem; }
+
+    /* ── Toast ── */
+    #toast {
+      position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
+      background:#1a1208; border:1px solid var(--rust); border-radius:4px;
+      padding:.5rem 1.2rem; font-size:.62rem; color:#c8b96e; opacity:0;
+      transition:all .3s; pointer-events:none; white-space:nowrap; z-index:999;
+    }
+    #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── No vehicle state ── */
+    .no-vehicle { text-align:center; padding:2rem 1rem; }
+    .no-vehicle p { font-family:'IM Fell English',serif; font-style:italic; color:#7a6435; font-size:.82rem; margin-bottom:1rem; }
+  </style>
+</head>
+<body>
+<div id="nav"></div>
+<div class="garage-wrap">
+  <div class="garage-header">
+    <div>
+      <div class="garage-title">🔧 GARAGE</div>
+      <div class="garage-sub">BUILD · UPGRADE · DRIVE</div>
+    </div>
+    <button class="btn-secondary" onclick="window.location.href='book.html'">← Book</button>
+  </div>
+
+  <!-- Materials strip -->
+  <div class="materials-strip" id="materials-strip">
+    <div class="mat-chip">Loading...</div>
+  </div>
+
+  <!-- Vehicle select -->
+  <div class="section">
+    <div class="section-label">🚗 YOUR VEHICLES</div>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:#7a6435;margin-bottom:.75rem;line-height:1.5">All three vehicles are permanently yours. Select one to drive, then install upgrades using your materials.</p>
+    <div class="vehicle-grid" id="vehicle-grid">Loading...</div>
+  </div>
+
+  <!-- Upgrades -->
+  <div class="section" id="upgrade-section" style="display:none">
+    <div class="section-label">🔩 INSTALLED UPGRADES</div>
+    <div class="upgrade-grid" id="upgrade-grid"></div>
+    <div class="action-row">
+      <button class="btn-secondary" id="upgrade-shop-btn" onclick="openUpgradeShop()">+ Install Upgrade</button>
+    </div>
+  </div>
+
+  <!-- Drive -->
+  <div class="drive-section">
+    <button class="drive-btn" id="drive-btn" disabled onclick="drive()">▶ DRIVE</button>
+    <div class="drive-label" id="drive-label">SELECT A VEHICLE TO DRIVE</div>
+  </div>
+</div>
+
+<!-- Upgrade shop modal -->
+<div id="shop-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.85);overflow-y:auto">
+  <div style="max-width:440px;margin:2rem auto;padding:1.25rem;background:#0f0c09;border:1px solid var(--rust);border-radius:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <span style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--rust)">🔩 UPGRADE SHOP</span>
+      <button onclick="closeUpgradeShop()" style="background:none;border:none;color:#7a6435;font-size:1.1rem;cursor:pointer">✕</button>
+    </div>
+    <div id="shop-list"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+import { supabase } from '../supabase.js'
+import { renderNav, showToast as navToast } from '../components/nav.js'
+
+// ── Vehicle definitions ───────────────────────────────────
+const VEHICLES = {
+  motorcycle: {
+    icon: '🏍️', name: 'Motorcycle', tagline: 'Fast. Fragile. Furious.',
+    base: { speed:90, durability:30, firepower:50 },
+    color: '#e05555',
+    cost: { scrap_metal:5, flashlight:2 },
+    desc: 'High speed lets you dodge incoming Eyes. Low armor means every hit counts. The right parts can make it last.',
+  },
+  car: {
+    icon: '🚗', name: 'Car', tagline: 'Balanced. Reliable. Ready.',
+    base: { speed:60, durability:60, firepower:60 },
+    color: '#5eaee0',
+    cost: { scrap_metal:10, flashlight:3 },
+    desc: 'The all-rounder. Upgrades push it in any direction. The most flexible platform.',
+  },
+  van: {
+    icon: '🚐', name: 'Van', tagline: 'Slow. Armored. Overwhelming.',
+    base: { speed:30, durability:90, firepower:70 },
+    color: '#5ec45e',
+    cost: { scrap_metal:15, flashlight:5, scrap_blade:2 },
+    desc: 'Takes everything and keeps moving. The right engine parts make it surprisingly fast.',
+  },
+}
+
+// ── Upgrade definitions ───────────────────────────────────
+const UPGRADES = [
+  // Engine upgrades
+  { id:'eng_boost',   slot:'engine',  name:'Turbo Coil',       effect:'+20 Speed',                   icon:'⚡', cost:{scrap_metal:4,flashlight:2},  stat:{speed:20},     vehicles:['motorcycle','car','van'] },
+  { id:'eng_heavy',   slot:'engine',  name:'Heavy Engine',     effect:'+10 Speed, +10 Durability',   icon:'⚙️', cost:{scrap_metal:8},                stat:{speed:10,durability:10}, vehicles:['car','van'] },
+  { id:'eng_lite',    slot:'engine',  name:'Lite Frame',       effect:'+30 Speed, -10 Durability',   icon:'💨', cost:{scrap_metal:5,scrap_blade:1},  stat:{speed:30,durability:-10}, vehicles:['motorcycle'] },
+  // Armor upgrades
+  { id:'arm_plate',   slot:'armor',   name:'Scrap Plate',      effect:'+25 Durability',              icon:'🛡', cost:{scrap_metal:6},                stat:{durability:25}, vehicles:['motorcycle','car','van'] },
+  { id:'arm_reactive',slot:'armor',   name:'Reactive Mesh',    effect:'+15 Durability, reflect dmg', icon:'⚙️', cost:{scrap_metal:8,scrap_blade:2},  stat:{durability:15}, vehicles:['car','van'] },
+  { id:'arm_shield',  slot:'armor',   name:'Flash Shield',     effect:'+20 Durability, blinds Eyes', icon:'🔦', cost:{scrap_metal:4,flashlight:4},   stat:{durability:20}, vehicles:['motorcycle','car','van'] },
+  // Weapon upgrades
+  { id:'wpn_cannon',  slot:'weapon',  name:'Scrap Cannon',     effect:'+25 Firepower',               icon:'💥', cost:{scrap_metal:5,scrap_blade:3},  stat:{firepower:25},  vehicles:['car','van'] },
+  { id:'wpn_rapid',   slot:'weapon',  name:'Rapid Fire Kit',   effect:'+15 Firepower, faster fire',  icon:'🔫', cost:{scrap_metal:4,flashlight:1},   stat:{firepower:15},  vehicles:['motorcycle','car'] },
+  { id:'wpn_beam',    slot:'weapon',  name:'Flash Beam',       effect:'+20 Firepower, pierces Eyes', icon:'🔦', cost:{scrap_metal:3,flashlight:6},   stat:{firepower:20},  vehicles:['motorcycle','car','van'] },
+  // Special upgrades
+  { id:'spc_boost',   slot:'special', name:'Nitro Tank',       effect:'Burst speed on demand',       icon:'🔥', cost:{scrap_metal:6,scrap_blade:2},  stat:{},              vehicles:['motorcycle','car'] },
+  { id:'spc_drone',   slot:'special', name:'Eye Drone',        effect:'Auto-targets nearest Eye',    icon:'👁', cost:{scrap_metal:5,flashlight:3},   stat:{firepower:5},   vehicles:['car','van'] },
+  { id:'spc_repair',  slot:'special', name:'Repair Kit',       effect:'Regen 5 Durability/sec',      icon:'🔧', cost:{scrap_metal:8,flashlight:2},   stat:{},              vehicles:['motorcycle','car','van'] },
+]
+
+const MAT_ICONS = {
+  scrap_metal:'⚙️', flashlight:'🔦', scrap_blade:'🗡️',
+  scrap_helm:'🪖', scrap_shield:'🛡', energy_drink:'🥤',
+  medkit:'💊', knife:'🔪', worn_boots:'👢',
+}
+const MAT_NAMES = {
+  scrap_metal:'Scrap Metal', flashlight:'Flashlight', scrap_blade:'Scrap Blade',
+  scrap_helm:'Scrap Helm', scrap_shield:'Scrap Shield', energy_drink:'Energy Drink',
+  medkit:'Medkit', knife:'Knife', worn_boots:'Worn Boots',
+}
+
+let player = null
+let materials = {}  // item_key → quantity
+let vehicleData = null  // from players table: { type, parts, upgrades[] }
+
+// ── vehicle_data shape: { active:'car', upgrades:{motorcycle:[],car:[],van:[]} }
+// All 3 vehicles are always owned. active = which one is selected to drive.
+
+// ── Normalise legacy vehicle_data ────────────────────────
+function normaliseVehicleData(raw) {
+  if (!raw) return { active: null, upgrades: { motorcycle:[], car:[], van:[] } }
+  // Legacy: { type:'car', upgrades:[] }
+  if (raw.type !== undefined && !raw.active) {
+    return {
+      active: raw.type,
+      upgrades: {
+        motorcycle: [],
+        car: raw.type === 'car' ? (raw.upgrades||[]) : [],
+        van: raw.type === 'van' ? (raw.upgrades||[]) : [],
+      }
+    }
+  }
+  // Already new format
+  if (!raw.upgrades?.motorcycle) raw.upgrades = { motorcycle:[], car:[], van:[] }
+  return raw
+}
+
+// ── Init ─────────────────────────────────────────────────
+player = await renderNav('nav')
+if (!player) throw new Error('no player')
+
+const urlDest = new URLSearchParams(window.location.search).get('dest')
+const destination = urlDest ? parseInt(urlDest) : null
+
+vehicleData = normaliseVehicleData(player.vehicle_data)
+await loadMaterials()
+renderMaterials()
+renderVehicleGrid()
+renderUpgrades()
+updateDriveButton()
+
+if (destination) {
+  document.getElementById('drive-label').textContent = `DESTINATION: CHAPTER ${destination}`
+}
+
+// ── Load materials from inventory ─────────────────────────
+async function loadMaterials() {
+  const matKeys = Object.keys(MAT_ICONS)
+  const { data } = await supabase.from('inventory')
+    .select('item_key,quantity')
+    .eq('player_id', player.id)
+    .in('item_key', matKeys)
+  materials = {}
+  if (data) data.forEach(r => { materials[r.item_key] = r.quantity })
+}
+
+// ── Render materials strip ────────────────────────────────
+function renderMaterials() {
+  const el = document.getElementById('materials-strip')
+  const mats = Object.entries(materials).filter(([,q]) => q > 0)
+  if (!mats.length) {
+    el.innerHTML = `<span class="mat-chip" style="color:#5a4825">No materials — farm Chapter 1 enemies</span>`
+    return
+  }
+  el.innerHTML = mats.map(([key, qty]) =>
+    `<span class="mat-chip">${MAT_ICONS[key]||'📦'} ${MAT_NAMES[key]||key} <span>×${qty}</span></span>`
+  ).join('')
+}
+
+// ── Render vehicle grid ───────────────────────────────────
+function renderVehicleGrid() {
+  const el = document.getElementById('vehicle-grid')
+  el.innerHTML = Object.entries(VEHICLES).map(([type, v]) => {
+    const isActive = vehicleData.active === type
+    const stats = computeStats(type)
+    const statBars = [
+      { label:'SPEED',     val:stats.speed,      max:130, color:'#5eaee0' },
+      { label:'DURABILITY',val:stats.durability,  max:130, color:'#5ec45e' },
+      { label:'FIREPOWER', val:stats.firepower,   max:130, color:'#e05555' },
+    ]
+    const upgCount = (vehicleData.upgrades?.[type]||[]).length
+    return `
+      <div class="vehicle-card${isActive?' selected':''}" onclick="selectVehicle('${type}')">
+        ${isActive ? `<div class="active-badge">◉ ACTIVE</div>` : ''}
+        ${upgCount > 0 ? `<div style="position:absolute;top:.75rem;right:.75rem;font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#c8b96e;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.2);padding:2px 6px;border-radius:10px">${upgCount} upgrade${upgCount>1?'s':''}</div>` : ''}
+        <span class="vehicle-icon">${v.icon}</span>
+        <div class="vehicle-name">${v.name}</div>
+        <div class="vehicle-tagline">${v.tagline}</div>
+        <div class="stat-bars">
+          ${statBars.map(s => `
+            <div class="stat-row-v">
+              <span class="stat-lbl">${s.label}</span>
+              <div class="stat-track">
+                <div class="stat-fill" style="width:${Math.min(100,s.val/s.max*100)}%;background:${s.color}"></div>
+              </div>
+              <span class="stat-val-v">${s.val}</span>
+            </div>`).join('')}
+        </div>
+      </div>`
+  }).join('')
+}
+
+function computeStats(type) {
+  const base = { ...VEHICLES[type].base }
+  const typeUpgrades = vehicleData.upgrades?.[type] || []
+  typeUpgrades.forEach(uid => {
+    const u = UPGRADES.find(u => u.id === uid)
+    if (!u) return
+    Object.entries(u.stat).forEach(([k,v]) => { base[k] = (base[k]||0) + v })
+  })
+  return base
+}
+
+function canAffordVehicle(type) {
+  return Object.entries(VEHICLES[type].cost).every(([k,n]) => (materials[k]||0) >= n)
+}
+
+// ── Select active vehicle (all are owned, just pick which to drive) ───────
+window.selectVehicle = async function(type) {
+  vehicleData.active = type
+  if (!vehicleData.upgrades) vehicleData.upgrades = { motorcycle:[], car:[], van:[] }
+  await supabase.from('players').update({ vehicle_data: vehicleData }).eq('id', player.id)
+  player.vehicle_data = vehicleData
+  toast(`${VEHICLES[type].icon} ${VEHICLES[type].name} selected`)
+  renderVehicleGrid()
+  renderUpgrades()
+  updateDriveButton()
+}
+
+// ── Render installed upgrades ─────────────────────────────
+function renderUpgrades() {
+  const sec  = document.getElementById('upgrade-section')
+  const grid = document.getElementById('upgrade-grid')
+  if (!vehicleData.active) { sec.style.display='none'; return }
+  sec.style.display = 'block'
+  const type = vehicleData.active
+  const typeUpgrades = vehicleData.upgrades?.[type] || []
+  const slots = ['engine','armor','weapon','special']
+  grid.innerHTML = slots.map(slot => {
+    const installedId = typeUpgrades.find(uid => {
+      const u = UPGRADES.find(u=>u.id===uid)
+      return u && u.slot === slot
+    })
+    const u = installedId ? UPGRADES.find(u=>u.id===installedId) : null
+    return `
+      <div class="upgrade-slot${u?' installed':''}">
+        <div class="slot-type">${slot.toUpperCase()}</div>
+        ${u ? `
+          <div class="slot-name">${u.icon} ${u.name}</div>
+          <div class="slot-effect">${u.effect}</div>
+          <button onclick="removeUpgrade('${u.id}')" style="margin-top:5px;font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#e05555;background:none;border:.5px solid #e0555540;padding:2px 6px;border-radius:3px;cursor:pointer">✕ Remove</button>
+        ` : `
+          <div class="slot-name" style="color:#5a4825">Empty Slot</div>
+          <div class="slot-effect" style="color:#4a3820">No upgrade installed</div>
+        `}
+      </div>`
+  }).join('')
+}
+
+// ── Upgrade shop ──────────────────────────────────────────
+window.openUpgradeShop = function() {
+  if (!vehicleData.active) { toast('Select a vehicle first', true); return }
+  const type = vehicleData.active
+  const typeUpgrades = vehicleData.upgrades?.[type] || []
+  const modal = document.getElementById('shop-modal')
+  const list  = document.getElementById('shop-list')
+
+  const available = UPGRADES.filter(u =>
+    u.vehicles.includes(type) && !typeUpgrades.includes(u.id)
+  )
+
+  const bySlot = {}
+  available.forEach(u => { if (!bySlot[u.slot]) bySlot[u.slot]=[]; bySlot[u.slot].push(u) })
+
+  list.innerHTML = Object.entries(bySlot).map(([slot, ups]) => `
+    <div style="margin-bottom:1rem">
+      <div style="font-family:'Orbitron',monospace;font-size:.52rem;color:var(--rust);letter-spacing:.1em;margin-bottom:.4rem">${slot.toUpperCase()}</div>
+      ${ups.map(u => {
+        const afford = Object.entries(u.cost).every(([k,n])=>(materials[k]||0)>=n)
+        const conflict = typeUpgrades.find(uid => {
+          const ex = UPGRADES.find(u2=>u2.id===uid)
+          return ex && ex.slot === u.slot
+        })
+        return `
+          <div style="border:.5px solid rgba(200,184,128,${afford?'.25':'.1'});border-radius:4px;padding:.6rem .7rem;margin-bottom:.4rem;background:rgba(0,0,0,.3)">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+              <span style="font-family:'Orbitron',monospace;font-size:.62rem;color:${afford?'#c8b96e':'#5a4825'}">${u.icon} ${u.name}</span>
+              <button onclick="installUpgrade('${u.id}')" ${!afford||conflict?'disabled':''} style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#1a1208;background:${afford&&!conflict?'rgba(200,184,128,.5)':'rgba(100,80,40,.2)'};border:1px solid ${afford&&!conflict?'rgba(200,184,128,.6)':'rgba(100,80,40,.3)'};border-radius:3px;padding:2px 8px;cursor:${afford&&!conflict?'pointer':'not-allowed'}">
+                ${conflict ? 'SLOT FULL' : afford ? 'INSTALL' : 'NEED MATS'}
+              </button>
+            </div>
+            <div style="font-size:.5rem;color:#7a6435;margin-bottom:4px">${u.effect}</div>
+            <div style="display:flex;gap:5px;flex-wrap:wrap">
+              ${Object.entries(u.cost).map(([k,n])=>
+                `<span style="font-size:.44rem;color:${(materials[k]||0)>=n?'#5ec45e':'#e05555'};background:rgba(0,0,0,.3);padding:1px 5px;border-radius:8px;border:.5px solid rgba(200,184,128,.1)">${MAT_ICONS[k]||'📦'} ${n} ${MAT_NAMES[k]||k} (have ${materials[k]||0})</span>`
+              ).join('')}
+            </div>
+          </div>`
+      }).join('')}
+    </div>`
+  ).join('') || '<p style="font-family:\'IM Fell English\',serif;font-style:italic;color:#7a6435;font-size:.8rem">All available upgrades installed.</p>'
+
+  modal.style.display = 'block'
+}
+
+window.closeUpgradeShop = function() {
+  document.getElementById('shop-modal').style.display = 'none'
+}
+
+window.installUpgrade = async function(uid) {
+  const u = UPGRADES.find(u=>u.id===uid)
+  if (!u || !vehicleData.active) return
+  const type = vehicleData.active
+  for (const [key, qty] of Object.entries(u.cost)) {
+    const { data } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',key).maybeSingle()
+    if (!data || data.quantity < qty) { toast('Not enough '+MAT_NAMES[key], true); return }
+    if (data.quantity <= qty) await supabase.from('inventory').delete().eq('id', data.id)
+    else await supabase.from('inventory').update({ quantity: data.quantity - qty }).eq('id', data.id)
+    materials[key] = Math.max(0, (materials[key]||0) - qty)
+  }
+  if (!vehicleData.upgrades) vehicleData.upgrades = { motorcycle:[], car:[], van:[] }
+  vehicleData.upgrades[type] = [...(vehicleData.upgrades[type]||[]), uid]
+  await supabase.from('players').update({ vehicle_data: vehicleData }).eq('id', player.id)
+  toast(`${u.icon} ${u.name} installed on ${VEHICLES[type].name}!`)
+  await loadMaterials()
+  renderMaterials()
+  renderVehicleGrid()
+  renderUpgrades()
+  closeUpgradeShop()
+}
+
+window.removeUpgrade = async function(uid) {
+  const type = vehicleData.active
+  if (!type) return
+  if (!vehicleData.upgrades) vehicleData.upgrades = { motorcycle:[], car:[], van:[] }
+  vehicleData.upgrades[type] = (vehicleData.upgrades[type]||[]).filter(id=>id!==uid)
+  await supabase.from('players').update({ vehicle_data: vehicleData }).eq('id', player.id)
+  const u = UPGRADES.find(u=>u.id===uid)
+  toast(`${u?.name||uid} removed`)
+  renderVehicleGrid()
+  renderUpgrades()
+}
+
+// ── Drive ─────────────────────────────────────────────────
+function updateDriveButton() {
+  const btn = document.getElementById('drive-btn')
+  const lbl = document.getElementById('drive-label')
+  if (vehicleData.active) {
+    btn.disabled = false
+    const v = VEHICLES[vehicleData.active]
+    lbl.textContent = destination
+      ? `${v.icon} ${v.name.toUpperCase()} — HEADING TO CHAPTER ${destination}`
+      : `${v.icon} ${v.name.toUpperCase()} READY`
+  } else {
+    btn.disabled = true
+    lbl.textContent = 'SELECT A VEHICLE TO DRIVE'
+  }
+}
+
+window.drive = function() {
+  if (!vehicleData.active) return
+  const dest = destination ? `?dest=${destination}` : ''
+  window.location.href = 'vehicle.html' + dest
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg, err=false) {
+  const el = document.getElementById('toast')
+  el.textContent = msg
+  el.style.borderColor = err ? '#e05555' : 'var(--rust)'
+  el.classList.add('show')
+  setTimeout(() => el.classList.remove('show'), 2800)
+}
+
+// Render upgrades if vehicle already owned
+if (vehicleData.type) renderUpgrades()
+</script>
+</body>
+</html>

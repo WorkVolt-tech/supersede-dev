@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Choose Your Name</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="auth-outer">
+  <div class="auth-card parchment">
+    <p class="auth-sys">IDENTITY CONFIGURATION</p>
+    <h1 class="auth-title">Choose Your Name</h1>
+    <p class="auth-sub">Welcome to the System.</p>
+
+    <div class="auth-form">
+      <label class="auth-label">Username</label>
+      <input class="auth-input" type="text" id="username" placeholder="Your in-game name" maxlength="24">
+      
+      <p class="auth-error" id="error"></p>
+      <button class="auth-btn" id="submit-btn">Enter the System ›</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase } from '../supabase.js'
+
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) { window.location.href = 'auth.html'; throw new Error() }
+
+  // If player already exists, skip setup entirely
+  const { data: existing } = await supabase
+    .from('players').select('id').eq('user_id', session.user.id).single()
+  if (existing) { window.location.href = 'book.html'; throw new Error() }
+
+  const btn     = document.getElementById('submit-btn')
+  const errorEl = document.getElementById('error')
+
+  btn.addEventListener('click', async () => {
+    const username = document.getElementById('username').value.trim()
+
+    if (!username) { errorEl.textContent = 'Please enter a username.'; return }
+    if (username.length < 3) { errorEl.textContent = 'Username must be at least 3 characters.'; return }
+
+    btn.textContent = 'Saving...'
+    btn.disabled = true
+
+    // INSERT a new player row — not update
+    const { error } = await supabase.from('players').insert({
+      user_id:           session.user.id,
+      username,
+      level:             1,
+      xp:                0,
+      hp:                100,
+      max_hp:            100,
+      gold:              0,
+      reputation:        'neutral',
+      chapters_unlocked: [1],
+      current_chapter:   1,
+    })
+
+    if (error) {
+      errorEl.textContent = 'Error: ' + error.message
+      btn.disabled = false
+      btn.textContent = 'Enter the System ›'
+      return
+    }
+
+    window.location.href = 'book.html'
+  })
+
+  document.getElementById('username').addEventListener('keydown', e => {
+    if (e.key === 'Enter') btn.click()
+  })
+</script>
+</body>
+</html>

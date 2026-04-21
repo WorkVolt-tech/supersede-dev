@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Badges</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="book-wrap">
+  <div id="nav"></div>
+  <div class="book animate-in">
+    <div class="page-left parchment">
+      <div class="page-inner">
+        <p class="chapter-label">Hall of Records</p>
+        <h1 class="page-title">Earned Seals</h1>
+        <p id="earned-count" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#9a8050;letter-spacing:.06em;margin-bottom:.5rem"></p>
+        <hr class="ink-divider">
+        <div id="earned-seals" style="display:grid;grid-template-columns:repeat(2,1fr);gap:1rem"></div>
+        <p id="no-badges" style="display:none;font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#7a6435">No seals earned yet. Complete Chapter 1 to begin.</p>
+      </div>
+    </div>
+    <div class="spine"></div>
+    <div class="page-right parchment">
+      <div class="page-inner">
+        <p class="chapter-label">Sealed Records</p>
+        <h2 class="page-title">In Progress</h2>
+        <hr class="ink-divider">
+        <div id="locked-badges"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase }  from '../supabase.js'
+  import { renderNav } from '../components/nav.js'
+
+  const ALL_BADGES = [
+    {key:'survivor',      name:'Survivor',      icon:'🟡', rarity:'common',    desc:'Complete Chapter 1.',          ctype:'chapter', cval:1 },
+    {key:'helper',        name:'Helper',        icon:'🟢', rarity:'uncommon',  desc:'Help 3 players.',              ctype:'helps',   cval:3 },
+    {key:'hunter',        name:'Hunter',        icon:'🔴', rarity:'uncommon',  desc:'Defeat 5 players in PvP.',     ctype:'kills',   cval:5 },
+    {key:'watcher_slain', name:'Watcher Slain', icon:'👁', rarity:'rare',      desc:'Defeat The Watcher.',          ctype:'boss',    cval:1 },
+    {key:'elite',         name:'Elite',         icon:'🟣', rarity:'epic',      desc:'Reach level 10.',              ctype:'level',   cval:10},
+    {key:'unknown',       name:'Unknown',       icon:'⚫', rarity:'legendary', desc:'????? hidden conditions ?????', ctype:'hidden',  cval:0 },
+  ]
+  const RC = {common:'#888',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#a07de0',legendary:'#c8b96e'}
+
+  let player = await renderNav('nav')
+  if (!player) throw new Error('no player')
+
+  const {data:earnedRows} = await supabase.from('player_badges').select('badge_key,earned_at').eq('player_id',player.id)
+  const earnedKeys = new Set((earnedRows||[]).map(b=>b.badge_key))
+
+  function getProgress(b) {
+    switch(b.ctype) {
+      case 'chapter': return Math.min(b.cval, player.current_chapter||1)
+      case 'level':   return Math.min(b.cval, player.level||1)
+      case 'helps':   return Math.min(b.cval, player.helps_given||0)
+      case 'kills':   return Math.min(b.cval, player.pvp_kills||0)
+      case 'boss':    return earnedKeys.has('watcher_slain')?1:0
+      default: return 0
+    }
+  }
+
+  const earned = ALL_BADGES.filter(b=> earnedKeys.has(b.key))
+  const locked  = ALL_BADGES.filter(b=>!earnedKeys.has(b.key))
+
+  document.getElementById('earned-count').textContent = `${earned.length} of ${ALL_BADGES.length} seals obtained`
+
+  if (!earned.length) {
+    document.getElementById('no-badges').style.display='block'
+  } else {
+    document.getElementById('earned-seals').innerHTML = earned.map(b=>`
+      <div class="seal">
+        <div class="seal-wax" style="border-color:${RC[b.rarity]}80;box-shadow:0 0 12px ${RC[b.rarity]}40">
+          <span class="seal-emoji">${b.icon}</span>
+          <div class="seal-ring" style="border-color:${RC[b.rarity]}40"></div>
+        </div>
+        <p class="seal-name" style="color:${RC[b.rarity]}">${b.name}</p>
+        <p class="seal-desc">${b.desc}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#9a8050;letter-spacing:.1em;text-transform:uppercase">${b.rarity}</p>
+      </div>
+    `).join('')
+  }
+
+  document.getElementById('locked-badges').innerHTML = locked.map(b=>{
+    const prog = b.cval>0 ? Math.min(1,getProgress(b)/b.cval) : 0
+    const rc   = RC[b.rarity]
+    const hidden = b.ctype==='hidden'
+    return `
+      <div style="display:flex;align-items:flex-start;gap:.75rem;padding:.8rem 0;border-bottom:.5px solid rgba(139,106,32,.15);opacity:.55">
+        <span style="font-size:1.5rem;filter:grayscale(.7);flex-shrink:0">${b.icon}</span>
+        <div style="flex:1;min-width:0">
+          <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#3a2e15;margin:0 0 2px">${b.name}</p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#7a6435;margin:0 0 5px">${hidden?'?????':b.desc}</p>
+          ${!hidden?`
+            <div class="prog-bar"><div class="prog-fill" style="width:${prog*100}%;background:${rc}"></div></div>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#9a8050;letter-spacing:.06em">${getProgress(b)} / ${b.cval}</p>
+          `:''}
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;border:.5px solid ${rc}40;border-radius:20px;padding:1px 6px;letter-spacing:.08em;color:${rc};flex-shrink:0;margin-top:2px">${b.rarity}</span>
+      </div>
+    `
+  }).join('')
+</script>
+</body>
+</html>

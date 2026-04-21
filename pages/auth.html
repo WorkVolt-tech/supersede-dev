@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Sign In</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <style>
+    .auth-wrap {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .auth-book {
+      display: flex;
+      max-width: 680px;
+      width: 100%;
+    }
+    .auth-page {
+      flex: 1;
+      border-radius: 2px 6px 6px 2px;
+      box-shadow: 4px 6px 32px rgba(0,0,0,.45);
+      padding: 2.5rem 2rem;
+    }
+    .auth-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: rgba(255,255,255,.35);
+      border: 1px solid rgba(139,106,32,.45);
+      border-radius: 2px;
+      padding: .55rem .75rem;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .82rem;
+      color: #1a1208;
+      margin-bottom: .85rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    .auth-input:focus { border-color: rgba(139,106,32,.9); }
+    .auth-input::placeholder { color: rgba(26,18,8,.4); }
+    .auth-btn {
+      width: 100%;
+      font-family: 'Cinzel', serif;
+      font-size: .82rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      color: #1a1208;
+      background: rgba(200,184,128,.4);
+      border: 1px solid rgba(139,106,32,.5);
+      border-radius: 2px;
+      padding: .65rem 1rem;
+      cursor: pointer;
+      transition: background .2s;
+      margin-bottom: .5rem;
+    }
+    .auth-btn:hover { background: rgba(200,184,128,.65); }
+    .auth-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .auth-toggle {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: .78rem;
+      color: #1a1208;
+      text-align: center;
+      margin-top: .75rem;
+      opacity: .7;
+    }
+    .auth-toggle a {
+      color: #1a1208;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .auth-error {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: .72rem;
+      color: #a03030;
+      margin-bottom: .75rem;
+      min-height: 1rem;
+    }
+    .auth-spine {
+      width: 18px;
+      background: linear-gradient(to right, #7a5c1e, #c8a84b, #7a5c1e);
+      border-radius: 0;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+<div class="auth-wrap">
+  <div class="auth-book">
+    <div class="auth-page parchment">
+      <div class="page-inner">
+        <p class="chapter-label">SuperSede</p>
+        <h1 class="page-title" id="form-title">Sign In</h1>
+        <hr class="ink-divider">
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#1a1208;line-height:1.7;margin-bottom:1.5rem">
+          Enter your credentials to continue your journey.
+        </p>
+
+        <div id="auth-error" class="auth-error"></div>
+
+        <input id="email"    class="auth-input" type="email"    placeholder="Email address" autocomplete="email" />
+        <input id="password" class="auth-input" type="password" placeholder="Password"      autocomplete="current-password" />
+        <div id="confirm-wrap" style="display:none">
+          <input id="confirm" class="auth-input" type="password" placeholder="Confirm password" autocomplete="new-password" />
+        </div>
+
+        <button id="submit-btn" class="auth-btn" onclick="handleSubmit()">Enter the World</button>
+
+        <div class="auth-toggle">
+          <span id="toggle-text">No account?</span>
+          <a onclick="toggleMode()"> <span id="toggle-link">Create one</span></a>
+        </div>
+      </div>
+    </div>
+    <div class="auth-spine"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase } from '../supabase.js'
+
+  // If already signed in with a valid player, skip straight to book
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session) {
+    const { data: player } = await supabase
+      .from('players').select('id').eq('user_id', session.user.id).single()
+    if (player) {
+      window.location.href = 'book.html'
+    } else {
+      window.location.href = 'setup.html'
+    }
+  }
+
+  let isSignUp = false
+
+  window.toggleMode = () => {
+    isSignUp = !isSignUp
+    document.getElementById('form-title').textContent   = isSignUp ? 'Create Account' : 'Sign In'
+    document.getElementById('submit-btn').textContent   = isSignUp ? 'Begin Your Journey' : 'Enter the World'
+    document.getElementById('confirm-wrap').style.display = isSignUp ? 'block' : 'none'
+    document.getElementById('toggle-text').textContent  = isSignUp ? 'Already have an account?' : 'No account?'
+    document.getElementById('toggle-link').textContent  = isSignUp ? 'Sign in' : 'Create one'
+    document.getElementById('auth-error').textContent   = ''
+  }
+
+  window.handleSubmit = async () => {
+    const email    = document.getElementById('email').value.trim()
+    const password = document.getElementById('password').value
+    const confirm  = document.getElementById('confirm')?.value
+    const errEl    = document.getElementById('auth-error')
+    const btn      = document.getElementById('submit-btn')
+
+    errEl.textContent = ''
+
+    if (!email || !password) {
+      errEl.textContent = 'Please fill in all fields.'
+      return
+    }
+    if (isSignUp && password !== confirm) {
+      errEl.textContent = 'Passwords do not match.'
+      return
+    }
+
+    btn.disabled = true
+    btn.textContent = '...'
+
+    if (isSignUp) {
+      const { error } = await supabase.auth.signUp({ email, password })
+      if (error) {
+        errEl.textContent = error.message
+        btn.disabled = false
+        btn.textContent = 'Begin Your Journey'
+        return
+      }
+      // New user — go to setup
+      window.location.href = 'setup.html'
+    } else {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      if (error) {
+        errEl.textContent = error.message
+        btn.disabled = false
+        btn.textContent = 'Enter the World'
+        return
+      }
+      // Check if player profile exists
+      const { data: { session } } = await supabase.auth.getSession()
+      const { data: player } = await supabase
+        .from('players').select('id').eq('user_id', session.user.id).single()
+      window.location.href = player ? 'book.html' : 'setup.html'
+    }
+  }
+
+  // Allow Enter key to submit
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.handleSubmit()
+  })
+</script>
+</body>
+</html>

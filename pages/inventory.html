@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Inventory</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="book-wrap">
+  <div id="nav"></div>
+
+  <div class="book animate-in">
+    <div class="page-left parchment">
+      <div class="page-inner">
+        <p class="chapter-label">Equipment</p>
+        <h1 class="page-title">Loadout</h1>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#3a2008;margin-bottom:.5rem" id="equip-hint">Select an item from the right, then click a slot.</p>
+        <hr class="ink-divider">
+        <div id="equip-slots"></div>
+        <div id="set-bonus-panel" style="margin-top:.5rem"></div>
+        <hr class="ink-divider">
+        <div id="total-stats" style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#3a2008;display:flex;gap:1.5rem;letter-spacing:.06em"></div>
+      </div>
+    </div>
+
+    <div class="spine"></div>
+
+    <div class="page-right parchment">
+      <div class="page-inner">
+        <p class="chapter-label">Item Bag</p>
+        <h2 class="page-title" id="bag-count">— items</h2>
+        <hr class="ink-divider">
+        <div style="display:flex;gap:3px;margin-bottom:.75rem;flex-wrap:wrap" id="filter-tabs"></div>
+        <div class="item-grid" id="item-grid"></div>
+        <div id="item-detail"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase }           from '../supabase.js'
+  import { renderNav, showToast } from '../components/nav.js'
+
+const ITEM_IMAGES = {
+  'ember_blade':'../assets/weapon/fire/ember_blade.png',
+  'flame_dagger':'../assets/weapon/fire/flame_dagger.png',
+  'inferno_sword':'../assets/weapon/fire/inferno_sword.png',
+  'burning_staff':'../assets/weapon/fire/burning_staff.png',
+  'ashen_tome':'../assets/weapon/fire/ashen_tome.png',
+  'lava_gauntlets':'../assets/weapon/fire/lava_gauntlets.png',
+  'tide_blade':'../assets/weapon/water/tide_blade.png',
+  'ocean_staff':'../assets/weapon/water/ocean_staff.png',
+  'flow_dagger':'../assets/weapon/water/flow_dagger.png',
+  'deep_tome':'../assets/weapon/water/deep_tome.png',
+  'current_gauntlets':'../assets/weapon/water/current_gauntlets.png',
+  'stone_sword':'../assets/weapon/earth/stone_sword.png',
+  'root_blade':'../assets/weapon/earth/root_blade.png',
+  'titan_hammer':'../assets/weapon/earth/titan_hammer.png',
+  'crystal_staff':'../assets/weapon/earth/crystal_staff.png',
+  'boulder_gauntlets':'../assets/weapon/earth/boulder_gauntlets.png',
+  'wind_dagger':'../assets/weapon/air/wind_dagger.png',
+  'gale_blade':'../assets/weapon/air/gale_blade.png',
+  'storm_sword':'../assets/weapon/air/storm_sword.png',
+  'sky_staff':'../assets/weapon/air/sky_staff.png',
+  'swift_gauntlets':'../assets/weapon/air/swift_gauntlets.png',
+  'shadow_blade':'../assets/weapon/dark/shadow_blade.png',
+  'void_dagger':'../assets/weapon/dark/void_dagger.png',
+  'curse_sword':'../assets/weapon/dark/curse_sword.png',
+  'nightmare_staff':'../assets/weapon/dark/nightmare_staff.png',
+  'abyss_gauntlets':'../assets/weapon/dark/abyss_gauntlets.png',
+  'radiant_blade':'../assets/weapon/light/radiant_blade.png',
+  'halo_staff':'../assets/weapon/light/halo_staff.png',
+  'dawn_sword':'../assets/weapon/light/dawn_sword.png',
+  'blessing_tome':'../assets/weapon/light/blessing_tome.png',
+  'light_gauntlets':'../assets/weapon/light/light_gauntlets.png',
+  'cinder_armor':'../assets/armor/cinder_armor.png',
+  'inferno_cloak':'../assets/armor/inferno_cloak.png',
+  'blazing_robes':'../assets/armor/blazing_robes.png',
+  'smoke_veil':'../assets/armor/smoke_veil.png',
+  'mist_cloak':'../assets/armor/mist_cloak.png',
+  'ocean_armor':'../assets/armor/ocean_armor.png',
+  'rain_robes':'../assets/armor/rain_robes.png',
+  'tide_shield':'../assets/armor/tide_shield.png',
+  'rock_armor':'../assets/armor/rock_armor.png',
+  'root_cloak':'../assets/armor/root_cloak.png',
+  'terra_plate':'../assets/armor/terra_plate.png',
+  'crystal_shell':'../assets/armor/crystal_shell.png',
+  'feather_cloak':'../assets/armor/feather_cloak.png',
+  'storm_armor':'../assets/armor/storm_armor.png',
+  'cloud_robes':'../assets/armor/cloud_robes.png',
+  'wind_veil':'../assets/armor/wind_veil.png',
+  'shadow_cloak':'../assets/armor/shadow_cloak.png',
+  'void_armor':'../assets/armor/void_armor.png',
+  'nightmare_robes':'../assets/armor/nightmare_robes.png',
+  'curse_shell':'../assets/armor/curse_shell.png',
+  'holy_armor':'../assets/armor/holy_armor.png',
+  'blessing_cloak':'../assets/armor/blessing_cloak.png',
+  'radiant_robes':'../assets/armor/radiant_robes.png',
+  'halo_shield':'../assets/armor/halo_shield.png',
+  'rune_ignis':'../assets/runes/rune_ignis.png',
+  'rune_aqua':'../assets/runes/rune_aqua.png',
+  'rune_terra':'../assets/runes/rune_terra.png',
+  'rune_aero':'../assets/runes/rune_aero.png',
+  'rune_umbra':'../assets/runes/rune_umbra.png',
+  'rune_lux':'../assets/runes/rune_lux.png',
+  'rune_venin':'../assets/runes/rune_venin.png',
+  'rune_ferro':'../assets/runes/rune_ferro.png',
+  'rune_flora':'../assets/runes/rune_flora.png',
+  'rune_volt':'../assets/runes/rune_volt.png',
+  // Base items
+  'scrap_blade':    '../assets/weapon/scrap_blade.png',
+  'knife':          '../assets/weapon/knife.png',
+  'jacket':         '../assets/armor/jacket.png',
+  'worn_boots':     '../assets/armor/worn_boots.png',
+  'riot_vest':      '../assets/armor/riot_vest.png',
+  'iron_ring':      '../assets/armor/iron_ring.png',
+  'energy_drink':   '../assets/items/energy_drink.png',
+  'medkit':         '../assets/items/medkit.png',
+  'scrap_metal':    '../assets/items/scrap_metal.png',
+  'flashlight':     '../assets/items/flashlight.png',
+  'core_fragment':  '../assets/items/core_fragment.png',
+  // Base helmets & shields
+  'scrap_helm':     '../assets/armor/scrap_helm.png',
+  'scrap_shield':   '../assets/armor/scrap_shield.png',
+  'iron_helm':      '../assets/armor/iron_helm.png',
+  'iron_shield':    '../assets/armor/iron_shield.png',
+  'tactical_helm':  '../assets/armor/tactical_helm.png',
+  'tactical_shield':'../assets/armor/tactical_shield.png',
+  // Tactical weapon
+  'iron_sword':     '../assets/weapon/iron_sword.png',
+  'tactical_sword': '../assets/weapon/tactical_sword.png',
+  // Watcher Set
+  'watcher_eye_ring': '../assets/sets/watcher_eye_ring.png',
+  'watcher_band':     '../assets/sets/watcher_band.png',
+  'watcher_cloak':    '../assets/sets/watcher_cloak.png',
+  'watcher_crown':    '../assets/sets/watcher_crown.png',
+}
+function getItemImg(k) { return ITEM_IMAGES[k] || null }
+
+
+  const SLOTS = [
+    { key:'helmet',     label:'Helmet',      icon:'⛑',  accepts:['helmet','armor'] },
+    { key:'chest',      label:'Chest',       icon:'🦺', accepts:['chest','armor','cloak'] },
+    { key:'gloves',     label:'Gloves',      icon:'🧤', accepts:['gloves'] },
+    { key:'boots',      label:'Boots',       icon:'👢', accepts:['boots'] },
+    { key:'accessory1', label:'Accessory 1', icon:'💍', accepts:['accessory','ring'] },
+    { key:'accessory2', label:'Accessory 2', icon:'📿', accepts:['accessory','ring'] },
+    { key:'mainhand',   label:'Weapon',      icon:'🗡',  accepts:['sword','dagger','staff','bow','spear','shield'] },
+    { key:'offhand',    label:'Off-hand',    icon:'🛡',  accepts:['shield','dagger','tome','sword'] },
+  ]
+
+  const RARITY = { common:'#c8c0a0', uncommon:'#5ec45e', rare:'#5eaee0', epic:'#c090ff', legendary:'#f0d060', mythic:'#ff88ff' }
+  const FILTERS = ['all','weapon','armor','accessory','consumable','material','key']
+
+  let player = await renderNav('nav')
+  if (!player) throw new Error('no player')
+
+  let items = [], selectedId = null, filter = 'all', sellMode = false, sellSelected = new Set()
+
+  async function load() {
+    const { data } = await supabase.from('inventory').select('*').eq('player_id', player.id).order('obtained_at',{ascending:false})
+    items = data || []
+    render()
+  }
+
+  function render() {
+    renderSlots()
+    renderGrid()
+    renderStats()
+    renderDetail()
+  }
+
+  function renderSlots() {
+    const equipped = {}
+    items.filter(i=>i.equipped_slot).forEach(i=>{ equipped[i.equipped_slot]=i })
+    document.getElementById('equip-slots').innerHTML = SLOTS.map(s => {
+      const item = equipped[s.key]
+      const EL_COLORS = {fire:'#ff5500',water:'#0088ff',earth:'#8b5e3c',air:'#a8d8ea',dark:'#b06eff',light:'#ffd700',none:'#9a8050'}
+      const elColor = item ? (EL_COLORS[item.element] || '#9a8050') : '#9a8050'
+      const _socketsTotal = item ? (item.sockets_total||0) : 0
+      const _socketsUsed  = item ? (item.sockets_used||0)  : 0
+      const _runeword     = item ? item.runeword_name : null
+      return `<div class="equip-slot${selectedId?' clickable':''}" data-slot="${s.key}" title="${item?item.name+' — click to manage':s.label}">
+        ${(()=>{if(!item)return '<span class="slot-icon">'+s.icon+'</span>';const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" class="slot-icon" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">'):'<span class="slot-icon" style="flex-shrink:0">'+item.icon+'</span>';})()}
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <span class="slot-label" style="color:${item ? (RARITY[item.rarity]||'#1a1208') : '#1a1208'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem">${item ? item.name : s.label}</span>
+          ${item ? (()=>{
+            const bonuses = [
+              item.atk_bonus>0?'ATK +'+item.atk_bonus:'',
+              item.def_bonus>0?'DEF +'+item.def_bonus:'',
+              (item.power_bonus||0)>0?'PWR +'+item.power_bonus:'',
+              (item.guard_bonus||0)>0?'GRD +'+item.guard_bonus:'',
+              (item.speed_bonus||0)>0?'SPD +'+item.speed_bonus:'',
+              (item.control_bonus||0)>0?'CTR +'+item.control_bonus:'',
+              (item.insight_bonus||0)>0?'INS +'+item.insight_bonus:'',
+              (item.luck_bonus||0)>0?'LCK +'+item.luck_bonus:'',
+            ].filter(Boolean).join(' ')
+            const rwLine = _runeword ? '✦ '+_runeword : (_socketsTotal>0?_socketsUsed+'/'+_socketsTotal+' sockets':'')
+            return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:#1a1208;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</span>'
+              + (rwLine?'<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:'+(_runeword?'#5020b0':'#1a1208')+'">'+rwLine+'</span>':'')
+          })() : ''}
+        </div>
+      </div>`
+    }).join('')
+
+    document.querySelectorAll('.equip-slot').forEach(el => {
+      el.addEventListener('click', async () => {
+        const slot = el.dataset.slot
+        if (selectedId) {
+          await equipItem(selectedId, slot)
+        } else {
+          const item = items.find(i=>i.equipped_slot===slot)
+          if (item) showEquippedModal(item)
+        }
+      })
+    })
+
+    // ── Set bonus detection ───────────────────────────────
+    const WATCHER_KEYS = ['watcher_eye_ring','watcher_band','watcher_cloak','watcher_crown']
+    const SET_BONUSES = {
+      1: null,
+      2: { label:'2-Piece Set', effect:'Observer Stacks on hit (max 5): +2% Crit Chance & +2% Accuracy per stack.' },
+      3: { label:'3-Piece Set', effect:'Dodging or critting auto-applies Observed. Observed enemies take +10% damage.' },
+      4: { label:'4-Piece Set — THE WATCHER SEES ALL', effect:'After 5 hits: Total Observation — enemy Marked (+30% dmg), Slowed, cannot dodge.' },
+    }
+    const equippedWatcher = items.filter(i => i.equipped_slot && WATCHER_KEYS.includes(i.item_key))
+    const panel = document.getElementById('set-bonus-panel')
+    if (equippedWatcher.length >= 2) {
+      const bonus = SET_BONUSES[Math.min(equippedWatcher.length, 4)]
+      panel.innerHTML = `
+        <div style="padding:.5rem .65rem;background:rgba(94,174,224,.06);border:.5px solid rgba(94,174,224,.2);border-radius:4px">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin-bottom:2px">
+            👁 WATCHER SET (${equippedWatcher.length}/4) — ${bonus.label}
+          </p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#3a2008;line-height:1.4;margin:0">${bonus.effect}</p>
+          ${equippedWatcher.length < 4 ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin-top:3px">${4-equippedWatcher.length} more piece${equippedWatcher.length<3?'s':''} for next bonus</p>` : ''}
+        </div>`
+    } else if (equippedWatcher.length === 1) {
+      panel.innerHTML = `<p style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:#7a6435;letter-spacing:.06em">👁 Watcher Set: 1/4 equipped — equip 1 more for set bonus</p>`
+    } else {
+      panel.innerHTML = ''
+    }
+  }
+
+  function renderGrid() {
+    // Exclude equipped items from the bag view
+    const unequipped = items.filter(i => !i.equipped_slot)
+    const filtered = unequipped.filter(i=>filter==='all'||i.item_type===filter)
+    const unequippedCount = items.filter(i=>!i.equipped_slot).length
+    document.getElementById('bag-count').textContent = unequippedCount + ' items'
+
+    // ── Sell-mode toolbar ────────────────────────────
+    let toolbar = document.getElementById('sell-toolbar')
+    if (!toolbar) {
+      toolbar = document.createElement('div')
+      toolbar.id = 'sell-toolbar'
+      toolbar.style.cssText = 'display:flex;gap:5px;margin-bottom:.5rem;flex-wrap:wrap;align-items:center'
+      const filterTabs = document.getElementById('filter-tabs')
+      filterTabs.insertAdjacentElement('afterend', toolbar)
+    }
+    const totalSellGold = [...sellSelected].reduce((sum, id) => {
+      const it = items.find(i=>i.id===id)
+      if (!it) return sum
+      return sum + (it.sell_price || Math.max(1, Math.floor((it.buy_price||20)*.4))) * (it.quantity||1)
+    }, 0)
+    toolbar.innerHTML = sellMode
+      ? `<button onclick="toggleSellMode()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.5);color:#c04040">✕ Cancel</button>
+         ${sellSelected.size>0 ? `<button onclick="sellSelectedItems()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">Sell ${sellSelected.size} item(s) ◈${totalSellGold}</button>
+         <button onclick="selectAllSellable()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">Select All</button>` : '<span style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.75rem;color:#3a2008">Click items to select</span>'}`
+      : `<button onclick="toggleSellMode()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">⊞ Multi-Sell</button>`
+
+    document.getElementById('item-grid').innerHTML = filtered.map(item => {
+      const isSellSelected = sellMode && sellSelected.has(item.id)
+      return `
+      <div class="item-card${!sellMode && selectedId===item.id?' selected':''}" data-id="${item.id}" style="display:flex;align-items:flex-start;gap:6px;min-height:72px;${sellMode?'cursor:pointer;':''}${isSellSelected?'outline:1.5px solid #c8b96e;background:rgba(200,184,128,.18);':''}" >
+        ${sellMode ? `<div style="width:16px;height:16px;border-radius:3px;border:1.5px solid ${isSellSelected?'#c8b96e':'rgba(139,106,32,.4)'};background:${isSellSelected?'#c8b96e':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${isSellSelected?'<span style="font-size:.6rem;color:#1a1208">✓</span>':''}</div>` : ''}
+        ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" class="item-icon" style="width:32px;height:32px;object-fit:contain;flex-shrink:0">'):'<span class="item-icon">'+(item.icon||'📦')+'</span>';})()}
+        <div style="flex:1;min-width:0;overflow:hidden">
+          <p class="item-name" style="color:${RARITY[item.rarity]||'#c8c0a0'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px">${item.name}</p>
+          <p class="item-type" style="margin-bottom:1px">${item.subtype||item.item_type}${item.quantity>1?' ×'+item.quantity:''}</p>
+          ${(()=>{
+            const bonuses = [
+              item.atk_bonus>0?'ATK+'+item.atk_bonus:'',
+              item.def_bonus>0?'DEF+'+item.def_bonus:'',
+              (item.power_bonus||0)>0?'PWR+'+item.power_bonus:'',
+              (item.guard_bonus||0)>0?'GRD+'+item.guard_bonus:'',
+              (item.speed_bonus||0)>0?'SPD+'+item.speed_bonus:'',
+              (item.control_bonus||0)>0?'CTR+'+item.control_bonus:'',
+              (item.insight_bonus||0)>0?'INS+'+item.insight_bonus:'',
+              (item.luck_bonus||0)>0?'LCK+'+item.luck_bonus:'',
+              item.hp_restore>0?'+'+item.hp_restore+'HP':'',
+            ].filter(Boolean).join(' ')
+            return bonuses ? '<p style="font-family:monospace;font-size:.44rem;color:#a8c0a0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</p>' : ''
+          })()}
+          ${(item.sockets_total||0)>0?'<p style="font-family:monospace;font-size:.44rem;color:'+(item.runeword_name?'#a07de0':'#7a6090')+';margin:0">'+(item.runeword_name?'✦ '+item.runeword_name:''+(item.sockets_used||0)+'/'+(item.sockets_total)+'◈')+'</p>':''}
+        </div>
+        ${item.equipped_slot?'<span class="item-eq" style="position:absolute;top:3px;right:3px">EQ</span>':''}
+      </div>
+      `
+    }).join('') || `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#3a2008;grid-column:span 3">Nothing here.</p>`
+
+    document.querySelectorAll('.item-card').forEach(el => {
+      el.addEventListener('click', () => {
+        if (sellMode) {
+          const id = el.dataset.id
+          if (sellSelected.has(id)) sellSelected.delete(id)
+          else sellSelected.add(id)
+          renderGrid()
+        } else {
+          selectedId = selectedId === el.dataset.id ? null : el.dataset.id
+          render()
+          renderDetail()
+        }
+      })
+    })
+  }
+
+  window.toggleSellMode = () => {
+    sellMode = !sellMode
+    sellSelected.clear()
+    selectedId = null
+    renderGrid()
+    renderDetail()
+  }
+
+  window.selectAllSellable = () => {
+    const unequipped = items.filter(i => !i.equipped_slot && (filter==='all'||i.item_type===filter))
+    unequipped.forEach(i => sellSelected.add(i.id))
+    renderGrid()
+  }
+
+  window.sellSelectedItems = async () => {
+    if (!sellSelected.size) return
+    const toSell = [...sellSelected].map(id => items.find(i=>i.id===id)).filter(Boolean)
+    let totalGold = 0
+    for (const item of toSell) {
+      const price = item.sell_price || Math.max(1, Math.floor((item.buy_price||20)*.4))
+      const qty = item.quantity || 1
+      totalGold += price * qty
+      await supabase.from('inventory').delete().eq('id', item.id)
+    }
+    const newGold = (player.gold || 0) + totalGold
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    showToast('Sold ' + toSell.length + ' item(s) for ◈' + totalGold)
+    sellSelected.clear()
+    sellMode = false
+    selectedId = null
+    await load()
+  }
+
+  function renderStats() {
+    const eq   = items.filter(i=>i.equipped_slot)
+    const atk  = 1 + eq.reduce((s,i)=>s+(i.atk_bonus||0),0)
+    const def  =     eq.reduce((s,i)=>s+(i.def_bonus||0),0)
+    const pwr  =     eq.reduce((s,i)=>s+(i.power_bonus||0),0)
+    const ctr  =     eq.reduce((s,i)=>s+(i.control_bonus||0),0)
+    const grd  =     eq.reduce((s,i)=>s+(i.guard_bonus||0),0)
+    const spd  =     eq.reduce((s,i)=>s+(i.speed_bonus||0),0)
+    const ins  =     eq.reduce((s,i)=>s+(i.insight_bonus||0),0)
+    const lck  =     eq.reduce((s,i)=>s+(i.luck_bonus||0),0)
+    document.getElementById('total-stats').innerHTML = `
+      <span>ATK <strong style="color:#e05555">${atk}</strong></span>
+      <span>DEF <strong style="color:#5ec45e">${def}</strong></span>
+      ${pwr?`<span>PWR <strong style="color:#ff5500">${pwr}</strong></span>`:''}
+      ${ctr?`<span>CTR <strong style="color:#0088ff">${ctr}</strong></span>`:''}
+      ${grd?`<span>GRD <strong style="color:#8b5e3c">${grd}</strong></span>`:''}
+      ${spd?`<span>SPD <strong style="color:#a8d8ea">${spd}</strong></span>`:''}
+      ${ins?`<span>INS <strong style="color:#ffd700">${ins}</strong></span>`:''}
+      ${lck?`<span>LCK <strong style="color:#b06eff">${lck}</strong></span>`:''}
+    `
+  }
+
+  function renderDetail() {
+    const el = document.getElementById('item-detail')
+    if (!selectedId) { el.innerHTML=''; return }
+    const item = items.find(i=>i.id===selectedId)
+    if (!item) { el.innerHTML=''; return }
+    el.innerHTML = `
+      <div style="border:0.5px solid rgba(139,106,32,.3);border-radius:3px;padding:.75rem;margin-top:.5rem;background:rgba(0,0,0,.05)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
+          <div style="display:flex;gap:.6rem;align-items:flex-start;flex:1">
+          ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" style="width:52px;height:52px;object-fit:contain;border-radius:6px" onerror="this.style.display=\'none\'">'):'<span style="font-size:1.6rem">'+(item.icon||'📦')+'</span>';})()}
+          <div>
+            <p style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${RARITY[item.rarity]||'#c8c0a0'};margin:0 0 2px">${item.name}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#3a2008;margin:0;letter-spacing:.06em">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
+          </div>
+          </div>
+          <button onclick="selectedId=null;render()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#3a2008;padding:0;line-height:1;flex-shrink:0;margin-left:.5rem">✕</button>
+        </div>
+        <div style="display:flex;gap:.5rem;font-family:'Share Tech Mono',monospace;font-size:.65rem;margin-bottom:.6rem;flex-wrap:wrap">
+          ${(item.atk_bonus||0)>0?`<span style="color:#e05555">ATK +${item.atk_bonus}</span>`:''}
+          ${(item.def_bonus||0)>0?`<span style="color:#5ec45e">DEF +${item.def_bonus}</span>`:''}
+          ${(item.power_bonus||0)>0?`<span style="color:#ff5500">PWR +${item.power_bonus}</span>`:''}
+          ${(item.guard_bonus||0)>0?`<span style="color:#8b5e3c">GRD +${item.guard_bonus}</span>`:''}
+          ${(item.speed_bonus||0)>0?`<span style="color:#a8d8ea">SPD +${item.speed_bonus}</span>`:''}
+          ${(item.control_bonus||0)>0?`<span style="color:#0088ff">CTR +${item.control_bonus}</span>`:''}
+          ${(item.insight_bonus||0)>0?`<span style="color:#ffd700">INS +${item.insight_bonus}</span>`:''}
+          ${(item.luck_bonus||0)>0?`<span style="color:#b06eff">LCK +${item.luck_bonus}</span>`:''}
+          ${(item.hp_restore||0)>0?`<span style="color:#5eaee0">+${item.hp_restore} HP</span>`:''}
+          ${!(item.atk_bonus||item.def_bonus||item.power_bonus||item.guard_bonus||item.speed_bonus||item.control_bonus||item.insight_bonus||item.luck_bonus||item.hp_restore)?`<span style="color:#3a2008">Utility item</span>`:''}
+        </div>
+        ${item.special_effect ? `<div style="margin-bottom:.6rem;padding:5px 8px;background:rgba(94,174,224,.08);border:.5px solid rgba(94,174,224,.3);border-radius:3px">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin:0 0 2px">SET EFFECT</p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#1a1208;margin:0;line-height:1.4">${item.special_effect}</p>
+        </div>` : ''}
+        ${(item.sockets_total||0) > 0 ? `
+          <div style="margin-bottom:.5rem">
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a07de0;letter-spacing:.07em;margin-bottom:3px">SOCKETS ${item.sockets_used||0}/${item.sockets_total}</p>
+            <div style="display:flex;gap:4px;margin-bottom:4px">
+              ${Array.from({length:item.sockets_total||0}).map((_,i) => {
+                const rune = (item.socketed_runes||[])[i]
+                const runeColors = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
+                const color = rune ? (runeColors[rune]||'#a07de0') : 'rgba(160,125,224,.3)'
+                const imgSrc = rune ? `../assets/runes/rune_${rune}.png` : ''
+                return '<div style="width:22px;height:22px;border-radius:50%;border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;overflow:hidden;background:'+(rune?color+'22':'rgba(0,0,0,.15)')+'" title="'+(rune||'Empty socket')+'">'
+                  + (rune ? '<img src="'+imgSrc+'" style="width:18px;height:18px;object-fit:contain;border-radius:50%" onerror="this.outerHTML=\'<span style=\\\"font-size:.75rem\\\">◈</span>\'">' : '○')
+                  + '</div>'
+              }).join('')}
+            </div>
+            ${item.runeword_name ? `
+              <div style="margin-top:4px;padding:4px 6px;background:rgba(160,125,224,.12);border-radius:3px;border:.5px solid rgba(160,125,224,.3)">
+                <p style="font-family:'Cinzel',serif;font-size:.68rem;color:#a07de0;margin:0 0 2px">✦ ${item.runeword_name}</p>
+                ${item.runeword_effect ? '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.65rem;color:#1a1208;margin:0 0 2px">'+item.runeword_effect+'</p>' : ''}
+                <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#3a2008;margin:0">
+                  ${[['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']].filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')}
+                </p>
+              </div>` : ''}
+            ${(item.sockets_used||0) < (item.sockets_total||0) ? '<button onclick="openRunePicker(\''+item.id+'\',\''+item.item_type+'\')" style="font-family:\'Cinzel\',serif;font-size:.68rem;color:#a07de0;background:none;border:.5px solid #a07de060;border-radius:3px;padding:3px 10px;cursor:pointer;margin-top:4px">✦ Add Rune</button>' : ''}
+            ${(item.sockets_used||0) > 0 ? '<button onclick="removeRunes(\''+item.id+'\')" style="font-family:\'Cinzel\',serif;font-size:.68rem;color:#3a2008;background:none;border:.5px solid rgba(139,106,32,.3);border-radius:3px;padding:3px 10px;cursor:pointer;margin-top:4px;margin-left:4px">Remove Runes</button>' : ''}
+            <div id="rune-picker-${item.id}" style="display:none;margin-top:6px;padding:6px;background:rgba(0,0,0,.08);border-radius:4px;border:.5px solid rgba(160,125,224,.3)"></div>
+          </div>
+        ` : ''}
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          ${item.item_type==='consumable'?`<button onclick="useItem('${item.id}')" style="font-family:'Cinzel',serif;font-size:.72rem;color:#5eaee0;background:none;border:.5px solid #5eaee040;border-radius:3px;padding:4px 12px;cursor:pointer">Use ×1</button>`:''}
+          ${item.equipped_slot?`<button onclick="unequipSlot('${item.equipped_slot}')" style="font-family:'Cinzel',serif;font-size:.72rem;color:#c8b96e;background:none;border:.5px solid #c8b96e40;border-radius:3px;padding:4px 12px;cursor:pointer">Unequip</button>`:''}
+          ${!item.equipped_slot ? (()=>{
+            const _sp  = item.sell_price || Math.max(1, Math.floor((item.buy_price||20)*.4))
+            const _qty = item.quantity || 1
+            const _bs  = "font-family:'Cinzel',serif;font-size:.72rem;background:none;border:.5px solid rgba(139,106,32,.5);border-radius:3px;padding:4px 10px;cursor:pointer;color:#6b4a10"
+            return _qty > 1
+              ? `<button onclick="sellItem('${item.id}','${item.name}',${_sp},${_qty})" style="${_bs}">Sell ×1 ◈${_sp}</button> <button onclick="sellItemAll('${item.id}','${item.name}',${_sp},${_qty})" style="${_bs}">Sell All ◈${_sp*_qty}</button>`
+              : `<button onclick="sellItem('${item.id}','${item.name}',${_sp},1)" style="${_bs}">Sell ◈${_sp}</button>`
+          })() : ''}
+        </div>
+      </div>
+    `
+  }
+
+  // ── Equipped item modal ──────────────────────────
+  function showEquippedModal(item) {
+    document.getElementById('equipped-modal')?.remove()
+
+    const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
+    const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
+    const RC = {common:'#2a1208',uncommon:'#2a6020',rare:'#1a3a6e',epic:'#4a2a8a',legendary:'#6b5010',mythic:'#6a1a6a'}
+
+    const sockets    = item.sockets_total || 0
+    const used       = item.sockets_used  || 0
+    const runes      = item.socketed_runes || []
+    const hasEmpty   = used < sockets
+    const hasRunes   = used > 0
+
+    // Rune slot display
+    const slotDisplay = sockets > 0 ? `
+      <div style="margin:8px 0">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.07em;margin-bottom:4px">SOCKETS ${used}/${sockets}</p>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+          ${Array.from({length:sockets}).map((_,i) => {
+            const rune = runes[i]
+            const color = rune ? (RUNE_COLORS[rune]||'#a07de0') : 'rgba(100,80,40,.3)'
+            return '<div style="width:26px;height:26px;border-radius:50%;border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;overflow:hidden;background:'+(rune?color+'22':'rgba(0,0,0,.1)')+'" title="'+(rune||'Empty socket')+'">'
+              + (rune ? '<img src="../assets/runes/rune_'+rune+'.png" style="width:22px;height:22px;object-fit:contain;border-radius:50%" onerror="this.outerHTML=\'<span style=\\\"font-size:.85rem\\\">'+(RUNE_ICONS[rune]||'◈')+'</span>\'">' : '○')
+              + '</div>'
+          }).join('')}
+        </div>
+        ${item.runeword_name ? `
+  <div style="margin-top:4px;padding:4px 6px;background:rgba(160,125,224,.15);border-radius:3px">
+    <p style="font-family:'Cinzel',serif;font-size:.72rem;color:#4a20a8;margin:0 0 2px">✦ ${item.runeword_name}</p>
+    ${item.runeword_effect ? '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.66rem;color:#1a1208;margin:0 0 2px">'+item.runeword_effect+'</p>' : ''}
+    <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#3a2008;margin:0">
+      ${[['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']].filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')}
+    </p>
+  </div>` : ''}
+      </div>` : ''
+
+    const modal = document.createElement('div')
+    modal.id = 'equipped-modal'
+    modal.style.cssText = `
+      position:fixed;inset:0;z-index:600;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.65);animation:fadeIn .2s ease`
+    modal.innerHTML = `
+      <div style="background:#c4b070;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem">
+          ${(()=>{const s=getItemImg(item.item_key);return s?'<img src="'+s+'" style="width:48px;height:48px;object-fit:contain;border-radius:4px;flex-shrink:0">':'<span style="font-size:2rem">'+item.icon+'</span>'})()}
+          <div style="flex:1">
+            <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:${RC[item.rarity]||'#1a1208'};margin:0 0 2px">${item.name}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin:0">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin-top:2px">
+              ${item.atk_bonus>0?'ATK +'+item.atk_bonus+' ':''} ${item.def_bonus>0?'DEF +'+item.def_bonus+' ':''}
+              ${(item.power_bonus||0)>0?'PWR +'+item.power_bonus+' ':''} ${(item.speed_bonus||0)>0?'SPD +'+item.speed_bonus:''}
+            </p>
+          </div>
+          <button onclick="document.getElementById('equipped-modal').remove()" style="background:none;border:none;color:#1a1208;font-size:1.1rem;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✕</button>
+        </div>
+
+        ${slotDisplay}
+
+        ${hasEmpty ? `
+          <button onclick="openRunePickerModal('${item.id}','${item.item_type}')" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:.45rem;cursor:pointer;margin-bottom:6px">
+            ✦ Add Rune to Socket
+          </button>` : ''}
+
+        <button onclick="unequipSlot('${item.equipped_slot}');document.getElementById('equipped-modal').remove()" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(200,184,128,.3);border:1px solid rgba(139,106,32,.5);border-radius:3px;padding:.45rem;cursor:pointer;margin-bottom:6px">
+          Unequip
+        </button>
+
+        ${hasRunes ? `
+          <button onclick="destroyRunes('${item.id}')" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#c04040;background:rgba(192,64,64,.1);border:1px solid rgba(192,64,64,.3);border-radius:3px;padding:.45rem;cursor:pointer">
+            ✕ Remove & Destroy Runes
+          </button>` : ''}
+      </div>
+    `
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+    document.body.appendChild(modal)
+  }
+
+  // ── Open rune picker from equipped modal ──────────
+  window.openRunePickerModal = async function(itemId, itemType) {
+    const pickerEl = document.createElement('div')
+    pickerEl.style.cssText = 'margin-top:8px;padding:8px;background:rgba(0,0,0,.1);border-radius:4px;border:.5px solid rgba(160,125,224,.3)'
+
+    const modal = document.getElementById('equipped-modal')
+    const existing = modal.querySelector('#modal-rune-picker')
+    if (existing) { existing.remove(); return }
+    pickerEl.id = 'modal-rune-picker'
+
+    const { data: runeItems } = await supabase.from('inventory')
+      .select('*').eq('player_id', player.id).like('item_key','rune_%').gt('quantity',0)
+
+    if (!runeItems || !runeItems.length) {
+      pickerEl.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#1a1208">No runes in inventory.</p>'
+    } else {
+      const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
+      const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
+      const RUNE_NAMES  = {ignis:'Ignis',aqua:'Aqua',terra:'Terra',aero:'Aero',umbra:'Umbra',lux:'Lux',venin:'Venin',ferro:'Ferro',flora:'Flora',volt:'Volt'}
+      pickerEl.innerHTML = `
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.07em;margin-bottom:5px">SELECT RUNE</p>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">
+          ${runeItems.map(r => {
+            const key = r.item_key.replace('rune_','')
+            const col = RUNE_COLORS[key]||'#888'
+            return '<button onclick="socketRuneToItem(\''+itemId+'\',\''+r.id+'\',\''+key+'\',\''+itemType+'\')" style="display:flex;align-items:center;gap:4px;background:'+col+'18;border:1px solid '+col+'60;border-radius:4px;padding:4px 8px;cursor:pointer;font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:'+col+'"><img src="../assets/runes/rune_'+key+'.png" style="width:16px;height:16px;object-fit:contain;border-radius:2px" onerror="this.outerHTML=\'<span>'+(RUNE_ICONS[key]||'◈')+'</span>\'"><span>'+(RUNE_NAMES[key]||key)+'</span><span style="color:#1a1208;font-size:.5rem">×'+r.quantity+'</span></button>'
+          }).join('')}
+        </div>`
+    }
+    modal.querySelector('div').appendChild(pickerEl)
+  }
+
+  // ── Destroy runes (does NOT refund) ──────────────
+  window.destroyRunes = async function(itemId) {
+    if (!confirm('Remove and DESTROY all runes? They will not be returned.')) return
+    await supabase.from('inventory').update({
+      socketed_runes:[], sockets_used:0,
+      runeword_name:null, runeword_effect:null,
+      power_bonus:0, control_bonus:0, guard_bonus:0,
+      speed_bonus:0, insight_bonus:0, luck_bonus:0,
+    }).eq('id', itemId)
+    document.getElementById('equipped-modal')?.remove()
+    showToast('Runes destroyed')
+    await load()
+  }
+
+  async function equipItem(itemId, slot) {
+    const item = items.find(i=>i.id===itemId)
+    if (!item) return
+    const slotDef = SLOTS.find(s=>s.key===slot)
+    if (!slotDef.accepts.includes(item.subtype||item.item_type)) {
+      showToast(`${item.name} can't go in ${slotDef.label}`, true); return
+    }
+    // Unequip current in slot
+    const current = items.find(i=>i.equipped_slot===slot)
+    if (current) await supabase.from('inventory').update({equipped_slot:null}).eq('id',current.id)
+    // If 2H, clear offhand
+    if (item.two_handed && slot==='mainhand') {
+      const oh = items.find(i=>i.equipped_slot==='offhand')
+      if (oh) await supabase.from('inventory').update({equipped_slot:null}).eq('id',oh.id)
+    }
+    await supabase.from('inventory').update({equipped_slot:slot}).eq('id',itemId)
+    showToast(`${item.name} equipped`)
+    selectedId = null
+    await load()
+  }
+
+  async function unequipSlot(slot) {
+    const item = items.find(i=>i.equipped_slot===slot)
+    if (!item) return
+    await supabase.from('inventory').update({equipped_slot:null}).eq('id',item.id)
+    showToast(`${item.name} unequipped`)
+    await load()
+  }
+
+  window.unequipSlot = unequipSlot
+
+  // ── Runeword data ──────────────────────────────
+  const RUNEWORDS = {
+    // ══════════════════════════════════════════════════════
+    // WEAPON RUNEWORDS — 2 rune
+    // ══════════════════════════════════════════════════════
+    'ignis+ignis':              {n:2,name:'Ember Core',        rarity:'rare',      slot:'weapon',    stats:{power_bonus:2,atk_bonus:2}},
+    'aero+ignis':               {n:2,name:'Blazing Speed',     rarity:'epic',      slot:'weapon',    stats:{power_bonus:2,speed_bonus:4}},
+    'ignis+umbra':              {n:2,name:'Hellfire Pact',     rarity:'legendary', slot:'weapon',    stats:{power_bonus:6,atk_bonus:4}},
+    'ignis+terra':              {n:2,name:'Molten Strike',     rarity:'rare',      slot:'weapon',    stats:{power_bonus:2,atk_bonus:3,guard_bonus:1}},
+    'aqua+ignis':               {n:2,name:'Steam Burst',       rarity:'epic',      slot:'weapon',    stats:{power_bonus:2,control_bonus:2}},
+    'ignis+lux':                {n:2,name:'Holy Flame',        rarity:'epic',      slot:'weapon',    stats:{power_bonus:2,insight_bonus:2,atk_bonus:2}},
+    'aqua+aqua':                {n:2,name:'Flow State',        rarity:'rare',      slot:'weapon',    stats:{control_bonus:3,luck_bonus:2}},
+    'aqua+lux':                 {n:2,name:'Sacred Tide',       rarity:'epic',      slot:'weapon',    stats:{control_bonus:2,insight_bonus:2}},
+    'aero+aqua':                {n:2,name:'Current Shift',     rarity:'epic',      slot:'weapon',    stats:{control_bonus:3,speed_bonus:2}},
+    'aqua+umbra':               {n:2,name:'Drowning Curse',    rarity:'legendary', slot:'weapon',    stats:{control_bonus:5,power_bonus:2}},
+    'aqua+terra':               {n:2,name:'Deep Stability',    rarity:'rare',      slot:'weapon',    stats:{control_bonus:2,guard_bonus:2}},
+    'aero+aero':                {n:2,name:'Wind Fury',         rarity:'rare',      slot:'weapon',    stats:{speed_bonus:4,luck_bonus:2}},
+    'aero+umbra':               {n:2,name:'Phantom Strike',    rarity:'legendary', slot:'weapon',    stats:{speed_bonus:4,power_bonus:3}},
+    'aero+lux':                 {n:2,name:'Light Speed',       rarity:'epic',      slot:'weapon',    stats:{speed_bonus:3,insight_bonus:2}},
+    'umbra+umbra':              {n:2,name:'Abyss Core',        rarity:'epic',      slot:'weapon',    stats:{power_bonus:5,atk_bonus:3}},
+    'lux+umbra':                {n:2,name:'Twilight Blade',    rarity:'legendary', slot:'weapon',    stats:{power_bonus:3,guard_bonus:2,insight_bonus:2}},
+    'lux+lux':                  {n:2,name:'Radiant Edge',      rarity:'rare',      slot:'weapon',    stats:{insight_bonus:2,luck_bonus:2,guard_bonus:1}},
+    'terra+umbra+weapon':       {n:2,name:'Grave Force',       rarity:'epic',      slot:'weapon',    stats:{power_bonus:4,atk_bonus:5}},
+
+    // ══════════════════════════════════════════════════════
+    // WEAPON RUNEWORDS — 3 rune
+    // ══════════════════════════════════════════════════════
+    'ignis+ignis+umbra':        {n:3,name:'Doom Flame',        rarity:'legendary', slot:'weapon',    stats:{power_bonus:5,atk_bonus:5}},
+    'aero+ignis+ignis':         {n:3,name:'Doom Flame',        rarity:'legendary', slot:'weapon',    stats:{power_bonus:5,atk_bonus:5}},
+    'aero+aero+ignis':          {n:3,name:'Inferno Rush',      rarity:'epic',      slot:'weapon',    stats:{power_bonus:3,speed_bonus:2,atk_bonus:2}},
+    'aero+terra+umbra':         {n:3,name:'Shadow Cyclone',    rarity:'legendary', slot:'weapon',    stats:{speed_bonus:2,power_bonus:3,atk_bonus:3}},
+    'aqua+aero+umbra':          {n:3,name:'Phantom Current',   rarity:'legendary', slot:'weapon',    stats:{control_bonus:4,speed_bonus:3,power_bonus:2}},
+    'aqua+aqua+lux':            {n:3,name:'Ocean Blessing',    rarity:'epic',      slot:'weapon',    stats:{control_bonus:3,insight_bonus:2,luck_bonus:2}},
+    'aero+aqua+lux':            {n:3,name:'Radiant Flow',      rarity:'epic',      slot:'weapon',    stats:{speed_bonus:2,control_bonus:2,insight_bonus:2}},
+    'aqua+ignis+terra':         {n:3,name:'Steam Core',        rarity:'epic',      slot:'weapon',    stats:{power_bonus:2,control_bonus:2,guard_bonus:1,atk_bonus:2}},
+    'ignis+terra+umbra':        {n:3,name:'Magma Curse',       rarity:'legendary', slot:'weapon',    stats:{power_bonus:3,atk_bonus:4}},
+    'aqua+lux+umbra':           {n:3,name:'Void Purge',        rarity:'legendary', slot:'weapon',    stats:{control_bonus:3,power_bonus:2,insight_bonus:2}},
+    'ignis+lux+terra':          {n:3,name:'Sacred Volcano',    rarity:'legendary', slot:'weapon',    stats:{guard_bonus:2,power_bonus:4,atk_bonus:3}},
+    'aero+ignis+umbra':         {n:3,name:'Ash Reaper',        rarity:'epic',      slot:'weapon',    stats:{power_bonus:3,speed_bonus:2,atk_bonus:3}},
+    'aero+aqua+ignis':          {n:3,name:'Superheated Storm', rarity:'epic',      slot:'weapon',    stats:{power_bonus:2,speed_bonus:3,control_bonus:2}},
+    'lux+terra+umbra+weapon3':  {n:3,name:'Soul Rift',         rarity:'legendary', slot:'weapon',    stats:{power_bonus:4,insight_bonus:2,atk_bonus:3}},
+
+    // ══════════════════════════════════════════════════════
+    // WEAPON RUNEWORDS — 4 rune
+    // ══════════════════════════════════════════════════════
+    'ignis+ignis+umbra+umbra':  {n:4,name:'Hell Collapse',     rarity:'mythic',    slot:'weapon',    stats:{power_bonus:8,atk_bonus:6}},
+    'aero+aero+ignis+ignis':    {n:4,name:'Storm Inferno',     rarity:'legendary', slot:'weapon',    stats:{speed_bonus:4,power_bonus:3,atk_bonus:3}},
+    'aqua+aero+ignis+umbra':    {n:4,name:'Chaos Engine',      rarity:'mythic',    slot:'weapon',    stats:{power_bonus:6,speed_bonus:4,atk_bonus:4}},
+    'aero+aqua+lux+terra':      {n:4,name:'Elemental Edge',    rarity:'legendary', slot:'weapon',    stats:{power_bonus:3,control_bonus:3,speed_bonus:2,guard_bonus:2}},
+    'aero+ignis+terra+umbra':   {n:4,name:'Void Eruption',     rarity:'mythic',    slot:'weapon',    stats:{power_bonus:7,speed_bonus:3,atk_bonus:5}},
+
+    // ══════════════════════════════════════════════════════
+    // WEAPON RUNEWORDS — 5 rune
+    // ══════════════════════════════════════════════════════
+    'aero+aqua+ignis+terra+umbra':  {n:5,name:'Worldbreaker',  rarity:'mythic',    slot:'weapon',    stats:{power_bonus:8,speed_bonus:5,atk_bonus:7,guard_bonus:2}},
+    'aero+aqua+ignis+lux+umbra':    {n:5,name:'Heaven Ender',  rarity:'mythic',    slot:'weapon',    stats:{power_bonus:7,speed_bonus:4,atk_bonus:6,insight_bonus:3}},
+
+    // ══════════════════════════════════════════════════════
+    // WEAPON RUNEWORDS — 6 rune
+    // ══════════════════════════════════════════════════════
+    'aero+aqua+ignis+lux+terra+umbra': {n:6,name:'Genesis Blade',rarity:'mythic',  slot:'weapon',    stats:{power_bonus:6,control_bonus:6,guard_bonus:6,speed_bonus:6,insight_bonus:6,luck_bonus:6,atk_bonus:8}},
+
+    // ══════════════════════════════════════════════════════
+    // ARMOR RUNEWORDS — 2 rune
+    // ══════════════════════════════════════════════════════
+    'terra+terra':              {n:2,name:'Stone Skin',         rarity:'rare',      slot:'armor',     stats:{guard_bonus:5,def_bonus:3}},
+    'lux+terra':                {n:2,name:'Sanctuary',          rarity:'epic',      slot:'armor',     stats:{guard_bonus:3,insight_bonus:2,def_bonus:2}},
+    'aqua+terra+armor':         {n:2,name:'Living Armor',       rarity:'rare',      slot:'armor',     stats:{guard_bonus:2,def_bonus:2}},
+    'terra+umbra':              {n:2,name:'Grave Shell',        rarity:'epic',      slot:'armor',     stats:{guard_bonus:4,def_bonus:4}},
+    'aero+terra':               {n:2,name:'Dust Guard',         rarity:'rare',      slot:'armor',     stats:{guard_bonus:2,speed_bonus:2,def_bonus:2}},
+    'ignis+ignis+armor':        {n:2,name:'Flame Guard',        rarity:'uncommon',  slot:'armor',     stats:{guard_bonus:1,def_bonus:2}},
+    'ignis+terra+armor':        {n:2,name:'Molten Shell',       rarity:'rare',      slot:'armor',     stats:{guard_bonus:2,power_bonus:1,def_bonus:3}},
+    'aqua+ignis+armor':         {n:2,name:'Steam Armor',        rarity:'rare',      slot:'armor',     stats:{guard_bonus:2,def_bonus:3}},
+    'aqua+aqua+armor':          {n:2,name:'Flow Armor',         rarity:'rare',      slot:'armor',     stats:{guard_bonus:2,control_bonus:2,def_bonus:2}},
+    'aqua+lux+armor':           {n:2,name:'Healing Guard',      rarity:'epic',      slot:'armor',     stats:{guard_bonus:2,insight_bonus:1,def_bonus:2}},
+    'aqua+umbra+armor':         {n:2,name:'Void Barrier',       rarity:'epic',      slot:'armor',     stats:{guard_bonus:3,control_bonus:2,def_bonus:2}},
+    'aero+aero+armor':          {n:2,name:'Ghost Cloak',        rarity:'rare',      slot:'armor',     stats:{guard_bonus:1,speed_bonus:4,def_bonus:1}},
+    'aero+aqua+armor':          {n:2,name:'Mist Form',          rarity:'epic',      slot:'armor',     stats:{guard_bonus:2,speed_bonus:3,control_bonus:1}},
+    'aero+umbra+armor':         {n:2,name:'Shadow Veil',        rarity:'rare',      slot:'armor',     stats:{guard_bonus:1,speed_bonus:3,def_bonus:2}},
+    'umbra+umbra+armor':        {n:2,name:'Grave Armor',        rarity:'epic',      slot:'armor',     stats:{guard_bonus:4,def_bonus:4}},
+    'lux+umbra+armor':          {n:2,name:'Fallen Light',       rarity:'epic',      slot:'armor',     stats:{guard_bonus:2,insight_bonus:2,power_bonus:1}},
+    'lux+lux+armor':            {n:2,name:'Divine Shell',       rarity:'epic',      slot:'armor',     stats:{guard_bonus:3,insight_bonus:3,luck_bonus:2}},
+    'ignis+umbra+armor':        {n:2,name:'Hell Armor',         rarity:'epic',      slot:'armor',     stats:{guard_bonus:2,power_bonus:2,def_bonus:3}},
+
+    // ══════════════════════════════════════════════════════
+    // ARMOR RUNEWORDS — 3 rune
+    // ══════════════════════════════════════════════════════
+    'aero+lux+armor':           {n:3,name:"Heaven's Grace",     rarity:'epic',      slot:'armor',     stats:{guard_bonus:2,speed_bonus:3,def_bonus:1}},
+    'ignis+lux+armor':          {n:3,name:'Phoenix Guard',      rarity:'legendary', slot:'armor',     stats:{guard_bonus:2,def_bonus:2,power_bonus:1}},
+    'aqua+lux+terra+armor':     {n:3,name:'Eternal Guard',      rarity:'legendary', slot:'armor',     stats:{guard_bonus:6,def_bonus:4,insight_bonus:2}},
+    'terra+terra+aqua+armor':   {n:3,name:'Deep Root',          rarity:'epic',      slot:'armor',     stats:{guard_bonus:4,def_bonus:3,control_bonus:2}},
+    'aero+terra+umbra+armor':   {n:3,name:'Wraith Shell',       rarity:'legendary', slot:'armor',     stats:{guard_bonus:4,speed_bonus:2,def_bonus:3}},
+    'ignis+terra+umbra+armor':  {n:3,name:'Magma Armor',        rarity:'legendary', slot:'armor',     stats:{guard_bonus:3,power_bonus:2,def_bonus:4}},
+    'aero+ignis+lux+armor':     {n:3,name:'Celestial Flame',    rarity:'legendary', slot:'armor',     stats:{guard_bonus:2,power_bonus:2,speed_bonus:2,def_bonus:2}},
+    'lux+umbra+lux+armor':      {n:3,name:'Fallen Angel',       rarity:'legendary', slot:'armor',     stats:{guard_bonus:4,power_bonus:3,def_bonus:3}},
+
+    // ══════════════════════════════════════════════════════
+    // ARMOR RUNEWORDS — 4 rune
+    // ══════════════════════════════════════════════════════
+    'aqua+lux+terra+umbra+armor':{n:4,name:'World Core',        rarity:'legendary', slot:'armor',     stats:{guard_bonus:8,def_bonus:6,control_bonus:2}},
+    'aero+ignis+terra+umbra+armor':{n:4,name:'Titan Shell',     rarity:'mythic',    slot:'armor',     stats:{guard_bonus:6,def_bonus:5,power_bonus:3,speed_bonus:2}},
+
+    // ══════════════════════════════════════════════════════
+    // ARMOR RUNEWORDS — 5 rune
+    // ══════════════════════════════════════════════════════
+    'aero+aqua+lux+terra+umbra+armor':{n:5,name:'Celestial Aegis',rarity:'mythic',  slot:'armor',     stats:{guard_bonus:6,def_bonus:6,insight_bonus:4,luck_bonus:4}},
+
+    // ══════════════════════════════════════════════════════
+    // ARMOR RUNEWORDS — 6 rune
+    // ══════════════════════════════════════════════════════
+    'aero+aqua+ignis+lux+terra+umbra+armor':{n:6,name:'Genesis Armor',rarity:'mythic',slot:'armor',   stats:{guard_bonus:8,def_bonus:8,power_bonus:4,speed_bonus:4,insight_bonus:4,luck_bonus:4}},
+
+    // ══════════════════════════════════════════════════════
+    // UNIVERSAL RUNEWORDS (any slot)
+    // ══════════════════════════════════════════════════════
+    'lux+terra+uni':            {n:2,name:'Harmony',            rarity:'rare',      slot:'any',       stats:{power_bonus:1,control_bonus:1,guard_bonus:1,speed_bonus:1}},
+    'aqua+ignis+uni':           {n:2,name:'Balance Break',      rarity:'epic',      slot:'any',       stats:{control_bonus:3,power_bonus:2}},
+    'lux+umbra+uni':            {n:2,name:'Twilight Core',      rarity:'legendary', slot:'any',       stats:{power_bonus:3,guard_bonus:2,insight_bonus:2}},
+    'aero+terra+uni':           {n:2,name:'Foundation Shift',   rarity:'rare',      slot:'any',       stats:{speed_bonus:2,guard_bonus:2}},
+    'aqua+ignis+lux+uni':       {n:3,name:'Trinity Flow',       rarity:'epic',      slot:'any',       stats:{power_bonus:2,control_bonus:2,insight_bonus:2}},
+    'lux+terra+umbra+uni':      {n:3,name:'Dark Balance',       rarity:'legendary', slot:'any',       stats:{power_bonus:3,guard_bonus:2,insight_bonus:2}},
+    'aero+ignis+terra+uni':     {n:3,name:'Storm Forge',        rarity:'epic',      slot:'any',       stats:{speed_bonus:2,power_bonus:2,guard_bonus:1}},
+    'aero+aqua+umbra+uni':      {n:3,name:'Phantom Tide',       rarity:'legendary', slot:'any',       stats:{speed_bonus:3,control_bonus:3,power_bonus:1}},
+    'lux+lux+lux+uni':          {n:3,name:'Pure Divinity',      rarity:'mythic',    slot:'any',       stats:{insight_bonus:5,guard_bonus:4,luck_bonus:5}},
+    'aero+aqua+ignis+lux+terra+umbra+uni':{n:6,name:'Genesis',  rarity:'mythic',    slot:'any',       stats:{power_bonus:5,control_bonus:5,guard_bonus:5,speed_bonus:5,insight_bonus:5,luck_bonus:5}},
+
+    // ══════════════════════════════════════════════════════
+    // ACCESSORY RUNEWORDS
+    // ══════════════════════════════════════════════════════
+    'lux+lux+acc':              {n:2,name:'Blessing Loop',      rarity:'rare',      slot:'accessory', stats:{luck_bonus:3,insight_bonus:2}},
+    'umbra+umbra+acc':          {n:2,name:'Curse Loop',         rarity:'epic',      slot:'accessory', stats:{power_bonus:4,luck_bonus:1}},
+    'aero+ignis+acc':           {n:2,name:'Flash Burn',         rarity:'uncommon',  slot:'accessory', stats:{speed_bonus:2,power_bonus:1}},
+    'aqua+lux+acc':             {n:2,name:'Pure Flow',          rarity:'rare',      slot:'accessory', stats:{control_bonus:2,insight_bonus:1}},
+    'lux+terra+acc':            {n:2,name:'Stone Heart',        rarity:'rare',      slot:'accessory', stats:{guard_bonus:2,insight_bonus:1}},
+    'aero+aqua+acc':            {n:2,name:'Slipstream',         rarity:'uncommon',  slot:'accessory', stats:{speed_bonus:2,control_bonus:1}},
+    'ignis+umbra+acc':          {n:2,name:'Hell Ring',          rarity:'epic',      slot:'accessory', stats:{power_bonus:3,atk_bonus:2}},
+    'aqua+umbra+acc':           {n:2,name:'Dark Flow',          rarity:'epic',      slot:'accessory', stats:{control_bonus:2,power_bonus:1}},
+    'aero+terra+acc':           {n:2,name:'Dust Band',          rarity:'uncommon',  slot:'accessory', stats:{speed_bonus:2,guard_bonus:1}},
+    'lux+umbra+acc':            {n:2,name:'Twilight Loop',      rarity:'rare',      slot:'accessory', stats:{insight_bonus:2,power_bonus:1,guard_bonus:1}},
+  }
+  function findRuneword(runes, slot, socketsTotal) {
+    const count = runes.length
+    const key   = [...runes].sort().join('+')
+
+    // Runeword only triggers when:
+    // 1. The rune combo matches exactly
+    // 2. The runeword requires exactly this many runes
+    // 3. The item has exactly this many sockets total (no partial fills on larger items)
+    if (RUNEWORDS[key] && RUNEWORDS[key].n === count && count === socketsTotal) return RUNEWORDS[key]
+
+    // Try with slot suffix (armor/uni) — suffix adds to key but not rune count
+    const suffixes = ['uni', slot==='accessory'?'acc':null, slot==='armor'?'armor':null].filter(Boolean)
+    for (const s of suffixes) {
+      const k2 = [...runes, s].sort().join('+')
+      if (RUNEWORDS[k2] && RUNEWORDS[k2].n === count && count === socketsTotal) return RUNEWORDS[k2]
+    }
+    return null
+  }
+
+  // ── Open inline rune picker ──────────────────────
+  window.openRunePicker = async function(itemId, itemType) {
+    const pickerId = 'rune-picker-' + itemId
+    const picker   = document.getElementById(pickerId)
+    if (!picker) return
+
+    // Toggle
+    if (picker.style.display !== 'none') { picker.style.display = 'none'; return }
+    picker.style.display = 'block'
+    picker.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#3a2008">Loading runes…</p>'
+
+    // Load runes from inventory
+    const { data: runeItems } = await supabase.from('inventory')
+      .select('*').eq('player_id', player.id).like('item_key','rune_%').gt('quantity',0)
+
+    if (!runeItems || !runeItems.length) {
+      picker.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#3a2008">No runes in inventory.<br>Farm enemies to find runes.</p>'
+      return
+    }
+
+    const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
+    const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
+    const RUNE_NAMES  = {ignis:'Ignis',aqua:'Aqua',terra:'Terra',aero:'Aero',umbra:'Umbra',lux:'Lux',venin:'Venin',ferro:'Ferro',flora:'Flora',volt:'Volt'}
+
+    picker.innerHTML = `
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a07de0;letter-spacing:.07em;margin-bottom:5px">SELECT RUNE TO SOCKET</p>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        ${runeItems.map(r => {
+          const key   = r.item_key.replace('rune_','')
+          const color = RUNE_COLORS[key] || '#888'
+          const icon  = RUNE_ICONS[key]  || '◈'
+          const name  = RUNE_NAMES[key]  || key
+          return `<button onclick="socketRuneToItem('${itemId}','${r.id}','${key}','${itemType}')"
+            style="display:flex;align-items:center;gap:4px;background:${color}18;border:1px solid ${color}60;border-radius:4px;padding:4px 8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:${color}">
+            <img src="../assets/runes/rune_${key}.png" style="width:16px;height:16px;object-fit:contain;border-radius:2px" onerror="this.outerHTML='<span>${icon}</span>'">
+            <span>${name}</span><span style="color:#3a2008;font-size:.5rem">×${r.quantity}</span>
+          </button>`
+        }).join('')}
+      </div>
+    `
+  }
+
+  // ── Socket a rune into an item ───────────────────
+  window.socketRuneToItem = async function(itemId, runeInventoryId, runeKey, itemType) {
+    const item = items.find(i => i.id === itemId)
+    if (!item) return
+
+    const sockets = item.sockets_total || 0
+    const used    = item.sockets_used  || 0
+    if (used >= sockets) { showToast('All sockets filled', true); return }
+
+    const newRunes  = [...(item.socketed_runes||[]), runeKey]
+    const newUsed   = used + 1
+
+    // Check for runeword — only triggers if rune count fills ALL sockets exactly
+    const slot = itemType === 'armor' ? 'armor' : itemType === 'weapon' ? 'weapon' : 'accessory'
+    const rw   = findRuneword(newRunes, slot, sockets)
+
+    // Build stat updates from runeword
+    const statUpdates = {}
+    if (rw) Object.entries(rw.stats).forEach(([k,v]) => { statUpdates[k] = (item[k]||0) + v })
+
+    await supabase.from('inventory').update({
+      socketed_runes:  newRunes,
+      sockets_used:    newUsed,
+      runeword_name:   rw ? rw.name   : (item.runeword_name  || null),
+      runeword_effect: rw ? rw.effect : (item.runeword_effect || null),
+      ...statUpdates,
+    }).eq('id', itemId)
+
+    // Consume the rune
+    const runeItem = items.find(i => i.id === runeInventoryId)
+    if (runeItem) {
+      if ((runeItem.quantity||1) <= 1) {
+        await supabase.from('inventory').delete().eq('id', runeInventoryId)
+      } else {
+        await supabase.from('inventory').update({ quantity: runeItem.quantity - 1 }).eq('id', runeInventoryId)
+      }
+    }
+
+    if (rw) showToast('✦ Runeword activated: ' + rw.name + '!')
+    else    showToast('Rune socketed — ' + newRunes.length + '/' + sockets + ' filled')
+
+    selectedId = itemId
+    await load()
+
+    // Refresh the equipped modal so it shows updated sockets (keep it open)
+    const updatedItem = items.find(i => i.id === itemId)
+    if (updatedItem) {
+      document.getElementById('equipped-modal')?.remove()
+      showEquippedModal(updatedItem)
+      // Re-open rune picker inline if sockets still available and no runeword triggered
+      if (newUsed < sockets && !rw) {
+        setTimeout(() => openRunePickerModal(itemId, itemType), 100)
+      }
+    }
+  }
+
+  // ── Remove all runes from an item ───────────────
+  window.removeRunes = async function(itemId) {
+    const item = items.find(i => i.id === itemId)
+    if (!item || !(item.sockets_used > 0)) return
+
+    // Refund runes to inventory
+    for (const runeKey of (item.socketed_runes||[])) {
+      const runeItemKey = 'rune_' + runeKey
+      const { data: ex } = await supabase.from('inventory').select('*')
+        .eq('player_id', player.id).eq('item_key', runeItemKey).maybeSingle()
+      if (ex) {
+        await supabase.from('inventory').update({ quantity: ex.quantity + 1 }).eq('id', ex.id)
+      } else {
+        const { data: m } = await supabase.from('items').select('*').eq('item_key', runeItemKey).single()
+        if (m) await supabase.from('inventory').insert({
+          player_id:player.id, item_key:runeItemKey, name:m.name,
+          item_type:'material', rarity:m.rarity, icon:m.icon,
+          element:m.element, quantity:1
+        })
+      }
+    }
+
+    // Clear rune stats (reset bonus stats)
+    await supabase.from('inventory').update({
+      socketed_runes:[], sockets_used:0,
+      runeword_name:null, runeword_effect:null,
+      power_bonus:0, control_bonus:0, guard_bonus:0,
+      speed_bonus:0, insight_bonus:0, luck_bonus:0,
+    }).eq('id', itemId)
+
+    showToast('Runes removed — returned to inventory')
+    selectedId = itemId
+    await load()
+  }
+
+  window.sellItem = async (itemId, itemName, sellPrice, qty) => {
+    const newQty = (qty || 1) - 1
+    if (newQty <= 0) {
+      await supabase.from('inventory').delete().eq('id', itemId)
+    } else {
+      await supabase.from('inventory').update({ quantity: newQty }).eq('id', itemId)
+    }
+    const newGold = (player.gold || 0) + sellPrice
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+    selectedId = null
+    await load()
+  }
+
+  window.sellItemAll = async (itemId, itemName, priceEach, qty) => {
+    // Always delete the entire row
+    await supabase.from('inventory').delete().eq('id', itemId)
+    const total   = priceEach * (qty || 1)
+    const newGold = (player.gold || 0) + total
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    showToast('Sold ' + (qty||1) + '× ' + itemName + ' for ◈' + total)
+    selectedId = null
+    await load()
+  }
+
+  window.useItem = async (itemId) => {
+    const item = items.find(i=>i.id===itemId)
+    if (!item || item.item_type !== 'consumable') return
+
+    // ── Fetch current player HP from DB (always fresh) ──
+    const { data: freshPlayer } = await supabase
+      .from('players').select('hp,max_hp').eq('id', player.id).single()
+
+    const currentHp = freshPlayer?.hp    || 100
+    const maxHp     = freshPlayer?.max_hp || 100
+
+    if (item.hp_restore > 0) {
+      const newHp = Math.min(maxHp, currentHp + item.hp_restore)
+      const healed = newHp - currentHp
+      // Save to DB
+      await supabase.from('players').update({ hp: newHp }).eq('id', player.id)
+      showToast('+' + healed + ' HP restored (' + newHp + '/' + maxHp + ')')
+    } else if (item.special_effect) {
+      showToast(item.name + ' used — ' + item.special_effect)
+    } else {
+      showToast(item.name + ' used')
+    }
+
+    // Consume item
+    const newQty = (item.quantity || 1) - 1
+    if (newQty <= 0) {
+      await supabase.from('inventory').delete().eq('id', itemId)
+    } else {
+      await supabase.from('inventory').update({ quantity: newQty }).eq('id', itemId)
+    }
+
+    selectedId = null
+    await load()
+  }
+
+  // Filter tabs
+  document.getElementById('filter-tabs').innerHTML = FILTERS.map(f => `
+    <button onclick="setFilter('${f}')" id="ftab-${f}" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;background:none;border:.5px solid rgba(139,106,32,.2);border-radius:20px;padding:2px 9px;cursor:pointer;color:#3a2008;transition:all .15s">${f}</button>
+  `).join('')
+
+  window.setFilter = (f) => {
+    filter = f
+    FILTERS.forEach(x => {
+      const t = document.getElementById('ftab-'+x)
+      t.style.background   = x===f ? 'rgba(139,106,32,.15)' : 'none'
+      t.style.borderColor  = x===f ? 'rgba(139,106,32,.6)'  : 'rgba(139,106,32,.2)'
+      t.style.color        = x===f ? '#1a1208' : '#3a2008'
+    })
+    renderGrid()
+  }
+
+  await load()
+</script>
+</body>
+</html>

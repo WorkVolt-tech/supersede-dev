@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Chapter 2</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="book-wrap">
+  <div id="nav"></div>
+  <div class="book animate-in">
+    <div class="page-left parchment" id="left-page">
+      <div class="page-inner">
+        <p class="chapter-label">Chapter 2 — Broken Alliances</p>
+        <p class="chapter-sub">Groups form. Groups break. The System watches both.</p>
+        <hr class="ink-divider">
+        <p class="story-text" id="story-text"></p>
+        <div class="notice-box animate-in" id="outcome-box" style="display:none"></div>
+      </div>
+    </div>
+    <div class="spine"></div>
+    <div class="page-right parchment">
+      <div class="page-inner">
+        <div class="hud" id="hud"></div>
+        <hr class="ink-divider">
+        <div id="right-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { supabase } from '../supabase.js'
+import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+
+const META = {
+  number: 2,
+  title:  'Broken Alliances',
+  sub:    'Groups form. Groups break. The System watches both.',
+  unlocksChapter: 3,
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHAPTER 2 NODES
+// ═══════════════════════════════════════════════════════════
+const NODES = {
+
+  // ═══════════════════════════════
+  // OPENING — ARRIVAL
+  // ═══════════════════════════════
+  opening: {
+    id: 'opening', type: 'story',
+    text: `The road ends at a collapsed overpass.
+
+Beyond it, the shopping district stretches out — or what's left of it. Glass storefronts shattered inward. Mannequins knocked from their pedestals, frozen mid-fall. A banner reading GRAND REOPENING hangs diagonally across an entrance, half-burned, swaying in a wind that shouldn't exist.
+
+Your vehicle idles at the edge. The road here is cracked — something hit it from below.
+
+Your interface updates:
+
+CHAPTER 2 — BROKEN ALLIANCES
+ZONE: Kessler Shopping District
+STATUS: Contested. Multiple player factions active.
+
+Three signals pulse on your radar. Close together, then moving apart. People — or something pretending to be.
+
+A message appears in your interface. No sender ID:
+
+"You'll need to pick a side eventually. Everyone does. The ones who don't just end up in the middle when it collapses."
+
+You get out of the vehicle.`,
+    sysMsg: 'Chapter 2 active. Faction activity detected across the district. Proceed with caution.',
+    choices: [
+      { label: 'Move toward the market plaza', sub: 'Three signals are clustered there', next: 'plaza_arrival' },
+      { label: 'Scout the perimeter first',    sub: 'Get the lay of the land before making contact', next: 'scout_perimeter' },
+      { label: 'Check your interface systems', sub: 'Review what carried over from Chapter 1', next: 'interface_check' },
+    ],
+  },
+
+  interface_check: {
+    id: 'interface_check', type: 'story',
+    text: `You stand at the edge of the district and pull up your full interface display.
+
+Everything you built in Chapter 1 is still there. The stats. The badge. The items. Whatever relationship you have with the System — it followed you here.
+
+There's one new tab, though. FACTION ALIGNMENT. It's empty. A note below reads:
+
+"Your position will be calculated from your actions in this district. You don't choose a faction — the faction chooses you, based on what you do."
+
+Below that:
+
+ELEMENTAL PATHS AVAILABLE: 9
+STATUS: Locked. Complete district encounters to access.
+
+There's a third section. ALLIANCE LOG. Also empty. The header reads:
+
+"Cooperation and betrayal are both tracked here. The Judges will review this record."
+
+You close the interface.
+
+Something is watching the district. You can feel it — not like the Watcher. Quieter. More patient. Like something waiting to see what you'll become before it decides what to do about it.`,
+    choices: [
+      { label: 'Move into the district', next: 'plaza_arrival' },
+    ],
+  },
+
+  scout_perimeter: {
+    id: 'scout_perimeter', type: 'story',
+    text: `You move along the outer edge of the district. Broken fencing. An overturned food truck. The smell of something that burned days ago.
+
+You find three things:
+
+One: a group of players hauling salvage into a parking structure, working in silence with practiced efficiency. They clock you but don't stop moving.
+
+Two: a solo player crouched behind a collapsed wall, watching the same group. When they notice you noticing them, they don't run — they just hold up two fingers. Wait.
+
+Three: a shopfront that's still intact. The lights are on inside. A handwritten sign on the door reads:
+
+OPEN. TRADING. WEAPONS. INFO. NO QUESTIONS.
+
+Your interface marks all three positions. Your radar has been accurate so far.
+
+The question is where to go first.`,
+    xp: 40,
+    choices: [
+      { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders_first' },
+      { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts_first' },
+      { label: 'Go to the intact shop',             sub: 'NPC trader — neutral ground',        next: 'trader_intro' },
+      { label: 'Head to the main plaza',            sub: 'See what else is active',            next: 'plaza_arrival' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // PLAZA — THE THREE FACTIONS
+  // ═══════════════════════════════
+  plaza_arrival: {
+    id: 'plaza_arrival', type: 'story',
+    text: `The plaza is a wide open square at the center of the district. A fountain in the middle, dry, full of broken glass. Around the edges, three distinct groups.
+
+On the left — the Builders. Eight or nine players, maybe more. They've pushed broken furniture into a defensive perimeter and are actively restoring a food stall at the far end. Someone is keeping inventory on a tablet. They have a visible stockpile. They look established.
+
+On the right — the Hunters. Smaller group. Five. They're not working. They're watching. Every one of them has their interface open on the other groups' positions. One of them, a lean figure with a cracked visor, is smiling at something you can't see.
+
+In the middle — the Ghosts. Not really a group. Just people sitting near each other by choice or proximity. Not talking much. Not committed to either side. Three of them, spread out enough to look casual but close enough to have a plan.
+
+And then there's you.
+
+Three different kinds of stares land on you at the same moment.
+
+Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
+    choices: [
+      { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +10',   next: 'meet_builders',  moral: 10 },
+      { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -5',        next: 'meet_hunters',   moral: -5 },
+      { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
+      { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
+    ],
+  },
+
+  plaza_center: {
+    id: 'plaza_center', type: 'story',
+    text: `You walk to the fountain and sit on the edge of it. Glass crunches under your boots. You wait.
+
+It takes about forty seconds. Then someone from each group peels off and approaches — not together, but in loose orbit, like they've done this before. Like standing at the fountain is a neutral zone everyone agreed on without saying it.
+
+The Builder is a tall woman with grey-streaked hair and methodical eyes. She looks at you like she's already cataloguing your usefulness.
+
+The Hunter has the cracked visor. Up close the smile is less unsettling and more exhausted — like someone who decided to be threatening because it was simpler.
+
+The Ghost is barely there. Faded jacket, soft voice. They don't introduce themselves. They just sit next to you on the fountain's edge like they've known you for a while.
+
+The Builder speaks first. "You came from the road. That means you were in Chapter 1."
+
+Not a question.`,
+    choices: [
+      { label: '"I finished Chapter 1."',          sub: 'Straightforward — neutral response', next: 'faction_talk_honest' },
+      { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -5 },
+      { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 10 },
+    ],
+  },
+
+  faction_talk_honest: {
+    id: 'faction_talk_honest', type: 'story',
+    text: `"Finished it," the Builder repeats. "Good. We need people who can finish things."
+
+The Hunter with the cracked visor tilts their head. "What's your badge?"
+
+You show them. They study it — all three of them, for a half-second, in the way people do when they're calculating something.
+
+The Ghost speaks, almost to themselves: "Honest answer. That's unusual here."
+
+The Builder extends a hand. "Sera. I run the Builders. We salvage, we stabilize, we protect what we build. Join a work rotation for a day and we'll give you access to our stockpile and the path we've been clearing." She pauses. "No obligation. We're not recruiting. We're just solving problems."
+
+The Hunter doesn't offer a name. "We've identified three faction caches in this district. Sealed. System-protected. The only way to open them is a coordinated push — or convincing someone else to take the risk while you wait for the split." The smile again. "We call it 'Mutual Benefit.'"
+
+The Ghost looks at the sky. "There are nine elemental zones in this district. I've found two. The System sealed them off when the alliances started fracturing. You want in — you need to be the kind of person a zone will open for."
+
+Three offers. Three completely different definitions of what it means to be useful.`,
+    choices: [
+      { label: 'Ask Sera more about the Builders',  next: 'builders_deep' },
+      { label: 'Ask the Hunter about the caches',   next: 'hunters_deep' },
+      { label: 'Ask the Ghost about the elements',  next: 'ghosts_deep' },
+      { label: 'Head into the district',            next: 'district_hub' },
+    ],
+  },
+
+  faction_talk_evasive: {
+    id: 'faction_talk_evasive', type: 'story',
+    text: `The Hunter laughs — short and genuine. "Survived it. Yeah. That's the right word."
+
+Sera, the Builder, doesn't smile. She files something away behind her eyes and waits.
+
+The Ghost says nothing for a long moment. Then: "You're deciding what version of yourself to be in this chapter. That's fine. We all are."
+
+The Hunter leans forward. "Here's what I'll tell you. There are three sealed caches in this district. The System put them there. The Builders are going to try to open them cooperatively. They'll succeed, and they'll share the contents, and it will be fair and organized and documented." A pause. "Or — someone could let the Builders do the work, and then take one of the caches while everyone's celebrating the other two." Another pause. "I'm not saying that's a good idea. I'm saying the System allows it. I find that interesting."
+
+The Hunter stands up. "Name's Voss. Find me when you decide what kind of chapter this is going to be."`,
+    choices: [
+      { label: 'Follow Voss to learn more',       next: 'hunters_deep' },
+      { label: 'Talk to Sera instead',             next: 'builders_deep' },
+      { label: 'Talk to the Ghost',                next: 'ghosts_deep' },
+      { label: 'Head into the district alone',     next: 'district_hub' },
+    ],
+  },
+
+  faction_talk_helper: {
+    id: 'faction_talk_helper', type: 'story',
+    text: `Something shifts in Sera's posture. Not much — she's controlled — but it shifts.
+
+"Good," she says. "We need people who remember that."
+
+The Hunter's smile flickers. Recalculating. They don't leave — but they take a small step back.
+
+The Ghost looks at you steadily. "The System tracked that in Chapter 1. It's tracking it now. I don't know what it does with that information. I don't think we're supposed to know."
+
+Sera speaks at a normal pace, like she has unlimited time: "We have four active projects. Clearing the east corridor, establishing a medical station near the food court, inventorying the sealed shops, and — the one I actually need help with — the three elemental zones that shut down when the district went hostile. They respond to cooperative energy. My theory is they won't open for someone who came alone with no intention of sharing what they find." She looks at you. "You helped people in Chapter 1. That's a starting point. Work with us for a few hours and I think those zones will open."
+
+She means it. No negotiation in her voice. Just information, offered without leverage.`,
+    choices: [
+      { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 10 },
+      { label: 'Ask about the elemental zones',    next: 'ghosts_deep' },
+      { label: 'Explore the district first',       next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // FACTION DEEP DIVES
+  // ═══════════════════════════════
+  builders_deep: {
+    id: 'builders_deep', type: 'story',
+    text: `Sera walks you through their setup while she works. Compact, efficient — no wasted motion.
+
+"We have eleven active members. Three more who come and go. In Chapter 1, all of us made choices that pushed our moral scores positive. Not because we were told to. Because we watched what happened when people didn't."
+
+She shows you the inventory on her tablet. Organized by type, by location, by priority. It's the most structured thing you've seen since the System started.
+
+"The shopping district has resources. Real ones — not System drops, but actual food, medicine, tools. The sealed shops are full of it. The problem is they're locked. System-locked. The System requires an alliance signature to unlock each one — at least two players with compatible moral profiles, agreeing to share contents." She looks up. "The Hunters figured out the same thing. Their solution was to find someone who would sign as a partner, then take everything and run before the signature expires."
+
+She goes back to her tablet.
+
+"We've completed two unlocks. Shared everything both times. The third one is the largest. And we're short a partner with the right profile."
+
+She doesn't say anything else. She lets you think.`,
+    xp: 50,
+    choices: [
+      { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +15',  next: 'builders_alliance', moral: 15 },
+      { label: "Ask what you'd get out of it",  sub: 'Practical question',              next: 'builders_negotiation' },
+      { label: 'Keep your options open',        sub: 'Non-committal',                   next: 'district_hub' },
+    ],
+  },
+
+  builders_negotiation: {
+    id: 'builders_negotiation', type: 'story',
+    text: `Sera doesn't look offended. She expected the question.
+
+"Access to our stockpile. A guaranteed share of whatever's in the third cache. Backup on the elemental zones — we've mapped three of the nine and cleared the approaches." She pauses. "And the honest version: we'll vouch for you to the Judges."
+
+You raise an eyebrow.
+
+"The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two evaluators — one looks at what you built, one looks at what you took. At the end of this chapter, everyone faces one of them, or both. I don't know exactly how it works. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
+
+She picks the tablet back up.
+
+"I'm not trying to scare you into it. I'm telling you what I know. You can decide what that's worth."`,
+    choices: [
+      { label: 'Sign the alliance',  sub: 'moral +15', next: 'builders_alliance', moral: 15 },
+      { label: 'Decline, stay free', sub: 'Keep all options',  next: 'district_hub' },
+    ],
+  },
+
+  builders_alliance: {
+    id: 'builders_alliance', type: 'story',
+    text: `You sign the alliance interface. A soft chime. A line of text:
+
+ALLIANCE FORMED: [YOUR NAME] + BUILDERS
+COOPERATIVE PROTOCOL ACTIVE
+BENEFITS: Stockpile access, zone clearance support, vouched reputation
+
+Sera extends her hand again — this time to shake. "Good. Come find me when you want to work on the cache. In the meantime, the elemental zones should start responding to you." She gestures toward the east side of the district. "Fire zone is that direction. Lightning's near the old sports store. Water's in the food court basement. Start wherever makes sense for how you fight."
+
+One of the other Builders — a kid, maybe twenty, with a carefully bandaged hand — gives you a small nod as you pass. Not performative. Just acknowledgment.
+
+Your interface updates: ALLIANCE LOG — Builders: Active. Cooperation credit recorded.`,
+    xp: 80,
+    rewards: [{ itemKey: 'builders_cache_key', qty: 1 }],
+    choices: [
+      { label: 'Head to the elemental zones', next: 'district_hub' },
+      { label: 'Ask about the Judges',        next: 'judge_lore_builders' },
+    ],
+  },
+
+  hunters_deep: {
+    id: 'hunters_deep', type: 'story',
+    text: `Voss takes you somewhere the others can't hear. A gutted electronics shop with all the screens still on, showing static.
+
+"I'll be straight with you," they say. Which is probably what they say to everyone, you think. But they continue: "The Builders are going to open that third cache. Eleven players, moral scores high, organized — they'll do it. The question is what happens in the four minutes after it opens before they've distributed everything."
+
+Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Kaelith evaluates what you built and with whom. Judge Morren evaluates what you took and how."
+
+They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once." They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
+
+They lean against a broken shelf. "I'm not recruiting you to betray the Builders. I'm telling you the System doesn't care which path you pick. It just wants you to pick deliberately."`,
+    xp: 50,
+    choices: [
+      { label: 'Ask what Voss wants',          next: 'hunters_voss_goal' },
+      { label: 'Ask about the elemental zones', next: 'ghosts_deep' },
+      { label: 'Head into the district',       next: 'district_hub' },
+    ],
+  },
+
+  hunters_voss_goal: {
+    id: 'hunters_voss_goal', type: 'story',
+    text: `"What do I want?" Voss looks almost amused. "I want to face Judge Morren. Specifically. I want to see what the System thinks I'm worth after everything I've done in this city."
+
+A pause.
+
+"I betrayed three people in Chapter 1. None of them were weak. I made choices that lowered my moral score past the point of easy recovery. And I'm not — I don't regret it. I made calculated decisions and they worked." They look at you steadily. "I'm not asking you to do the same. I'm saying the System built a Judge for people like me. That means the System expected people like me. Maybe even needed us."
+
+They push off the shelf.
+
+"The elemental zones respond to character. Not good character or bad character. Just clarity. If you know what you are — really know — the zones open. The ones who get stuck are the ones pretending." Voss smiles. "The Shadow zone, specifically, is for people who've made a cost and paid it. If your moral score is below a threshold, it opens easy. If you're faking it — it stays shut."
+
+They head for the door. "Find the Ghost if you want the map. They've been to all nine."`,
+    choices: [
+      { label: 'Find the Ghost',          next: 'ghosts_deep' },
+      { label: 'Head to the zones alone', next: 'district_hub' },
+    ],
+  },
+
+  ghosts_deep: {
+    id: 'ghosts_deep', type: 'story',
+    text: `The Ghost — they eventually tell you their name is Rue — has a map.
+
+Not a System map. A physical one, drawn on the back of a parking ticket with a pen that's running out of ink. Somehow it's more accurate than your interface.
+
+"Nine zones," Rue says, spreading it on a dust-covered bench. "One for each element. Fire, Water, Lightning, Arcane, Shadow, Earth, Wind, Plant, Metal. The System placed them in specific locations — each one in a part of the district that matches its nature."
+
+They trace the path with one finger.
+
+"Fire's in the old kitchen supply store. Lots of copper and heat damage already — it was near something that burned." A pause. "Water's in the food court basement where the pipes burst. Earth's in the parking structure — concrete, weight, layers. Shadow's under the closed cinema. Wind's in the atrium where the roof caved and the crossdraft never stopped. Lightning's at the old electronics hub." They look up. "Arcane is in the bookshop at the center. Plant is in the garden center near the south exit. Metal is in the hardware megastore."
+
+Rue rolls the map. "I've been to all nine. None of them opened for me. I'm not sure what I am yet."
+
+They hand you the map. "Maybe you are."`,
+    xp: 60,
+    rewards: [{ itemKey: 'district_map', qty: 1 }],
+    choices: [
+      { label: 'Ask what the zones give you',     next: 'zone_explanation' },
+      { label: 'Head into the district',          next: 'district_hub' },
+    ],
+  },
+
+  zone_explanation: {
+    id: 'zone_explanation', type: 'story',
+    text: `"Each zone is a skill tree," Rue says. "Elemental. Connected to the five branches — offense, defense, flow, arcane, decay. Each element has variations for each build type, so whatever you focused on in Chapter 1, there's a version of each element that extends it."
+
+They pause. "You can only activate one element at a time. The System calls it resonance. You can unlock nodes in multiple elemental trees — learn from them, understand them — but only one element resonates actively in any given fight."
+
+"So pick the one that fits how you fight. Or pick the one the zone opens for. They're not always the same thing."
+
+A silence.
+
+"The Judges respond to elemental resonance. Judge Kaelith — the cooperation Judge — responds to Water, Plant, Earth, Wind, Arcane. Protective elements. Patient ones. Judge Morren — the dominance Judge — responds to Fire, Lightning, Shadow, Metal. Aggressive elements. Precise ones."
+
+Rue looks at the map in your hands. "I don't think either Judge is worse than the other. I think they're the same difficulty, tuned for different kinds of players." A long pause. "I think the System is fair, actually. I just haven't figured out what that means yet."`,
+    choices: [
+      { label: 'Head to the district hub',  next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // DISTRICT HUB — 9 ELEMENTAL ZONES
+  // ═══════════════════════════════
+  district_hub: {
+    id: 'district_hub', type: 'story',
+    text: `The shopping district spreads out before you. Mostly intact structures, mostly emptied of people — whoever was here before the System arrived either left or became something else. The silence has weight. Not the frozen silence of Chapter 1. This is the silence of aftermath.
+
+Your interface shows nine elemental zones distributed across the district. Some are accessible immediately. Others glow dim — locked, waiting for a threshold you haven't reached yet.
+
+Below the zone map, a separate indicator:
+
+ALLIANCE LOG: Active entries determine which Judge you face at chapter end.
+
+The Builders are working somewhere to the east. Voss is watching somewhere to the north. Rue is near the fountain, eyes on the map.
+
+The district is yours to move through. When you've finished what you came here for — the Judges will find you.`,
+    choices: [], // rendered dynamically by renderDistrictHub2
+  },
+
+  // ═══════════════════════════════
+  // NPC TRADER
+  // ═══════════════════════════════
+  trader_intro: {
+    id: 'trader_intro', type: 'story',
+    text: `The intact shop is a narrow space — a phone repair kiosk that someone has converted into something else. Behind the counter sits a small person with careful hands and a headset they're not using anymore.
+
+They look up when you enter. Not startled. Like they've been waiting.
+
+"You're not from this district," they say. "Good. The ones from here bring too much history."
+
+They gesture at the shelves behind them. Not phone parts anymore — material goods, System-compatible items, a few things you recognize from Chapter 1 loot tables.
+
+"I trade for scraps, for information, and occasionally for favors. Standard System economy." They tilt their head. "You look like you need something. You also look like you're not sure what it is yet. That's fine. Take a look."
+
+A name tag on the counter reads PELL, written in careful block letters.`,
+    choices: [
+      { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop' },
+      { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore' },
+      { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges' },
+      { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub' },
+    ],
+  },
+
+  trader_shop: {
+    id: 'trader_shop', type: 'story',
+    text: `Pell slides a short list across the counter. Handwritten, organized into columns.
+
+WEAPONS: Notched blade (atk +6), Shock rod (atk +4, lightning damage), Reinforced gloves (atk +3, guard +2)
+
+ARMOR: Patchwork vest (def +8), Wired jacket (def +5, speed +2), Glass-fiber shield (guard +8)
+
+CONSUMABLES: Stabilizer pack (restore 40 HP), Signal jammer (1-turn enemy stun), Adrenaline spike (speed +5 for 1 fight)
+
+MATERIALS: Scrap runs, component packs, and two items marked ELEMENTAL REAGENT — one labeled Ignis Seed, one labeled Aqua Cord.
+
+"Elemental Reagents are new this chapter," Pell says. "They don't do anything on their own. Take them to the right zone and they open the zone faster — like a key that makes the lock easier." They shrug. "Or don't. The zones open for the right person without any key. It just takes longer."`,
+    rewards: [],
+    choices: [
+      { label: 'Buy the Ignis Seed for 80 gold',        sub: 'Fire zone accelerant', next: 'buy_ignis_seed' },
+      { label: 'Buy the Aqua Cord for 80 gold',         sub: 'Water zone accelerant', next: 'buy_aqua_cord' },
+      { label: 'Buy a Stabilizer pack for 50 gold',     sub: 'Restore 40 HP', next: 'buy_stabilizer' },
+      { label: 'Look but don\'t buy anything',          next: 'trader_intro' },
+    ],
+  },
+
+  buy_ignis_seed:  { id:'buy_ignis_seed',  type:'story', text:`Pell wraps it in foil. "Don't drop it. It doesn't explode but it does stain everything permanently orange."`, rewards:[{itemKey:'ignis_seed',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+  buy_aqua_cord:   { id:'buy_aqua_cord',   type:'story', text:`Pell hands it over — a length of silvery cord that's always slightly damp. "Don't ask what it's made of. I asked. I regret it."`, rewards:[{itemKey:'aqua_cord',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+  buy_stabilizer:  { id:'buy_stabilizer',  type:'story', text:`Pell slides the pack across without ceremony. "Reliable. I've tested everything I sell." They say it flatly enough that you believe them.`, rewards:[{itemKey:'stabilizer_pack',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+
+  trader_lore: {
+    id: 'trader_lore', type: 'story',
+    text: `Pell leans on the counter.
+
+"The nine zones were always here. Before the System activated — they were just buildings. Places. The fire zone was a kitchen supply store. The lightning zone was an electronics hub." They pause. "The System put something in them when it arrived. Not locked them — seeded them. Like it was curious what would grow."
+
+A quiet moment.
+
+"The zones respond to resonance. That's the official System term. Resonance is what happens when who you are and what you're standing in match closely enough. A fire zone resonates with aggression — not anger, aggression. The kind that's cold and deliberate. A water zone resonates with patience — not passivity, patience. The ability to absorb and redirect." Pell tilts their head. "I've been in and out of this district for a week. I think about it differently now."
+
+"The zones don't want you to be special. They want you to be consistent."`,
+    choices: [
+      { label: 'Ask about the Judges', next: 'trader_judges' },
+      { label: 'Go to the district',   next: 'district_hub' },
+    ],
+  },
+
+  trader_judges: {
+    id: 'trader_judges', type: 'story',
+    text: `Pell's expression changes slightly. More careful.
+
+"The Judges. Right." They come around the counter and sit on a stool. "I saw Kaelith once, at the end of someone else's run. Briefly. It looked like — the most patient thing I've ever seen. Like it had been waiting a very long time and wasn't surprised by anything."
+
+A long pause.
+
+"Morren I've only heard about. Players who faced Morren describe it as... precise. Like it already knew what you'd done and was just confirming the math. No judgment in the face. Just accounting."
+
+Pell looks at you directly.
+
+"I don't know which one you'll face. I don't think anyone does until the chapter ends. But I'll tell you what I've observed: the players who faced both at once — the ones who did some of everything — they came out changed differently than the ones who faced just one. Not better or worse. Just different kinds of changed." 
+
+They stand and go back behind the counter.
+
+"Both Judges can be beaten. Both Judges can be respected. The System doesn't punish you for who you are. It evaluates you. That's different."`,
+    choices: [
+      { label: 'Go into the district', next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // THE BETRAYAL OPPORTUNITY
+  // ═══════════════════════════════
+  cache_betrayal_offer: {
+    id: 'cache_betrayal_offer', type: 'story',
+    text: `You're passing through the east corridor when Voss falls into step beside you. Silent until they choose to speak.
+
+"The Builders are signing the third cache right now," Voss says. "Sera and two others. Alliance signature, full cooperative protocol." A pause. "There's a four-minute window after the cache opens where the distribution protocol hasn't locked in. Items are accessible to anyone with hands."
+
+They keep walking.
+
+"I'm not going to take it. I want to be clear — I'm not doing this. My record is already what it is and one cache isn't interesting to me." They glance sideways at you. "But someone could. The Builders trust you. You could be standing right there."
+
+They stop walking.
+
+"I'm telling you because the System knows about this opportunity whether you take it or not. The Judges know. Kaelith will know you didn't betray your allies. Morren will know you chose not to when you could." Voss almost smiles. "Either way, it becomes part of your record. Deliberate choice is what matters — not which choice."
+
+They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
+    choices: [
+      { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5 },
+      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10 },
+      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20 },
+    ],
+  },
+
+  cache_consider: {
+    id: 'cache_consider', type: 'story',
+    text: `You go to the cache opening.
+
+The Builders are there — Sera, two others named Dov and Mira, and the bandaged-hand kid from yesterday. They've completed the unlock. The cache is open. Contents spill out on a cloth they've laid on the floor: medical supplies, two weapon upgrades, three material packs, and a sealed System container with a glyph on the side.
+
+Sera looks up and nods at you. Waves you closer. She's already started tallying the split.
+
+The four-minute window ticks in your peripheral interface. Invisible to them.
+
+You look at the cache. You look at Sera's careful hands doing the tally. You look at the bandaged kid taking inventory with a cracked stylus.
+
+Your interface: MORAL DECISION POINT. This action will be recorded.
+
+Two paths forward from here — take, or stand.`,
+    choices: [
+      { label: 'Take nothing — stand with the Builders', sub: 'moral +15, full alliance maintained', next: 'cache_stood', moral: 15 },
+      { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -40. Recorded permanently.', next: 'cache_betrayed', moral: -40 },
+    ],
+  },
+
+  cache_stood: {
+    id: 'cache_stood', type: 'story',
+    text: `The four minutes pass. The distribution protocol locks in.
+
+Sera hands you your share: a medical pack, a material bundle, and a small weapon component you don't have a name for yet.
+
+"Good work," she says, without looking up.
+
+The bandaged kid — you learn their name is Tam — gives you a fistbump. Unselfconscious. Like it was the obvious thing to do.
+
+Your interface: ALLIANCE LOG UPDATED. Cache cooperation recorded. Kaelith weight +3.
+
+You don't feel heroic. You feel like someone who made a decision and then stuck with it. The System doesn't seem to have an opinion about that distinction.
+
+Sera catches your eye. "The Judges will see this. What you could have done and didn't. I think that matters to Kaelith." She pauses. "I think it matters to Morren too, differently."`,
+    xp: 100,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 3 }],
+    choices: [
+      { label: 'Head to the elemental zones', next: 'district_hub' },
+    ],
+  },
+
+  cache_betrayed: {
+    id: 'cache_betrayed', type: 'story',
+    text: `You take the sealed container. Move fast. Out of the room before the distribution protocol locks in.
+
+Sera's voice, behind you: "—hey—"
+
+You don't stop.
+
+Outside, the container opens: two item upgrades, a rare material. Worth something.
+
+Your interface: BETRAYAL RECORDED. Alliance: Builders — BROKEN. Moral −40. Backstab counter: +1. Morren weight +5.
+
+The container is in your pack. The items are real. The record is real.
+
+Voss passes you on a side corridor without stopping. Just a small nod — not approval, just acknowledgment. You made a deliberate choice. They respect deliberate choices.
+
+The Builders won't trust you again this chapter. Some zones that respond to cooperation will be harder to access now. The Shadow zone, however, and the Fire zone — your interface shows them both lit up clearly. Resonating.
+
+The System didn't punish you. It updated you.`,
+    xp: 60,
+    rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+    choices: [
+      { label: 'Head to the Shadow zone', sub: 'Now open to you', next: 'zone_shadow' },
+      { label: 'Go to the district hub',  next: 'district_hub' },
+    ],
+  },
+
+  cache_refused: {
+    id: 'cache_refused', type: 'story',
+    text: `You keep walking. Voss watches you go.
+
+Later, Sera finds you near the map station. "Voss told me what they offered you." She's direct about it, no setup. "Thank you for not taking it."
+
+"You weren't there," you say.
+
+"I know. That's why it counts."
+
+She adds something to your share of the cache distribution — a small extra, unmarked. The bandaged kid, Tam, gives you a more formal nod this time. Like something's been decided about you.
+
+Your interface: MORAL RECORD — Refusal logged. Kaelith weight +5. Morren weight −2.
+
+It doesn't feel like a big moment. It probably shouldn't.`,
+    xp: 120,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 4 }],
+    choices: [
+      { label: 'Head to the elemental zones', next: 'district_hub' },
+    ],
+  },
+
+  cache_reported: {
+    id: 'cache_reported', type: 'story',
+    text: `You find Sera before the opening. Tell her what Voss offered. No commentary — just the facts.
+
+She listens without interrupting. When you finish she nods once.
+
+"Voss does this," she says. "Tests people. I don't think they're malicious. I think they're curious." A pause. "We'll keep an eye on the window. Thank you."
+
+At the cache opening, Voss appears. They see you. They see Sera's people distributed around the room. They see you meet their eye.
+
+For a moment nothing happens.
+
+Then Voss nods — small, real — and leaves without a word.
+
+Sera's team completes the opening cleanly. Your share is full, plus a bonus Sera calls "trustworthy conduct." Tam high-fives you. You let them.
+
+Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Kaelith weight +8. Moral +20. Permanent flag: "Can be trusted under pressure."`,
+    xp: 150,
+    rewards: [{ itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_metal', qty: 5 }],
+    choices: [
+      { label: 'Head to the elemental zones', next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // ELEMENTAL ZONE ENTRIES
+  // ═══════════════════════════════
+  zone_fire: {
+    id: 'zone_fire', type: 'story',
+    text: `The kitchen supply store still smells like copper and char. The fire came through here hard — shelves warped, glass melted into the floor in strange shapes, a row of copper pots that are now abstract sculpture.
+
+But the back of the store is untouched. A door, slightly warm to the touch. No lock. Just the door and what's behind it.
+
+When you push it open, the air changes. Not hot — charged. Like the atmosphere before a lightning strike but slower, more deliberate. Like something powerful at rest.
+
+Your interface: ELEMENTAL ZONE — IGNIS. Resonance check: Offense alignment detected. Loading...
+
+The zone opens.
+
+Inside: a narrow corridor of hanging fire that doesn't burn you. Wall markings in what might be a System language. At the end, a node interface — connected to the tree that's been building in your skill screen since you arrived.
+
+IGNIS SKILL TREE — UNLOCKED.
+Elemental Focus: Fire. Branch variants: Offense, Defense, Flow, Arcane, Decay.
+Activate up to 1 element at a time.`,
+    xp: 120,
+    choices: [
+      { label: 'Enter and unlock the Ignis tree', sub: 'Unlocks Fire elemental skills', next: 'zone_fire_unlock' },
+      { label: 'Mark it and come back',           next: 'district_hub' },
+    ],
+  },
+
+  zone_fire_unlock: {
+    id: 'zone_fire_unlock', type: 'story',
+    text: `The node interface responds immediately. No puzzle, no test — just recognition. The zone already ran its check when you walked through the door.
+
+IGNIS TREE UNLOCKED. Skill points available in Fire branch.
+
+The fire in the corridor dims slightly — like something that's been holding its breath just exhaled.
+
+You spend a few minutes in the quiet. The node tree is visible in your interface, 40 nodes arranged in a configuration that mirrors your existing skill branches. Each elemental variant labeled by the build it extends.
+
+On the way out, the copper pots catch the light differently. You're not sure if that's you or the zone or just the angle.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_ignis', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_water: {
+    id: 'zone_water', type: 'story',
+    text: `The food court basement is flooded — not deep, ankle height, but still. The pipes that burst have been burst for what feels like longer than they should have been. The water is clear and cold and slightly luminescent.
+
+Steps lead down. You go down.
+
+At the bottom, the water is completely still despite the dripping above. A circular space, low ceiling, walls covered in what looks like condensation but forms patterns too regular to be accidental.
+
+Your interface: ELEMENTAL ZONE — AQUA. Resonance check: Patience threshold detected. Loading...
+
+The zone opens. Still. Patient. Like it was waiting for you specifically and had decided in advance not to be in a hurry about it.
+
+AQUA SKILL TREE — UNLOCKED.
+Elemental Focus: Water. Branch variants: Defense, Flow, Arcane, Offense, Decay.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Aqua tree', next: 'zone_water_unlock' },
+      { label: 'Mark it and come back', next: 'district_hub' },
+    ],
+  },
+
+  zone_water_unlock: {
+    id: 'zone_water_unlock', type: 'story',
+    text: `The unlock is quiet. A soft ripple moves across the standing water — out from you in all directions, reaching the walls, coming back. By the time it returns, your interface has updated.
+
+AQUA TREE UNLOCKED.
+
+You stand in the water for a moment. The cold is present but not unpleasant. A droplet falls from the ceiling and makes a ring. Another ring. Perfect circles, overlapping.
+
+There's something restful about this zone. Like it doesn't need you to be anything other than still.
+
+You go back up the steps. The water level looks the same. It will probably always look the same.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_aqua', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_lightning: {
+    id: 'zone_lightning', type: 'story',
+    text: `The electronics hub. Every screen is on. Every screen is showing a different channel — not static, not System messages, actual channels, actual content, as if the world outside is still broadcasting.
+
+You stop in front of a wall of televisions and watch for a moment. News. A cooking show. A documentary about deep-sea creatures. A reality show you recognize from before. The world, going on without knowing what's happening here.
+
+In the back of the store, between two server racks that hum with too much energy, the lightning zone is obvious — arcs of electricity between the racks, not dangerous, but close. A narrow corridor of active charge.
+
+Your interface: ELEMENTAL ZONE — VOLT. Resonance check: Flow alignment detected. Loading...
+
+VOLT SKILL TREE — UNLOCKED.
+Elemental Focus: Lightning. Branch variants: Flow, Offense, Arcane, Defense, Decay.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Volt tree', next: 'zone_lightning_unlock' },
+      { label: 'Mark it and come back', next: 'district_hub' },
+    ],
+  },
+
+  zone_lightning_unlock: {
+    id: 'zone_lightning_unlock', type: 'story',
+    text: `The arcs respond to your presence. Not violently — they reach toward you slightly, like plants toward light, and then the interface clicks over.
+
+VOLT TREE UNLOCKED.
+
+On your way out you pass the wall of screens again. One of them is dark now. Just dark. You're not sure which channel it was showing.
+
+Outside, your hair is standing up slightly. It'll pass. Probably.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_volt', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_arcane: {
+    id: 'zone_arcane', type: 'story',
+    text: `The bookshop at the district center. Floor to ceiling shelves, all still standing — which feels impossible given what happened to everything else around it. Books undisturbed. Dust on the covers in the right places.
+
+The shop cat — and there is, somehow, a shop cat — watches you from the top of a shelf. It blinks once. It does not look impressed.
+
+The arcane zone is in the middle of the store, behind an overstuffed reading chair that wasn't moved but has been moved around, adjusted, situated exactly where it is with intention.
+
+Your interface: ELEMENTAL ZONE — ARCANE. Resonance check: Knowledge alignment detected. Loading...
+
+ARCANE SKILL TREE — UNLOCKED.
+Elemental Focus: Arcane. Branch variants: Arcane, Mind, Flow, Offense, Defense.
+
+The cat blinks again and looks away. As if to say: of course you qualified. Obviously.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Arcane tree', next: 'zone_arcane_unlock' },
+      { label: 'Mark it and come back',  next: 'district_hub' },
+    ],
+  },
+
+  zone_arcane_unlock: {
+    id: 'zone_arcane_unlock', type: 'story',
+    text: `ARCANE TREE UNLOCKED.
+
+You sit in the chair for a moment. It's comfortable. This chair has been comfortable for a long time.
+
+The shop cat walks across three shelves and settles on the arm of the chair beside you. It purrs for exactly forty-five seconds, then stops and goes somewhere else.
+
+You sit with the updated interface for a minute. The Arcane tree is deep. Forty nodes, each one suggesting something about how information and intention intersect. It's dense but navigable.
+
+On your way out you pick up a book from the closest shelf. You're not sure why. You put it in your pack. The cat doesn't react.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_lux', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_shadow: {
+    id: 'zone_shadow', type: 'story',
+    text: `The cinema is shut. Has been, officially, for renovations — a sign on the door is dated eight months ago. Someone opened it anyway. Not forced — the lock is intact. Just open.
+
+Inside it's dark the way cinema lobbies are dark at 3am. Not scary. Just past its purpose.
+
+The zone is in one of the smaller screening rooms. You find it by following a current of air that shouldn't exist underground. The door is already open.
+
+The screening room is completely dark except for where the zone is. A circle of shadow deeper than the room around it. Not a void — something present in the absence.
+
+Your interface: ELEMENTAL ZONE — UMBRA. Resonance check: Decay alignment detected. Moral threshold: below 0 recommended, or above 60 with deliberate intent. Loading...
+
+UMBRA SKILL TREE — UNLOCKED.
+
+The darkness doesn't press in on you. It just acknowledges you.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Umbra tree', next: 'zone_shadow_unlock' },
+      { label: 'Mark it and come back',  next: 'district_hub' },
+    ],
+  },
+
+  zone_shadow_unlock: {
+    id: 'zone_shadow_unlock', type: 'story',
+    text: `UMBRA TREE UNLOCKED.
+
+The circle of shadow closes gently — like a hand unclenching. Your interface updates quietly.
+
+The Umbra tree doesn't announce itself the way the other trees did. Forty nodes, each one slightly harder to read than the last, requiring a second look. The descriptions are accurate but oblique. The System isn't hiding anything — it's just being honest about the nature of what decay and shadow actually are. Patient. Precise. Costly in particular ways.
+
+You sit in the dark for a moment. 
+
+When you stand to leave, the door to the hallway is lit by the lobby lights in a way it wasn't when you came in. Warmer.
+
+You walk through it.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_umbra', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_earth: {
+    id: 'zone_earth', type: 'story',
+    text: `The parking structure is three levels of poured concrete and the particular silence of spaces that were built for cars and are now empty of them. Your footsteps echo in a way that makes you sound alone even if you're not.
+
+Level two. The earth zone is between two structural pillars that show hairline cracks — not dangerous, just present. Evidence of weight over time.
+
+The zone is different from the others. Less dramatic. Just a space between the pillars where the concrete floor has cracked in a specific pattern, and through the cracks something slow and warm is moving.
+
+Your interface: ELEMENTAL ZONE — TERRA. Resonance check: Endurance alignment detected. Loading...
+
+TERRA SKILL TREE — UNLOCKED.
+Elemental Focus: Earth. Branch variants: Defense, Offense, Flow, Decay, Arcane.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Terra tree', next: 'zone_earth_unlock' },
+      { label: 'Mark it and come back',  next: 'district_hub' },
+    ],
+  },
+
+  zone_earth_unlock: {
+    id: 'zone_earth_unlock', type: 'story',
+    text: `TERRA TREE UNLOCKED.
+
+The cracks in the floor close slightly — not all the way, but the movement stops. The warmth dissipates. Whatever was moving through has acknowledged you and gone somewhere else.
+
+The Terra tree is straightforward in the way that deep things can be. No tricks. No oblique descriptions. Forty nodes of increasing power, each one clearly labeled. Wall. Weight. Foundation. Growth.
+
+You press one hand briefly to a pillar on your way out. Cold concrete, decades old. Still holding.
+
+Out on the street level, you can see the whole district from here. Birds have landed somewhere on the upper level. They've been there a while.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_terra', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_wind: {
+    id: 'zone_wind', type: 'story',
+    text: `The atrium is the largest interior space in the district — a glass-roofed corridor between two anchor stores, maybe sixty meters long. The roof caved on the west end three panels deep. The crossdraft that moves through has been moving since and has set up a permanent wind through the space.
+
+It's not unpleasant. It carries the smell of the outside — real outside, past the district boundaries.
+
+The wind zone is where the crossdraft is strongest, where the air pressure makes a sound like a long held note. It doesn't announce itself. You just walk into it and your interface registers it immediately.
+
+Your interface: ELEMENTAL ZONE — AERO. Resonance check: Flow-Arcane alignment detected. Loading...
+
+AERO SKILL TREE — UNLOCKED.
+Elemental Focus: Wind. Branch variants: Flow, Arcane, Defense, Offense, Decay.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Aero tree', next: 'zone_wind_unlock' },
+      { label: 'Mark it and come back', next: 'district_hub' },
+    ],
+  },
+
+  zone_wind_unlock: {
+    id: 'zone_wind_unlock', type: 'story',
+    text: `AERO TREE UNLOCKED.
+
+The crossdraft doesn't change when the zone activates — it was already doing what it was going to do. The zone just adds you to that fact.
+
+The Aero tree has forty nodes spread in a pattern that feels less linear than the others. More lateral. Options that branch sideways before they branch upward. It makes sense for wind. Wind goes where it needs to.
+
+Standing in the crossdraft for a minute, your interface processes. The smell of the outside is still there. Somewhere past the district boundary it smells like rain that hasn't arrived yet.
+
+You could use some rain.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_aero', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_plant: {
+    id: 'zone_plant', type: 'story',
+    text: `The garden center near the south exit is the only place in the district where things are still growing. The System didn't stop biology. It just stopped the people.
+
+The plants have had a week to themselves. Vines have crossed the aisle. A fig tree in the back has dropped two cycles of fruit. Ferns have unfurled in the fluorescent light that's still running on generator power. It smells like soil and green things and something almost sweet.
+
+The zone is in the back, past the fig tree. You don't need directions — you follow the warmth. Living things generate heat. This much life together generates a lot of it.
+
+Your interface: ELEMENTAL ZONE — FLORA. Resonance check: Defense-Decay alignment detected. Loading...
+
+FLORA SKILL TREE — UNLOCKED.
+Elemental Focus: Plant. Branch variants: Defense, Decay, Flow, Arcane, Offense.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Flora tree', next: 'zone_plant_unlock' },
+      { label: 'Mark it and come back',  next: 'district_hub' },
+    ],
+  },
+
+  zone_plant_unlock: {
+    id: 'zone_plant_unlock', type: 'story',
+    text: `FLORA TREE UNLOCKED.
+
+The plants don't react. They were going to keep growing regardless.
+
+The Flora tree is the only one that has nodes with a dual character — things that are both growth and decay, both protective and corrosive. Roots that stabilize and roots that split stone. Vines that support and vines that constrict. The System is honest about what plant life actually is: patient, patient, patient, and then suddenly not.
+
+You pick up a fallen fig on your way out. It's good. Fresh. The tree didn't need your permission.
+
+Outside, the south exit is clear. You can see the district boundary from here. Farther out than you thought.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_flora', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  zone_metal: {
+    id: 'zone_metal', type: 'story',
+    text: `The hardware megastore is the largest building in the district by footprint. Twelve aisles. High ceilings. The smell of machine oil and cut lumber and the specific clean smell of new tools still in packaging.
+
+Everything is exactly where it was. No looting here — either no one thought of it or someone made sure no one could get to it. The security shutters over the entrance were opened deliberately, not forced. Whoever opened them had a key.
+
+The metal zone is in the power tool aisle, which seems almost funny until you're standing in it and feel the resonance — precision and function and the particular kind of beauty that comes from something that does exactly one thing extremely well.
+
+Your interface: ELEMENTAL ZONE — FERRO. Resonance check: Offense-Arcane alignment detected. Loading...
+
+FERRO SKILL TREE — UNLOCKED.
+Elemental Focus: Metal. Branch variants: Offense, Arcane, Defense, Flow, Decay.`,
+    xp: 120,
+    choices: [
+      { label: 'Unlock the Ferro tree', next: 'zone_metal_unlock' },
+      { label: 'Mark it and come back',  next: 'district_hub' },
+    ],
+  },
+
+  zone_metal_unlock: {
+    id: 'zone_metal_unlock', type: 'story',
+    text: `FERRO TREE UNLOCKED.
+
+The Ferro tree is exactly as precise as you'd expect. Forty nodes, no ambiguity. Each one does a specific thing. The descriptions are technical where the other trees were evocative. The System respects the nature of metal.
+
+You pick up a wrench from an open display. Good weight. You put it back exactly where you found it.
+
+On your way out, you stop at the front of the store. Whoever opened this place left a note taped to the security panel:
+
+"Took what I needed. Left the rest. It seemed right."
+
+No name. The handwriting is clean and careful.
+
+You go back into the district.`,
+    xp: 50,
+    rewards: [{ itemKey: 'rune_ferro', qty: 2 }],
+    choices: [
+      { label: 'Continue through the district', next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // JUDGE LORE
+  // ═══════════════════════════════
+  judge_lore_builders: {
+    id: 'judge_lore_builders', type: 'story',
+    text: `"Kaelith and Morren," Sera says. "We've been piecing together what we know."
+
+She sits down. This is a longer conversation.
+
+"Kaelith appeared at the end of Chapter 1 for two players on our network who we know had high cooperation scores. Both described the same thing: an entity that was calm, precise, and — strange word for a System entity — kind. Not soft. Just fair. It evaluated what they built, who they helped, what they gave up. It didn't ask them to justify their choices. It just — confirmed them. And then it fought them."
+
+"It's still a boss fight?"
+
+"It's still a boss fight." She almost smiles. "The System evaluates you and then tests you. That's what it does. Kaelith is hard. But the players who faced it said it felt like the System respecting them enough to take them seriously." 
+
+She pauses.
+
+"Morren. The two people I know of who faced Morren were quieter about it afterward. Not damaged — just quieter. One of them said: 'It knew exactly what I'd done and it didn't blink. It just wanted to see if I was as good at fighting as I was at taking.'" She looks at you. "Both players survived. Both players changed differently."`,
+    choices: [
+      { label: 'Head to the elemental zones', next: 'district_hub' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // PRE-BOSS CONVERGENCE
+  // ═══════════════════════════════
+  pre_boss_ch2: {
+    id: 'pre_boss_ch2', type: 'story',
+    text: `Your interface pulses once. An unfamiliar color — not the usual gold. Something cooler. More deliberate.
+
+CHAPTER ASSESSMENT COMPLETE.
+MORAL RECORD: Compiled.
+ALLIANCE LOG: Compiled.
+ELEMENTAL RESONANCE: Recorded.
+
+TWIN JUDGES: Summoned.
+
+The district goes quiet in a new way. Not the System-pause quiet. Not the aftermath quiet. A third kind of quiet — expectation made physical.
+
+The plaza is empty now. The Builders are gone. Voss is gone. Rue is gone. Pell's shop is dark.
+
+It's just you and the fountain and the broken glass and whatever's coming.
+
+Two shapes at the far end of the plaza. One moving toward you with the patience of something that has been waiting in exactly this way for exactly this moment. The other standing still — already there, somehow, without having arrived.
+
+Your interface shows both:
+
+JUDGE KAELITH — Evaluator of Cooperation
+JUDGE MORREN — Evaluator of Dominance
+
+Both present. The record you built brought both.
+
+A system message, the last one before the fight:
+
+"The System adapts to human choices. This is what that looks like."`,
+    choices: [
+      { label: 'Face the Twin Judges', sub: 'Boss fight — your record determines the encounter', next: 'boss_judges' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // BOSS FIGHT — TWIN JUDGES
+  // ═══════════════════════════════
+  boss_judges: {
+    id: 'boss_judges', type: 'boss',
+    text: `Kaelith arrives like weather — not a dramatic entrance but a presence that was suddenly relevant. Tall. Still. An interface halo that's twice the complexity of any System display you've seen. Eyes that are cataloguing, not judging — or judging in the sense that a scale judges: accurately, without preference.
+
+Morren is already beside you somehow. No approach. Just — adjacent. Smaller than Kaelith. More compressed. The feeling off Morren is like holding something very sharp — not threatening unless you make a mistake, but the kind of thing where you know exactly what it could do.
+
+Neither of them speaks.
+
+Their interfaces open simultaneously. Your record scrolls between them — every choice, every alliance, every betrayal, every cooperation. All of it, in precise System notation.
+
+Kaelith's display highlights the cooperative entries. They glow warm.
+Morren's display highlights the decisive entries. They glow cold.
+
+Both Judges look at you.
+
+The fight begins.`,
+    enemy: {
+      name: 'The Twin Judges',
+      icon: '⚖️',
+      hp: 380,
+      atk: 22,
+      def: 14,
+      xp: 600,
+      img: '../assets/boss/twin_judges.png',
+      loot: [{ itemKey: 'judges_seal', qty: 1 }, { itemKey: 'rune_lux', qty: 1 }],
+    },
+    bossKey: 'twin_judges',
+    onWin:  'chapter_end_ch2',
+    onLose: 'pre_boss_ch2',
+  },
+
+  // ═══════════════════════════════
+  // CHAPTER END
+  // ═══════════════════════════════
+  chapter_end_ch2: {
+    id: 'chapter_end_ch2', type: 'end',
+  },
+
+} // END NODES
+
+// ═══════════════════════════════════════════════════════════
+// ENGINE — mirrors chapter1 exactly
+// ═══════════════════════════════════════════════════════════
+
+function xpForLevel(lv) { return Math.floor(100 * Math.pow(1.5, lv - 1)) }
+function getDefeatedBosses() { return player.defeated_bosses || [] }
+function markBossDefeated(key) { const d=[...getDefeatedBosses()]; if(!d.includes(key)) d.push(key); player.defeated_bosses=d; return d }
+
+async function addItem(itemKey, qty) {
+  const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+  if (ex) return supabase.from('inventory').update({ quantity: ex.quantity + qty }).eq('id', ex.id)
+  const ITEM_DEF = {
+    builders_cache_key: { name:"Builder's Cache Key", item_type:'key',     rarity:'uncommon', icon:'🗝️' },
+    district_map:       { name:'District Map',         item_type:'material', rarity:'common',   icon:'🗺️' },
+    ignis_seed:         { name:'Ignis Seed',            item_type:'material', rarity:'uncommon', icon:'🔥' },
+    aqua_cord:          { name:'Aqua Cord',             item_type:'material', rarity:'uncommon', icon:'💧' },
+    stabilizer_pack:    { name:'Stabilizer Pack',       item_type:'consumable',rarity:'common',  icon:'💊', hp_restore:40 },
+    medical_pack:       { name:'Medical Pack',          item_type:'consumable',rarity:'common',  icon:'🩹', hp_restore:30 },
+    scrap_metal:        { name:'Scrap Metal',           item_type:'material', rarity:'common',   icon:'⚙️' },
+    rare_component:     { name:'Rare Component',        item_type:'material', rarity:'rare',     icon:'🔮' },
+    judges_seal:        { name:"Judges' Seal",          item_type:'accessory',rarity:'legendary',icon:'⚖️' },
+    rune_ignis:         { name:'Ignis Rune',            item_type:'material', rarity:'uncommon', icon:'🔥' },
+    rune_aqua:          { name:'Aqua Rune',             item_type:'material', rarity:'uncommon', icon:'💧' },
+    rune_volt:          { name:'Volt Rune',             item_type:'material', rarity:'uncommon', icon:'⚡' },
+    rune_lux:           { name:'Lux Rune',              item_type:'material', rarity:'uncommon', icon:'✨' },
+    rune_umbra:         { name:'Umbra Rune',            item_type:'material', rarity:'uncommon', icon:'🌑' },
+    rune_terra:         { name:'Terra Rune',            item_type:'material', rarity:'uncommon', icon:'🪨' },
+    rune_aero:          { name:'Aero Rune',             item_type:'material', rarity:'uncommon', icon:'💨' },
+    rune_flora:         { name:'Flora Rune',            item_type:'material', rarity:'uncommon', icon:'🌿' },
+    rune_ferro:         { name:'Ferro Rune',            item_type:'material', rarity:'uncommon', icon:'⚙️' },
+  }
+  const def = ITEM_DEF[itemKey] || { name:itemKey, item_type:'material', rarity:'common', icon:'📦' }
+  await supabase.from('inventory').insert({ player_id:player.id, item_key:itemKey, quantity:qty, ...def })
+}
+
+async function save(updates) {
+  Object.assign(player, updates)
+  const { data, error } = await supabase.from('players').update(updates).eq('id', player.id).select().single()
+  if (error) console.error('[ch2 save]', error.message)
+  if (data) { player = data; currentHp = data.hp }
+  renderHUD()
+}
+
+function calcBadge(moral, pvpKills, helpsGiven) {
+  const m=moral||0, pk=pvpKills||0, hg=helpsGiven||0
+  if (m>=60&&(hg>=3||pk===0)) return 'elite'
+  if (m>=20) return 'green'
+  if (m<=-20||(pk>=5&&pk>hg*3)) return 'red'
+  return 'neutral'
+}
+
+window.goTo = async function goTo(nextId, choice={}) {
+  if (!NODES[nextId]) return
+  const cur = NODES[nodeId]
+  const oldXp=player.xp||0, oldLvl=player.level||1
+  const updates = { current_node:'ch2_'+nextId }
+  if (cur?.xp)     { updates.xp=oldXp+cur.xp; player.xp=updates.xp }
+  if (cur?.hpLoss) { currentHp=Math.max(1,currentHp-cur.hpLoss); updates.hp=currentHp }
+  if (choice.moral) {
+    const nm=Math.max(-100,Math.min(100,(player.moral_score||0)+choice.moral))
+    updates.moral_score=nm; player.moral_score=nm
+    const nb=calcBadge(nm,player.pvp_kills,player.helps_given)
+    updates.badge=nb; updates.reputation=nb; player.badge=nb
+  }
+  if (choice.outcome) outcome=choice.outcome
+  if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
+  if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
+  await save(updates)
+  const lp=document.getElementById('left-page')
+  lp.style.cssText+='transition:opacity .3s,transform .3s;opacity:0;transform:translateX(-8px)'
+  setTimeout(()=>{ nodeId=nextId; render(); lp.style.opacity='1'; lp.style.transform='translateX(0)'; window.scrollTo({top:0,behavior:'smooth'}) },320)
+}
+
+function render() {
+  const node=NODES[nodeId]
+  if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
+  if (node.sysMsg) showSysOverlay(node.sysMsg)
+  const stEl=document.getElementById('story-text')
+  stEl.textContent=node.text||''
+  stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
+
+  // Judge image near boss
+  const judgeNodes=['pre_boss_ch2','boss_judges']
+  const judgeImg=document.getElementById('judge-img')
+  if (judgeNodes.includes(nodeId)) {
+    if (!judgeImg) {
+      const img=document.createElement('img');img.id='judge-img'
+      img.src='../assets/boss/twin_judges.png';img.alt='The Twin Judges'
+      img.style.cssText='width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:'+(nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)')
+      stEl.insertAdjacentElement('afterend',img);setTimeout(()=>img.style.opacity='1',100)
+    } else { judgeImg.style.filter=nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)';judgeImg.style.opacity='1' }
+  } else { judgeImg?.remove() }
+
+  document.getElementById('outcome-box').style.display='none'
+  const panel=document.getElementById('right-panel')
+  if      (node.type==='boss')   renderBoss(panel,node)
+  else if (node.type==='combat') renderCombat(panel,node)
+  else if (node.type==='end')    renderEnd(panel,node)
+  else if (nodeId==='district_hub') renderDistrictHub(panel)
+  else                           renderChoices(panel,node)
+}
+
+function renderChoices(panel,node) {
+  const choices=node.choices||[]
+  if (!choices.length) { panel.innerHTML=''; return }
+  panel.innerHTML='<p class="choices-label">What do you do?</p><div class="choices">'+
+    choices.map(c=>{
+      const next=c.next||''
+      const moral=c.moral||0
+      const outcome=c.outcome||''
+      const variant=c.variant?' choice-'+c.variant:''
+      const sub=c.sub?'<span class="choice-sub">'+c.sub+'</span>':''
+      return '<button class="choice'+variant+'" onclick="goTo(\''+next+'\',{moral:'+moral+',outcome:\''+outcome+'\'})">'+
+        '<span class="choice-arrow">→</span>'+
+        '<span class="choice-body">'+c.label+sub+'</span>'+
+        '</button>'
+    }).join('')+'</div>'
+}
+
+// District hub — 9 elemental zones
+const ZONES = [
+  { id:'zone_fire',      icon:'🔥', name:'Kitchen Supply Store',    element:'Ignis',  color:'#ff5500', branch:'Offense' },
+  { id:'zone_water',     icon:'💧', name:'Food Court Basement',     element:'Aqua',   color:'#0088ff', branch:'Defense' },
+  { id:'zone_lightning', icon:'⚡', name:'Electronics Hub',         element:'Volt',   color:'#ffee58', branch:'Flow' },
+  { id:'zone_arcane',    icon:'✨', name:'Kessler Bookshop',        element:'Arcane', color:'#b06eff', branch:'Arcane' },
+  { id:'zone_shadow',    icon:'🌑', name:'Closed Cinema',           element:'Umbra',  color:'#9a6fd8', branch:'Decay' },
+  { id:'zone_earth',     icon:'🪨', name:'Parking Structure',        element:'Terra',  color:'#8b5e3c', branch:'Defense+Offense' },
+  { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane' },
+  { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay' },
+  { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane' },
+]
+
+const STORY_EVENTS = [
+  { id:'cache_betrayal_offer', label:'⚖️ The Cache Offer', sub:'A decision point waits in the east corridor', done: false },
+  { id:'trader_intro',         label:'🏪 Pell\'s Shop',    sub:'Neutral trader — weapons, info, reagents',  done: false },
+]
+
+function renderDistrictHub(panel) {
+  const defeated = getDefeatedBosses()
+  const judgeReady = defeated.includes('twin_judges')
+
+  // Build story events status
+  const moral=player.moral_score||0
+  const hasAlliance = (player.alliance_log||[]).includes('builders')
+
+  const stEl=document.getElementById('story-text')
+  stEl.textContent=`The shopping district spreads out before you. Nine elemental zones pulse across your radar — some bright and accessible, others dim, waiting for the right resonance to open them.
+
+Your interface shows the faction positions, the zone locations, and below it all, a quiet indicator:
+
+ALLIANCE LOG: ${hasAlliance?'Builders (Active)':'No alliances recorded'}
+MORAL SCORE: ${moral>0?'+':''}${moral}
+JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
+
+  let zonesHtml = ZONES.map(z=>{
+    const unlockNode = z.id+'_unlock'
+    const done = player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))||defeated.includes(z.element.toLowerCase())
+    return `<div onclick="goTo('${z.id}')" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;padding:.55rem .65rem;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
+      onmouseover="this.style.background='${z.color}28'" onmouseout="this.style.background='${z.color}${done?'18':'08'}'">
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-size:1rem">${z.icon}</span>
+        <div style="flex:1;min-width:0">
+          <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'#9a8050'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${z.branch} branch · ${done?'✓ UNLOCKED':'Enter to unlock'}</p>
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'ACTIVE':'ZONE'}</span>
+      </div>
+    </div>`
+  }).join('')
+
+  let eventsHtml = `<div style="margin-top:.75rem">
+    <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#7a6435;letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
+    <div onclick="goTo('cache_betrayal_offer')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">⚖️ The Cache Offer</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">A decision waits in the east corridor</p>
+    </div>
+    <div onclick="goTo('trader_intro')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">Neutral trader — open for business</p>
+    </div>
+    <div onclick="goTo('pre_boss_ch2')" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s" onmouseover="this.style.background='rgba(200,81,42,.12)'" onmouseout="this.style.background='rgba(200,81,42,.06)'">
+      <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
+    </div>
+  </div>`
+
+  panel.innerHTML=`<p class="choices-label">District Map</p><div style="max-height:65vh;overflow-y:auto;padding-right:2px">${zonesHtml}${eventsHtml}</div>`
+}
+
+// Combat + boss engines (full implementation)
+function renderCombat(panel,node) { buildCombatUI(panel,node.enemy,node.onWin,node.onLose,node.onEscape,false) }
+function renderBoss(panel,node) {
+  const lvl=player.level||1
+  const enemy={...node.enemy}
+  // Scale to player level
+  enemy.hp = node.enemy.hp + lvl*20
+  enemy.atk = node.enemy.atk + Math.floor(lvl*1.5)
+  buildCombatUI(panel,enemy,node.onWin,node.onLose||'pre_boss_ch2',node.onEscape||'pre_boss_ch2',true)
+}
+
+function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss) {
+  const cid='cb'+Math.random().toString(36).slice(2,7)
+  const $=id=>panel.querySelector('#'+cid+'-'+id)
+  let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100, over=false
+
+  function playerATK() { return (player.atk||5)+(player.power||0)*.5+Math.floor(Math.random()*6) }
+  function playerDEF() { return (player.def||2)+(player.guard||0)*.5 }
+  function pctBar(v,m) { return Math.max(0,Math.round(v/m*100)) }
+
+  panel.innerHTML=`
+    <div style="font-family:'Cinzel',serif;font-size:.9rem;color:#c8b96e;margin-bottom:.5rem">${enemy.icon||'👁'} ${enemy.name}</div>
+    <div style="margin-bottom:.5rem">
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;margin-bottom:2px"><span>ENEMY HP</span><span id="${cid}-ehp-txt">${enemyHp}/${maxEnemyHp}</span></div>
+      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-ebar" style="height:100%;width:100%;background:#e05555;border-radius:3px;transition:width .3s"></div></div>
+    </div>
+    <div style="margin-bottom:.75rem">
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;margin-bottom:2px"><span>YOUR HP</span><span id="${cid}-php-txt">${currentHp}/${maxPlayerHp}</span></div>
+      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-pbar" style="height:100%;width:100%;background:#5ec45e;border-radius:3px;transition:width .3s"></div></div>
+    </div>
+    <div id="${cid}-log" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#c8b96e;min-height:3rem;margin-bottom:.75rem;line-height:1.55"></div>
+    <div id="${cid}-actions" style="display:flex;flex-direction:column;gap:6px">
+      <button class="choice" onclick="doAction_${cid}('strike')"><span class="choice-arrow">⚔</span><span class="choice-body">Strike<span class="choice-sub">Deal ~${Math.round(playerATK())} damage</span></span></button>
+      <button class="choice" onclick="doAction_${cid}('heavy')"><span class="choice-arrow">💥</span><span class="choice-body">Heavy Strike<span class="choice-sub">More damage, slow</span></span></button>
+      <button class="choice" onclick="doAction_${cid}('defend')"><span class="choice-arrow">🛡</span><span class="choice-body">Defend<span class="choice-sub">Reduce incoming damage, heal slightly</span></span></button>
+      ${onEscape?`<button class="choice" onclick="doAction_${cid}('escape')"><span class="choice-arrow">↩</span><span class="choice-body">Escape<span class="choice-sub">Flee the fight</span></span></button>`:''}
+    </div>
+    <div id="${cid}-over" style="display:none;margin-top:.75rem"></div>`
+
+  function syncBars() {
+    $('ebar').style.width=pctBar(enemyHp,maxEnemyHp)+'%'
+    $('pbar').style.width=pctBar(currentHp,maxPlayerHp)+'%'
+    $('ehp-txt').textContent=Math.max(0,Math.round(enemyHp))+'/'+maxEnemyHp
+    $('php-txt').textContent=Math.max(0,Math.round(currentHp))+'/'+maxPlayerHp
+    $('pbar').style.background=currentHp/maxPlayerHp>0.6?'#5ec45e':currentHp/maxPlayerHp>0.3?'#c8b96e':'#e05555'
+  }
+  function log(msg) { const el=$('log'); el.innerHTML=msg }
+
+  async function endCombat(result) {
+    if (over) return; over=true
+    $('actions').style.display='none'
+    if (result==='win') {
+      const oldXp=player.xp||0, oldLvl=player.level||1
+      const newXp=oldXp+(enemy.xp||50)
+      const updates={xp:newXp,hp:currentHp}
+      if (isBoss) {
+        const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
+        updates.chapters_unlocked=uls; updates.skill_points=(player.skill_points||0)+2
+        if (enemy.loot) for (const l of enemy.loot) await addItem(l.itemKey,l.qty)
+        if (node?.bossKey) { const d=markBossDefeated(node.bossKey); updates.defeated_bosses=d }
+        showToast('Chapter 2 Complete! +2 Bonus SP!')
+      }
+      const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
+      await save(updates)
+      const nextNode=isBoss?'chapter_end_ch2':onWin
+      $('over').style.display='block'
+      $('over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+    } else if (result==='escape') {
+      await save({hp:currentHp})
+      $('over').style.display='block'
+      $('over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape the fight</span></button>`
+    } else {
+      currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
+      $('over').style.display='block'
+      $('over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall. The Judges withdraw — for now.</p><button class="choice" onclick="goTo('${onLose||'pre_boss_ch2'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+    }
+  }
+
+  window['doAction_'+cid]=async function(action) {
+    if (over) return
+    $('actions').style.display='none'
+    const msgs=[]
+    if (action==='escape') { log('You disengage and retreat.'); endCombat('escape'); return }
+    if (action==='strike') {
+      const dmg=Math.max(1,Math.round(playerATK()-playerDEF()*.3))
+      enemyHp=Math.max(0,enemyHp-dmg); msgs.push('You strike for <strong>'+dmg+'</strong> damage.')
+    } else if (action==='heavy') {
+      const dmg=Math.max(1,Math.round(playerATK()*1.6-playerDEF()*.2))
+      enemyHp=Math.max(0,enemyHp-dmg); msgs.push('Heavy strike — <strong>'+dmg+'</strong> damage!')
+    } else if (action==='defend') {
+      const heal=Math.round(maxPlayerHp*.08); currentHp=Math.min(maxPlayerHp,currentHp+heal)
+      msgs.push('You defend. Recovered <strong>'+heal+'</strong> HP.')
+    }
+    // Enemy counterattack
+    if (enemyHp>0) {
+      const eAtk=Math.max(0,Math.round(enemy.atk-playerDEF()*(action==='defend'?.7:.3)+(Math.random()*6-3)))
+      currentHp=Math.max(0,currentHp-eAtk); msgs.push(enemy.name+' attacks for <strong>'+eAtk+'</strong>.')
+    }
+    syncBars(); log(msgs.join('<br>'))
+    if (enemyHp<=0) { log(msgs.join('<br>')+'<br>'+enemy.name+' is defeated.'); endCombat('win'); return }
+    if (currentHp<=0) { log(msgs.join('<br>')+'<br>You are overwhelmed.'); endCombat('lose'); return }
+    setTimeout(()=>{ $('actions').style.display='flex' },400)
+  }
+  syncBars()
+}
+
+function renderEnd(panel,node) {
+  const moral=player.moral_score||0
+  const morality=moral>=60?'hero':moral>=20?'good':moral>=-20?'neutral':moral>=-60?'ruthless':'villain'
+  const mColor=moral>=60?'#a0d0ff':moral>=20?'#c8e8a0':moral>=-20?'#c8b96e':moral>=-60?'#e07a40':'#e05555'
+
+  const verdicts = {
+    hero:     'Kaelith steps back. The record speaks for itself. You built more than you took — not because the System asked you to, but because you decided that mattered. Morren watches, satisfied at the precision even in cooperation. Both Judges acknowledge you with the same gesture: a slow opening of the hand. Whatever you are, you are consistent. The System calls it: complete.',
+    good:     'Kaelith weighs the record and finds it positive. More construction than demolition. More alliance than betrayal. Morren notes the decisive moments where you acted without hesitation. Both Judges accept the accounting. Neither is surprised. You move into Chapter 3 with both evaluations behind you.',
+    neutral:  'The Judges stand close together and consult in a language you cannot hear. The record is balanced — cooperation and betrayal, construction and taking, alliance and independence. Both Judges look at you simultaneously. Whatever they conclude, they keep to themselves. The System records: inconclusive, and moves you forward.',
+    ruthless: 'Morren steps forward and nods once. The record is decisive if not generous. You took more than you built. Kaelith observes this without condemnation — just notation. You are what you are, and you were consistent about it. The System records this accurately and advances you.',
+    villain:  'Morren records everything with the expression of someone finding exactly what they expected. Kaelith stands back — not in judgment, but in documentation. You were deliberate. The System respects deliberate choices. It advances you with full knowledge of what you are.',
+  }
+
+  const END_BEATS = [
+    {
+      title: 'The Record',
+      text: verdicts[morality],
+    },
+    {
+      title: 'What Remains',
+      text: `The plaza empties quickly after the Judges withdraw.
+
+Sera finds you before you leave. She looks tired in the specific way of someone who has been responsible for other people for too long. She hands you something — a small pin, simple, the kind of thing that used to mark volunteers at community events.
+
+"For what it's worth," she says. "You were useful." She doesn't qualify it. She means it exactly as stated.
+
+Voss is already gone. But there's a message in your interface from a sender ID you don't recognize — you suspect it's them:
+
+"Good run. The Shadow zone opened easier because of you. Don't ask why. Just know the district remembers who passed through it."
+
+Rue leaves the map on the fountain's edge. You pick it up. It's not System-compatible — no upload, no sync. Just paper. You fold it and put it in your pack anyway.
+
+The district is clearing. Other players moving toward the boundary. Some of them look at you and nod. Some of them don't. Both feel right.`,
+    },
+    {
+      title: 'Chapter 3 Awaits',
+      text: `Your interface updates as you reach the district boundary.
+
+CHAPTER 2 COMPLETE.
+ALLIANCES RECORDED.
+ELEMENTAL RESONANCE: Locked in.
+JUDGES: Evaluated.
+
+Below that, a new entry:
+
+CHAPTER 3 — UNLOCKED.
+
+The road ahead is unfamiliar. The System's next chapter sits beyond a horizon you can't see yet. Whatever is there, it knows about Kessler District. It knows what you did here. It knows what you chose.
+
+You get back in your vehicle.
+
+The engine turns over first try. Some things still work the way they should.
+
+Chapter 3 is waiting.`,
+    },
+  ]
+
+  let beatIdx=0
+  function showBeat() {
+    const b=END_BEATS[beatIdx], isLast=beatIdx===END_BEATS.length-1
+    const ob=document.getElementById('outcome-box'); ob.style.display='none'
+    document.getElementById('story-text').textContent=b.text
+    panel.innerHTML=`
+      <div class="end-box">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.1em;margin-bottom:.4rem">${beatIdx+1} / ${END_BEATS.length}</p>
+        <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${b.title}</p>
+        <button class="end-btn" id="beat-btn" style="display:block;width:100%">${isLast?'→ Chapter 3':'Continue ›'}</button>
+      </div>`
+    document.getElementById('beat-btn').addEventListener('click',()=>{
+      if (isLast) window.location.href='book.html'
+      else { beatIdx++; showBeat() }
+    })
+  }
+
+  document.getElementById('story-text').textContent=''
+  panel.innerHTML=`
+    <div class="end-box">
+      <p class="end-title">Chapter 2 Complete</p>
+      <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.08em;margin-bottom:2px">EVALUATION COMPLETE</p>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${morality.toUpperCase()}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#9a8050;margin-top:2px">Moral score: ${moral>0?'+':''}${moral}</p>
+      </div>
+      <p class="end-sub" style="margin-bottom:.75rem">The Twin Judges have rendered their verdict.<br>Chapter 3 awaits.</p>
+      <button class="end-btn" id="continue-ch2" style="display:block;width:100%;margin-bottom:.75rem">Continue ›</button>
+    </div>`
+  document.getElementById('continue-ch2').addEventListener('click',()=>showBeat())
+}
+
+// Level up
+async function checkLevelUp(oldXp,newXp,oldLevel) {
+  let level=oldLevel,xp=newXp,leveled=false,levelsGained=0
+  while(xp>=xpForLevel(level)){xp-=xpForLevel(level);level++;leveled=true;levelsGained++}
+  if(!leveled)return null
+  const newMaxHp=(player.max_hp||100)+levelsGained*5,newHp=newMaxHp
+  const spGained=levelsGained,newSP=(player.skill_points||0)+spGained
+  player.skill_points=newSP;player.sp_claimed=(player.sp_claimed||0)+spGained
+  const sg=levelsGained
+  const us={atk:(player.atk||1)+sg,def:(player.def||0)+sg,power:(player.power||0)+sg,guard:(player.guard||0)+sg,speed:(player.speed||0)+sg,insight:(player.insight||0)+sg,luck:(player.luck||0)+sg,control:(player.control||0)+sg}
+  Object.assign(player,us);currentHp=newHp;player.max_hp=newMaxHp;player.level=level;player.xp=newXp
+  showToast('LEVEL UP! Lvl '+level+' — +5 HP · +1 all stats · +'+spGained+' SP!')
+  renderHUD()
+  return{level,max_hp:newMaxHp,hp:newHp,xp:newXp,skill_points:newSP,sp_claimed:player.sp_claimed,...us}
+}
+
+function getEquippedBonus(stat) {
+  return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
+}
+function calcATK() {
+  return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')))
+}
+function calcDEF() {
+  return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus'))
+}
+function calcSPD() {
+  return Math.round((player.speed||0)+(player.insight||0)*0.1+getEquippedBonus('speed_bonus'))
+}
+
+window.openStatWindow = function() {
+  document.getElementById('stat-window')?.remove()
+  const eqItems=window._equippedItems||[]
+  const STATS=[
+    {label:'Power',  val:player.power||0,  color:'#ff5500',desc:'Scales ATK damage',         derived:'ATK +'+Math.round((player.power||0)*0.6)},
+    {label:'Control',val:player.control||0,color:'#0088ff',desc:'Scales DEF & retry chance',  derived:'DEF +'+Math.round((player.control||0)*0.2)},
+    {label:'Guard',  val:player.guard||0,  color:'#8b5e3c',desc:'Scales DEF & damage block',  derived:'DEF +'+Math.round((player.guard||0)*0.6)},
+    {label:'Speed',  val:player.speed||0,  color:'#a8d8ea',desc:'Scales ATK & turn order',    derived:'ATK +'+Math.round((player.speed||0)*0.2)},
+    {label:'Insight',val:player.insight||0,color:'#ffd700',desc:'Scales SPD & luck effects',  derived:'SPD +'+Math.round((player.insight||0)*0.1)},
+    {label:'Luck',   val:player.luck||0,   color:'#b06eff',desc:'Improves crit & loot chance',derived:'Loot +'+Math.round((player.luck||0)*5)+'%'},
+  ]
+  const modal=document.createElement('div')
+  modal.id='stat-window'
+  modal.style.cssText='position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+  modal.innerHTML=`
+    <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">Character Stats</p>
+        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#1a1208">✕</button>
+      </div>
+      <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          ${[['ATK',calcATK(),'#e05555'],['DEF',calcDEF(),'#5ec45e'],['SPD',calcSPD(),'#a8d8ea'],
+             ['HP',player.max_hp||100,'#5eaee0'],['LVL',player.level||1,'#c8b96e'],['GOLD',player.gold||0,'#c8b96e']
+          ].map(([k,v,c])=>'<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#3a2008;display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
+        </div>
+      </div>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
+      ${STATS.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+        <div style="flex:1">
+          <div style="display:flex;align-items:baseline;gap:4px">
+            <span style="font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;font-weight:600">${s.label}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208">${s.val}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#3a2008;margin-left:auto">${s.derived}</span>
+          </div>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:#3a2008;margin:0">${s.desc}</p>
+        </div></div>`).join('')}
+      <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
+        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:#1a1208;margin:0">${eqItems.map(i=>i.name).join(', ')||'None'}</p>
+      </div>
+      ${(player.skill_points||0)>0?`<button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
+    </div>`
+  modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
+  document.body.appendChild(modal)
+}
+
+function renderHUD() {
+  const hp=currentHp, mhp=player.max_hp||100, xp=player.xp||0, lvl=player.level||1
+  const BC={neutral:'#c8b96e',red:'#e05555',green:'#5ec45e',elite:'#a07de0'}
+  const BS={neutral:'🟡',red:'🔴',green:'🟢',elite:'🟣'}
+  const bc=BC[player.badge]||'#c8b96e', bs=BS[player.badge]||'🟡'
+  const hpPct=Math.max(0,Math.round(hp/mhp*100))
+  const hpCol=hpPct>60?'#5ec45e':hpPct>30?'#c8b96e':'#e05555'
+  const xpNext=xpForLevel(lvl)
+  const xpIntoLevel=Math.max(0,Math.min(xp,xpNext-1))
+  const xpPct=Math.min(100,Math.round(xpIntoLevel/xpNext*100))
+  const moral=player.moral_score||0
+  const moralPct=Math.round((moral+100)/2)
+  const moralCol=moral>=60?'#a0d0ff':moral>=20?'#c8e8a0':moral>=-20?'#c8b96e':moral>=-60?'#e07a40':'#e05555'
+  const moralLabel=moral>=70?'HERO':moral>=30?'GOOD':moral>=-10?'NEUTRAL':moral>=-40?'RUTHLESS':moral>=-70?'CORRUPT':'VILLAIN'
+  const dotLeft=Math.max(2,Math.min(94,moralPct))
+
+  document.getElementById('hud').innerHTML=`
+    <div class="hud-badge-row">
+      <span class="hud-seal">${bs}</span>
+      <div>
+        <p class="hud-seal-label" style="color:${bc}">${(player.badge||'neutral')[0].toUpperCase()+(player.badge||'neutral').slice(1)}</p>
+        <p class="hud-chapter">Chapter 2 · Lvl ${lvl}</p>
+      </div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">HP</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="hp-bar" style="width:${hpPct}%;background:${hpCol};transition:width .4s,background .4s"></div></div>
+      <span class="stat-val" id="hp-val">${Math.round(hp)}/${mhp}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">XP</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${xpPct}%;background:#a07de0;transition:width .4s"></div></div>
+      <span class="stat-val" style="font-size:.52rem;min-width:60px;text-align:right">${xpIntoLevel}/${xpNext}</span>
+    </div>
+    <div style="margin-bottom:5px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;letter-spacing:.07em">REPUTATION</span>
+        <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
+      </div>
+      <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
+        <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
+      </div>
+    </div>
+    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+    <div class="stat-grid">
+      <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
+      <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
+      <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
+    </div>
+    <div style="display:flex;gap:4px;margin-top:6px">
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+    </div>`
+}
+
+function updateHpBar(hp) {
+  currentHp=hp
+  const mhp=player.max_hp||100, pct=Math.max(0,Math.round(hp/mhp*100))
+  const col=pct>60?'#5ec45e':pct>30?'#c8b96e':'#e05555'
+  const bar=document.getElementById('hp-bar'), val=document.getElementById('hp-val')
+  if(bar){bar.style.width=pct+'%';bar.style.background=col}
+  if(val)val.textContent=Math.round(hp)+'/'+mhp
+}
+
+// Also load equipped items for stat display
+;(async()=>{
+  if(!window._equippedItems){
+    const {data}=await supabase.from('inventory').select('*').eq('player_id',player.id).not('equipped_slot','is',null)
+    window._equippedItems=data||[]
+  }
+})()
+
+// ── Init ──────────────────────────────────────────
+let player   = await renderNav('nav')
+if (!player) throw new Error('no player')
+
+let currentHp = player.hp || 100
+let nodeId = (player.current_node||'').startsWith('ch2_')
+  ? player.current_node.replace('ch2_','')
+  : 'opening'
+let outcome = null
+
+if (!NODES[nodeId]) nodeId='opening'
+
+renderHUD()
+render()
+
+</script>
+</body>
+</html>

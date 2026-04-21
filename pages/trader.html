@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Trader</title>
+  <link rel="stylesheet" href="../styles/main.css">
+</head>
+<body>
+<div class="book-wrap">
+  <div id="nav"></div>
+  <div class="book animate-in">
+    <div class="page-left parchment">
+      <div class="page-inner">
+        <p class="chapter-label">NPC Directory</p>
+        <h1 class="page-title">Available</h1>
+        <hr class="ink-divider">
+        <div id="npc-list"></div>
+        <hr class="ink-divider">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#1a1208;letter-spacing:.08em">GOLD</span>
+          <span id="gold-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#c8b96e">◈ 0</span>
+        </div>
+      </div>
+    </div>
+    <div class="spine"></div>
+    <div class="page-right parchment">
+      <div class="page-inner" id="npc-panel">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:.5rem">
+          <span style="font-size:2.5rem">🧭</span>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;color:#1a1208">Select an NPC to interact.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { supabase }             from '../supabase.js'
+  import { renderNav, showToast } from '../components/nav.js'
+
+  const RARITY = { common:'#888', uncommon:'#5ec45e', rare:'#5eaee0', epic:'#a07de0', legendary:'#c8b96e' }
+
+  // ── Item images (same as inventory) ───────────────
+  const ITEM_IMAGES = {
+    'ember_blade':'../assets/weapon/fire/ember_blade.png','flame_dagger':'../assets/weapon/fire/flame_dagger.png',
+    'inferno_sword':'../assets/weapon/fire/inferno_sword.png','burning_staff':'../assets/weapon/fire/burning_staff.png',
+    'tide_blade':'../assets/weapon/water/tide_blade.png','ocean_staff':'../assets/weapon/water/ocean_staff.png',
+    'stone_sword':'../assets/weapon/earth/stone_sword.png','wind_dagger':'../assets/weapon/air/wind_dagger.png',
+    'shadow_blade':'../assets/weapon/dark/shadow_blade.png','radiant_blade':'../assets/weapon/light/radiant_blade.png',
+    'cinder_armor':'../assets/armor/cinder_armor.png','ocean_armor':'../assets/armor/ocean_armor.png',
+    'rock_armor':'../assets/armor/rock_armor.png','storm_armor':'../assets/armor/storm_armor.png',
+    'void_armor':'../assets/armor/void_armor.png','holy_armor':'../assets/armor/holy_armor.png',
+    'rune_ignis':'../assets/runes/rune_ignis.png','rune_aqua':'../assets/runes/rune_aqua.png',
+    'rune_terra':'../assets/runes/rune_terra.png','rune_aero':'../assets/runes/rune_aero.png',
+    'rune_umbra':'../assets/runes/rune_umbra.png','rune_lux':'../assets/runes/rune_lux.png',
+    'scrap_blade':'../assets/weapon/scrap_blade.png','knife':'../assets/weapon/knife.png',
+    'jacket':'../assets/armor/jacket.png','worn_boots':'../assets/armor/worn_boots.png',
+    'riot_vest':'../assets/armor/riot_vest.png','iron_ring':'../assets/armor/iron_ring.png',
+    'energy_drink':'../assets/items/energy_drink.png','medkit':'../assets/items/medkit.png',
+    'scrap_metal':'../assets/items/scrap_metal.png','flashlight':'../assets/items/flashlight.png',
+    'core_fragment':'../assets/items/core_fragment.png',
+    'scrap_helm':'../assets/armor/scrap_helm.png','scrap_shield':'../assets/armor/scrap_shield.png',
+    'iron_helm':'../assets/armor/iron_helm.png','iron_shield':'../assets/armor/iron_shield.png',
+    'tactical_helm':'../assets/armor/tactical_helm.png','tactical_shield':'../assets/armor/tactical_shield.png',
+    'iron_sword':'../assets/weapon/iron_sword.png','tactical_sword':'../assets/weapon/tactical_sword.png',
+    'wooden_shield':'../assets/armor/scrap_shield.png','leather_gloves':'../assets/armor/jacket.png',
+  }
+  function getItemImg(k) { return ITEM_IMAGES[k] || null }
+
+  let traderSellMode = false
+  let traderSellSelected = new Set()
+
+  // ── NPC definitions — add new NPCs here ──────────
+  const NPCS = [
+    {
+      key:'black_market', name:'The Trader', title:'Black Market Vendor', icon:'🧥',
+      dialogue:'"I don\'t ask questions. I just sell."',
+      type:'trader', unlockChapter:1,
+      stock:[
+        {itemKey:'knife',         chapterUnlock:1},
+        {itemKey:'jacket',        chapterUnlock:1},
+        {itemKey:'energy_drink',  chapterUnlock:1},
+        {itemKey:'medkit',        chapterUnlock:1},
+        {itemKey:'wooden_shield', chapterUnlock:1},
+        {itemKey:'leather_gloves',chapterUnlock:1},
+        {itemKey:'worn_boots',    chapterUnlock:1},
+        {itemKey:'iron_sword',    chapterUnlock:2},
+        {itemKey:'riot_vest',     chapterUnlock:2},
+        {itemKey:'iron_helm',     chapterUnlock:2},
+        {itemKey:'iron_shield',   chapterUnlock:2},
+        {itemKey:'iron_ring',     chapterUnlock:2},
+      ]
+    },
+    {
+      key:'doc_mira', name:'Doc Mira', title:'Field Medic', icon:'🩺',
+      dialogue:'"I patch you up. What you do after is your problem."',
+      type:'healer', unlockChapter:1,
+      services:[
+        {action:'heal_full', label:'Full heal',    goldCost:200, desc:'Restore all HP'},
+        {action:'heal_half', label:'Partial heal', goldCost:125, desc:'Restore 50% HP'},
+      ]
+    },
+  ]
+
+  let player = await renderNav('nav')
+  if (!player) throw new Error('no player')
+
+  const chapter = player.current_chapter || 1
+  const npcs = NPCS.filter(n=>n.unlockChapter<=chapter)
+  let activeNPC = null
+  let itemMasters = {}
+
+  // Load all item data upfront
+  const { data: allItems } = await supabase.from('items').select('*')
+  allItems?.forEach(i=>{ itemMasters[i.item_key]=i })
+
+  document.getElementById('gold-display').textContent = `◈ ${player.gold||0}`
+
+  // NPC list
+  document.getElementById('npc-list').innerHTML = npcs.map(n=>`
+    <div class="equip-slot" data-npc="${n.key}" style="cursor:pointer;margin-bottom:4px">
+      <span class="slot-icon">${n.icon}</span>
+      <div style="flex:1">
+        <p style="font-family:'Cinzel',serif;font-size:.9rem;color:#1a1208;margin:0 0 1px">${n.name}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${n.title}</p>
+      </div>
+      <span style="color:#1a1208">›</span>
+    </div>
+  `).join('')
+
+  document.querySelectorAll('[data-npc]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      activeNPC = npcs.find(n=>n.key===el.dataset.npc)
+      renderNPCPanel()
+    })
+  })
+
+  function renderNPCPanel() {
+    const n = activeNPC
+    if (!n) return
+    const panel = document.getElementById('npc-panel')
+
+    if (n.type==='trader') {
+      const rows = n.stock.filter(s=>s.chapterUnlock<=chapter).map(s=>{
+        const item = itemMasters[s.itemKey]
+        if (!item) return ''
+        const canAfford = (player.gold||0) >= item.buy_price
+        const imgSrc = getItemImg(s.itemKey)
+        return `
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15);flex-wrap:wrap">
+            ${imgSrc
+              ? `<img src="${imgSrc}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.2rem\\'>${item.icon}</span>'">`
+              : `<span style="font-size:1.2rem">${item.icon}</span>`}
+            <div style="flex:1;min-width:0">
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:${RARITY[item.rarity]||'#2a1208'};margin:0 0 1px">${item.name}</p>
+              <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin:0">
+                ${item.element&&item.element!=='none'?`[${item.element.toUpperCase()}] `:''}${item.item_type}${item.atk_bonus>0?` · ATK +${item.atk_bonus}`:''}${item.def_bonus>0?` · DEF +${item.def_bonus}`:''}${item.hp_restore>0?` · +${item.hp_restore}HP`:''}${(item.power_bonus||0)>0?` · PWR +${item.power_bonus}`:''}${(item.speed_bonus||0)>0?` · SPD +${item.speed_bonus}`:''}${(item.insight_bonus||0)>0?` · INS +${item.insight_bonus}`:''}
+              </p>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${item.buy_price}</span>
+            <button onclick="buyItem('${s.itemKey}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Buy</button>
+          </div>
+        `
+      }).join('')
+
+      panel.innerHTML = `
+        <p class="chapter-label">${n.title}</p>
+        <h2 class="page-title">${n.name}</h2>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <hr class="ink-divider">
+        <div style="display:flex;gap:6px;margin-bottom:.75rem">
+          <button id="tab-buy"  onclick="switchTab('buy',  '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">BUY</button>
+          <button id="tab-sell" onclick="switchTab('sell', '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#1a1208">SELL</button>
+        </div>
+        <div id="tab-content-buy">${rows}</div>
+        <div id="tab-content-sell" style="display:none"></div>
+      `
+    } else if (n.type==='runesmith') {
+      const rows = n.services.map(s=>{
+        const canAfford = (player.gold||0) >= s.goldCost
+        return `
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
+            <div style="flex:1">
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;margin:0 0 1px">${s.label}</p>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${s.desc}</p>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
+            <button onclick="runesmith('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
+          </div>
+        `
+      }).join('')
+      panel.innerHTML = `
+        <p class="chapter-label">${n.title}</p>
+        <h2 class="page-title">${n.name}</h2>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <hr class="ink-divider">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;letter-spacing:.06em;margin-bottom:.75rem">Select the rarity of item you want to socket. Maximum sockets: Common=1, Uncommon=2, Rare=3, Epic=4, Legendary=5</p>
+        <div>${rows}</div>
+        <hr class="ink-divider">
+        <a href="crafting.html" style="font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.08em;color:#a07de0;text-decoration:none;border:.5px solid #a07de040;padding:.35rem .9rem;border-radius:2px">
+          ✦ Open Crafting Table →
+        </a>
+      `
+    } else if (n.type==='healer') {
+      const rows = n.services.map(s=>{
+        const canAfford = (player.gold||0) >= s.goldCost
+        return `
+          <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
+            <div style="flex:1">
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;margin:0 0 1px">${s.label}</p>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${s.desc}</p>
+            </div>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
+            <button onclick="heal('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
+          </div>
+        `
+      }).join('')
+
+      panel.innerHTML = `
+        <p class="chapter-label">${n.title}</p>
+        <h2 class="page-title">${n.name}</h2>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <hr class="ink-divider">
+        <div>${rows}</div>
+      `
+    }
+  }
+
+  window.switchTab = async (tab, npcKey) => {
+    const buyBtn  = document.getElementById('tab-buy')
+    const sellBtn = document.getElementById('tab-sell')
+    const buyDiv  = document.getElementById('tab-content-buy')
+    const sellDiv = document.getElementById('tab-content-sell')
+    if (!buyBtn) return
+
+    if (tab === 'buy') {
+      buyBtn.style.background  = 'rgba(139,106,32,.2)'
+      buyBtn.style.borderColor = 'rgba(139,106,32,.5)'
+      sellBtn.style.background = 'none'
+      sellBtn.style.borderColor= 'rgba(139,106,32,.2)'
+      buyDiv.style.display  = 'block'
+      sellDiv.style.display = 'none'
+      traderSellMode = false
+      traderSellSelected.clear()
+    } else {
+      sellBtn.style.background  = 'rgba(139,106,32,.2)'
+      sellBtn.style.borderColor = 'rgba(139,106,32,.5)'
+      buyBtn.style.background   = 'none'
+      buyBtn.style.borderColor  = 'rgba(139,106,32,.2)'
+      buyDiv.style.display  = 'none'
+      sellDiv.style.display = 'block'
+      await renderSellTab(sellDiv)
+    }
+  }
+
+  async function renderSellTab(sellDiv) {
+    sellDiv.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:#1a1208">Loading...</p>'
+    const { data: inv } = await supabase.from('inventory').select('*')
+      .eq('player_id', player.id)
+      .order('item_type')
+
+    if (!inv || !inv.length) {
+      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:#1a1208">Nothing to sell.</p>'
+      return
+    }
+
+    const sellable = inv.filter(i => !i.equipped_slot)
+    if (!sellable.length) {
+      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:#1a1208">All items are currently equipped.</p>'
+      return
+    }
+
+    const RC = {common:'#888',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#a07de0',legendary:'#c8b96e',mythic:'#ff88ff'}
+    const RUNE_ICONS = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨'}
+
+    const totalSell = [...traderSellSelected].reduce((sum,id)=>{
+      const it = sellable.find(i=>i.id===id)
+      if(!it) return sum
+      const sp = it.sell_price || Math.max(1, Math.floor((it.buy_price||20)*.4))
+      return sum + sp * (it.quantity||1)
+    },0)
+
+    // Toolbar
+    const modeBar = traderSellMode
+      ? `<div style="display:flex;gap:5px;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
+          <button onclick="traderToggleMode()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.5);color:#c04040">✕ Cancel</button>
+          ${traderSellSelected.size>0
+            ? `<button onclick="traderSellSelected_action()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">Sell ${traderSellSelected.size} items ◈${totalSell}</button>
+               <button onclick="traderSelectAll()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">Select All</button>`
+            : '<span style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.72rem;color:#3a2008">Click items to select</span>'}
+         </div>`
+      : `<div style="margin-bottom:.5rem"><button onclick="traderToggleMode()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">⊞ Multi-Sell</button></div>`
+
+    sellDiv.innerHTML = modeBar + sellable.map(item => {
+      const sellPrice = item.sell_price || Math.max(1, Math.floor((item.buy_price||20) * 0.4))
+      const hasSocket = (item.sockets_total||0) > 0
+      const hasRune   = (item.sockets_used||0) > 0
+      const isRune    = item.item_type === 'material' && item.item_key?.startsWith('rune_')
+      const runeKey   = isRune ? item.item_key.replace('rune_','') : null
+      const imgSrc    = getItemImg(item.item_key)
+      const isSelected= traderSellMode && traderSellSelected.has(item.id)
+
+      return `
+        <div onclick="${traderSellMode ? `traderToggleItem('${item.id}')` : ''}"
+          style="display:flex;align-items:center;gap:.6rem;padding:.65rem 0;border-bottom:.5px solid rgba(139,106,32,.15);cursor:${traderSellMode?'pointer':'default'};${isSelected?'background:rgba(200,184,128,.2);margin:0 -4px;padding-left:4px;padding-right:4px;border-radius:3px;':''}">
+          ${traderSellMode ? `<div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${isSelected?'#c8b96e':'rgba(139,106,32,.4)'};background:${isSelected?'#c8b96e':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSelected?'<span style="font-size:.5rem;color:#1a1208">✓</span>':''}</div>` : ''}
+          ${imgSrc
+            ? `<img src="${imgSrc}" style="width:32px;height:32px;object-fit:contain;border-radius:3px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.1rem\\'>${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>'">`
+            : `<span style="font-size:1.1rem">${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>`}
+          <div style="flex:1;min-width:0">
+            <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${RC[item.rarity]||'#2a1208'};margin:0 0 1px">
+              ${item.name}
+              ${hasSocket?`<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a07de0;margin-left:4px">[${item.sockets_used||0}/${item.sockets_total}◈]</span>`:''}
+            </p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;margin:0">
+              ${item.rarity} ${item.subtype||item.item_type}
+              ${item.atk_bonus>0?` · ATK +${item.atk_bonus}`:''}
+              ${item.def_bonus>0?` · DEF +${item.def_bonus}`:''}
+              ${item.hp_restore>0?` · +${item.hp_restore}HP`:''}
+              ${(item.quantity||1)>1?` · ×${item.quantity}`:''}
+            </p>
+            ${hasRune?'<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#e05555;margin:1px 0 0">⚠ Runes lost on sell</p>':''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:#c8b96e">◈${sellPrice}${(item.quantity||1)>1?' ea':''}</span>
+            ${!traderSellMode ? `<button onclick="traderSellOne('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell${(item.quantity||1)>1?' ×1':''}</button>` : ''}
+            ${!traderSellMode && (item.quantity||1)>1 ? `<button onclick="traderSellAll('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:#1a1208;background:rgba(200,184,128,.25);border:1px solid rgba(139,106,32,.4);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell All ◈${sellPrice*(item.quantity||1)}</button>` : ''}
+          </div>
+        </div>
+      `
+    }).join('')
+  }
+
+  window.traderToggleMode = () => {
+    traderSellMode = !traderSellMode
+    traderSellSelected.clear()
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+  window.traderToggleItem = (id) => {
+    if (traderSellSelected.has(id)) traderSellSelected.delete(id)
+    else traderSellSelected.add(id)
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+  window.traderSelectAll = async () => {
+    const { data: inv } = await supabase.from('inventory').select('id').eq('player_id', player.id)
+    const { data: equipped } = await supabase.from('inventory').select('id').eq('player_id', player.id).not('equipped_slot','is',null)
+    const equippedIds = new Set((equipped||[]).map(i=>i.id))
+    ;(inv||[]).filter(i=>!equippedIds.has(i.id)).forEach(i=>traderSellSelected.add(i.id))
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+  window.traderSellSelected_action = async () => {
+    if (!traderSellSelected.size) return
+    const { data: inv } = await supabase.from('inventory').select('*').eq('player_id', player.id)
+    const sellable = (inv||[]).filter(i=>traderSellSelected.has(i.id) && !i.equipped_slot)
+    let total = 0
+    for (const item of sellable) {
+      const sp = item.sell_price || Math.max(1, Math.floor((item.buy_price||20)*.4))
+      total += sp * (item.quantity||1)
+      await supabase.from('inventory').delete().eq('id', item.id)
+    }
+    const newGold = (player.gold||0) + total
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    document.getElementById('gold-display').textContent = '◈ ' + newGold
+    showToast('Sold ' + sellable.length + ' item(s) for ◈' + total)
+    traderSellMode = false
+    traderSellSelected.clear()
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+  window.traderSellOne = async (itemId, itemName, sellPrice, qty) => {
+    const newQty = qty - 1
+    if (newQty <= 0) await supabase.from('inventory').delete().eq('id', itemId)
+    else await supabase.from('inventory').update({ quantity: newQty }).eq('id', itemId)
+    const newGold = (player.gold||0) + sellPrice
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    document.getElementById('gold-display').textContent = '◈ ' + newGold
+    showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+  window.traderSellAll = async (itemId, itemName, priceEach, qty) => {
+    await supabase.from('inventory').delete().eq('id', itemId)
+    const total = priceEach * qty
+    const newGold = (player.gold||0) + total
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    document.getElementById('gold-display').textContent = '◈ ' + newGold
+    showToast('Sold ' + qty + '× ' + itemName + ' for ◈' + total)
+    const sd = document.getElementById('tab-content-sell')
+    if (sd) renderSellTab(sd)
+  }
+
+  window.sellItem = async (itemId, itemName, sellPrice) => {
+    await supabase.from('inventory').delete().eq('id', itemId)
+    const newGold = (player.gold||0) + sellPrice
+    await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
+    player.gold = newGold
+    document.getElementById('gold-display').textContent = '◈ ' + newGold
+    showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+    window.switchTab('sell', '')
+  }
+
+  window.buyItem = async (itemKey) => {
+    const item = itemMasters[itemKey]
+    if (!item||(player.gold||0)<item.buy_price) { showToast('Not enough gold',true); return }
+    const newGold = player.gold - item.buy_price
+    await supabase.from('players').update({gold:newGold}).eq('id',player.id)
+    player.gold = newGold
+    document.getElementById('gold-display').textContent = `◈ ${newGold}`
+    // Add to inventory
+    const {data:ex} = await supabase.from('inventory').select('*').eq('player_id',player.id).eq('item_key',itemKey).eq('item_type','consumable').maybeSingle()
+    if (ex) { await supabase.from('inventory').update({quantity:ex.quantity+1}).eq('id',ex.id) }
+    else {
+      await supabase.from('inventory').insert({
+        player_id:player.id, item_key:item.item_key, name:item.name,
+        item_type:item.item_type, subtype:item.subtype, rarity:item.rarity,
+        atk_bonus:item.atk_bonus, def_bonus:item.def_bonus, hp_restore:item.hp_restore,
+        two_handed:item.two_handed, icon:item.icon, quantity:1,
+        element:item.element||'none',
+        power_bonus:item.power_bonus||0, control_bonus:item.control_bonus||0,
+        guard_bonus:item.guard_bonus||0, speed_bonus:item.speed_bonus||0,
+        insight_bonus:item.insight_bonus||0, luck_bonus:item.luck_bonus||0,
+        special_effect:item.special_effect||null
+      })
+    }
+    await supabase.from('trade_log').insert({player_id:player.id,trader_key:activeNPC.key,item_key:itemKey,quantity:1,gold_spent:item.buy_price})
+    showToast(`Bought ${item.name}`)
+    renderNPCPanel()
+  }
+
+  window.heal = async (action, cost) => {
+    const goldCost = parseInt(cost)
+    if ((player.gold||0)<goldCost) { showToast('Not enough gold',true); return }
+    let newHp = player.hp||100
+    const maxHp = player.max_hp||100
+    if (action==='heal_full') newHp = maxHp
+    if (action==='heal_half') newHp = Math.min(maxHp, newHp + Math.floor(maxHp*.5))
+    const newGold = player.gold - goldCost
+    await supabase.from('players').update({hp:newHp,gold:newGold}).eq('id',player.id)
+    player.hp=newHp; player.gold=newGold
+    document.getElementById('gold-display').textContent = `◈ ${newGold}`
+    showToast(`Healed to ${newHp} HP`)
+    renderNPCPanel()
+  }
+</script>
+</body>
+</html>
