@@ -436,8 +436,6 @@
           <a href="badges.html"    class="action-btn">🏅 Badges</a>
         </div>
 
-        <div id="chapter-continue-row" style="display:none;margin-top:10px"></div>
-
         <div class="ink-quote">
           "Every path you walked. Every player you helped — or abandoned."
           <span class="attr">— The Watcher · Chapter 1 Finale</span>
@@ -638,23 +636,33 @@
         </div>`
       }
 
-      const isReplay    = unlocked.includes(ch.number + 1)
       const isCh1       = ch.number === 1
       const alreadyIn   = (player.current_node || '').startsWith(`ch${ch.number}_`)
-      // Chapter is unlocked = it's in the unlocked array. Drive only needed if NOT unlocked.
-      // (chapters_unlocked contains the chapter numbers the player has access to)
       const chUnlocked  = unlocked.includes(ch.number)
-      const needsDrive  = !chUnlocked && !isCh1
+      const isReplay    = unlocked.includes(ch.number + 1)
 
-      const href  = needsDrive ? `garage.html?dest=${ch.number}` : `chapter${ch.number}.html`
-      const label = alreadyIn || player.current_chapter === ch.number ? 'Continue ›'
-                  : isReplay  ? 'Replay ›'
-                  : needsDrive ? 'Drive ›'
-                  : 'Enter ›'
+      // Ch1 — single button only
+      if (isCh1) {
+        const href  = alreadyIn || player.current_chapter === 1 ? 'chapter1.html' : 'chapter1.html'
+        const label = player.current_chapter === 1 || alreadyIn ? 'Continue ›' : isReplay ? 'Replay ›' : 'Enter ›'
+        return `<div class="chapter-entry">
+          ${thumbHtml}
+          <div class="ch-info">
+            ${chNumLabel}
+            <div class="ch-title">${ch.title}</div>
+            <div class="ch-sub">${ch.sub}</div>
+          </div>
+          <a href="${href}" class="ch-btn ${player.current_chapter===1?'active':''}"
+             onclick="event.preventDefault();triggerPageTurn('${href}')">${label}</a>
+        </div>`
+      }
 
-      // After garage drive completes, player returns with chapter now unlocked.
-      // Show a prominent "Enter Chapter" button so they don't need to re-drive.
-      const extraBtn = ''  // label logic above handles it cleanly now
+      // Ch2+ — always show Drive button + Chapter button (chapter locked until drive done)
+      const driveLabel = 'Drive ›'
+      const chLabel    = alreadyIn || player.current_chapter === ch.number ? 'Continue ›'
+                       : isReplay ? 'Replay ›' : 'Enter ›'
+      const chHref     = `chapter${ch.number}.html`
+      const chDisabled = !chUnlocked
 
       return `<div class="chapter-entry">
         ${thumbHtml}
@@ -663,33 +671,20 @@
           <div class="ch-title">${ch.title}</div>
           <div class="ch-sub">${ch.sub}</div>
         </div>
-        <a href="${href}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
-           onclick="event.preventDefault(); triggerPageTurn('${href}')">${label}</a>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
+          <a href="garage.html?dest=${ch.number}" class="ch-btn"
+             onclick="event.preventDefault();triggerPageTurn('garage.html?dest=${ch.number}')">${driveLabel}</a>
+          ${chDisabled
+            ? `<span class="ch-btn" style="opacity:.35;cursor:not-allowed;pointer-events:none" title="Complete the drive to unlock">🔒 Chapter</span>`
+            : `<a href="${chHref}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
+                 onclick="event.preventDefault();triggerPageTurn('${chHref}')">${chLabel}</a>`
+          }
+        </div>
       </div>`
     }).join('')
 
     // expose for inline onclick
     window.triggerPageTurn = triggerPageTurn
-
-    // ── Show "Continue to Chapter N" if a chapter was just unlocked via drive ──
-    // Checks for any chapter in unlocked that isn't ch1, showing a prominent entry button
-    const continueRow = document.getElementById('chapter-continue-row')
-    const freshChapters = CHAPTERS.filter(ch =>
-      ch.number > 1 && unlocked.includes(ch.number)
-    )
-    if (freshChapters.length > 0) {
-      const ch = freshChapters[freshChapters.length - 1] // most recent
-      continueRow.style.display = 'block'
-      continueRow.innerHTML = `
-        <div style="border:1px solid rgba(200,168,74,.4);background:rgba(200,168,74,.05);padding:10px 12px">
-          <p style="font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.28em;color:var(--gold);text-transform:uppercase;margin-bottom:6px">▶ Ready to enter</p>
-          <a href="chapter${ch.number}.html" class="action-btn"
-             onclick="event.preventDefault();triggerPageTurn('chapter${ch.number}.html')"
-             style="border-color:rgba(200,168,74,.5);color:var(--gold)">
-            ⚡ Chapter ${ch.number} — ${ch.title}
-          </a>
-        </div>`
-    }
   })()
 </script>
 </body>
