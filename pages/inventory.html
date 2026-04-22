@@ -368,7 +368,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
       return `<div class="equip-slot${selectedId?' clickable':''}" data-slot="${s.key}" title="${item?item.name+' — click to manage':s.label}">
         ${(()=>{if(!item)return '<span class="slot-icon">'+s.icon+'</span>';const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" class="slot-icon" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">'):'<span class="slot-icon" style="flex-shrink:0">'+item.icon+'</span>';})()}
         <div style="flex:1;min-width:0;overflow:hidden">
-          <span class="slot-label" style="color:${item ? (RARITY[item.rarity]||'#1a1208') : '#1a1208'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem">${item ? item.name : s.label}</span>
+          <div style="color:${item ? (RARITY[item.rarity]||'#c8c0a0') : 'rgba(200,168,74,.35)'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem;font-family:'Cinzel',serif">${item ? item.name : s.label}</div>
           ${item ? (()=>{
             const bonuses = [
               item.atk_bonus>0?'ATK +'+item.atk_bonus:'',
@@ -381,8 +381,8 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
               (item.luck_bonus||0)>0?'LCK +'+item.luck_bonus:'',
             ].filter(Boolean).join(' ')
             const rwLine = _runeword ? '✦ '+_runeword : (_socketsTotal>0?_socketsUsed+'/'+_socketsTotal+' sockets':'')
-            return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:#1a1208;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</span>'
-              + (rwLine?'<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:'+(_runeword?'#5020b0':'#1a1208')+'">'+rwLine+'</span>':'')
+            return (bonuses ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:rgba(200,168,74,.65);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</div>' : '')
+              + (rwLine ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:'+(_runeword?'#c090ff':'rgba(200,168,74,.45)')+'">'+rwLine+'</div>' : '')
           })() : ''}
         </div>
       </div>`
