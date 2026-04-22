@@ -354,6 +354,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
     renderStats()
     renderDetail()
   }
+  window.render = render
 
   function renderSlots() {
     const equipped = {}
@@ -560,79 +561,218 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
   }
 
   function renderDetail() {
-    const el = document.getElementById('item-detail')
-    if (!selectedId) { el.innerHTML=''; return }
+    const container = document.getElementById('item-detail')
+    container.innerHTML = ''
+    if (!selectedId) return
     const item = items.find(i=>i.id===selectedId)
-    if (!item) { el.innerHTML=''; return }
-    el.innerHTML = `
-      <div style="border:0.5px solid rgba(139,106,32,.3);border-radius:3px;padding:.75rem;margin-top:.5rem;background:rgba(0,0,0,.05)">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem">
-          <div style="display:flex;gap:.6rem;align-items:flex-start;flex:1">
-          ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" style="width:52px;height:52px;object-fit:contain;border-radius:6px" onerror="this.style.display=\'none\'">'):'<span style="font-size:1.6rem">'+(item.icon||'📦')+'</span>';})()}
-          <div>
-            <p style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${RARITY[item.rarity]||'#c8c0a0'};margin:0 0 2px">${item.name}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#3a2008;margin:0;letter-spacing:.06em">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
-          </div>
-          </div>
-          <button onclick="selectedId=null;render()" style="background:rgba(255,255,255,.06) !important;border:1px solid rgba(200,168,74,.25) !important;color:var(--ink-dim) !important;font-size:.9rem !important;cursor:pointer !important;padding:3px 8px !important;line-height:1 !important;flex-shrink:0 !important;margin-left:.5rem !important;border-radius:3px !important;font-family:'JetBrains Mono',monospace !important;letter-spacing:0 !important">✕</button>
-        </div>
-        <div style="display:flex;gap:.5rem;font-family:'Share Tech Mono',monospace;font-size:.65rem;margin-bottom:.6rem;flex-wrap:wrap">
-          ${(item.atk_bonus||0)>0?`<span style="color:#e05555">ATK +${item.atk_bonus}</span>`:''}
-          ${(item.def_bonus||0)>0?`<span style="color:#5ec45e">DEF +${item.def_bonus}</span>`:''}
-          ${(item.power_bonus||0)>0?`<span style="color:#ff5500">PWR +${item.power_bonus}</span>`:''}
-          ${(item.guard_bonus||0)>0?`<span style="color:#8b5e3c">GRD +${item.guard_bonus}</span>`:''}
-          ${(item.speed_bonus||0)>0?`<span style="color:#a8d8ea">SPD +${item.speed_bonus}</span>`:''}
-          ${(item.control_bonus||0)>0?`<span style="color:#0088ff">CTR +${item.control_bonus}</span>`:''}
-          ${(item.insight_bonus||0)>0?`<span style="color:#ffd700">INS +${item.insight_bonus}</span>`:''}
-          ${(item.luck_bonus||0)>0?`<span style="color:#b06eff">LCK +${item.luck_bonus}</span>`:''}
-          ${(item.hp_restore||0)>0?`<span style="color:#5eaee0">+${item.hp_restore} HP</span>`:''}
-          ${!(item.atk_bonus||item.def_bonus||item.power_bonus||item.guard_bonus||item.speed_bonus||item.control_bonus||item.insight_bonus||item.luck_bonus||item.hp_restore)?`<span style="color:#3a2008">Utility item</span>`:''}
-        </div>
-        ${item.special_effect ? `<div style="margin-bottom:.6rem;padding:5px 8px;background:rgba(94,174,224,.08);border:.5px solid rgba(94,174,224,.3);border-radius:3px">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin:0 0 2px">SET EFFECT</p>
-          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#1a1208;margin:0;line-height:1.4">${item.special_effect}</p>
-        </div>` : ''}
-        ${(item.sockets_total||0) > 0 ? `
-          <div style="margin-bottom:.5rem">
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a07de0;letter-spacing:.07em;margin-bottom:3px">SOCKETS ${item.sockets_used||0}/${item.sockets_total}</p>
-            <div style="display:flex;gap:4px;margin-bottom:4px">
-              ${Array.from({length:item.sockets_total||0}).map((_,i) => {
-                const rune = (item.socketed_runes||[])[i]
-                const runeColors = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
-                const color = rune ? (runeColors[rune]||'#a07de0') : 'rgba(160,125,224,.3)'
-                const imgSrc = rune ? `../assets/runes/rune_${rune}.png` : ''
-                return '<div style="width:22px;height:22px;border-radius:50%;border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;overflow:hidden;background:'+(rune?color+'22':'rgba(0,0,0,.15)')+'" title="'+(rune||'Empty socket')+'">'
-                  + (rune ? '<img src="'+imgSrc+'" style="width:18px;height:18px;object-fit:contain;border-radius:50%" onerror="this.outerHTML=\'<span style=\\\"font-size:.75rem\\\">◈</span>\'">' : '○')
-                  + '</div>'
-              }).join('')}
-            </div>
-            ${item.runeword_name ? `
-              <div style="margin-top:4px;padding:4px 6px;background:rgba(160,125,224,.12);border-radius:3px;border:.5px solid rgba(160,125,224,.3)">
-                <p style="font-family:'Cinzel',serif;font-size:.68rem;color:#a07de0;margin:0 0 2px">✦ ${item.runeword_name}</p>
-                ${item.runeword_effect ? '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.65rem;color:#1a1208;margin:0 0 2px">'+item.runeword_effect+'</p>' : ''}
-                <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#3a2008;margin:0">
-                  ${[['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']].filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')}
-                </p>
-              </div>` : ''}
-            ${(item.sockets_used||0) < (item.sockets_total||0) ? '<button onclick="openRunePicker(\''+item.id+'\',\''+item.item_type+'\')" style="font-family:\'Cinzel\',serif;font-size:.68rem;color:#a07de0;background:none;border:.5px solid #a07de060;border-radius:3px;padding:3px 10px;cursor:pointer;margin-top:4px">✦ Add Rune</button>' : ''}
-            ${(item.sockets_used||0) > 0 ? '<button onclick="removeRunes(\''+item.id+'\')" style="font-family:\'Cinzel\',serif;font-size:.68rem;color:#3a2008;background:none;border:.5px solid rgba(139,106,32,.3);border-radius:3px;padding:3px 10px;cursor:pointer;margin-top:4px;margin-left:4px">Remove Runes</button>' : ''}
-            <div id="rune-picker-${item.id}" style="display:none;margin-top:6px;padding:6px;background:rgba(0,0,0,.08);border-radius:4px;border:.5px solid rgba(160,125,224,.3)"></div>
-          </div>
-        ` : ''}
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          ${item.item_type==='consumable'?`<button onclick="useItem('${item.id}')" style="font-family:'Cinzel',serif;font-size:.72rem;color:#5eaee0;background:none;border:.5px solid #5eaee040;border-radius:3px;padding:4px 12px;cursor:pointer">Use ×1</button>`:''}
-          ${item.equipped_slot?`<button onclick="unequipSlot('${item.equipped_slot}')" style="font-family:'Cinzel',serif;font-size:.72rem;color:#c8b96e;background:none;border:.5px solid #c8b96e40;border-radius:3px;padding:4px 12px;cursor:pointer">Unequip</button>`:''}
-          ${!item.equipped_slot ? (()=>{
-            const _sp  = item.sell_price || Math.max(1, Math.floor((item.buy_price||20)*.4))
-            const _qty = item.quantity || 1
-            const _bs  = "font-family:'Cinzel',serif;font-size:.72rem;background:none;border:.5px solid rgba(139,106,32,.5);border-radius:3px;padding:4px 10px;cursor:pointer;color:#6b4a10"
-            return _qty > 1
-              ? `<button onclick="sellItem('${item.id}','${item.name}',${_sp},${_qty})" style="${_bs}">Sell ×1 ◈${_sp}</button> <button onclick="sellItemAll('${item.id}','${item.name}',${_sp},${_qty})" style="${_bs}">Sell All ◈${_sp*_qty}</button>`
-              : `<button onclick="sellItem('${item.id}','${item.name}',${_sp},1)" style="${_bs}">Sell ◈${_sp}</button>`
-          })() : ''}
-        </div>
-      </div>
-    `
+    if (!item) return
+
+    const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
+    const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
+
+    const wrap = document.createElement('div')
+    Object.assign(wrap.style, {border:'.5px solid rgba(200,168,74,.2)', borderRadius:'4px', padding:'.75rem', marginTop:'.5rem', background:'rgba(0,0,0,.25)'})
+
+    // ── Header: image + name + close ──
+    const header = document.createElement('div')
+    header.style.cssText = 'display:flex;align-items:flex-start;gap:.6rem;margin-bottom:.6rem'
+
+    const imgSrc = getItemImg(item.item_key)
+    if (imgSrc) {
+      const img = document.createElement('img')
+      img.src = imgSrc
+      img.style.cssText = 'width:48px;height:48px;object-fit:contain;border-radius:5px;flex-shrink:0;border:1px solid rgba(200,168,74,.2)'
+      img.onerror = () => img.remove()
+      header.appendChild(img)
+    }
+
+    const nameBlock = document.createElement('div')
+    nameBlock.style.cssText = 'flex:1;min-width:0'
+
+    const nameEl = document.createElement('div')
+    nameEl.textContent = item.name
+    Object.assign(nameEl.style, {fontFamily:"'Cinzel',serif", fontSize:'.88rem', fontWeight:'600', color: RARITY[item.rarity]||'#c8c0a0', marginBottom:'2px', lineHeight:'1.2'})
+    nameBlock.appendChild(nameEl)
+
+    const subEl = document.createElement('div')
+    subEl.textContent = `${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}`
+    Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'rgba(200,168,74,.55)', letterSpacing:'.06em', textTransform:'uppercase'})
+    nameBlock.appendChild(subEl)
+    header.appendChild(nameBlock)
+
+    // Close button — proper DOM button, not innerHTML
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = '✕'
+    Object.assign(closeBtn.style, {
+      flexShrink:'0', marginLeft:'.4rem',
+      background:'rgba(255,255,255,.07)', border:'1px solid rgba(200,168,74,.25)',
+      color:'#e8dfc8', fontSize:'.85rem', cursor:'pointer',
+      padding:'3px 8px', borderRadius:'3px',
+      fontFamily:"'JetBrains Mono',monospace", lineHeight:'1'
+    })
+    closeBtn.addEventListener('click', () => { selectedId = null; render() })
+    header.appendChild(closeBtn)
+    wrap.appendChild(header)
+
+    // ── Stat pills ──
+    const statRow = document.createElement('div')
+    statRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.6rem'
+    const statDefs = [
+      [item.atk_bonus,    'ATK', '#e05555'],
+      [item.def_bonus,    'DEF', '#5ec45e'],
+      [item.power_bonus,  'PWR', '#ff5500'],
+      [item.guard_bonus,  'GRD', '#5eaee0'],
+      [item.speed_bonus,  'SPD', '#a8d8ea'],
+      [item.control_bonus,'CTR', '#0088ff'],
+      [item.insight_bonus,'INS', '#ffd700'],
+      [item.luck_bonus,   'LCK', '#b06eff'],
+      [item.hp_restore,   '+HP', '#5eaee0'],
+    ]
+    let anyStats = false
+    statDefs.forEach(([val, label, col]) => {
+      if (!val || val <= 0) return
+      anyStats = true
+      const pill = document.createElement('div')
+      pill.textContent = `${label} +${val}`
+      Object.assign(pill.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:col, background:col+'18', border:`1px solid ${col}44`, borderRadius:'3px', padding:'2px 6px'})
+      statRow.appendChild(pill)
+    })
+    if (!anyStats) {
+      const util = document.createElement('div')
+      util.textContent = 'Utility item'
+      Object.assign(util.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:'rgba(200,168,74,.5)'})
+      statRow.appendChild(util)
+    }
+    wrap.appendChild(statRow)
+
+    // ── Special effect ──
+    if (item.special_effect) {
+      const fxBox = document.createElement('div')
+      Object.assign(fxBox.style, {marginBottom:'.6rem', padding:'5px 8px', background:'rgba(94,174,224,.08)', border:'.5px solid rgba(94,174,224,.3)', borderRadius:'3px'})
+      const fxLabel = document.createElement('div')
+      fxLabel.textContent = 'SET EFFECT'
+      Object.assign(fxLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.48rem', color:'#5eaee0', letterSpacing:'.08em', marginBottom:'2px'})
+      const fxText = document.createElement('div')
+      fxText.textContent = item.special_effect
+      Object.assign(fxText.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.68rem', color:'#e8dfc8', lineHeight:'1.4'})
+      fxBox.appendChild(fxLabel)
+      fxBox.appendChild(fxText)
+      wrap.appendChild(fxBox)
+    }
+
+    // ── Sockets ──
+    if ((item.sockets_total||0) > 0) {
+      const sockWrap = document.createElement('div')
+      sockWrap.style.cssText = 'margin-bottom:.5rem'
+
+      const sockLabel = document.createElement('div')
+      sockLabel.textContent = `SOCKETS ${item.sockets_used||0}/${item.sockets_total}`
+      Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#c090ff', letterSpacing:'.07em', marginBottom:'5px'})
+      sockWrap.appendChild(sockLabel)
+
+      const sockRow = document.createElement('div')
+      sockRow.style.cssText = 'display:flex;gap:4px;margin-bottom:5px;flex-wrap:wrap'
+      Array.from({length:item.sockets_total}).forEach((_,i) => {
+        const rune  = (item.socketed_runes||[])[i]
+        const color = rune ? (RUNE_COLORS[rune]||'#a07de0') : 'rgba(160,125,224,.3)'
+        const dot   = document.createElement('div')
+        Object.assign(dot.style, {width:'24px',height:'24px',borderRadius:'50%',border:`1.5px solid ${color}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',background: rune ? color+'22':'rgba(0,0,0,.3)',flexShrink:'0'})
+        if (rune) {
+          const ri = document.createElement('img')
+          ri.src = `../assets/runes/rune_${rune}.png`
+          ri.style.cssText = 'width:18px;height:18px;object-fit:contain;border-radius:50%'
+          ri.onerror = () => { ri.remove(); dot.textContent = RUNE_ICONS[rune]||'◈' }
+          dot.appendChild(ri)
+        } else {
+          const empty = document.createElement('div')
+          empty.textContent = '○'
+          Object.assign(empty.style, {color:'rgba(160,125,224,.4)', fontSize:'.75rem'})
+          dot.appendChild(empty)
+        }
+        sockRow.appendChild(dot)
+      })
+      sockWrap.appendChild(sockRow)
+
+      // Runeword
+      if (item.runeword_name) {
+        const rwBox = document.createElement('div')
+        Object.assign(rwBox.style, {padding:'4px 6px', background:'rgba(160,125,224,.12)', border:'.5px solid rgba(160,125,224,.3)', borderRadius:'3px', marginBottom:'4px'})
+        const rwName = document.createElement('div')
+        rwName.textContent = '✦ ' + item.runeword_name
+        Object.assign(rwName.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#c090ff', marginBottom:'2px'})
+        rwBox.appendChild(rwName)
+        if (item.runeword_effect) {
+          const rwFx = document.createElement('div')
+          rwFx.textContent = item.runeword_effect
+          Object.assign(rwFx.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.65rem', color:'#e8dfc8', marginBottom:'2px'})
+          rwBox.appendChild(rwFx)
+        }
+        const rwStats = [['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']]
+          .filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')
+        if (rwStats) {
+          const rwSt = document.createElement('div')
+          rwSt.textContent = rwStats
+          Object.assign(rwSt.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'rgba(200,168,74,.7)'})
+          rwBox.appendChild(rwSt)
+        }
+        sockWrap.appendChild(rwBox)
+      }
+
+      // Add rune / remove rune buttons
+      const sockBtnRow = document.createElement('div')
+      sockBtnRow.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-top:4px'
+      if ((item.sockets_used||0) < (item.sockets_total||0)) {
+        const addBtn = document.createElement('button')
+        addBtn.textContent = '✦ Add Rune'
+        Object.assign(addBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#c090ff', background:'rgba(160,125,224,.15)', border:'.5px solid rgba(160,125,224,.45)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
+        addBtn.addEventListener('click', () => openRunePicker(item.id, item.item_type))
+        sockBtnRow.appendChild(addBtn)
+      }
+      if ((item.sockets_used||0) > 0) {
+        const remBtn = document.createElement('button')
+        remBtn.textContent = 'Remove Runes'
+        Object.assign(remBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'rgba(200,168,74,.7)', background:'rgba(200,168,74,.08)', border:'.5px solid rgba(200,168,74,.25)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
+        remBtn.addEventListener('click', () => removeRunes(item.id))
+        sockBtnRow.appendChild(remBtn)
+      }
+      sockWrap.appendChild(sockBtnRow)
+
+      // Rune picker container
+      const pickerDiv = document.createElement('div')
+      pickerDiv.id = `rune-picker-${item.id}`
+      pickerDiv.style.cssText = 'display:none;margin-top:6px;padding:6px;background:rgba(0,0,0,.2);border-radius:4px;border:.5px solid rgba(160,125,224,.3)'
+      sockWrap.appendChild(pickerDiv)
+      wrap.appendChild(sockWrap)
+    }
+
+    // ── Action buttons ──
+    const actRow = document.createElement('div')
+    actRow.style.cssText = 'display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.25rem'
+
+    const mkBtn = (text, color, border, onClick) => {
+      const b = document.createElement('button')
+      b.textContent = text
+      Object.assign(b.style, {fontFamily:"'Cinzel',serif", fontSize:'.72rem', color, background: color+'18', border:`1px solid ${border}`, borderRadius:'3px', padding:'4px 12px', cursor:'pointer'})
+      b.addEventListener('click', onClick)
+      return b
+    }
+
+    if (item.item_type === 'consumable') {
+      actRow.appendChild(mkBtn('Use ×1', '#5eaee0', '#5eaee055', () => useItem(item.id)))
+    }
+    if (item.equipped_slot) {
+      actRow.appendChild(mkBtn('Unequip', '#c8a84a', '#c8a84a55', () => unequipSlot(item.equipped_slot)))
+    }
+    if (!item.equipped_slot) {
+      const sp  = item.sell_price || Math.max(1, Math.floor((item.buy_price||20)*.4))
+      const qty = item.quantity || 1
+      actRow.appendChild(mkBtn(`Sell ◈${sp}`, '#c8a84a', 'rgba(200,168,74,.4)', () => sellItem(item.id, item.name, sp, qty)))
+      if (qty > 1) {
+        actRow.appendChild(mkBtn(`Sell All ◈${sp*qty}`, '#c8a84a', 'rgba(200,168,74,.4)', () => sellItemAll(item.id, item.name, sp, qty)))
+      }
+    }
+    wrap.appendChild(actRow)
+    container.appendChild(wrap)
   }
 
   // ── Equipped item modal ──────────────────────────
