@@ -204,44 +204,6 @@
       border-bottom:1px solid var(--gold); border-right:1px solid var(--gold);
     }
 
-    /* ── PAGE TURN ANIMATION ── */
-    /* Leaf anchored at bottom-right corner, sweeps up and left */
-    .page-turn-wrap {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 9999;
-      perspective: 2000px;
-      perspective-origin: 100% 100%;
-    }
-    .page-leaf {
-      position: absolute;
-      bottom: 0; right: 0;
-      width: 50%;
-      height: 100%;
-      transform-origin: bottom right;
-      transform-style: preserve-3d;
-      backface-visibility: hidden;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .page-leaf.turning {
-      opacity: 1;
-      animation: pageTurn .8s cubic-bezier(.4,0,.2,1) forwards;
-    }
-    @keyframes pageTurn {
-      0%   { transform: rotateX(0deg)   rotateY(0deg);    opacity: 1; }
-      30%  { transform: rotateX(20deg)  rotateY(-60deg);  opacity: 1; }
-      70%  { transform: rotateX(10deg)  rotateY(-140deg); opacity: .6; }
-      100% { transform: rotateX(0deg)   rotateY(-180deg); opacity: 0; }
-    }
-    .page-leaf-face {
-      position: absolute; inset: 0;
-      background: linear-gradient(225deg, #0d1a10 0%, #0a1508 50%, #060e04 100%);
-      border-left: 1px solid var(--line);
-      box-shadow: -8px 0 32px rgba(0,0,0,.7), inset 1px 0 0 rgba(200,168,74,.05);
-    }
-
     /* ── LEFT PAGE CONTENT ── */
     .page-label {
       font-family:'JetBrains Mono',monospace;
@@ -442,13 +404,6 @@
         </div>
       </div>
 
-      <!-- PAGE TURN OVERLAY (JS-triggered) -->
-      <div class="page-turn-wrap" id="page-turn-wrap">
-        <div class="page-leaf" id="page-leaf">
-          <div class="page-leaf-face"></div>
-        </div>
-      </div>
-
     </div><!-- /book-body -->
   </div><!-- /book-shell -->
 
@@ -462,15 +417,8 @@
     { number: 2, title: 'The Element Awakens',   sub: 'Choose your path. Choose your power.' },
   ]
 
-  // ── Page-turn effect on chapter link click ──────────────
-  function triggerPageTurn(href) {
-    const leaf = document.getElementById('page-leaf')
-    if (!leaf) { window.location.href = href; return }
-    leaf.classList.add('turning')
-    leaf.addEventListener('animationend', () => {
-      window.location.href = href
-    }, { once: true })
-  }
+  // ── Direct navigation ──────────────────────────────
+  function goTo(href) { window.location.href = href }
 
   // ── Watcher SVG thumbnail ────────────────────────────────
   const WATCHER_SVG = `<svg viewBox="100 200 600 560" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -621,7 +569,7 @@
         : `<div style="display:flex;align-items:center;justify-content:center;height:100%"><span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#3a4354">Ch.${String(ch.number).padStart(2,'0')}</span></div>`
 
       const thumbHtml = previewHref && isUnlocked
-        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none" onclick="event.preventDefault();triggerPageTurn('${previewHref}')">${thumbInner}</a>`
+        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none" onclick="event.preventDefault();goTo('${previewHref}')">${thumbInner}</a>`
         : `<div class="ch-thumb">${thumbInner}</div>`
 
       if (!isUnlocked) {
@@ -653,7 +601,7 @@
             <div class="ch-sub">${ch.sub}</div>
           </div>
           <a href="${href}" class="ch-btn ${player.current_chapter===1?'active':''}"
-             onclick="event.preventDefault();triggerPageTurn('${href}')">${label}</a>
+             onclick="event.preventDefault();goTo('${href}')">${label}</a>
         </div>`
       }
 
@@ -673,18 +621,18 @@
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
           <a href="garage.html?dest=${ch.number}" class="ch-btn"
-             onclick="event.preventDefault();triggerPageTurn('garage.html?dest=${ch.number}')">${driveLabel}</a>
+             onclick="event.preventDefault();goTo('garage.html?dest=${ch.number}')">${driveLabel}</a>
           ${chDisabled
             ? `<span class="ch-btn" style="opacity:.35;cursor:not-allowed;pointer-events:none" title="Complete the drive to unlock">🔒 Chapter</span>`
             : `<a href="${chHref}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
-                 onclick="event.preventDefault();triggerPageTurn('${chHref}')">${chLabel}</a>`
+                 onclick="event.preventDefault();goTo('${chHref}')">${chLabel}</a>`
           }
         </div>
       </div>`
     }).join('')
 
     // expose for inline onclick
-    window.triggerPageTurn = triggerPageTurn
+    window.goTo = goTo
   })()
 </script>
 </body>
