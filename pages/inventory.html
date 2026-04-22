@@ -651,25 +651,25 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
 
     // Rune slot display
     const slotDisplay = sockets > 0 ? `
-      <div style="margin:8px 0">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.07em;margin-bottom:4px">SOCKETS ${used}/${sockets}</p>
+      <div style="margin:8px 0;padding:.5rem .6rem;background:rgba(255,255,255,.03);border:.5px solid rgba(200,168,74,.15);border-radius:4px">
+        <p style="font-family:'JetBrains Mono',monospace;font-size:.52rem;color:rgba(200,168,74,.6);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Sockets ${used}/${sockets}</p>
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
           ${Array.from({length:sockets}).map((_,i) => {
             const rune = runes[i]
-            const color = rune ? (RUNE_COLORS[rune]||'#a07de0') : 'rgba(100,80,40,.3)'
-            return '<div style="width:26px;height:26px;border-radius:50%;border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;overflow:hidden;background:'+(rune?color+'22':'rgba(0,0,0,.1)')+'" title="'+(rune||'Empty socket')+'">'
-              + (rune ? '<img src="../assets/runes/rune_'+rune+'.png" style="width:22px;height:22px;object-fit:contain;border-radius:50%" onerror="this.outerHTML=\'<span style=\\\"font-size:.85rem\\\">'+(RUNE_ICONS[rune]||'◈')+'</span>\'">' : '○')
+            const color = rune ? (RUNE_COLORS[rune]||'#a07de0') : 'rgba(200,168,74,.2)'
+            return '<div style="width:26px;height:26px;border-radius:50%;border:1.5px solid '+color+';display:flex;align-items:center;justify-content:center;overflow:hidden;background:'+(rune?color+'22':'rgba(0,0,0,.3)')+'" title="'+(rune||'Empty socket')+'">'
+              + (rune ? '<img src="../assets/runes/rune_'+rune+'.png" style="width:22px;height:22px;object-fit:contain;border-radius:50%" onerror="this.outerHTML=\'<span style=\\\"font-size:.85rem\\\">'+(RUNE_ICONS[rune]||'◈')+'</span>\'">' : '<span style="color:rgba(200,168,74,.3);font-size:.75rem">○</span>')
               + '</div>'
           }).join('')}
         </div>
         ${item.runeword_name ? `
-  <div style="margin-top:4px;padding:4px 6px;background:rgba(160,125,224,.15);border-radius:3px">
-    <p style="font-family:'Cinzel',serif;font-size:.72rem;color:#4a20a8;margin:0 0 2px">✦ ${item.runeword_name}</p>
-    ${item.runeword_effect ? '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.66rem;color:#1a1208;margin:0 0 2px">'+item.runeword_effect+'</p>' : ''}
-    <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#3a2008;margin:0">
-      ${[['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']].filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')}
-    </p>
-  </div>` : ''}
+          <div style="margin-top:4px;padding:4px 6px;background:rgba(160,125,224,.12);border-radius:3px;border:.5px solid rgba(160,125,224,.3)">
+            <p style="font-family:'Cinzel',serif;font-size:.72rem;color:#c090ff;margin:0 0 2px">✦ ${item.runeword_name}</p>
+            ${item.runeword_effect ? '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.66rem;color:#e8dfc8;margin:0 0 2px">'+item.runeword_effect+'</p>' : ''}
+            <p style="font-family:'JetBrains Mono',monospace;font-size:.52rem;color:rgba(200,168,74,.7);margin:0">
+              ${[['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']].filter(([k])=>(item[k]||0)>0).map(([k,l])=>l+' +'+item[k]).join(' · ')}
+            </p>
+          </div>` : ''}
       </div>` : ''
 
     const modal = document.createElement('div')
@@ -678,36 +678,44 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
       position:fixed;inset:0;z-index:600;
       display:flex;align-items:center;justify-content:center;
       background:rgba(0,0,0,.65);animation:fadeIn .2s ease`
+    const rarityCol = {common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
     modal.innerHTML = `
-      <div style="background:#c4b070;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
-        <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.75rem">
-          ${(()=>{const s=getItemImg(item.item_key);return s?'<img src="'+s+'" style="width:48px;height:48px;object-fit:contain;border-radius:4px;flex-shrink:0">':'<span style="font-size:2rem">'+item.icon+'</span>'})()}
-          <div style="flex:1">
-            <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:${RC[item.rarity]||'#1a1208'};margin:0 0 2px">${item.name}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin:0">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin-top:2px">
-              ${item.atk_bonus>0?'ATK +'+item.atk_bonus+' ':''} ${item.def_bonus>0?'DEF +'+item.def_bonus+' ':''}
-              ${(item.power_bonus||0)>0?'PWR +'+item.power_bonus+' ':''} ${(item.speed_bonus||0)>0?'SPD +'+item.speed_bonus:''}
-            </p>
+      <div style="background:#0d1208;border:1px solid rgba(200,168,74,.35);border-radius:6px;padding:1.25rem;min-width:290px;max-width:350px;box-shadow:0 24px 70px rgba(0,0,0,.95)">
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.85rem">
+          ${(()=>{const s=getItemImg(item.item_key);return s?'<img src="'+s+'" style="width:52px;height:52px;object-fit:contain;border-radius:4px;flex-shrink:0;border:1px solid rgba(200,168,74,.2)">':'<span style="font-size:2.2rem;flex-shrink:0">'+item.icon+'</span>'})()}
+          <div style="flex:1;min-width:0">
+            <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:${rarityCol[item.rarity]||'#e8dfc8'};margin:0 0 3px;line-height:1.2">${item.name}</p>
+            <p style="font-family:'JetBrains Mono',monospace;font-size:.52rem;color:rgba(200,168,74,.6);margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;font-family:'JetBrains Mono',monospace;font-size:.56rem">
+              ${item.atk_bonus>0?'<span style="color:#e05555">ATK +'+item.atk_bonus+'</span>':''}
+              ${item.def_bonus>0?'<span style="color:#5ec45e">DEF +'+item.def_bonus+'</span>':''}
+              ${(item.power_bonus||0)>0?'<span style="color:#ff6622">PWR +'+item.power_bonus+'</span>':''}
+              ${(item.guard_bonus||0)>0?'<span style="color:#5eaee0">GRD +'+item.guard_bonus+'</span>':''}
+              ${(item.speed_bonus||0)>0?'<span style="color:#a8d8ea">SPD +'+item.speed_bonus+'</span>':''}
+              ${(item.control_bonus||0)>0?'<span style="color:#0099ff">CTR +'+item.control_bonus+'</span>':''}
+              ${(item.insight_bonus||0)>0?'<span style="color:#ffd700">INS +'+item.insight_bonus+'</span>':''}
+              ${(item.luck_bonus||0)>0?'<span style="color:#c090ff">LCK +'+item.luck_bonus+'</span>':''}
+            </div>
           </div>
-          <button onclick="document.getElementById('equipped-modal').remove()" style="background:rgba(0,0,0,.25) !important;border:1px solid rgba(255,255,255,.2) !important;color:#e8dfc8 !important;font-size:1rem !important;cursor:pointer !important;padding:4px 8px !important;line-height:1 !important;flex-shrink:0 !important;border-radius:3px !important;font-family:'JetBrains Mono',monospace !important;letter-spacing:0 !important">✕</button>
+          <button onclick="document.getElementById('equipped-modal').remove()" style="background:rgba(255,255,255,.06) !important;border:1px solid rgba(200,168,74,.2) !important;color:#e8dfc8 !important;font-size:.85rem !important;cursor:pointer !important;padding:4px 8px !important;line-height:1 !important;flex-shrink:0 !important;border-radius:3px !important;font-family:'JetBrains Mono',monospace !important;letter-spacing:0 !important">✕</button>
         </div>
 
         ${slotDisplay}
 
-        ${hasEmpty ? `
-          <button onclick="openRunePickerModal('${item.id}','${item.item_type}')" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:.45rem;cursor:pointer;margin-bottom:6px">
-            ✦ Add Rune to Socket
-          </button>` : ''}
-
-        <button onclick="unequipSlot('${item.equipped_slot}');document.getElementById('equipped-modal').remove()" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(200,184,128,.3);border:1px solid rgba(139,106,32,.5);border-radius:3px;padding:.45rem;cursor:pointer;margin-bottom:6px">
-          Unequip
-        </button>
-
-        ${hasRunes ? `
-          <button onclick="destroyRunes('${item.id}')" style="width:100%;font-family:'Cinzel',serif;font-size:.78rem;color:#c04040;background:rgba(192,64,64,.1);border:1px solid rgba(192,64,64,.3);border-radius:3px;padding:.45rem;cursor:pointer">
-            ✕ Remove & Destroy Runes
-          </button>` : ''}
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:.5rem">
+          ${hasEmpty ? `
+            <button onclick="openRunePickerModal('${item.id}','${item.item_type}')" style="width:100% !important;font-family:'Cinzel',serif !important;font-size:.76rem !important;color:#c090ff !important;background:rgba(160,125,224,.15) !important;border:1px solid rgba(160,125,224,.45) !important;border-radius:3px !important;padding:.45rem !important;cursor:pointer !important">
+              ✦ Add Rune to Socket
+            </button>` : ''}
+          <button onclick="unequipSlot('${item.equipped_slot}');document.getElementById('equipped-modal').remove()" style="width:100% !important;font-family:'Cinzel',serif !important;font-size:.76rem !important;color:#e8dfc8 !important;background:rgba(200,168,74,.12) !important;border:1px solid rgba(200,168,74,.35) !important;border-radius:3px !important;padding:.45rem !important;cursor:pointer !important">
+            Unequip
+          </button>
+          ${hasRunes ? `
+            <button onclick="destroyRunes('${item.id}')" style="width:100% !important;font-family:'Cinzel',serif !important;font-size:.76rem !important;color:#ff6060 !important;background:rgba(192,64,64,.1) !important;border:1px solid rgba(192,64,64,.35) !important;border-radius:3px !important;padding:.45rem !important;cursor:pointer !important">
+              ✕ Remove & Destroy Runes
+            </button>` : ''}
+        </div>
       </div>
     `
     modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
@@ -728,18 +736,18 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
       .select('*').eq('player_id', player.id).like('item_key','rune_%').gt('quantity',0)
 
     if (!runeItems || !runeItems.length) {
-      pickerEl.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#1a1208">No runes in inventory.</p>'
+      pickerEl.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#e8dfc8">No runes in inventory.</p>'
     } else {
       const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
       const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
       const RUNE_NAMES  = {ignis:'Ignis',aqua:'Aqua',terra:'Terra',aero:'Aero',umbra:'Umbra',lux:'Lux',venin:'Venin',ferro:'Ferro',flora:'Flora',volt:'Volt'}
       pickerEl.innerHTML = `
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.07em;margin-bottom:5px">SELECT RUNE</p>
+        <p style="font-family:'JetBrains Mono',monospace;font-size:.52rem;color:rgba(200,168,74,.7);letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Select Rune</p>
         <div style="display:flex;flex-wrap:wrap;gap:5px">
           ${runeItems.map(r => {
             const key = r.item_key.replace('rune_','')
             const col = RUNE_COLORS[key]||'#888'
-            return '<button onclick="socketRuneToItem(\''+itemId+'\',\''+r.id+'\',\''+key+'\',\''+itemType+'\')" style="display:flex;align-items:center;gap:4px;background:'+col+'18;border:1px solid '+col+'60;border-radius:4px;padding:4px 8px;cursor:pointer;font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:'+col+'"><img src="../assets/runes/rune_'+key+'.png" style="width:16px;height:16px;object-fit:contain;border-radius:2px" onerror="this.outerHTML=\'<span>'+(RUNE_ICONS[key]||'◈')+'</span>\'"><span>'+(RUNE_NAMES[key]||key)+'</span><span style="color:#1a1208;font-size:.5rem">×'+r.quantity+'</span></button>'
+            return '<button onclick="socketRuneToItem(\''+itemId+'\',\''+r.id+'\',\''+key+'\',\''+itemType+'\')" style="display:flex !important;align-items:center !important;gap:4px !important;background:'+col+'22 !important;border:1px solid '+col+'70 !important;border-radius:4px !important;padding:4px 8px !important;cursor:pointer !important;font-family:JetBrains Mono,monospace !important;font-size:.6rem !important;color:'+col+' !important"><img src="../assets/runes/rune_'+key+'.png" style="width:16px;height:16px;object-fit:contain;border-radius:2px" onerror="this.outerHTML=\'<span>'+(RUNE_ICONS[key]||'◈')+'</span>\'"><span style="color:'+col+' !important">'+(RUNE_NAMES[key]||key)+'</span><span style="color:rgba(200,168,74,.5) !important;font-size:.5rem !important">×'+r.quantity+'</span></button>'
           }).join('')}
         </div>`
     }
