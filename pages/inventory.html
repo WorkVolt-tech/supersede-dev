@@ -448,11 +448,14 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
       if (!it) return sum
       return sum + (it.sell_price || Math.max(1, Math.floor((it.buy_price||20)*.4))) * (it.quantity||1)
     }, 0)
+    const _bst = 'font-family:JetBrains Mono,monospace;font-size:.58rem;padding:4px 12px;border-radius:20px;cursor:pointer;letter-spacing:.04em'
     toolbar.innerHTML = sellMode
-      ? `<button onclick="toggleSellMode()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.5);color:#c04040">✕ Cancel</button>
-         ${sellSelected.size>0 ? `<button onclick="sellSelectedItems()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">Sell ${sellSelected.size} item(s) ◈${totalSellGold}</button>
-         <button onclick="selectAllSellable()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">Select All</button>` : '<span style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.75rem;color:#3a2008">Click items to select</span>'}`
-      : `<button onclick="toggleSellMode()" style="font-family:'Share Tech Mono',monospace;font-size:.58rem;padding:3px 10px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">⊞ Multi-Sell</button>`
+      ? `<button onclick="toggleSellMode()" style="${_bst};background:rgba(192,64,64,.3) !important;border:1px solid rgba(220,80,80,.7) !important;color:#ff8080 !important">✕ Cancel</button>
+         ${sellSelected.size>0
+           ? `<button onclick="sellSelectedItems()" style="${_bst};background:rgba(200,168,74,.3) !important;border:1px solid rgba(200,168,74,.8) !important;color:#f0d080 !important;font-weight:600">⊞ Sell ${sellSelected.size} · ◈${totalSellGold}</button>
+              <button onclick="selectAllSellable()" style="${_bst};background:rgba(255,255,255,.05) !important;border:1px solid rgba(200,168,74,.3) !important;color:#c8a84a !important">All</button>`
+           : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim)">Tap items to select…</span>`}`
+      : `<button onclick="toggleSellMode()" style="${_bst};background:rgba(255,255,255,.04) !important;border:1px solid rgba(200,168,74,.25) !important;color:var(--gold-dim) !important">⊞ Multi-Sell</button>`
 
     document.getElementById('item-grid').innerHTML = filtered.map(item => {
       const isSellSelected = sellMode && sellSelected.has(item.id)
@@ -571,7 +574,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
             <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#3a2008;margin:0;letter-spacing:.06em">${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}</p>
           </div>
           </div>
-          <button onclick="selectedId=null;render()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#3a2008;padding:0;line-height:1;flex-shrink:0;margin-left:.5rem">✕</button>
+          <button onclick="selectedId=null;render()" style="background:rgba(255,255,255,.06) !important;border:1px solid rgba(200,168,74,.25) !important;color:var(--ink-dim) !important;font-size:.9rem !important;cursor:pointer !important;padding:3px 8px !important;line-height:1 !important;flex-shrink:0 !important;margin-left:.5rem !important;border-radius:3px !important;font-family:'JetBrains Mono',monospace !important;letter-spacing:0 !important">✕</button>
         </div>
         <div style="display:flex;gap:.5rem;font-family:'Share Tech Mono',monospace;font-size:.65rem;margin-bottom:.6rem;flex-wrap:wrap">
           ${(item.atk_bonus||0)>0?`<span style="color:#e05555">ATK +${item.atk_bonus}</span>`:''}
@@ -687,7 +690,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
               ${(item.power_bonus||0)>0?'PWR +'+item.power_bonus+' ':''} ${(item.speed_bonus||0)>0?'SPD +'+item.speed_bonus:''}
             </p>
           </div>
-          <button onclick="document.getElementById('equipped-modal').remove()" style="background:none;border:none;color:#1a1208;font-size:1.1rem;cursor:pointer;padding:0;line-height:1;flex-shrink:0">✕</button>
+          <button onclick="document.getElementById('equipped-modal').remove()" style="background:rgba(0,0,0,.25) !important;border:1px solid rgba(255,255,255,.2) !important;color:#e8dfc8 !important;font-size:1rem !important;cursor:pointer !important;padding:4px 8px !important;line-height:1 !important;flex-shrink:0 !important;border-radius:3px !important;font-family:'JetBrains Mono',monospace !important;letter-spacing:0 !important">✕</button>
         </div>
 
         ${slotDisplay}
