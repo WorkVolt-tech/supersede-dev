@@ -176,7 +176,7 @@
 
     /* ── RIGHT PAGE ── */
     .page-right {
-      flex: 0 0 320px;
+      flex: 1;
       background: var(--page-r);
       border: 1px solid var(--line);
       border-left: none;
@@ -205,20 +205,21 @@
     }
 
     /* ── PAGE TURN ANIMATION ── */
-    /* The turning leaf sits above the left page, flips right→left */
+    /* Leaf anchored at spine (left edge), sweeps left → right then away */
     .page-turn-wrap {
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       pointer-events: none;
       z-index: 20;
-      perspective: 1200px;
+      perspective: 1800px;
+      perspective-origin: 0% 50%;
     }
     .page-leaf {
       position: absolute;
       top: 0; bottom: 0;
       left: 0;
-      width: 100%;
-      transform-origin: right center;
+      width: 50%;
+      transform-origin: left center;
       transform-style: preserve-3d;
       backface-visibility: hidden;
       opacity: 0;
@@ -226,19 +227,19 @@
     }
     .page-leaf.turning {
       opacity: 1;
-      animation: pageTurn .65s cubic-bezier(.4,0,.2,1) forwards;
+      animation: pageTurn .7s cubic-bezier(.4,0,.2,1) forwards;
     }
     @keyframes pageTurn {
       0%   { transform: rotateY(0deg);    opacity:1; }
-      40%  { transform: rotateY(-50deg);  opacity:1; }
-      80%  { transform: rotateY(-110deg); opacity:.7; }
-      100% { transform: rotateY(-130deg); opacity:0; }
+      35%  { transform: rotateY(60deg);   opacity:1; }
+      70%  { transform: rotateY(130deg);  opacity:.6; }
+      100% { transform: rotateY(180deg);  opacity:0; }
     }
     .page-leaf-face {
       position: absolute; inset:0;
-      background: linear-gradient(135deg, #0d1a28 0%, #0a1520 60%, #081018 100%);
-      border-right: 1px solid var(--line);
-      box-shadow: -6px 0 24px rgba(0,0,0,.6), inset -1px 0 0 rgba(143,216,240,.06);
+      background: linear-gradient(270deg, #0d1a10 0%, #0a1508 60%, #081208 100%);
+      border-left: 1px solid var(--line);
+      box-shadow: 6px 0 24px rgba(0,0,0,.6), inset 1px 0 0 rgba(200,168,74,.06);
     }
 
     /* ── LEFT PAGE CONTENT ── */
@@ -434,6 +435,8 @@
           <a href="lobby.html"     class="action-btn">⚔ Lobby</a>
           <a href="badges.html"    class="action-btn">🏅 Badges</a>
         </div>
+
+        <div id="chapter-continue-row" style="display:none;margin-top:10px"></div>
 
         <div class="ink-quote">
           "Every path you walked. Every player you helped — or abandoned."
@@ -635,11 +638,23 @@
         </div>`
       }
 
-      const isReplay  = unlocked.includes(ch.number + 1)
-      const isCh1     = ch.number === 1
-      const alreadyIn = (player.current_node || '').startsWith(`ch${ch.number}_`)
-      const href  = isReplay || isCh1 || alreadyIn ? `chapter${ch.number}.html` : `garage.html?dest=${ch.number}`
-      const label = (player.current_chapter === ch.number) ? 'Continue ›' : isReplay ? 'Replay ›' : alreadyIn ? 'Continue ›' : 'Drive ›'
+      const isReplay    = unlocked.includes(ch.number + 1)
+      const isCh1       = ch.number === 1
+      const alreadyIn   = (player.current_node || '').startsWith(`ch${ch.number}_`)
+      // Chapter is unlocked = it's in the unlocked array. Drive only needed if NOT unlocked.
+      // (chapters_unlocked contains the chapter numbers the player has access to)
+      const chUnlocked  = unlocked.includes(ch.number)
+      const needsDrive  = !chUnlocked && !isCh1
+
+      const href  = needsDrive ? `garage.html?dest=${ch.number}` : `chapter${ch.number}.html`
+      const label = alreadyIn || player.current_chapter === ch.number ? 'Continue ›'
+                  : isReplay  ? 'Replay ›'
+                  : needsDrive ? 'Drive ›'
+                  : 'Enter ›'
+
+      // After garage drive completes, player returns with chapter now unlocked.
+      // Show a prominent "Enter Chapter" button so they don't need to re-drive.
+      const extraBtn = ''  // label logic above handles it cleanly now
 
       return `<div class="chapter-entry">
         ${thumbHtml}
@@ -655,6 +670,26 @@
 
     // expose for inline onclick
     window.triggerPageTurn = triggerPageTurn
+
+    // ── Show "Continue to Chapter N" if a chapter was just unlocked via drive ──
+    // Checks for any chapter in unlocked that isn't ch1, showing a prominent entry button
+    const continueRow = document.getElementById('chapter-continue-row')
+    const freshChapters = CHAPTERS.filter(ch =>
+      ch.number > 1 && unlocked.includes(ch.number)
+    )
+    if (freshChapters.length > 0) {
+      const ch = freshChapters[freshChapters.length - 1] // most recent
+      continueRow.style.display = 'block'
+      continueRow.innerHTML = `
+        <div style="border:1px solid rgba(200,168,74,.4);background:rgba(200,168,74,.05);padding:10px 12px">
+          <p style="font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.28em;color:var(--gold);text-transform:uppercase;margin-bottom:6px">▶ Ready to enter</p>
+          <a href="chapter${ch.number}.html" class="action-btn"
+             onclick="event.preventDefault();triggerPageTurn('chapter${ch.number}.html')"
+             style="border-color:rgba(200,168,74,.5);color:var(--gold)">
+            ⚡ Chapter ${ch.number} — ${ch.title}
+          </a>
+        </div>`
+    }
   })()
 </script>
 </body>
