@@ -186,6 +186,31 @@
     /* ── ANIMATE-IN ── */
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .animate-in{animation:fadeIn .4s ease forwards}
+
+    /* ── ITEM GRID — force equal 3-column layout ── */
+    .item-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 4px !important;
+      width: 100% !important;
+    }
+    .item-card {
+      position: relative !important;
+      border: .5px solid rgba(200,168,74,.15) !important;
+      border-radius: 3px !important;
+      padding: 5px 6px !important;
+      cursor: pointer !important;
+      transition: border-color .15s, background .15s !important;
+      background: rgba(0,0,0,.15) !important;
+      min-width: 0 !important;
+      overflow: hidden !important;
+    }
+    .item-card:hover { border-color: rgba(200,168,74,.4) !important; background: rgba(200,168,74,.06) !important; }
+    .item-card.selected { border-color: rgba(200,168,74,.7) !important; background: rgba(200,168,74,.1) !important; }
+    .item-icon { width: 28px !important; height: 28px !important; object-fit: contain !important; flex-shrink: 0 !important; }
+    .item-name { font-family: 'Cinzel', serif !important; font-size: .7rem !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; margin: 0 0 1px !important; }
+    .item-type { font-family: 'JetBrains Mono', monospace !important; font-size: .45rem !important; color: rgba(200,168,74,.5) !important; margin: 0 !important; letter-spacing: .04em !important; text-transform: uppercase !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+    .item-eq   { font-family: 'JetBrains Mono', monospace !important; font-size: .42rem !important; color: #5ec45e !important; letter-spacing: .06em !important; }
   </style>
 
 </head>
@@ -460,33 +485,35 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
 
     document.getElementById('item-grid').innerHTML = filtered.map(item => {
       const isSellSelected = sellMode && sellSelected.has(item.id)
+      const imgSrc = getItemImg(item.item_key)
+      const bonuses = [
+        item.atk_bonus>0?'ATK+'+item.atk_bonus:'',
+        item.def_bonus>0?'DEF+'+item.def_bonus:'',
+        (item.power_bonus||0)>0?'PWR+'+item.power_bonus:'',
+        (item.guard_bonus||0)>0?'GRD+'+item.guard_bonus:'',
+        (item.speed_bonus||0)>0?'SPD+'+item.speed_bonus:'',
+        (item.control_bonus||0)>0?'CTR+'+item.control_bonus:'',
+        (item.insight_bonus||0)>0?'INS+'+item.insight_bonus:'',
+        (item.luck_bonus||0)>0?'LCK+'+item.luck_bonus:'',
+        item.hp_restore>0?'+'+item.hp_restore+'HP':'',
+      ].filter(Boolean).join(' ')
+      const selOutline = isSellSelected ? 'outline:1.5px solid rgba(200,168,74,.8);background:rgba(200,168,74,.12) !important;' : ''
+      const isSelected = !sellMode && selectedId===item.id
       return `
-      <div class="item-card${!sellMode && selectedId===item.id?' selected':''}" data-id="${item.id}" style="display:flex;align-items:flex-start;gap:6px;min-height:72px;${sellMode?'cursor:pointer;':''}${isSellSelected?'outline:1.5px solid #c8b96e;background:rgba(200,184,128,.18);':''}" >
-        ${sellMode ? `<div style="width:16px;height:16px;border-radius:3px;border:1.5px solid ${isSellSelected?'#c8b96e':'rgba(139,106,32,.4)'};background:${isSellSelected?'#c8b96e':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">${isSellSelected?'<span style="font-size:.6rem;color:#1a1208">✓</span>':''}</div>` : ''}
-        ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" class="item-icon" style="width:32px;height:32px;object-fit:contain;flex-shrink:0">'):'<span class="item-icon">'+(item.icon||'📦')+'</span>';})()}
-        <div style="flex:1;min-width:0;overflow:hidden">
-          <p class="item-name" style="color:${RARITY[item.rarity]||'#c8c0a0'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px">${item.name}</p>
-          <p class="item-type" style="margin-bottom:1px">${item.subtype||item.item_type}${item.quantity>1?' ×'+item.quantity:''}</p>
-          ${(()=>{
-            const bonuses = [
-              item.atk_bonus>0?'ATK+'+item.atk_bonus:'',
-              item.def_bonus>0?'DEF+'+item.def_bonus:'',
-              (item.power_bonus||0)>0?'PWR+'+item.power_bonus:'',
-              (item.guard_bonus||0)>0?'GRD+'+item.guard_bonus:'',
-              (item.speed_bonus||0)>0?'SPD+'+item.speed_bonus:'',
-              (item.control_bonus||0)>0?'CTR+'+item.control_bonus:'',
-              (item.insight_bonus||0)>0?'INS+'+item.insight_bonus:'',
-              (item.luck_bonus||0)>0?'LCK+'+item.luck_bonus:'',
-              item.hp_restore>0?'+'+item.hp_restore+'HP':'',
-            ].filter(Boolean).join(' ')
-            return bonuses ? '<p style="font-family:monospace;font-size:.44rem;color:#a8c0a0;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</p>' : ''
-          })()}
-          ${(item.sockets_total||0)>0?'<p style="font-family:monospace;font-size:.44rem;color:'+(item.runeword_name?'#a07de0':'#7a6090')+';margin:0">'+(item.runeword_name?'✦ '+item.runeword_name:''+(item.sockets_used||0)+'/'+(item.sockets_total)+'◈')+'</p>':''}
+      <div class="item-card${isSelected?' selected':''}" data-id="${item.id}" style="${selOutline}">
+        ${sellMode ? `<div style="position:absolute;top:4px;right:4px;width:14px;height:14px;border-radius:2px;border:1.5px solid ${isSellSelected?'rgba(200,168,74,.9)':'rgba(200,168,74,.3)'};background:${isSellSelected?'rgba(200,168,74,.5)':'transparent'};display:flex;align-items:center;justify-content:center;font-size:.5rem;color:#e8dfc8">${isSellSelected?'✓':''}</div>` : ''}
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+          ${imgSrc ? `<img src="${imgSrc}" style="width:26px;height:26px;object-fit:contain;flex-shrink:0" onerror="this.style.display='none'">` : `<div style="font-size:1.1rem;flex-shrink:0;line-height:1">${item.icon||'📦'}</div>`}
+          <div style="min-width:0;flex:1;overflow:hidden">
+            <div class="item-name" style="color:${RARITY[item.rarity]||'#c8c0a0'}">${item.name}</div>
+            <div class="item-type">${item.subtype||item.item_type}${item.quantity>1?' ×'+item.quantity:''}</div>
+          </div>
         </div>
-        ${item.equipped_slot?'<span class="item-eq" style="position:absolute;top:3px;right:3px">EQ</span>':''}
-      </div>
-      `
-    }).join('') || `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#3a2008;grid-column:span 3">Nothing here.</p>`
+        ${bonuses ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(200,168,74,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bonuses}</div>` : ''}
+        ${(item.sockets_total||0)>0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:${item.runeword_name?'#c090ff':'rgba(160,125,224,.5)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.runeword_name?'✦ '+item.runeword_name:(item.sockets_used||0)+'/'+item.sockets_total+' ◈'}</div>` : ''}
+        ${item.equipped_slot ? `<div class="item-eq" style="position:absolute;top:3px;right:3px">EQ</div>` : ''}
+      </div>`
+    }).join('') || `<div style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:rgba(200,168,74,.4);grid-column:span 3;padding:.5rem">Nothing here.</div>`
 
     document.querySelectorAll('.item-card').forEach(el => {
       el.addEventListener('click', () => {
