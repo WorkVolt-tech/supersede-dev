@@ -78,7 +78,7 @@
     /* ── The book — side-by-side panels ── */
     .book {
       display: grid !important;
-      grid-template-columns: 1fr 20px 1fr !important;
+      grid-template-columns: 1fr 28px 1fr !important;
       gap: 0 !important;
       background: transparent !important;
       border: none !important;
@@ -102,6 +102,17 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
+    /* Left page: no right border — spine covers that edge */
+    .page-left {
+      border-right: none !important;
+      /* inner-edge fade simulating page depth toward spine */
+      box-shadow: inset -18px 0 28px -10px rgba(0,0,0,.55) !important;
+    }
+    /* Right page: no left border — spine covers that edge */
+    .page-right {
+      border-left: none !important;
+      box-shadow: inset 18px 0 28px -10px rgba(0,0,0,.55) !important;
+    }
     .parchment::before {
       content: ""; position: absolute; top: -1px; left: -1px;
       width: 16px; height: 16px;
@@ -116,12 +127,47 @@
     }
     .page-inner { padding: 22px 24px !important; }
 
-    /* ── Spine ── */
+    /* ── Spine — proper book binding ── */
     .spine {
-      background: var(--line) !important;
-      width: 1px !important;
-      margin: 0 10px !important;
+      background: linear-gradient(
+        to right,
+        #0a0e14 0%,
+        #141c26 18%,
+        #1e2a38 38%,
+        #1e2a38 62%,
+        #141c26 82%,
+        #0a0e14 100%
+      ) !important;
+      width: 28px !important;
+      margin: 0 !important;
       border: none !important;
+      position: relative;
+      flex-shrink: 0;
+    }
+    /* Spine centre rule — a single faint line down the middle */
+    .spine::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 1px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(143,216,240,.18) 8%,
+        rgba(143,216,240,.18) 92%,
+        transparent 100%
+      );
+      transform: translateX(-50%);
+    }
+    /* Spine top & bottom stitching marks */
+    .spine::after {
+      content: "";
+      position: absolute;
+      left: 4px; right: 4px;
+      top: 0; bottom: 0;
+      border-left: 1px solid rgba(255,255,255,.04);
+      border-right: 1px solid rgba(255,255,255,.04);
     }
 
     /* ── Chapter label / title ── */
@@ -532,7 +578,7 @@
 <script type="module">
 import { supabase } from '../supabase.js'
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
-import { resolveEnemyTurn, initEnemyState, ANIM } from '../data/enemyAI.js'
+import { resolveEnemyTurn, initEnemyState, ANIM } from './enemyAI.js'
 
 // ── Chapter data ─────────────────────────────────
 const META = {
