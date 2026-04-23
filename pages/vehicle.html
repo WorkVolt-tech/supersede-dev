@@ -111,7 +111,7 @@ const vehicleData=rawVD
 const vtype=vehicleData.active||'car'
 const vUpgrades=vehicleData.upgrades?.[vtype]||[]
 
-const BASE={motorcycle:{hp:60,speed:9,fireRate:10,bulletSpd:16,w:22,h:38,guns:1},car:{hp:100,speed:7,fireRate:16,bulletSpd:13,w:50,h:76,guns:2},van:{hp:160,speed:5,fireRate:24,bulletSpd:10,w:52,h:82,guns:3}}
+const BASE={motorcycle:{hp:60,speed:9,fireRate:10,bulletSpd:16,w:22,h:38,guns:1},car:{hp:100,speed:7,fireRate:16,bulletSpd:13,w:95,h:76,guns:2},van:{hp:160,speed:5,fireRate:24,bulletSpd:10,w:105,h:82,guns:3}}
 const UPGD={eng_boost:{speed:2},eng_heavy:{speed:1,hp:20},eng_lite:{speed:3,hp:-15},arm_plate:{hp:40},arm_reactive:{hp:25},arm_shield:{hp:30},wpn_cannon:{fireRate:6,bulletSpd:2,guns:1},wpn_rapid:{fireRate:4},wpn_beam:{bulletSpd:4}}
 function buildStats(){const s={...BASE[vtype]};vUpgrades.forEach(u=>{const d=UPGD[u]||{};Object.entries(d).forEach(([k,v])=>s[k]=(s[k]||0)+v)});return s}
 const VS=buildStats()
