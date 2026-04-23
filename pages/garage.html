@@ -377,6 +377,12 @@ const urlDest = new URLSearchParams(window.location.search).get('dest')
 const destination = urlDest ? parseInt(urlDest) : null
 
 vehicleData = normaliseVehicleData(player.vehicle_data)
+const VEHICLE_IMGS = {
+  motorcycle: '../assets/ride/side_motorcycle.webp',
+  car:        '../assets/ride/side_car.webp',
+  van:        '../assets/ride/side_van.webp',
+}
+
 await loadMaterials()
 renderMaterials()
 renderVehicleGrid()
@@ -412,12 +418,6 @@ function renderMaterials() {
 }
 
 // ── Vehicle side images ───────────────────────────────────
-const VEHICLE_IMGS = {
-  motorcycle: '../assets/ride/side_motorcycle.webp',
-  car:        '../assets/ride/side_car.webp',
-  van:        '../assets/ride/side_van.webp',
-}
-
 // ── Render vehicle grid ───────────────────────────────────
 function renderVehicleGrid() {
   const el = document.getElementById('vehicle-grid')
