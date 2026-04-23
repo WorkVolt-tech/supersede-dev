@@ -532,6 +532,7 @@
 <script type="module">
 import { supabase } from '../supabase.js'
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+import { resolveEnemyTurn, initEnemyState, ANIM } from './enemyAI.js'
 
 // ── Chapter data ─────────────────────────────────
 const META = {
@@ -4682,6 +4683,9 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
   const maxPlayerHp = player.max_hp || 100
   let over = false
 
+  // ── Per-enemy AI state (phases, turn count, move history) ──
+  const enemyState = initEnemyState(enemy)
+
   // Cache equipped items for derived stat calculations
   ;(async () => {
     const { data } = await supabase.from('inventory').select('*')
@@ -4829,6 +4833,31 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     if(!w) return
     w.classList.add('animate-shake')
     setTimeout(()=>w.classList.remove('animate-shake'),400)
+  }
+
+  // ── Animation helpers for enemyAI ──────────────────────────
+  function flashScreen(color, opacity) {
+    const el = document.createElement('div')
+    el.style.cssText = `position:fixed;inset:0;z-index:9997;background:${color};opacity:0;pointer-events:none;transition:opacity .12s`
+    document.body.appendChild(el)
+    requestAnimationFrame(() => {
+      el.style.opacity = opacity
+      setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.remove(), 200) }, 180)
+    })
+  }
+
+  function triggerAnimation(animClass) {
+    const wrap = $('combat-wrap')
+    switch (animClass) {
+      case ANIM.SHAKE:  shake(); break
+      case ANIM.PULSE:  if(wrap){wrap.style.boxShadow='0 0 30px 4px rgba(224,90,68,.5)'; setTimeout(()=>wrap.style.boxShadow='',600)} break
+      case ANIM.FLASH:  flashScreen('#e05a44', 0.14); break
+      case ANIM.VOID:   flashScreen('#b06eff', 0.18); break
+      case ANIM.GOLD:   flashScreen('#ffd68a', 0.12); break
+      case ANIM.ICE:    flashScreen('#8fd8f0', 0.15); break
+      case ANIM.TERROR: shake(); flashScreen('#cc000033', 0.30); break
+      default: break
+    }
   }
 
   async function endCombat(result) {
@@ -5083,7 +5112,10 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
 
   function playerATK()  { return calcATK() }
   function playerDEF()  { return calcDEF() }
-  function playerSPD()  { return calcSPD() }
+  function playerSPD()  {
+    const base = calcSPD()
+    return statusEffects.playerSlowTurns > 0 ? Math.floor(base / 2) : base
+  }
   function enemySPD()   { return enemy.spd || Math.floor((enemy.atk||5) * 0.6) }
 
   // ── Global skill level getter (also used by renderSkillSlots outside doTurn) ─
@@ -5346,23 +5378,28 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       const elIcon = EL_ICON[sk.el] || '✦'
 
       const cdLabel = cd > 0 ? cd + ' turn' + (cd > 1 ? 's' : '') : null
+      const terrorActive = (statusEffects.playerTerrorTurns || 0) > 0
       const border  = isUlt ? `border-color:${sk.color}70` : `border-color:${sk.color}40`
 
       // Build skill button safely — avoid nested template literals and quote hell
-      const cdOverlay = cd > 0
+      const cdOverlay = terrorActive
+        ? '<div style="position:absolute;inset:0;background:rgba(80,0,0,.55);display:flex;align-items:center;justify-content:center;border-radius:3px">'
+          + '<span style="font-family:Share Tech Mono,monospace;font-size:.5rem;color:#e07070">😱 TERROR</span>'
+          + '</div>'
+        : cd > 0
         ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px">'
           + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">' + cdLabel + '</span>'
           + '</div>'
         : ''
-      const iconFilter = cd > 0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
-      const btnColor   = cd > 0 ? 'rgba(200,160,60,.35)' : sk.color
+      const iconFilter = (cd > 0 || terrorActive) ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
+      const btnColor   = (cd > 0 || terrorActive) ? 'rgba(200,160,60,.35)' : sk.color
       const imgTag = '<img src="../assets/skills/' + k + '.webp"'
         + ' style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto"'
         + ' onerror="this.remove()">'
 
       return '<button class="combat-btn" id="' + cid + '-btn-skill-' + k + '"'
         + ' onclick="useSkill_' + cid + '(\'' + k + '\')"'
-        + (cd > 0 ? ' disabled' : '')
+        + (cd > 0 || terrorActive ? ' disabled' : '')
         + ' title="' + (sk.desc || sk.label) + ' (Lv' + lv + ' · ' + pct + '% power)"'
         + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;' + border + ';'
         + 'color:' + btnColor + ';position:relative;overflow:hidden">'
@@ -5389,7 +5426,8 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       const b = $('btn-skill-'+k)
       if (b && enabled) {
         const cd = statusEffects.skillCooldowns[k] || 0
-        b.disabled = cd > 0
+        const terror = (statusEffects.playerTerrorTurns || 0) > 0
+        b.disabled = cd > 0 || terror
       } else if (b) {
         b.disabled = true
       }
@@ -5460,6 +5498,45 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     Object.keys(statusEffects.skillCooldowns).forEach(k => {
       if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
     })
+
+    // ── Enemy-applied status effects on player ────────────────
+    // These are set by enemyAI move tables and ticked each turn BEFORE player acts.
+    const _preTurnMsgs = []
+    if (statusEffects.playerStunTurns > 0) {
+      statusEffects.playerStunTurns--
+      _preTurnMsgs.push('<strong>You are stunned</strong> — action lost!')
+    }
+    if (statusEffects.playerBleedTurns > 0) {
+      currentHp = Math.max(0, currentHp - (statusEffects.playerBleedDmg || 3))
+      statusEffects.playerBleedTurns--
+      _preTurnMsgs.push('🩸 Bleed: <strong>' + (statusEffects.playerBleedDmg || 3) + '</strong> dmg. (' + statusEffects.playerBleedTurns + ' left)')
+    }
+    if (statusEffects.playerPoisonTurns > 0) {
+      currentHp = Math.max(0, currentHp - (statusEffects.playerPoisonDmg || 3))
+      statusEffects.playerPoisonTurns--
+      _preTurnMsgs.push('☠ Poison: <strong>' + (statusEffects.playerPoisonDmg || 3) + '</strong> dmg. (' + statusEffects.playerPoisonTurns + ' left)')
+    }
+    if (statusEffects.playerSlowTurns > 0) {
+      statusEffects.playerSlowTurns--
+      // Speed effect is passive — just notify on first tick
+    }
+    if (statusEffects.playerDefShredTurns > 0) {
+      statusEffects.playerDefShredTurns--
+    }
+    if (statusEffects.playerTerrorTurns > 0) {
+      statusEffects.playerTerrorTurns--
+    }
+    // If stunned: flash the log and abort the whole turn
+    if (_preTurnMsgs.length) {
+      syncBars()
+      if (statusEffects.playerStunTurns >= 0 && _preTurnMsgs[0].includes('stunned')) {
+        log(_preTurnMsgs.join(' '), '⚠ STUNNED')
+        setButtons(true)
+        return
+      }
+    }
+    // Capture pre-turn messages to prepend later
+    const _preTurnPrefix = _preTurnMsgs.join(' ')
 
     // ── FF-Style Turn Order ───────────────────────────────────
     // Base speed comparison with jitter. Faster player goes first.
@@ -5837,14 +5914,17 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       }
     }
 
-    // ── Enemy action ──────────────────────────────────────
+    // ── Enemy action — routed through enemyAI.js ─────────────
     function resolveEnemyAction() {
       if (enemyHp <= 0) return
-      // Stun / root check
+
+      // Stun / root: enemy cannot act
       if (statusEffects.enemyStunTurns > 0 || statusEffects.rootTrapTurns > 0) {
         messages.push(enemy.name + ' is stunned — cannot attack!')
         return
       }
+
+      // Divine Barrier: absorb and reflect — skip enemy turn entirely
       if (statusEffects.invulnerable) {
         const reflectDmg = Math.floor(enemy.atk * 0.5)
         enemyHp          = Math.max(0, enemyHp - reflectDmg)
@@ -5852,107 +5932,172 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         messages.push('✨ Divine Barrier absorbs! Reflected ' + reflectDmg + ' back.')
         return
       }
-      // Player dodge check — includes Nightshroud first-turn, Ghost Step, Umbral Veil
+
+      // Phantom Step: untargetable for one turn
+      if (statusEffects.phantomStep) {
+        statusEffects.phantomStep = false
+        messages.push('👻 Phantom Step — you are untargetable. The attack finds nothing.')
+        return
+      }
+
+      // Player dodge check — Nightshroud, Ghost Step, Umbral Veil, Wind passive
       let dodgeChance = calcPlayerDodge()
-      if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
+      if (statusEffects.ghostStep || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
       if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
 
       if (Math.random() < dodgeChance) {
         messages.push('You <em>dodge</em> the attack!')
-        // Flicker: next strike doubles
-        if (statusEffects.flicker) { statusEffects.flickerReady = true }
-        // Ghost Step / Umbral Veil: counter on dodge
+        if (statusEffects.flicker)                              { statusEffects.flickerReady = true }
         if (statusEffects.ghostStep || statusEffects.umbralVeil) {
           const counterDmg = Math.max(1, Math.floor(playerATK() * 0.5))
           enemyHp = Math.max(0, enemyHp - counterDmg)
           messages.push('↩ Counter hit for <strong>' + counterDmg + '</strong>!')
         }
-        // Increment consecutive-hit counter on dodge (reset it)
         statusEffects.consecutiveHits = 0
         return
       }
-      // Foresight active: reduce damage 90%
+
+      // Endurig Root: immune to enemy-applied stun/slow effects
+      if (statusEffects.enduringRoot) {
+        statusEffects.playerStunTurns = 0
+        statusEffects.playerSlowTurns = 0
+      }
+
+      // Foresight: pre-multiplier for incoming damage
       let foresightMult = 1.0
-      if (statusEffects.foresight) { foresightMult = 0.10; statusEffects.foresight = false; messages.push('🔮 Foresight absorbs the blow!') }
-      // Endurig Root: immune to stun
-      if (statusEffects.enduringRoot) { statusEffects.enemyStunTurns = 0; statusEffects.rootTrapTurns = 0 }
-      const defMult  = defending ? 0.25 : 1
-      const eATKMult = (statusEffects.enemyATKMult || 1.0) * (foresightMult || 1.0)
-      // Apply enemy SPD reduction from heavyGround
-      const eSPDReduced = (statusEffects.enemySPDReduction || 0)
-      const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
-      let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
-
-      // Water shield absorbs
-      if (statusEffects.waterShield > 0 && eDmg > 0) {
-        const absorbed = Math.min(statusEffects.waterShield, eDmg)
-        eDmg -= absorbed
-        statusEffects.waterShield -= absorbed
-        if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + ' damage.')
+      if (statusEffects.foresight) {
+        foresightMult = 0.10
+        statusEffects.foresight = false
+        messages.push('🔮 Foresight absorbs the blow!')
       }
 
-      currentHp = Math.max(0, currentHp - eDmg)
-
-      // Metal reflect passive: Lv1 10% → Lv10 28% reflected
-      if (statusEffects.metalReflect && eDmg > 0) {
-        const refLv  = _skillLvGlobal('metal_passive_reflect')
-        const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
-        const refDmg = Math.max(1, Math.floor(eDmg * refPct))
-        enemyHp      = Math.max(0, enemyHp - refDmg)
-        messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' damage reflected!')
-      }
-      // Thornwall: reflect 15% of Defend absorption
-      if (statusEffects.thornwall && defending && eDmg > 0) {
-        const thornDmg = Math.max(1, Math.floor(eDmg * 0.15))
-        enemyHp = Math.max(0, enemyHp - thornDmg)
-        statusEffects.thornwall = false
-        messages.push('🌿 Thornwall — ' + thornDmg + ' thorn damage reflected!')
-      }
-      // Live Wire: 20% stun on being hit
-      if (statusEffects.liveWire && eDmg > 0 && Math.random() < 0.20) {
-        statusEffects.enemyStunTurns = 1
-        messages.push('⚡ Live Wire — shock! Enemy stunned next turn.')
-      }
-      // Tidal Resolve: first time below 50% HP, gain +20 DEF for 2 turns
-      if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
-          currentHp / maxPlayerHp < 0.50 && eDmg > 0) {
-        statusEffects.tidalResolveFired = true
-        statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
-        statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
-        messages.push('🌊 Tidal Resolve — below 50% HP: +20 DEF for 2 turns!')
-      }
-      // Absorption: hit counter — every 3 hits, next Defend heals 15
-      if (statusEffects.absorption && eDmg > 0) {
-        statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
-        if (statusEffects.absorptionCount >= 3) {
-          statusEffects.absorptionCount = 0
-          statusEffects.absorptionHeal  = 15
-          messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
-        }
-      }
-      // Arc Reflex: 3 consecutive hits → auto counter
-      if (statusEffects.arcReflex && eDmg > 0) {
-        statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
-        if (statusEffects.consecutiveHits >= 3) {
-          statusEffects.consecutiveHits = 0
-          const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
-          enemyHp = Math.max(0, enemyHp - arcDmg)
-          messages.push('⚡ Arc Reflex — counter strike for <strong>' + arcDmg + '</strong>!')
-        }
-      }
-      // Tremor Step: 20% chance to stagger enemy (they skip attack next turn)
-      if (statusEffects.tremorStep && Math.random() < 0.20) {
-        statusEffects.enemyStunTurns = 1
-        messages.push('🌍 Tremor Step — ground shakes! Enemy staggered.')
+      // Sixth Sense: 80% reduction if it was correctly triggered
+      if (statusEffects.sixthSense) {
+        foresightMult = Math.min(foresightMult, 0.20)
+        statusEffects.sixthSense = false
+        messages.push('🔮 Sixth Sense — pattern read correctly!')
       }
 
-      if (defending && eDmg === 0) {
-        messages.push(enemy.name + ' attacks — completely blocked!')
-      } else if (defending) {
-        messages.push(enemy.name + ' attacks for <strong>' + eDmg + '</strong> (reduced by defense).')
-      } else {
-        messages.push(enemy.name + ' retaliates for <strong>' + eDmg + '</strong>.')
-      }
+      // ── Hand off to enemyAI for the named move ──────────────
+      // onEnemyDmgPlayer applies all player-reactive effects to the raw damage value
+      // before committing it to currentHp, so every effect fires in the right order.
+      resolveEnemyTurn(enemy, {
+        enemyState,
+        enemyHp,
+        maxEnemyHp,
+        currentHp,
+        maxPlayerHp,
+        playerDEF,
+        defending,
+        statusEffects,
+        yara,
+        messages,
+        triggerAnimation,
+        playerMoral:  player.moral_score || 0,
+        playerAction,
+
+        onEnemyDmgPlayer(rawDmg) {
+          // Apply foresight/sixth-sense reduction
+          let dmg = Math.max(0, Math.round(rawDmg * foresightMult))
+
+          // enemyATKMult from player skills (Void Zone, Tornado, Dread Pulse etc.)
+          // Note: enemyAI already factors this via its own context — but its context
+          // uses the same statusEffects object so enemyATKMult is already applied.
+          // We do NOT double-apply here. foresightMult is the only extra multiplier.
+
+          // Water Shield absorbs first
+          if (statusEffects.waterShield > 0 && dmg > 0) {
+            const absorbed = Math.min(statusEffects.waterShield, dmg)
+            dmg -= absorbed
+            statusEffects.waterShield -= absorbed
+            if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + '.')
+          }
+
+          // Ancient Root shield (dc_ks2 keystone)
+          if (statusEffects.ancientRootShield > 0 && dmg > 0) {
+            const absorbed = Math.min(statusEffects.ancientRootShield, dmg)
+            dmg -= absorbed
+            statusEffects.ancientRootShield -= absorbed
+            if (absorbed > 0) messages.push('🌿 Ancient Root Shield absorbs ' + absorbed + '.')
+          }
+
+          // Absorb-next-hit (Deep Current)
+          if (statusEffects.absorbNextHit && dmg > 0) {
+            statusEffects.absorbNextHit = false
+            messages.push('🌊 Deep Current fully absorbs the hit!')
+            dmg = 0
+          }
+
+          // Iron Mirror: reflect 40% before applying
+          if (statusEffects.ironMirror && dmg > 0) {
+            const reflectDmg = Math.max(1, Math.floor(dmg * 0.40))
+            enemyHp = Math.max(0, enemyHp - reflectDmg)
+            statusEffects.ironMirror = false
+            messages.push('🛡 Iron Mirror reflects ' + reflectDmg + ' back!')
+          }
+
+          currentHp = Math.max(0, currentHp - dmg)
+
+          if (dmg <= 0) return  // fully blocked — no reactive effects
+
+          // Metal reflect passive
+          if (statusEffects.metalReflect) {
+            const refLv  = _skillLvGlobal('metal_passive_reflect')
+            const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
+            const refDmg = Math.max(1, Math.floor(dmg * refPct))
+            enemyHp = Math.max(0, enemyHp - refDmg)
+            messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' reflected!')
+          }
+          // Thornwall
+          if (statusEffects.thornwall && defending) {
+            const thornDmg = Math.max(1, Math.floor(dmg * 0.15))
+            enemyHp = Math.max(0, enemyHp - thornDmg)
+            statusEffects.thornwall = false
+            messages.push('🌿 Thornwall — ' + thornDmg + ' thorn reflected!')
+          }
+          // Live Wire: 20% chance to stun enemy on being hit
+          if (statusEffects.liveWire && Math.random() < 0.20) {
+            statusEffects.enemyStunTurns = 1
+            messages.push('⚡ Live Wire — shock! Enemy stunned.')
+          }
+          // Tidal Resolve: first time below 50% HP
+          if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
+              currentHp / maxPlayerHp < 0.50) {
+            statusEffects.tidalResolveFired = true
+            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
+            statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
+            messages.push('🌊 Tidal Resolve — +20 DEF for 2 turns!')
+          }
+          // Absorption counter
+          if (statusEffects.absorption) {
+            statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
+            if (statusEffects.absorptionCount >= 3) {
+              statusEffects.absorptionCount = 0
+              statusEffects.absorptionHeal  = 15
+              messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
+            }
+          }
+          // Arc Reflex: 3 consecutive hits → auto counter
+          if (statusEffects.arcReflex) {
+            statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
+            if (statusEffects.consecutiveHits >= 3) {
+              statusEffects.consecutiveHits = 0
+              const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
+              enemyHp = Math.max(0, enemyHp - arcDmg)
+              messages.push('⚡ Arc Reflex — counter for <strong>' + arcDmg + '</strong>!')
+            }
+          }
+          // Tremor Step: 20% stagger
+          if (statusEffects.tremorStep && Math.random() < 0.20) {
+            statusEffects.enemyStunTurns = 1
+            messages.push('🌍 Tremor Step — enemy staggered!')
+          }
+        },
+
+        onEnemyHealSelf(amt) {
+          enemyHp = Math.min(maxEnemyHp, enemyHp + Math.max(0, amt))
+        },
+      })
     }
 
     if (playerFirst) {
@@ -6010,7 +6155,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     }
 
     shake()
-    log(messages.join(' '), turnLabel)
+    log((_preTurnPrefix ? _preTurnPrefix + ' ' : '') + messages.join(' '), turnLabel)
     syncBars()
     renderSkillSlots()
 
