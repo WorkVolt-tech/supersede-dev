@@ -105,7 +105,6 @@
     /* Left page: no right border — spine covers that edge */
     .page-left {
       border-right: none !important;
-      /* inner-edge fade simulating page depth toward spine */
       box-shadow: inset -18px 0 28px -10px rgba(0,0,0,.55) !important;
     }
     /* Right page: no left border — spine covers that edge */
@@ -144,7 +143,6 @@
       position: relative;
       flex-shrink: 0;
     }
-    /* Spine centre rule — a single faint line down the middle */
     .spine::before {
       content: "";
       position: absolute;
@@ -160,7 +158,6 @@
       );
       transform: translateX(-50%);
     }
-    /* Spine top & bottom stitching marks */
     .spine::after {
       content: "";
       position: absolute;
