@@ -124,6 +124,26 @@
       border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
       pointer-events: none; z-index: 1;
     }
+    /* Left page: top-left and bottom-left corners only (spine side has no corner) */
+    .page-left::before {
+      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
+      border-right: none;
+    }
+    .page-left::after {
+      right: auto; left: -1px;
+      border-bottom: 1px solid var(--ice); border-left: 1px solid var(--ice);
+      border-right: none;
+    }
+    /* Right page: top-right and bottom-right corners only (spine side has no corner) */
+    .page-right::before {
+      left: auto; right: -1px;
+      border-top: 1px solid var(--ice); border-right: 1px solid var(--ice);
+      border-left: none;
+    }
+    .page-right::after {
+      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
+      border-left: none;
+    }
     .page-inner { padding: 22px 24px !important; }
 
     /* ── Spine — proper book binding ── */
