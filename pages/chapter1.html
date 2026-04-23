@@ -1972,20 +1972,77 @@ Your interface blinks back on fully. Health. Radar. Levels.
 
 You stand in the silence of level four and breathe.
 
-Marcus — if he's with you — puts a hand on the wall. Just steadying himself.
+Then something hits you from behind.
 
-"There's one more level," he says.
+Not hard enough to put you down — but hard enough to be deliberate. You spin.
+
+Dorian. He stepped back toward the ramp but he never left. He was waiting for the Sentinel to finish you. When it didn't, he decided to try himself.
+
+He's already pulling back — not pressing the advantage. He looks at you with that same flat expression. Then at his hand. Like he's not entirely sure why he did it.
+
+"Force of habit," he says.
+
+His badge pulses. RED.
+
+You have a choice.`,
+    hpLoss: 12,
+    xp: 50,
+    rewards: [{ itemKey:'medkit',qty:1 }],
+    choices: [
+      { label: 'Attack him — finish this now', sub: 'He hit first. Fair game.', next: 'garage_b4_dorian_final_fight', variant: 'danger', moral: -5 },
+      { label: 'Let it go — tell him to leave', sub: 'You have bigger things ahead.', next: 'garage_b4_dorian_let_go', moral: +8 },
+    ],
+  },
+
+  garage_b4_dorian_final_fight: {
+    id: 'garage_b4_dorian_final_fight', type: 'combat',
+    text: `He doesn't run. Just sets his stance. He knew you might come at him.
+
+"At least you're consistent," he says.`,
+    enemy: { name:'Dorian', icon:'🔴', hp:80, atk:10, xp:100, loot:[{itemKey:'knife',qty:1},{itemKey:'energy_drink',qty:1}] },
+    onWin: 'garage_b4_after_dorian',
+    onLose: 'garage_b4_after_dorian',
+    onEscape: 'garage_b4_after_dorian',
+  },
+
+  garage_b4_after_dorian: {
+    id: 'garage_b4_after_dorian', type: 'story',
+    text: `He's down. Or gone. Either way the floor is quiet now.
+
+Marcus — if he's with you — says nothing. Just looks at the ramp.
+
+"There's one more level," he says finally.
 
 "I know," you say.
-
-"It's different up there. The interference doesn't feel like the System anymore. It feels like something that's been here longer than the game."
 
 The ramp to level five. The top floor. Open to the sky above — except the sky doesn't look right from here.
 
 Something waits. And it has been waiting since before any of this started.`,
-    xp: 50,
-    rewards: [{ itemKey:'medkit',qty:1 }],
-    choices: [{ label: 'Climb to the top floor — face whatever is there', next: 'garage_b5_summit', variant: 'danger' }],
+    xp: 20,
+    choices: [{ label: 'Climb to the top floor', next: 'garage_b5_summit', variant: 'danger' }],
+  },
+
+  garage_b4_dorian_let_go: {
+    id: 'garage_b4_dorian_let_go', type: 'story',
+    text: `"Get out," you say.
+
+He looks at you for a long moment. Then he nods — one short, deliberate motion — and walks to the ramp.
+
+At the edge he stops.
+
+"Level five," he says. "Whatever's up there — it's been watching this whole building. Not through the creatures. Directly." A pause. "It saw you fight the Sentinel. It already knows what you are."
+
+Then he's gone.
+
+Marcus — if he's with you — exhales slowly. "Why did you let him go?"
+
+You don't answer. You're not entirely sure yourself.
+
+The ramp to level five. The top floor. Open to the sky above — except the sky doesn't look right from here.
+
+Something waits. And it has been waiting since before any of this started.`,
+    xp: 40,
+    choices: [{ label: 'Climb to the top floor', next: 'garage_b5_summit', variant: 'danger' }],
   },
 
   // BEAT 5 — The summit, Yara, and the Sentinel
@@ -3552,8 +3609,8 @@ const EYE_EXEMPT_NODES = new Set([
 function triggerForcedEyeEncounter(encounterType, resumeNextId) {
   const isSwarm   = encounterType === 'watcher_eye_swarm'
   const enemyData = isSwarm
-    ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_lux',qty:1},{itemKey:'rune_umbra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
-    : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_lux',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
+    ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
+    : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
 
   const alertLines = isSwarm ? [
     "The sky fractures in seven places at once.",
@@ -4309,7 +4366,8 @@ function renderChoices(panel, node) {
         <button class="choice ${c.variant||''}"
           data-next="${c.next}"
           data-outcome="${c.outcome||''}"
-          data-bossmode="${c.bossMode||''}">
+          data-bossmode="${c.bossMode||''}"
+          data-moral="${c.moral||0}">
           <span class="choice-arrow">→</span>
           <span class="choice-body">
             ${c.label}
@@ -4331,7 +4389,8 @@ function renderChoices(panel, node) {
   `
   panel.querySelectorAll('.choice').forEach(btn => {
     btn.addEventListener('click', () => {
-      goTo(btn.dataset.next, { outcome: btn.dataset.outcome||null, bossMode: btn.dataset.bossmode||null })
+      const moralVal = parseFloat(btn.dataset.moral) || 0
+      goTo(btn.dataset.next, { outcome: btn.dataset.outcome||null, bossMode: btn.dataset.bossmode||null, moral: moralVal || null })
     })
   })
 }
@@ -4904,7 +4963,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
 
     if (result === 'win') {
       const RUNE_POOL_COMMON = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
-      const RUNE_POOL_RARE   = ['rune_ignis','rune_aqua','rune_terra','rune_aero','rune_umbra','rune_lux']
+      const RUNE_POOL_RARE   = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
       const isHardEnemy      = (enemy.hp||0) > 60
       const runeChance       = isBoss ? 1.0 : isHardEnemy ? 0.35 : 0.20
       const runePool         = (isBoss || isHardEnemy) ? RUNE_POOL_RARE : RUNE_POOL_COMMON
@@ -4976,7 +5035,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         if (updates.xp) player.xp = updates.xp
         await save(updates)
         if (sGoldDrop > 0) queueLoot('◈ ' + sGoldDrop + ' Gold', 1, null)
-        // Award loot — for boss, fall back to rune_lux if core_fragment missing
+        // Award guaranteed loot from boss node definition
         if (enemy.loot) {
           for (const l of enemy.loot) {
             const result = await addItem(l.itemKey, l.qty)
