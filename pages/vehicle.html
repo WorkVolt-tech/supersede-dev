@@ -155,7 +155,7 @@ if(HAS_REPAIR)SPECIALS.push({icon:'🔧',label:'Repair', cd:0,maxCd:600,active:0
 // Game state
 const G={running:false,paused:false,finished:false,hp:VS.hp,maxHp:VS.hp,eyesKilled:0,score:0,combo:0,maxCombo:0,wave:1,waveKills:0,waveTarget:10,progress:0,speed:VS.speed,shake:0,lootDropped:[]}
 const PV={x:0,y:0,w:VS.w,h:VS.h,speed:VS.speed,inv:0}
-function resetPV(){PV.x=canvas.width/2;PV.y=canvas.height-PV.h-70}
+function resetPV(){PV.x=canvas.width/2;PV.y=canvas.height*.82-PV.h}
 resetPV()
 
 // World
@@ -175,10 +175,12 @@ let shootCD=0,waveShowTimer=0,waveTransition=false,spawnTimer=0,spawnRate=80
 let comboTimer=0,droneAngle=0
 
 // Input
-const keys={left:false,right:false,shoot:false,special:false}
+const keys={left:false,right:false,up:false,down:false,shoot:false,special:false}
 window.addEventListener('keydown',e=>{
   if(e.code==='ArrowLeft'||e.code==='KeyA'){e.preventDefault();keys.left=true}
   if(e.code==='ArrowRight'||e.code==='KeyD'){e.preventDefault();keys.right=true}
+  if(e.code==='ArrowUp'||e.code==='KeyW'){e.preventDefault();keys.up=true}
+  if(e.code==='ArrowDown'||e.code==='KeyS'){e.preventDefault();keys.down=true}
   if(e.code==='Space'){e.preventDefault();keys.shoot=true}
   if(e.code==='KeyE'||e.code==='ShiftLeft'){keys.special=true}
   if(e.code==='Escape'){G.paused=!G.paused}
@@ -186,6 +188,8 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('keyup',e=>{
   if(e.code==='ArrowLeft'||e.code==='KeyA')keys.left=false
   if(e.code==='ArrowRight'||e.code==='KeyD')keys.right=false
+  if(e.code==='ArrowUp'||e.code==='KeyW')keys.up=false
+  if(e.code==='ArrowDown'||e.code==='KeyS')keys.down=false
   if(e.code==='Space')keys.shoot=false
   if(e.code==='KeyE'||e.code==='ShiftLeft')keys.special=false
 })
@@ -308,12 +312,10 @@ function waveBanner(txt,dur=1800){const e=document.getElementById('wave-banner')
 // Wave system
 function nextWave(){
   G.wave++;G.waveKills=0
-  G.waveTarget=6+G.wave*3   // wave 2=12, 3=15, 4=18, 5=21 — manageable
-  spawnRate=Math.max(50,110-G.wave*8)  // starts slow, ramps gently
-  G.progress=Math.min(90,G.progress+16)
+  G.waveTarget=6+G.wave*3
+  spawnRate=Math.max(50,110-G.wave*8)
   waveTransition=false;document.getElementById('hud-wave').textContent='WAVE '+G.wave
   waveBanner('WAVE '+G.wave)
-  // Boss combo only on final wave 5
   if(G.wave===5){setTimeout(()=>{spawnEye(ETYPES[3]);spawnEye(ETYPES[4])},1500)}
 }
 
@@ -334,32 +336,37 @@ function drawWorld(){
     const bx=b.x===0?rx-b.w-4:rx+rw+4
     ctx.fillStyle='rgba(18,13,8,.95)';ctx.fillRect(bx,b.y,b.w,b.h)
     ctx.fillStyle='rgba(20,15,8,1)';ctx.fillRect(bx,b.y,b.w,3)
-    // Windows
     for(let wy=b.y+6;wy<b.y+b.h-4;wy+=9)for(let wx=bx+3;wx<bx+b.w-3;wx+=7){
       if(Math.random()<.35)ctx.fillStyle=`rgba(200,180,100,${.05+b.lit*.15})`
       else ctx.fillStyle='rgba(0,0,0,.4)'
       ctx.fillRect(wx,wy,4,5)
     }
   })
-  // Dirt
-  ctx.fillStyle='#0d0a06';ctx.fillRect(0,0,rx,H);ctx.fillRect(rx+rw,0,W-rx-rw,H)
-  // Road
-  ctx.fillStyle='#12151a';ctx.fillRect(rx,0,rw,H)
-  // Road glow center
+  // Dirt — slightly warmer
+  ctx.fillStyle='#100d08';ctx.fillRect(0,0,rx,H);ctx.fillRect(rx+rw,0,W-rx-rw,H)
+  // Road — brighter asphalt so dark vehicles pop
+  ctx.fillStyle='#2a2e38';ctx.fillRect(rx,0,rw,H)
+  // Road surface texture lines
+  for(let i=0;i<3;i++){
+    const lx=rx+rw*(i+1)/4
+    ctx.strokeStyle='rgba(255,255,255,.04)';ctx.lineWidth=1
+    ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,H);ctx.stroke()
+  }
+  // Road glow center — slightly brighter
   const rg=ctx.createRadialGradient(rx+rw/2,H*.5,0,rx+rw/2,H*.5,rw*.6)
-  rg.addColorStop(0,'rgba(200,81,42,.04)');rg.addColorStop(1,'transparent')
+  rg.addColorStop(0,'rgba(200,81,42,.06)');rg.addColorStop(1,'transparent')
   ctx.fillStyle=rg;ctx.fillRect(rx,0,rw,H)
   // Edges
-  ctx.strokeStyle='rgba(200,81,42,.55)';ctx.lineWidth=3
+  ctx.strokeStyle='rgba(200,81,42,.65)';ctx.lineWidth=3
   ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx,H);ctx.stroke()
   ctx.beginPath();ctx.moveTo(rx+rw,0);ctx.lineTo(rx+rw,H);ctx.stroke()
   // Center dash
-  ctx.strokeStyle='rgba(200,184,128,.1)';ctx.lineWidth=1.5;ctx.setLineDash([22,18])
+  ctx.strokeStyle='rgba(200,184,128,.12)';ctx.lineWidth=1.5;ctx.setLineDash([22,18])
   ctx.beginPath();ctx.moveTo(rx+rw/2,0);ctx.lineTo(rx+rw/2,H);ctx.stroke();ctx.setLineDash([])
   // Lane markers
   roadLines.forEach(l=>{
     const lx=rx+(l.lane+.5)*(rw/3)
-    ctx.strokeStyle=`rgba(200,184,128,${l.alpha})`;ctx.lineWidth=1;ctx.setLineDash([16,24])
+    ctx.strokeStyle=`rgba(255,255,255,${l.alpha*.8+.04})`;ctx.lineWidth=1;ctx.setLineDash([16,24])
     ctx.beginPath();ctx.moveTo(lx,l.y);ctx.lineTo(lx,l.y+18);ctx.stroke();ctx.setLineDash([])
   })
   // Debris
@@ -370,41 +377,39 @@ function drawWorld(){
   })
 }
 
+// Preload top-view vehicle images
+const VTOP_IMGS={}
+;['motorcycle','car','van'].forEach(t=>{const img=new Image();img.src=`../assets/ride/top_${t}.webp`;VTOP_IMGS[t]=img})
+
 // Draw vehicle
 const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
 const vcol=VCOL[vtype]||'#c8b96e'
 function drawVehicle(x,y){
   if(PV.inv>0&&Math.floor(PV.inv/4)%2===0)return
-  ctx.save();ctx.translate(x,y);ctx.shadowColor=vcol;ctx.shadowBlur=22
-  if(vtype==='motorcycle'){
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,24,11,4,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle=vcol;ctx.fillRect(-7,-20,14,40)
-    ctx.fillStyle='#1a1a1a';ctx.strokeStyle='#555';ctx.lineWidth=2
-    ctx.beginPath();ctx.ellipse(0,-22,6,9,0,0,Math.PI*2);ctx.fill();ctx.stroke()
-    ctx.beginPath();ctx.ellipse(0,22,6,9,0,0,Math.PI*2);ctx.fill();ctx.stroke()
-    ctx.fillStyle='#222';ctx.fillRect(-4,-20,8,8)
-    ctx.shadowColor='#fffde0';ctx.shadowBlur=14;ctx.fillStyle='rgba(255,253,224,.9)';ctx.beginPath();ctx.ellipse(0,-20,3,2,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle='rgba(255,100,0,.8)';ctx.fillRect(-3,20,2,5+Math.random()*8)
-  } else if(vtype==='van'){
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,32,20,5,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle=vcol;ctx.beginPath();ctx.roundRect(-17,-28,34,56,4);ctx.fill()
-    ctx.fillStyle='rgba(150,210,255,.15)';ctx.fillRect(-12,-22,24,15)
-    ctx.strokeStyle='rgba(255,255,255,.2)';ctx.lineWidth=1;ctx.strokeRect(-12,-22,24,15)
-    ctx.fillStyle='#111';ctx.strokeStyle='#555';ctx.lineWidth=2
-    ;[[-20,-18],[ 15,-18],[-20,8],[15,8]].forEach(([px,py])=>{ctx.fillRect(px,py,5,14);ctx.strokeRect(px,py,5,14)})
-    ctx.shadowColor='#ffcc00';ctx.shadowBlur=12;ctx.fillStyle='#ffcc00';ctx.fillRect(-14,-28,5,4);ctx.fillRect(9,-28,5,4)
-    if(HAS_CANNON){ctx.shadowColor='#888';ctx.shadowBlur=4;ctx.fillStyle='#888';ctx.fillRect(-4,-32,8,8);ctx.fillStyle='#555';ctx.fillRect(-2,-34,4,4)}
-    ctx.fillStyle='rgba(255,110,0,.7)';ctx.fillRect(-8,28,4,5+Math.random()*8);ctx.fillRect(4,28,4,5+Math.random()*8)
+  ctx.save();ctx.translate(x,y)
+  // Ground shadow / glow ring so vehicle pops on road
+  ctx.shadowColor=vcol;ctx.shadowBlur=32
+  ctx.fillStyle=vcol+'22';ctx.beginPath();ctx.ellipse(0,PV.h*.28,PV.w*.55,PV.h*.18,0,0,Math.PI*2);ctx.fill()
+  ctx.strokeStyle=vcol+'66';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(0,PV.h*.28,PV.w*.55,PV.h*.18,0,0,Math.PI*2);ctx.stroke()
+  const img=VTOP_IMGS[vtype]
+  if(img&&img.complete&&img.naturalWidth>0){
+    ctx.shadowColor=vcol;ctx.shadowBlur=24
+    ctx.drawImage(img,-PV.w/2,-PV.h/2,PV.w,PV.h)
   } else {
-    ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(0,28,18,5,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle=vcol;ctx.beginPath();ctx.roundRect(-14,-24,28,48,6);ctx.fill()
-    ctx.fillStyle=vcol+'cc';ctx.beginPath();ctx.roundRect(-10,-18,20,24,3);ctx.fill()
-    ctx.fillStyle='rgba(150,210,255,.18)';ctx.fillRect(-9,-18,18,14);ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=1;ctx.strokeRect(-9,-18,18,14)
-    ctx.fillStyle='#111';ctx.strokeStyle='#555';ctx.lineWidth=2
-    ;[[-17,-14],[12,-14],[-17,8],[12,8]].forEach(([px,py])=>{ctx.fillRect(px,py,5,11);ctx.strokeRect(px,py,5,11)})
-    ctx.shadowColor='#ffcc00';ctx.shadowBlur=10;ctx.fillStyle='#ffcc00';ctx.fillRect(-12,-24,5,4);ctx.fillRect(7,-24,5,4)
-    ctx.shadowColor='#e05555';ctx.shadowBlur=8;ctx.fillStyle='#e05555';ctx.fillRect(-12,20,5,3);ctx.fillRect(7,20,5,3)
-    ctx.fillStyle='rgba(255,120,0,.7)';ctx.fillRect(-6,24,3,5+Math.random()*6);ctx.fillRect(3,24,3,5+Math.random()*6)
+    // Canvas fallback
+    ctx.shadowBlur=22
+    if(vtype==='motorcycle'){
+      ctx.fillStyle=vcol;ctx.fillRect(-7,-20,14,40)
+      ctx.fillStyle='#1a1a1a';ctx.strokeStyle='#888';ctx.lineWidth=2
+      ctx.beginPath();ctx.ellipse(0,-22,6,9,0,0,Math.PI*2);ctx.fill();ctx.stroke()
+      ctx.beginPath();ctx.ellipse(0,22,6,9,0,0,Math.PI*2);ctx.fill();ctx.stroke()
+    } else if(vtype==='van'){
+      ctx.fillStyle=vcol;ctx.beginPath();ctx.roundRect(-17,-28,34,56,4);ctx.fill()
+      ctx.fillStyle='rgba(200,230,255,.2)';ctx.fillRect(-12,-22,24,15)
+    } else {
+      ctx.fillStyle=vcol;ctx.beginPath();ctx.roundRect(-14,-24,28,48,6);ctx.fill()
+      ctx.fillStyle='rgba(200,230,255,.2)';ctx.fillRect(-9,-18,18,14)
+    }
   }
   // Shield glow
   const sh=SPECIALS.find(s=>s.fn==='shield')
@@ -460,15 +465,23 @@ function drawLoot(l){
 
 // Progress bar
 function drawProgress(){
-  const H=canvas.height,ph=H*.6,pw=6,px=canvas.width-22,py=H*.2
-  ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(px,py,pw,ph)
+  const H=canvas.height,ph=H*.6,pw=8,px=canvas.width-26,py=H*.2
+  // Track
+  ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(px,py,pw,ph)
+  ctx.strokeStyle='rgba(200,168,74,.15)';ctx.lineWidth=1;ctx.strokeRect(px,py,pw,ph)
+  // Fill
   const fill=ph*(G.progress/100)
   const pg=ctx.createLinearGradient(0,py+ph-fill,0,py+ph)
   pg.addColorStop(0,'#c8512a');pg.addColorStop(1,'#ffcc00')
   ctx.fillStyle=pg;ctx.fillRect(px,py+ph-fill,pw,fill)
-  ctx.font='12px serif';ctx.textAlign='center'
-  ctx.fillText('🏁',px+pw/2,py-6)
-  ctx.fillText(vtype==='motorcycle'?'🏍️':vtype==='van'?'🚐':'🚗',px+pw/2,py+ph-fill-6)
+  // Destination flag
+  ctx.font='13px serif';ctx.textAlign='center'
+  ctx.fillText('🏁',px+pw/2,py-8)
+  // Vehicle position marker
+  ctx.fillStyle='rgba(200,168,74,.9)';ctx.fillRect(px-1,py+ph-fill-3,pw+2,4)
+  // Vehicle icon
+  const vEmoji=vtype==='motorcycle'?'🏍':vtype==='van'?'🚐':'🚗'
+  ctx.font='11px serif';ctx.fillText(vEmoji,px+pw/2,py+ph-fill-14)
 }
 
 // HUD
@@ -504,7 +517,8 @@ function loop(ts){
   let mx=0,my=0
   if(keys.left||joyD.x<-.15)mx=-1
   if(keys.right||joyD.x>.15)mx=1
-  if(joyD.y<-.2)my=-1;if(joyD.y>.2)my=1
+  if(keys.up||joyD.y<-.2)my=-1
+  if(keys.down||joyD.y>.2)my=1
 
   // Off-road detection
   const onRoad = PV.x > rx+PV.w/2+2 && PV.x < rx+rw-PV.w/2-2
@@ -515,12 +529,23 @@ function loop(ts){
   // Speed is reduced off-road, normal on road
   const nitroActive = G.speed === VS.speed*2.3
   const baseMs = nitroActive ? PV.speed*1.8 : PV.speed
-  const ms = offRoad ? baseMs * 0.35 : baseMs  // 65% speed penalty off road
+  const ms = offRoad ? baseMs * 0.35 : baseMs
 
-  // Allow player to go off-road fully (up to screen edges)
+  // Vertical bounds: top = 25% of screen (forward), bottom = 88% (rear)
+  const yMin = canvas.height * .25
+  const yMax = canvas.height * .88 - PV.h
+
   PV.x = Math.max(PV.w/2+4, Math.min(canvas.width-PV.w/2-4, PV.x+mx*ms))
-  PV.y = Math.max(canvas.height*.38, Math.min(canvas.height-PV.h-18, PV.y+my*ms*.45))
+  PV.y = Math.max(yMin, Math.min(yMax, PV.y+my*ms*.55))
   if(PV.inv>0)PV.inv--
+
+  // Wave progress reflects vertical position — moving forward (up) advances progress within wave
+  // Full forward = 100% of wave progress, full back = 0%. Actual kill-based progress layered on top.
+  const posProgress = 1 - (PV.y - yMin) / (yMax - yMin)   // 0..1, 1 = most forward
+  const waveBase = ((G.wave-1)/5)*80  // base progress per wave completion
+  const waveKillProgress = (G.waveKills/G.waveTarget)*16   // up to 16% from kills per wave
+  const posBump = posProgress * 6                           // up to 6% from position
+  G.progress = Math.min(98, waveBase + waveKillProgress + posBump)
 
   // Draw off-road warning overlay on the dirt zone
   if(offRoad){
