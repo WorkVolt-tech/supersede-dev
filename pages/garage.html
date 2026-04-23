@@ -5,172 +5,239 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperSede — Garage</title>
   <link rel="stylesheet" href="../styles/main.css">
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Share+Tech+Mono&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800&family=Cormorant+Garamond:wght@400;500&family=JetBrains+Mono:wght@400;600&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
   <style>
     :root {
-      --rust:   #c8512a;
-      --steel:  #8fa3b1;
-      --gold:   #c8b96e;
-      --smoke:  #1a1510;
-      --panel:  #0f0c09;
-      --glow-r: rgba(200,81,42,.35);
-      --glow-g: rgba(94,196,94,.3);
+      --bg-0:      #05080c;
+      --panel:     #0d1208;
+      --ink:       #e8dfc8;
+      --ink-dim:   #7a7055;
+      --gold:      #c8a84a;
+      --gold-hot:  #f0d080;
+      --gold-dim:  #7a6430;
+      --line:      #1e1c0e;
+      --rust:      #c8512a;
+      --glow-r:    rgba(200,81,42,.35);
     }
-    * { box-sizing: border-box; margin:0; padding:0; }
-    body { background:#0a0805; color:#c8b96e; font-family:'Share Tech Mono',monospace; min-height:100vh; }
-
-    /* ── Road texture bg ── */
+    *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+    html, body {
+      background: radial-gradient(ellipse at 50% 10%, #0e1408 0%, #05080c 55%, #020401 100%);
+      color: var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    /* scanlines */
+    body::after {
+      content:''; position:fixed; inset:0; pointer-events:none; z-index:9998;
+      background-image: repeating-linear-gradient(180deg,
+        rgba(200,168,74,.010) 0px, rgba(200,168,74,.010) 1px,
+        transparent 1px, transparent 4px);
+    }
+    /* road lines subtle overlay */
     body::before {
       content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
       background: repeating-linear-gradient(180deg,
         transparent 0px, transparent 38px,
-        rgba(200,184,128,.03) 38px, rgba(200,184,128,.03) 40px);
+        rgba(200,168,74,.015) 38px, rgba(200,168,74,.015) 40px);
     }
 
-    .garage-wrap { position:relative; z-index:1; max-width:480px; margin:0 auto; padding:0 0 4rem; }
+    /* ── NAV ── */
+    #nav { position:relative; z-index:200; }
+    #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+    #nav a, #nav button {
+      font-family:'JetBrains Mono',monospace !important;
+      font-size:10px !important; letter-spacing:.28em !important;
+      text-transform:uppercase !important; color:var(--ink-dim) !important;
+      text-decoration:none !important; border:none !important; padding:0 !important;
+      transition:color .2s !important;
+    }
+    #nav a:hover, #nav button:hover { color:var(--gold) !important; }
+    #nav > *, #nav nav, #nav div {
+      border-bottom:1px solid var(--line) !important;
+      padding:14px 32px !important; display:flex !important;
+      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
+    }
 
-    /* ── Header ── */
+    .garage-wrap { position:relative; z-index:1; max-width:640px; margin:0 auto; padding:0 0 5rem; }
+
+    /* ── Header — matches book/inventory banner style ── */
     .garage-header {
-      background:linear-gradient(180deg,#1a1208,#0f0c09);
-      border-bottom:2px solid var(--rust);
-      padding:1rem 1.25rem .75rem;
-      display:flex; align-items:center; justify-content:space-between;
+      background: linear-gradient(180deg, rgba(14,18,8,.98), rgba(10,14,6,.95));
+      border-bottom: 2px solid var(--rust);
+      padding: 1.1rem 1.5rem .85rem;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
     }
-    .garage-title { font-family:'Orbitron',monospace; font-size:1.1rem; font-weight:800; color:var(--rust); letter-spacing:.15em; }
-    .garage-sub   { font-size:.52rem; color:#7a6435; letter-spacing:.08em; margin-top:2px; }
+    .garage-title {
+      font-family: 'Cinzel', serif; font-size: 1.3rem; font-weight: 600;
+      color: var(--ink); letter-spacing: .08em;
+    }
+    .garage-sub { font-family:'JetBrains Mono',monospace; font-size:.5rem; color:var(--rust); letter-spacing:.2em; margin-top:3px; text-transform:uppercase; }
+
     .materials-strip {
-      display:flex; gap:8px; flex-wrap:wrap;
-      padding:.6rem 1.25rem; background:rgba(0,0,0,.4);
-      border-bottom:.5px solid rgba(200,184,128,.1);
+      display:flex; gap:6px; flex-wrap:wrap;
+      padding:.65rem 1.5rem; background:rgba(0,0,0,.35);
+      border-bottom:.5px solid var(--line);
     }
     .mat-chip {
-      font-family:'Share Tech Mono',monospace; font-size:.52rem;
-      padding:2px 8px; border-radius:12px;
-      border:.5px solid rgba(200,184,128,.25); color:#9a8050;
+      font-family:'JetBrains Mono',monospace; font-size:.5rem;
+      padding:2px 8px; border-radius:10px;
+      border:.5px solid rgba(200,168,74,.2); color:var(--ink-dim);
       background:rgba(0,0,0,.3);
     }
-    .mat-chip span { color:#c8b96e; }
+    .mat-chip span { color:var(--gold); }
 
     /* ── Section ── */
-    .section { padding:1rem 1.25rem; border-bottom:.5px solid rgba(200,184,128,.08); }
+    .section { padding:1rem 1.5rem; border-bottom:.5px solid var(--line); }
     .section-label {
-      font-family:'Orbitron',monospace; font-size:.55rem; font-weight:600;
-      color:var(--rust); letter-spacing:.12em; margin-bottom:.75rem;
-      display:flex; align-items:center; gap:.5rem;
+      font-family:'Cinzel',serif; font-size:.7rem; font-weight:600;
+      color:var(--rust); letter-spacing:.1em; margin-bottom:.85rem;
+      display:flex; align-items:center; gap:.5rem; text-transform:uppercase;
     }
-    .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(to right,var(--rust),transparent); }
+    .section-label::after { content:''; flex:1; height:1px; background:linear-gradient(to right, var(--rust), transparent); }
 
-    /* ── Vehicle cards ── */
-    .vehicle-grid { display:flex; flex-direction:column; gap:.75rem; }
+    /* ── Vehicle cards — horizontal with side image ── */
+    .vehicle-grid { display:flex; flex-direction:column; gap:.85rem; }
     .vehicle-card {
-      border:1.5px solid rgba(200,184,128,.2); border-radius:6px;
-      padding:.85rem 1rem; cursor:pointer; transition:all .2s; position:relative;
-      background:rgba(0,0,0,.3);
+      border:1px solid rgba(200,168,74,.15); border-radius:4px;
+      padding:0; cursor:pointer; transition:all .2s; position:relative;
+      background:rgba(0,0,0,.3); overflow:hidden;
+      display:grid; grid-template-columns:130px 1fr;
     }
-    .vehicle-card:hover { border-color:rgba(200,184,128,.45); background:rgba(200,184,128,.04); }
-    .vehicle-card.selected {
-      border-color:var(--rust); background:rgba(200,81,42,.06);
-      box-shadow:0 0 20px rgba(200,81,42,.2);
-    }
-    .vehicle-card.owned { border-color:rgba(94,196,94,.5); background:rgba(94,196,94,.04); }
-    .vehicle-icon { font-size:2.5rem; margin-bottom:.4rem; display:block; text-align:center; }
-    .vehicle-name { font-family:'Orbitron',monospace; font-size:.85rem; font-weight:700; color:#c8b96e; margin-bottom:.2rem; }
-    .vehicle-tagline { font-family:'IM Fell English',serif; font-style:italic; font-size:.72rem; color:#7a6435; margin-bottom:.6rem; }
+    .vehicle-card:hover { border-color:rgba(200,168,74,.35); background:rgba(200,168,74,.04); }
+    .vehicle-card.selected { border-color:var(--rust); background:rgba(200,81,42,.06); box-shadow:0 0 20px rgba(200,81,42,.18); }
 
-    .stat-bars { display:flex; flex-direction:column; gap:4px; }
-    .stat-row-v { display:flex; align-items:center; gap:.5rem; }
-    .stat-lbl { font-size:.48rem; color:#9a8050; width:52px; letter-spacing:.06em; }
-    .stat-track { flex:1; height:5px; background:rgba(255,255,255,.06); border-radius:3px; overflow:hidden; }
-    .stat-fill { height:100%; border-radius:3px; transition:width .4s; }
-    .stat-val-v { font-size:.5rem; color:#c8b96e; width:24px; text-align:right; }
+    /* Vehicle image panel */
+    .vehicle-img-panel {
+      background: linear-gradient(135deg, rgba(0,0,0,.6), rgba(14,10,6,.8));
+      border-right:.5px solid rgba(200,168,74,.1);
+      display:flex; align-items:center; justify-content:center;
+      padding:.75rem; position:relative; overflow:hidden; min-height:110px;
+    }
+    .vehicle-img-panel::before {
+      content:''; position:absolute; inset:0;
+      background: repeating-linear-gradient(90deg, transparent 0, transparent 18px, rgba(200,168,74,.015) 18px, rgba(200,168,74,.015) 20px);
+    }
+    .vehicle-side-img {
+      width:110px; height:70px; object-fit:contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,.8));
+      position:relative; z-index:1;
+      transition: filter .3s;
+    }
+    .vehicle-card.selected .vehicle-side-img {
+      filter: drop-shadow(0 4px 18px rgba(200,81,42,.5));
+    }
+    /* road strip under vehicle */
+    .vehicle-img-panel::after {
+      content:''; position:absolute; bottom:12px; left:10%; right:10%; height:3px;
+      background: linear-gradient(90deg, transparent, rgba(200,168,74,.25), transparent);
+      border-radius:2px;
+    }
 
-    .vehicle-cost {
-      position:absolute; top:.75rem; right:.75rem;
-      font-family:'Share Tech Mono',monospace; font-size:.5rem; color:#7a6435;
-      text-align:right; line-height:1.5;
-    }
-    .vehicle-cost .cost-item { display:flex; align-items:center; gap:3px; justify-content:flex-end; }
-    .owned-badge {
-      position:absolute; top:.75rem; right:.75rem;
-      font-family:'Orbitron',monospace; font-size:.45rem; color:#5ec45e;
-      border:.5px solid #5ec45e55; padding:2px 6px; border-radius:10px; letter-spacing:.08em;
-    }
+    /* Vehicle info */
+    .vehicle-info { padding:.75rem .9rem; display:flex; flex-direction:column; justify-content:space-between; }
+    .vehicle-name { font-family:'Cinzel',serif; font-size:.88rem; font-weight:600; color:var(--ink); margin-bottom:1px; }
+    .vehicle-tagline { font-family:'IM Fell English',serif; font-style:italic; font-size:.7rem; color:var(--ink-dim); margin-bottom:.55rem; }
+
+    .stat-bars { display:flex; flex-direction:column; gap:3px; }
+    .stat-row-v { display:flex; align-items:center; gap:.45rem; }
+    .stat-lbl { font-family:'JetBrains Mono',monospace; font-size:.42rem; color:var(--ink-dim); width:56px; letter-spacing:.04em; text-transform:uppercase; }
+    .stat-track { flex:1; height:4px; background:rgba(255,255,255,.06); border-radius:2px; overflow:hidden; }
+    .stat-fill { height:100%; border-radius:2px; transition:width .4s; }
+    .stat-val-v { font-family:'JetBrains Mono',monospace; font-size:.46rem; color:var(--ink-dim); width:24px; text-align:right; }
+
     .active-badge {
-      position:absolute; top:.75rem; right:.75rem;
-      font-family:'Orbitron',monospace; font-size:.45rem; color:var(--rust);
-      border:.5px solid var(--rust); padding:2px 6px; border-radius:10px; letter-spacing:.08em;
+      position:absolute; top:.5rem; right:.5rem; z-index:2;
+      font-family:'JetBrains Mono',monospace; font-size:.42rem; color:var(--rust);
+      border:.5px solid var(--rust); padding:2px 7px; border-radius:10px; letter-spacing:.08em;
       animation:pulse 2s infinite;
     }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .upgcount-badge {
+      position:absolute; bottom:.5rem; right:.5rem; z-index:2;
+      font-family:'JetBrains Mono',monospace; font-size:.42rem; color:var(--gold);
+      background:rgba(200,168,74,.1); border:.5px solid rgba(200,168,74,.25);
+      padding:2px 7px; border-radius:10px;
+    }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 
     /* ── Upgrade slots ── */
-    .upgrade-grid { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .upgrade-grid { display:grid; grid-template-columns:1fr 1fr; gap:.55rem; }
     .upgrade-slot {
-      border:.5px solid rgba(200,184,128,.2); border-radius:5px; padding:.65rem .7rem;
-      background:rgba(0,0,0,.3); cursor:pointer; transition:all .2s;
+      border:.5px solid rgba(200,168,74,.15); border-radius:3px; padding:.6rem .7rem;
+      background:rgba(0,0,0,.25); transition:all .2s;
     }
-    .upgrade-slot:hover { border-color:rgba(200,184,128,.4); }
-    .upgrade-slot.installed { border-color:var(--rust); background:rgba(200,81,42,.06); }
-    .slot-type { font-size:.45rem; color:#7a6435; letter-spacing:.08em; margin-bottom:3px; }
-    .slot-name { font-family:'Orbitron',monospace; font-size:.6rem; color:#c8b96e; margin-bottom:4px; }
-    .slot-effect { font-size:.48rem; color:#9a8050; line-height:1.4; }
-    .slot-cost-row { display:flex; gap:6px; margin-top:5px; flex-wrap:wrap; }
-    .slot-mat { font-size:.44rem; color:#7a6435; background:rgba(200,184,128,.06); padding:1px 5px; border-radius:8px; border:.5px solid rgba(200,184,128,.15); }
+    .upgrade-slot.installed { border-color:var(--rust); background:rgba(200,81,42,.05); }
+    .slot-type { font-family:'JetBrains Mono',monospace; font-size:.42rem; color:var(--ink-dim); letter-spacing:.08em; margin-bottom:3px; text-transform:uppercase; }
+    .slot-name { font-family:'Cinzel',serif; font-size:.6rem; color:var(--ink); margin-bottom:3px; }
+    .slot-effect { font-family:'JetBrains Mono',monospace; font-size:.46rem; color:var(--ink-dim); line-height:1.4; }
 
     /* ── Action buttons ── */
-    .action-row { display:flex; gap:.6rem; margin-top:1rem; flex-wrap:wrap; }
+    .action-row { display:flex; gap:.5rem; margin-top:.85rem; flex-wrap:wrap; }
     .btn-primary {
-      flex:1; font-family:'Orbitron',monospace; font-size:.65rem; font-weight:600;
-      letter-spacing:.1em; padding:.65rem 1rem; border-radius:4px; cursor:pointer;
-      background:linear-gradient(135deg,#8b2000,var(--rust));
+      flex:1; font-family:'Cinzel',serif; font-size:.65rem; font-weight:600;
+      letter-spacing:.08em; padding:.6rem 1rem; border-radius:3px; cursor:pointer;
+      background:linear-gradient(135deg,#5a1000,var(--rust));
       border:1px solid var(--rust); color:#fff; transition:all .2s;
     }
     .btn-primary:hover { box-shadow:0 0 20px var(--glow-r); transform:translateY(-1px); }
-    .btn-primary:disabled { opacity:.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-primary:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
     .btn-secondary {
-      font-family:'Share Tech Mono',monospace; font-size:.6rem; padding:.6rem 1rem;
-      border:.5px solid rgba(200,184,128,.3); background:none; color:#9a8050;
-      border-radius:4px; cursor:pointer; transition:all .2s;
+      font-family:'JetBrains Mono',monospace; font-size:.52rem; padding:.55rem .9rem;
+      border:.5px solid rgba(200,168,74,.2); background:none; color:var(--ink-dim);
+      border-radius:3px; cursor:pointer; transition:all .2s; letter-spacing:.04em;
     }
     .btn-secondary:hover { border-color:var(--gold); color:var(--gold); }
 
-    /* ── Drive button ── */
+    /* ── Drive section ── */
     .drive-section {
-      padding:1.25rem; text-align:center;
-      background:linear-gradient(180deg,transparent,rgba(200,81,42,.05));
+      padding:1.25rem 1.5rem; text-align:center;
+      background:linear-gradient(180deg,transparent,rgba(200,81,42,.04));
+      border-top:.5px solid var(--line);
     }
     .drive-btn {
-      width:100%; font-family:'Orbitron',monospace; font-size:.9rem; font-weight:800;
-      letter-spacing:.2em; padding:1rem; border-radius:6px; cursor:pointer;
+      width:100%; font-family:'Cinzel',serif; font-size:1rem; font-weight:600;
+      letter-spacing:.2em; padding:1rem; border-radius:4px; cursor:pointer;
       background:linear-gradient(135deg,#5a1000,#c8512a,#e06030);
       border:2px solid var(--rust); color:#fff;
-      box-shadow:0 0 30px rgba(200,81,42,.3); transition:all .25s;
+      box-shadow:0 0 30px rgba(200,81,42,.25); transition:all .25s;
     }
-    .drive-btn:hover { box-shadow:0 0 50px rgba(200,81,42,.6); transform:scale(1.02); }
-    .drive-btn:disabled { opacity:.35; cursor:not-allowed; transform:none; box-shadow:none; }
-    .drive-label { font-size:.5rem; color:#7a6435; letter-spacing:.1em; margin-top:.4rem; }
+    .drive-btn:hover { box-shadow:0 0 50px rgba(200,81,42,.55); transform:scale(1.02); }
+    .drive-btn:disabled { opacity:.3; cursor:not-allowed; transform:none; box-shadow:none; }
+    .drive-label { font-family:'JetBrains Mono',monospace; font-size:.48rem; color:var(--ink-dim); letter-spacing:.1em; margin-top:.5rem; text-transform:uppercase; }
 
     /* ── Toast ── */
     #toast {
       position:fixed; bottom:1.5rem; left:50%; transform:translateX(-50%) translateY(20px);
-      background:#1a1208; border:1px solid var(--rust); border-radius:4px;
-      padding:.5rem 1.2rem; font-size:.62rem; color:#c8b96e; opacity:0;
-      transition:all .3s; pointer-events:none; white-space:nowrap; z-index:999;
+      background:rgba(10,14,6,.95); border:1px solid var(--rust); border-radius:3px;
+      padding:.5rem 1.2rem; font-family:'JetBrains Mono',monospace; font-size:.58rem;
+      color:var(--ink); opacity:0; transition:all .3s; pointer-events:none;
+      white-space:nowrap; z-index:999;
     }
     #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-    /* ── No vehicle state ── */
-    .no-vehicle { text-align:center; padding:2rem 1rem; }
-    .no-vehicle p { font-family:'IM Fell English',serif; font-style:italic; color:#7a6435; font-size:.82rem; margin-bottom:1rem; }
+    /* ── Shop modal ── */
+    .shop-modal-inner {
+      max-width:460px; margin:2rem auto; padding:1.25rem;
+      background:#0a0e06; border:1px solid var(--rust); border-radius:5px;
+    }
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:var(--bg-0)}
+    ::-webkit-scrollbar-thumb{background:var(--line)}
+    ::-webkit-scrollbar-thumb:hover{background:var(--gold-dim)}
+    /* ── Animate ── */
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .animate-in{animation:fadeIn .4s ease forwards}
   </style>
 </head>
 <body>
 <div id="nav"></div>
-<div class="garage-wrap">
+<div class="garage-wrap animate-in">
   <div class="garage-header">
     <div>
-      <div class="garage-title">🔧 GARAGE</div>
-      <div class="garage-sub">BUILD · UPGRADE · DRIVE</div>
+      <div class="garage-title">Garage</div>
+      <div class="garage-sub">Build · Upgrade · Drive</div>
     </div>
     <button class="btn-secondary" onclick="window.location.href='book.html'">← Book</button>
   </div>
@@ -182,14 +249,14 @@
 
   <!-- Vehicle select -->
   <div class="section">
-    <div class="section-label">🚗 YOUR VEHICLES</div>
-    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:#7a6435;margin-bottom:.75rem;line-height:1.5">All three vehicles are permanently yours. Select one to drive, then install upgrades using your materials.</p>
+    <div class="section-label">Your Vehicles</div>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);margin-bottom:.85rem;line-height:1.6">All three vehicles are permanently yours. Select one to drive, then install upgrades using your materials.</p>
     <div class="vehicle-grid" id="vehicle-grid">Loading...</div>
   </div>
 
   <!-- Upgrades -->
   <div class="section" id="upgrade-section" style="display:none">
-    <div class="section-label">🔩 INSTALLED UPGRADES</div>
+    <div class="section-label">Installed Upgrades</div>
     <div class="upgrade-grid" id="upgrade-grid"></div>
     <div class="action-row">
       <button class="btn-secondary" id="upgrade-shop-btn" onclick="openUpgradeShop()">+ Install Upgrade</button>
@@ -198,17 +265,17 @@
 
   <!-- Drive -->
   <div class="drive-section">
-    <button class="drive-btn" id="drive-btn" disabled onclick="drive()">▶ DRIVE</button>
-    <div class="drive-label" id="drive-label">SELECT A VEHICLE TO DRIVE</div>
+    <button class="drive-btn" id="drive-btn" disabled onclick="drive()">▶ Drive</button>
+    <div class="drive-label" id="drive-label">Select a vehicle to drive</div>
   </div>
 </div>
 
 <!-- Upgrade shop modal -->
-<div id="shop-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.85);overflow-y:auto">
-  <div style="max-width:440px;margin:2rem auto;padding:1.25rem;background:#0f0c09;border:1px solid var(--rust);border-radius:8px">
+<div id="shop-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.88);overflow-y:auto">
+  <div class="shop-modal-inner">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-      <span style="font-family:'Orbitron',monospace;font-size:.85rem;color:var(--rust)">🔩 UPGRADE SHOP</span>
-      <button onclick="closeUpgradeShop()" style="background:none;border:none;color:#7a6435;font-size:1.1rem;cursor:pointer">✕</button>
+      <div style="font-family:'Cinzel',serif;font-size:.88rem;color:var(--rust);letter-spacing:.08em">Upgrade Shop</div>
+      <button onclick="closeUpgradeShop()" style="background:rgba(255,255,255,.06);border:1px solid rgba(200,168,74,.2);color:var(--ink);font-size:.85rem;cursor:pointer;padding:3px 8px;border-radius:3px;font-family:'JetBrains Mono',monospace">✕</button>
     </div>
     <div id="shop-list"></div>
   </div>
@@ -344,6 +411,13 @@ function renderMaterials() {
   ).join('')
 }
 
+// ── Vehicle side images ───────────────────────────────────
+const VEHICLE_IMGS = {
+  motorcycle: '../assets/ride/side_motorcycle.webp',
+  car:        '../assets/ride/side_car.webp',
+  van:        '../assets/ride/side_van.webp',
+}
+
 // ── Render vehicle grid ───────────────────────────────────
 function renderVehicleGrid() {
   const el = document.getElementById('vehicle-grid')
@@ -358,20 +432,27 @@ function renderVehicleGrid() {
     const upgCount = (vehicleData.upgrades?.[type]||[]).length
     return `
       <div class="vehicle-card${isActive?' selected':''}" onclick="selectVehicle('${type}')">
-        ${isActive ? `<div class="active-badge">◉ ACTIVE</div>` : ''}
-        ${upgCount > 0 ? `<div style="position:absolute;top:.75rem;right:.75rem;font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#c8b96e;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.2);padding:2px 6px;border-radius:10px">${upgCount} upgrade${upgCount>1?'s':''}</div>` : ''}
-        <span class="vehicle-icon">${v.icon}</span>
-        <div class="vehicle-name">${v.name}</div>
-        <div class="vehicle-tagline">${v.tagline}</div>
-        <div class="stat-bars">
-          ${statBars.map(s => `
-            <div class="stat-row-v">
-              <span class="stat-lbl">${s.label}</span>
-              <div class="stat-track">
-                <div class="stat-fill" style="width:${Math.min(100,s.val/s.max*100)}%;background:${s.color}"></div>
-              </div>
-              <span class="stat-val-v">${s.val}</span>
-            </div>`).join('')}
+        ${isActive ? `<div class="active-badge">◉ Active</div>` : ''}
+        ${upgCount > 0 ? `<div class="upgcount-badge">${upgCount} upgrade${upgCount>1?'s':''}</div>` : ''}
+        <div class="vehicle-img-panel">
+          <img class="vehicle-side-img" src="${VEHICLE_IMGS[type]}" alt="${v.name}"
+            onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div style=\\'font-size:2.5rem;opacity:.5\\'>${v.icon}</div>')">
+        </div>
+        <div class="vehicle-info">
+          <div>
+            <div class="vehicle-name">${v.name}</div>
+            <div class="vehicle-tagline">${v.tagline}</div>
+          </div>
+          <div class="stat-bars">
+            ${statBars.map(s => `
+              <div class="stat-row-v">
+                <div class="stat-lbl">${s.label}</div>
+                <div class="stat-track">
+                  <div class="stat-fill" style="width:${Math.min(100,s.val/s.max*100)}%;background:${s.color}"></div>
+                </div>
+                <div class="stat-val-v">${s.val}</div>
+              </div>`).join('')}
+          </div>
         </div>
       </div>`
   }).join('')
