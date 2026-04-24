@@ -82,7 +82,7 @@
     /* ── Book — perspective tilt matching inventory ── */
     .book {
       display: grid !important;
-      grid-template-columns: 1fr 52px 1fr !important;
+      grid-template-columns: 1fr 22px 1fr !important;
       align-items: stretch !important;
       gap: 0 !important;
       background: transparent !important;
@@ -151,175 +151,95 @@
     }
     .page-inner { padding: 24px 26px !important; }
 
-    /* ── Spine — full book spine with embossed text, leather layers, gold foil ── */
+    /* ── Spine — open book gutter / inner binding ── */
+    /* Simulates the crease and shadow of pages meeting at the centre of an open book */
     .spine {
-      background:
-        linear-gradient(90deg,
-          rgba(0,0,0,.55) 0%,
-          rgba(255,255,255,.04) 18%,
-          rgba(255,255,255,.00) 35%,
-          rgba(0,0,0,.20) 50%,
-          rgba(255,255,255,.00) 65%,
-          rgba(255,255,255,.04) 82%,
-          rgba(0,0,0,.55) 100%),
-        linear-gradient(180deg,
-          #060b11 0%,
-          #0b1420 6%,
-          #0d1825 12%,
-          #0c1620 18%,
-          #0b1520 50%,
-          #0c1620 82%,
-          #0d1825 88%,
-          #0b1420 94%,
-          #060b11 100%) !important;
-      border-left:  1px solid rgba(143,216,240,.18) !important;
-      border-right: 1px solid rgba(143,216,240,.18) !important;
+      /* Deep crease shadow: dark at centre, fading out to page colour on each edge */
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.0)  0%,
+        rgba(0,0,0,.32) 28%,
+        rgba(0,0,0,.55) 46%,
+        rgba(0,0,0,.62) 50%,
+        rgba(0,0,0,.55) 54%,
+        rgba(0,0,0,.32) 72%,
+        rgba(0,0,0,.0)  100%
+      ) !important;
+      border-left:  none !important;
+      border-right: none !important;
       position: relative; z-index: 5;
-      width: 52px !important;
-      min-width: 52px !important;
+      width: 22px !important;
+      min-width: 22px !important;
       margin: 0 !important;
-      overflow: hidden;
-      box-shadow:
-        inset 3px 0 8px rgba(0,0,0,.7),
-        inset -3px 0 8px rgba(0,0,0,.7),
-        inset 0 0 1px rgba(143,216,240,.08) !important;
+      overflow: visible;
+      box-shadow: none !important;
     }
 
-    /* Top cap band */
+    /* Hairline crease at the very centre */
     .spine::before {
       content: "";
       position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 28px;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
       background: linear-gradient(180deg,
-        rgba(143,216,240,.12) 0%,
-        rgba(143,216,240,.06) 40%,
+        transparent 0%,
+        rgba(0,8,18,.9) 8%,
+        rgba(0,8,18,.9) 92%,
         transparent 100%);
-      border-bottom: 1px solid rgba(143,216,240,.15);
-      z-index: 1;
+      z-index: 2;
     }
 
-    /* Bottom cap band */
+    /* Stacked-page edge: left side (right-hand page stack visible on left edge) */
     .spine::after {
       content: "";
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 28px;
-      background: linear-gradient(0deg,
-        rgba(143,216,240,.12) 0%,
-        rgba(143,216,240,.06) 40%,
-        transparent 100%);
-      border-top: 1px solid rgba(143,216,240,.15);
+      top: 2px; bottom: 2px;
+      left: -3px;
+      width: 3px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(143,216,240,.06) 0px,
+        rgba(143,216,240,.02) 1px,
+        rgba(0,0,0,.15)       1px,
+        rgba(0,0,0,.05)       2px
+      );
+      border-left: 1px solid rgba(143,216,240,.10);
       z-index: 1;
     }
 
-    /* The actual spine content — title + ornament + chapter label, rotated */
-    .spine-inner {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 2;
-      /* Rotate so text reads bottom-to-top (standard book convention) */
-      writing-mode: vertical-rl;
-      text-orientation: mixed;
-      transform: rotate(180deg);
-      gap: 10px;
-      padding: 32px 0;
+    /* Page curl shadow cast onto left page from the binding */
+    .page-left::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
 
-    .spine-title {
-      font-family: 'Cormorant Garamond', serif !important;
-      font-size: 12px !important;
-      font-weight: 600 !important;
-      letter-spacing: .28em !important;
-      text-transform: uppercase !important;
-      color: transparent !important;
-      /* Ice foil effect — text is transparent, color comes from background-clip */
-      background: linear-gradient(180deg,
-        #c8eeff 0%,
-        #8fd8f0 30%,
-        #6ec8e8 50%,
-        #8fd8f0 70%,
-        #c8eeff 100%);
-      -webkit-background-clip: text;
-      background-clip: text;
-      /* Emboss shadow pair — light above, dark below */
-      text-shadow:
-        0 -1px 0 rgba(200,238,255,.25),
-        0  1px 2px rgba(0,0,0,.8);
-      white-space: nowrap;
-      flex-shrink: 0;
+    /* Page curl shadow cast onto right page from the binding */
+    .page-right::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; left: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
 
-    /* Horizontal rule ornament on the spine */
-    .spine-rule {
-      width: 1px;
-      height: 32px;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(143,216,240,.5) 20%,
-        rgba(143,216,240,.8) 50%,
-        rgba(143,216,240,.5) 80%,
-        transparent 100%);
-      flex-shrink: 0;
-    }
-
-    /* Diamond ornament */
-    .spine-diamond {
-      width: 5px;
-      height: 5px;
-      background: rgba(143,216,240,.7);
-      transform: rotate(45deg);
-      flex-shrink: 0;
-      box-shadow: 0 0 4px rgba(143,216,240,.4);
-    }
-
-    .spine-chapter {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 7.5px !important;
-      letter-spacing: .35em !important;
-      text-transform: uppercase !important;
-      color: rgba(143,216,240,.55) !important;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-
-    /* Left highlight stripe — catches the "light" */
-    .spine-highlight {
-      position: absolute;
-      top: 28px; bottom: 28px;
-      left: 6px;
-      width: 1px;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(255,255,255,.06) 15%,
-        rgba(255,255,255,.10) 50%,
-        rgba(255,255,255,.06) 85%,
-        transparent 100%);
-      z-index: 3;
-    }
-
-    /* Right shadow stripe — depth illusion */
-    .spine-shadow {
-      position: absolute;
-      top: 28px; bottom: 28px;
-      right: 6px;
-      width: 1px;
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(0,0,0,.25) 15%,
-        rgba(0,0,0,.35) 50%,
-        rgba(0,0,0,.25) 85%,
-        transparent 100%);
-      z-index: 3;
-    }
-
-    @media(max-width: 860px) {
-      .spine-inner { display: none; }
-    }
+    .spine-inner, .spine-highlight, .spine-shadow,
+    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
 
     /* ── Chapter label / subtitle ── */
     .chapter-label {
