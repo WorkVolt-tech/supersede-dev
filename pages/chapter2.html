@@ -14,26 +14,26 @@
        Inventory layout: spine, tilt, corner light.
     ══════════════════════════════════════════════ */
     :root {
-      --bg-0:      #05080c;
-      --bg-1:      #0a1018;
-      --panel:     #0d131c;
-      --page-l:    #0b1018;
-      --page-r:    #0d1520;
-      --ink:       #dfe7f2;
-      --ink-dim:   #6f7b8d;
-      --ink-faint: #3a4354;
-      --ice:       #8fd8f0;
-      --ice-hot:   #c8eeff;
-      --gold:      #c8a84a;
-      --gold-hot:  #f0d080;
-      --gold-dim:  #7a6430;
-      --amber:     #ffb347;
-      --amber-hot: #ffd68a;
-      --warn:      #e05a44;
-      --line:      #1a2230;
-      --green:     #5ec45e;
+      --bg-0:      #07070a;
+      --bg-1:      #0f0e14;
+      --panel:     #12111a;
+      --page-l:    #0f0e14;
+      --page-r:    #12111a;
+      --ink:       #e8e3d6;
+      --ink-dim:   #857f92;
+      --ink-faint: #4a4556;
+      --ice:       #7fd6a6;
+      --ice-hot:   #b6f0ce;
+      --gold:      #f4c45a;
+      --gold-hot:  #ffd98a;
+      --gold-dim:  #8a6e20;
+      --amber:     #e8564a;
+      --amber-hot: #ff8a7a;
+      --warn:      #e8564a;
+      --line:      #26232f;
+      --green:     #7fd6a6;
       --purple:    #b06eff;
-      --spine-col: #0d1018;
+      --spine-col: #0f0e14;
     }
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -56,7 +56,7 @@
 
     /* ── Global reset ── */
     html, body {
-      background: radial-gradient(ellipse at 50% 0%, #0e1a28 0%, #05080c 55%, #020406 100%) !important;
+      background: radial-gradient(ellipse at 50% 30%, #15121c 0%, #07070a 60%, #030306 100%) !important;
       color: var(--ink) !important;
       font-family: 'Cormorant Garamond', Georgia, serif !important;
       min-height: 100vh;
@@ -67,7 +67,7 @@
     body::after {
       content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
       background-image: repeating-linear-gradient(180deg,
-        rgba(143,216,240,.012) 0px, rgba(143,216,240,.012) 1px,
+        rgba(127,214,166,.008) 0px, rgba(127,214,166,.008) 1px,
         transparent 1px, transparent 4px);
     }
 
@@ -115,11 +115,11 @@
 
     .page-left::before  {
       content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(143,216,240,.014) 0%, transparent 55%);
+      background: linear-gradient(90deg, rgba(127,214,166,.010) 0%, transparent 55%);
     }
     .page-right::before {
       content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(270deg, rgba(143,216,240,.010) 0%, transparent 55%);
+      background: linear-gradient(270deg, rgba(127,214,166,.008) 0%, transparent 55%);
     }
     .page-left::after {
       content: "" !important;
@@ -582,12 +582,12 @@
       width: 3px;
       background: repeating-linear-gradient(
         180deg,
-        rgba(143,216,240,.06) 0px,
-        rgba(143,216,240,.02) 1px,
+        rgba(127,214,166,.06) 0px,
+        rgba(127,214,166,.02) 1px,
         rgba(0,0,0,.15)       1px,
         rgba(0,0,0,.05)       2px
       );
-      border-left: 1px solid rgba(143,216,240,.10);
+      border-left: 1px solid rgba(127,214,166,.10);
       z-index: 1;
     }
 
