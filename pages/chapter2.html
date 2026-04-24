@@ -5,6 +5,598 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SuperSede — Chapter 2</title>
   <link rel="stylesheet" href="../styles/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════════
+       WATCHER THEME — Ice / Blue accent
+       Inventory layout: spine, tilt, corner light.
+    ══════════════════════════════════════════════ */
+    :root {
+      --bg-0:      #05080c;
+      --bg-1:      #0a1018;
+      --panel:     #0d131c;
+      --page-l:    #0b1018;
+      --page-r:    #0d1520;
+      --ink:       #dfe7f2;
+      --ink-dim:   #6f7b8d;
+      --ink-faint: #3a4354;
+      --ice:       #8fd8f0;
+      --ice-hot:   #c8eeff;
+      --gold:      #c8a84a;
+      --gold-hot:  #f0d080;
+      --gold-dim:  #7a6430;
+      --amber:     #ffb347;
+      --amber-hot: #ffd68a;
+      --warn:      #e05a44;
+      --line:      #1a2230;
+      --green:     #5ec45e;
+      --purple:    #b06eff;
+      --spine-col: #0d1018;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* ── Nav ── */
+    #nav { position: relative; z-index: 200; }
+    #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
+    #nav a, #nav button {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .28em !important;
+      text-transform: uppercase !important; color: var(--ink-dim) !important;
+      text-decoration: none !important; border: none !important; padding: 0 !important;
+      transition: color .2s !important;
+    }
+    #nav a:hover, #nav button:hover { color: var(--gold) !important; }
+    #nav > *, #nav nav, #nav div {
+      border-bottom: 1px solid var(--line) !important;
+      padding: 14px 32px !important; display: flex !important;
+      align-items: center !important; gap: 28px !important; flex-wrap: wrap !important;
+    }
+
+    /* ── Global reset ── */
+    html, body {
+      background: radial-gradient(ellipse at 50% 0%, #0e1a28 0%, #05080c 55%, #020406 100%) !important;
+      color: var(--ink) !important;
+      font-family: 'Cormorant Garamond', Georgia, serif !important;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* scanlines */
+    body::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background-image: repeating-linear-gradient(180deg,
+        rgba(143,216,240,.012) 0px, rgba(143,216,240,.012) 1px,
+        transparent 1px, transparent 4px);
+    }
+
+    /* ── Book wrap ── */
+    .book-wrap {
+      background: transparent !important;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 24px 24px 60px;
+    }
+
+    /* ── Book ── */
+    .book {
+      display: grid !important;
+      grid-template-columns: 1fr 22px 1fr !important;
+      align-items: stretch !important;
+      gap: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
+      transform: perspective(1600px) rotateX(2.5deg) !important;
+      transform-origin: 50% 0 !important;
+      margin-top: 10px !important;
+    }
+    @media(max-width: 860px) {
+      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
+      .spine { display: none !important; }
+    }
+
+    /* ── Pages ── */
+    .parchment, .page-left, .page-right {
+      background: var(--panel) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      color: var(--ink) !important;
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .page-left  { border-right: none !important; background: var(--page-l) !important; }
+    .page-right { border-left:  none !important; background: var(--page-r) !important; }
+
+    .page-left::before  {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(90deg, rgba(143,216,240,.014) 0%, transparent 55%);
+    }
+    .page-right::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(270deg, rgba(143,216,240,.010) 0%, transparent 55%);
+    }
+    .page-left::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
+    }
+    .page-right::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; left: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
+    }
+
+    .spine-inner, .spine-highlight, .spine-shadow,
+    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
+
+    /* ── Chapter label / subtitle ── */
+    .chapter-label {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9.5px !important;
+      letter-spacing: .42em !important;
+      text-transform: uppercase !important;
+      color: var(--ice) !important;
+      margin-bottom: 5px !important;
+    }
+    .chapter-sub {
+      font-size: 17px !important;
+      font-style: italic !important;
+      color: var(--ink-dim) !important;
+      margin-bottom: 0 !important;
+    }
+
+    /* ── Divider ── */
+    .ink-divider, hr.ink-divider {
+      border: none !important;
+      border-top: 1px solid var(--line) !important;
+      margin: 12px 0 !important;
+      opacity: 1 !important;
+    }
+
+    /* ── Body text colour remaps ── */
+    p, li, span { color: var(--ink) !important; }
+    [style*="color:#1a1208"] { color: var(--ink) !important; }
+    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
+    [style*="color:#7a6435"] { color: var(--ink-dim) !important; }
+    [style*="color:#9a8050"] { color: var(--ink-dim) !important; }
+    [style*="color:#c8b96e"] { color: var(--gold) !important; }
+    [style*="background:rgba(200,184,128"] { background: rgba(143,216,240,.06) !important; }
+    [style*="border-color:rgba(139,106,32"] { border-color: rgba(143,216,240,.25) !important; }
+
+    /* ── Story text ── */
+    .story-text {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 17px !important;
+      line-height: 1.65 !important;
+      color: var(--ink) !important;
+      white-space: pre-line !important;
+    }
+    .story-text.drop-cap::first-letter {
+      font-size: 3.8em !important;
+      float: left !important;
+      line-height: .78 !important;
+      margin: .05em .12em 0 0 !important;
+      color: var(--ice) !important;
+      font-weight: 600 !important;
+    }
+
+    /* ── Notice / outcome box ── */
+    .notice-box {
+      border: 1px solid var(--ice) !important;
+      background: rgba(143,216,240,.06) !important;
+      color: var(--ice-hot) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      letter-spacing: .06em !important;
+      padding: 10px 14px !important;
+      border-radius: 0 !important;
+      margin-top: 14px !important;
+    }
+
+    /* ── HUD ── */
+    #hud { color: var(--ink) !important; }
+    #hud p, #hud span, #hud div { color: var(--ink) !important; }
+    #hud .hud-badge-row .hud-seal-label { color: var(--gold) !important; }
+    #hud .hud-chapter { color: var(--ink-dim) !important; }
+    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
+    #hud .stat-val { color: var(--ink) !important; }
+    #hud .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
+    #hud .stat-box { background: rgba(255,255,255,.03) !important; border: 1px solid var(--line) !important; border-radius: 0 !important; }
+    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; }
+    #hud .stat-box-val { color: var(--amber) !important; }
+    #hud button {
+      background: rgba(143,216,240,.06) !important;
+      border-color: var(--line) !important;
+      color: var(--ink) !important;
+      border-radius: 0 !important;
+      font-family: 'JetBrains Mono',monospace !important;
+      transition: border-color .2s, color .2s !important;
+    }
+    #hud button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
+    #hud div[onclick] {
+      background: rgba(176,110,255,.15) !important;
+      border-color: rgba(176,110,255,.35) !important;
+      color: var(--ink) !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Buttons / choices ── */
+    button, .choice, .combat-btn {
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .08em !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+    }
+    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
+      border-color: var(--ice) !important;
+      color: var(--ice) !important;
+      background: rgba(143,216,240,.04) !important;
+    }
+
+    /* ── Choices panel ── */
+    .choices-label {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      letter-spacing: .38em !important;
+      text-transform: uppercase !important;
+      color: var(--ink-dim) !important;
+      margin-bottom: 12px !important;
+    }
+    .choices { display: flex; flex-direction: column; gap: 8px; }
+
+    button.choice, .choice {
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      padding: 12px 14px !important;
+      text-align: left !important;
+      cursor: pointer !important;
+      transition: border-color .2s, background .2s !important;
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+      width: 100% !important;
+      font-family: 'Cormorant Garamond', serif !important;
+    }
+    button.choice:hover, .choice:hover {
+      border-color: var(--ice) !important;
+      background: rgba(143,216,240,.04) !important;
+    }
+    button.choice.danger, .choice.danger {
+      border-color: rgba(224,90,68,.35) !important;
+    }
+    button.choice.danger:hover, .choice.danger:hover {
+      border-color: var(--warn) !important;
+      background: rgba(224,90,68,.06) !important;
+    }
+    button.choice.locked, .choice.locked {
+      opacity: .45 !important;
+      cursor: default !important;
+      border-color: var(--ink-faint) !important;
+    }
+    .choice-arrow {
+      color: var(--ice) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 13px !important;
+      flex-shrink: 0 !important;
+      margin-top: 1px !important;
+    }
+    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }
+    .choice-body {
+      font-size: 17px !important;
+      color: var(--ink) !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    .choice-sub {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9.5px !important;
+      letter-spacing: .06em !important;
+      color: var(--ink-dim) !important;
+      margin-top: 3px !important;
+    }
+
+    /* ── Stat bars ── */
+    .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
+    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }
+    .stat-val { color: var(--ink) !important; }
+
+    /* ── Combat panel ── */
+    .combat-panel {
+      background: var(--bg-1) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      padding: 16px !important;
+      position: relative;
+    }
+    .combat-panel::before {
+      content: ""; position: absolute; top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
+    }
+    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .combat-enemy-icon { font-size: 2.5rem; }
+    .combat-enemy-name {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 20px !important; font-weight: 600 !important;
+      letter-spacing: .04em !important; color: var(--ink) !important;
+    }
+    .combat-log {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-style: italic !important;
+      font-size: 15px !important;
+      line-height: 1.55 !important;
+      color: var(--ink-dim) !important;
+      background: rgba(0,0,0,.25) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      padding: 10px 12px !important;
+      min-height: 3rem !important;
+      margin-bottom: 10px !important;
+    }
+    .combat-log em     { color: var(--gold) !important; font-style: italic; }
+    .combat-log strong { color: var(--warn) !important; font-style: normal; }
+    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .stat-bar-wrap {
+      flex: 1; height: 5px !important;
+      background: rgba(255,255,255,.06) !important;
+      border-radius: 0 !important; overflow: hidden;
+    }
+    .stat-bar { height: 100%; transition: width .4s, background .4s; }
+    .stat-key {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .58rem !important; letter-spacing: .08em !important;
+      color: var(--ink-dim) !important; min-width: 44px;
+    }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .6rem !important; color: var(--ink) !important;
+      min-width: 50px; text-align: right;
+    }
+
+    /* ── Combat action buttons ── */
+    .combat-btn {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .6rem !important; letter-spacing: .06em !important;
+      color: var(--ink) !important;
+      background: rgba(255,255,255,.03) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      padding: .45rem .5rem !important;
+      cursor: pointer !important;
+      transition: border-color .2s, background .2s, color .2s !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+    }
+    .combat-btn:hover:not(:disabled) {
+      border-color: var(--ice) !important;
+      color: var(--ice) !important;
+      background: rgba(143,216,240,.06) !important;
+    }
+    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }
+
+    /* stat-grid inside HUD */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 4px; margin-top: 6px;
+    }
+
+    /* ── End screen ── */
+    .end-box {
+      background: var(--bg-1) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      padding: 20px !important;
+      position: relative;
+    }
+    .end-box::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
+    .end-box::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }
+    .end-title {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 22px !important; font-weight: 600 !important;
+      letter-spacing: .06em !important;
+      color: var(--ice) !important;
+      margin-bottom: 10px !important;
+    }
+    .end-sub {
+      font-style: italic !important;
+      font-size: 16px !important;
+      color: var(--ink-dim) !important;
+      line-height: 1.55 !important;
+      margin-bottom: 14px !important;
+    }
+    .end-btn {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .75rem !important;
+      letter-spacing: .14em !important;
+      text-transform: uppercase !important;
+      color: var(--ink) !important;
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      padding: .55rem 1.2rem !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+      text-decoration: none !important;
+      display: inline-block !important;
+    }
+    .end-btn:hover {
+      border-color: var(--ice) !important;
+      color: var(--ice) !important;
+      background: rgba(143,216,240,.04) !important;
+    }
+
+    /* ── Items panel ── */
+    #items-panel, [id$="-items-panel"] {
+      background: var(--bg-1) !important;
+      border: 1px solid rgba(143,216,240,.25) !important;
+      border-radius: 0 !important;
+    }
+    [id$="-items-panel"] p,
+    [id$="-items-panel"] span { color: var(--ink) !important; }
+
+    /* ── animate-in ── */
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { animation: fadeIn .4s ease forwards; }
+    @keyframes animateShake {
+      0%,100%{transform:translateX(0)}
+      20%,60%{transform:translateX(-4px)}
+      40%,80%{transform:translateX(4px)}
+    }
+    .animate-shake { animation: animateShake .35s ease; }
+
+    /* ── System overlay messages ── */
+    .sys-overlay, [id="sys-overlay"] {
+      background: rgba(5,8,12,.92) !important;
+      border: 1px solid var(--ice) !important;
+      color: var(--ice-hot) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10.5px !important;
+      letter-spacing: .08em !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Toast ── */
+    .toast, [class*="toast"] {
+      background: rgba(5,8,12,.94) !important;
+      border: 1px solid var(--ice) !important;
+      color: var(--ice-hot) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Loot window ── */
+    #loot-window {
+      background: var(--bg-1) !important;
+      border-color: rgba(143,216,240,.4) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+    }
+    #loot-window p, #loot-window span { color: var(--ink) !important; }
+
+    /* ── Stat window modal ── */
+    #stat-window > div {
+      background: var(--bg-1) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+    }
+    #stat-window * { color: var(--ink) !important; }
+    #stat-window [style*="background:rgba(200"] {
+      background: rgba(143,216,240,.06) !important;
+    }
+
+    /* ── Judge image ── */
+    #judge-img {
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      filter: drop-shadow(0 0 20px rgba(143,216,240,.15)) !important;
+    }
+
+    /* ── combat-over ── */
+    [id$="-combat-over"] { color: var(--ink) !important; }
+    [id$="-combat-over"] button {
+      font-family: 'JetBrains Mono', monospace !important;
+      color: var(--ink) !important;
+      background: rgba(143,216,240,.06) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      cursor: pointer !important;
+      transition: border-color .15s, color .15s !important;
+    }
+    [id$="-combat-over"] button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
+
+    /* ── Modals ── */
+    [id$="-window"] > div, .end-box {
+      background: var(--panel) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Right panel zone cards ── */
+    #right-panel div[onclick] { border-radius: 0 !important; }
+
+    /* ── Spine ── */
+    .spine {
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.0)  0%,
+        rgba(0,0,0,.32) 28%,
+        rgba(0,0,0,.55) 46%,
+        rgba(0,0,0,.62) 50%,
+        rgba(0,0,0,.55) 54%,
+        rgba(0,0,0,.32) 72%,
+        rgba(0,0,0,.0)  100%
+      ) !important;
+      border-left:  none !important;
+      border-right: none !important;
+      position: relative; z-index: 5;
+      width: 22px !important;
+      min-width: 22px !important;
+      margin: 0 !important;
+      overflow: visible;
+      box-shadow: none !important;
+    }
+    .spine::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(0,8,18,.9) 8%,
+        rgba(0,8,18,.9) 92%,
+        transparent 100%);
+      z-index: 2;
+    }
+    .spine::after {
+      content: "";
+      position: absolute;
+      top: 2px; bottom: 2px; left: -3px;
+      width: 3px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(143,216,240,.06) 0px,
+        rgba(143,216,240,.02) 1px,
+        rgba(0,0,0,.15)       1px,
+        rgba(0,0,0,.05)       2px
+      );
+      border-left: 1px solid rgba(143,216,240,.10);
+      z-index: 1;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: var(--bg-0); }
+    ::-webkit-scrollbar-thumb { background: var(--line); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+  </style>
 </head>
 <body>
 <div class="book-wrap">
@@ -19,7 +611,19 @@
         <div class="notice-box animate-in" id="outcome-box" style="display:none"></div>
       </div>
     </div>
-    <div class="spine"></div>
+    <div class="spine">
+      <div class="spine-highlight"></div>
+      <div class="spine-shadow"></div>
+      <div class="spine-inner">
+        <span class="spine-chapter">Ch · II</span>
+        <div class="spine-rule"></div>
+        <div class="spine-diamond"></div>
+        <span class="spine-title">SuperSede</span>
+        <div class="spine-diamond"></div>
+        <div class="spine-rule"></div>
+        <span class="spine-chapter">Alliances</span>
+      </div>
+    </div>
     <div class="page-right parchment">
       <div class="page-inner">
         <div class="hud" id="hud"></div>
@@ -33,6 +637,18 @@
 <script type="module">
 import { supabase } from '../supabase.js'
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+import { resolveEnemyTurn, initEnemyState, ANIM } from './enemyAI.js'
+import ZONE_FIRE      from './zones/zone-fire.js'
+import ZONE_WATER     from './zones/zone-water.js'
+import ZONE_LIGHTNING from './zones/zone-lightning.js'
+import ZONE_ARCANE    from './zones/zone-arcane.js'
+import ZONE_SHADOW    from './zones/zone-shadow.js'
+import ZONE_EARTH     from './zones/zone-earth.js'
+import ZONE_WIND      from './zones/zone-wind.js'
+import ZONE_PLANT     from './zones/zone-plant.js'
+import ZONE_METAL     from './zones/zone-metal.js'
+import ZONE_POISON    from './zones/zone-poison.js'
+window._enemyAI = { resolveEnemyTurn }
 
 const META = {
   number: 2,
@@ -46,7 +662,17 @@ const META = {
 // ═══════════════════════════════════════════════════════════
 const NODES = {
 
-  // ═══════════════════════════════
+  // Zone nodes — each element is a separate file in ./zones/
+  ...ZONE_FIRE,
+  ...ZONE_WATER,
+  ...ZONE_LIGHTNING,
+  ...ZONE_ARCANE,
+  ...ZONE_SHADOW,
+  ...ZONE_EARTH,
+  ...ZONE_WIND,
+  ...ZONE_PLANT,
+  ...ZONE_METAL,
+  ...ZONE_POISON,  // ═══════════════════════════════
   // OPENING — ARRIVAL
   // ═══════════════════════════════
   opening: {
@@ -395,16 +1021,21 @@ Rue looks at the map in your hands. "I don't think either Judge is worse than th
     id: 'district_hub', type: 'story',
     text: `The shopping district spreads out before you. Mostly intact structures, mostly emptied of people — whoever was here before the System arrived either left or became something else. The silence has weight. Not the frozen silence of Chapter 1. This is the silence of aftermath.
 
-Your interface shows nine elemental zones distributed across the district. Some are accessible immediately. Others glow dim — locked, waiting for a threshold you haven't reached yet.
+Your interface shows ten elemental zones distributed across the district. Some are accessible immediately. Others glow dim — locked, waiting for a threshold you haven't reached yet.
 
-Below the zone map, a separate indicator:
+Below the zone map, two separate indicators:
 
-ALLIANCE LOG: Active entries determine which Judge you face at chapter end.
+ALLIANCE LOG: Active entries determine which Judge evaluates your cooperation record.
+ELEMENTAL RESONANCE: Elements attempted are recorded. Commitment is tracked.
+
+A quiet system note beneath both:
+
+"Only one element can be active at a time. Attempting additional elements does not increase rewards. The system is watching what you choose to do with that information."
 
 The Builders are working somewhere to the east. Voss is watching somewhere to the north. Rue is near the fountain, eyes on the map.
 
 The district is yours to move through. When you've finished what you came here for — the Judges will find you.`,
-    choices: [], // rendered dynamically by renderDistrictHub2
+    choices: [], // rendered dynamically by renderDistrictHub
   },
 
   // ═══════════════════════════════
@@ -638,360 +1269,67 @@ Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Kaelith weig
   },
 
   // ═══════════════════════════════
-  // ELEMENTAL ZONE ENTRIES
+  // SYSTEM ESCALATION NODES
+  // (triggered when player enters a 2nd or 3rd+ element zone)
   // ═══════════════════════════════
-  zone_fire: {
-    id: 'zone_fire', type: 'story',
-    text: `The kitchen supply store still smells like copper and char. The fire came through here hard — shelves warped, glass melted into the floor in strange shapes, a row of copper pots that are now abstract sculpture.
+  zone_second_element_warning: {
+    id: 'zone_second_element_warning', type: 'story',
+    text: `Your interface flickers.
 
-But the back of the store is untouched. A door, slightly warm to the touch. No lock. Just the door and what's behind it.
+Not a glitch. Something deliberate.
 
-When you push it open, the air changes. Not hot — charged. Like the atmosphere before a lightning strike but slower, more deliberate. Like something powerful at rest.
+A single line appears in a font you haven't seen the system use before — slightly smaller, monospace, cold:
 
-Your interface: ELEMENTAL ZONE — IGNIS. Resonance check: Offense alignment detected. Loading...
+"Greed detected."
 
-The zone opens.
+A pause. Then:
 
-Inside: a narrow corridor of hanging fire that doesn't burn you. Wall markings in what might be a System language. At the end, a node interface — connected to the tree that's been building in your skill screen since you arrived.
+"Deviation from chosen path observed."
 
-IGNIS SKILL TREE — UNLOCKED.
-Elemental Focus: Fire. Branch variants: Offense, Defense, Flow, Arcane, Decay.
-Activate up to 1 element at a time.`,
-    xp: 120,
+The zone behind you closes. Not locked — just no longer interested in you. The elemental resonance you carried into it reads as background noise now. Whatever it recognized in you was already spent elsewhere.
+
+The new zone ahead activates anyway. The System doesn't close doors out of punishment. It opens them without enthusiasm.
+
+Your interface updates: Enemy parameters escalating.
+All enemies in remaining zones: ×2 HP, ATK, DEF, SPD.
+XP per kill: unchanged.
+
+The next zone will not provide guidance. The system has stopped calibrating for your success.`,
+    sysMsg: 'Deviation from chosen path observed. Escalating trial parameters.',
     choices: [
-      { label: 'Enter and unlock the Ignis tree', sub: 'Unlocks Fire elemental skills', next: 'zone_fire_unlock' },
-      { label: 'Mark it and come back',           next: 'district_hub' },
+      { label: 'Continue into the district', next: 'district_hub' },
     ],
   },
 
-  zone_fire_unlock: {
-    id: 'zone_fire_unlock', type: 'story',
-    text: `The node interface responds immediately. No puzzle, no test — just recognition. The zone already ran its check when you walked through the door.
+  zone_third_element_warning: {
+    id: 'zone_third_element_warning', type: 'story',
+    text: `No flicker this time.
 
-IGNIS TREE UNLOCKED. Skill points available in Fire branch.
+The system message appears directly on top of your field of view — not in the interface panel, not in a notification. Embedded in your vision like a heads-up display that doesn't belong to you:
 
-The fire in the corridor dims slightly — like something that's been holding its breath just exhaled.
+"Power without commitment is instability."
 
-You spend a few minutes in the quiet. The node tree is visible in your interface, 40 nodes arranged in a configuration that mirrors your existing skill branches. Each elemental variant labeled by the build it extends.
+Then:
 
-On the way out, the copper pots catch the light differently. You're not sure if that's you or the zone or just the angle.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_ignis', qty: 2 }],
+"Escalating trial parameters."
+
+Then nothing. The message doesn't clear. It fades, slowly, over fifteen seconds. Like it wants you to read it multiple times.
+
+The zone ahead is active. The enemies inside are — different. Not visually. But the way they move has changed. Faster. More deliberate. Like something recalibrated them while you were deciding to come here.
+
+Your interface: All enemies — ×4 HP, ATK, DEF, SPD.
+Environmental hazards: active.
+System support: withdrawn.
+
+A final line, in a smaller font than everything else, as if the system is saying it to itself:
+
+"You were given a path. You chose to take more. Now survive the weight of it."`,
+    sysMsg: 'Power without commitment is instability. Parameters at ×4. System support withdrawn.',
     choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
+      { label: 'Enter the zone anyway', next: 'district_hub' },
     ],
   },
 
-  zone_water: {
-    id: 'zone_water', type: 'story',
-    text: `The food court basement is flooded — not deep, ankle height, but still. The pipes that burst have been burst for what feels like longer than they should have been. The water is clear and cold and slightly luminescent.
-
-Steps lead down. You go down.
-
-At the bottom, the water is completely still despite the dripping above. A circular space, low ceiling, walls covered in what looks like condensation but forms patterns too regular to be accidental.
-
-Your interface: ELEMENTAL ZONE — AQUA. Resonance check: Patience threshold detected. Loading...
-
-The zone opens. Still. Patient. Like it was waiting for you specifically and had decided in advance not to be in a hurry about it.
-
-AQUA SKILL TREE — UNLOCKED.
-Elemental Focus: Water. Branch variants: Defense, Flow, Arcane, Offense, Decay.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Aqua tree', next: 'zone_water_unlock' },
-      { label: 'Mark it and come back', next: 'district_hub' },
-    ],
-  },
-
-  zone_water_unlock: {
-    id: 'zone_water_unlock', type: 'story',
-    text: `The unlock is quiet. A soft ripple moves across the standing water — out from you in all directions, reaching the walls, coming back. By the time it returns, your interface has updated.
-
-AQUA TREE UNLOCKED.
-
-You stand in the water for a moment. The cold is present but not unpleasant. A droplet falls from the ceiling and makes a ring. Another ring. Perfect circles, overlapping.
-
-There's something restful about this zone. Like it doesn't need you to be anything other than still.
-
-You go back up the steps. The water level looks the same. It will probably always look the same.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_aqua', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_lightning: {
-    id: 'zone_lightning', type: 'story',
-    text: `The electronics hub. Every screen is on. Every screen is showing a different channel — not static, not System messages, actual channels, actual content, as if the world outside is still broadcasting.
-
-You stop in front of a wall of televisions and watch for a moment. News. A cooking show. A documentary about deep-sea creatures. A reality show you recognize from before. The world, going on without knowing what's happening here.
-
-In the back of the store, between two server racks that hum with too much energy, the lightning zone is obvious — arcs of electricity between the racks, not dangerous, but close. A narrow corridor of active charge.
-
-Your interface: ELEMENTAL ZONE — VOLT. Resonance check: Flow alignment detected. Loading...
-
-VOLT SKILL TREE — UNLOCKED.
-Elemental Focus: Lightning. Branch variants: Flow, Offense, Arcane, Defense, Decay.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Volt tree', next: 'zone_lightning_unlock' },
-      { label: 'Mark it and come back', next: 'district_hub' },
-    ],
-  },
-
-  zone_lightning_unlock: {
-    id: 'zone_lightning_unlock', type: 'story',
-    text: `The arcs respond to your presence. Not violently — they reach toward you slightly, like plants toward light, and then the interface clicks over.
-
-VOLT TREE UNLOCKED.
-
-On your way out you pass the wall of screens again. One of them is dark now. Just dark. You're not sure which channel it was showing.
-
-Outside, your hair is standing up slightly. It'll pass. Probably.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_volt', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_arcane: {
-    id: 'zone_arcane', type: 'story',
-    text: `The bookshop at the district center. Floor to ceiling shelves, all still standing — which feels impossible given what happened to everything else around it. Books undisturbed. Dust on the covers in the right places.
-
-The shop cat — and there is, somehow, a shop cat — watches you from the top of a shelf. It blinks once. It does not look impressed.
-
-The arcane zone is in the middle of the store, behind an overstuffed reading chair that wasn't moved but has been moved around, adjusted, situated exactly where it is with intention.
-
-Your interface: ELEMENTAL ZONE — ARCANE. Resonance check: Knowledge alignment detected. Loading...
-
-ARCANE SKILL TREE — UNLOCKED.
-Elemental Focus: Arcane. Branch variants: Arcane, Mind, Flow, Offense, Defense.
-
-The cat blinks again and looks away. As if to say: of course you qualified. Obviously.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Arcane tree', next: 'zone_arcane_unlock' },
-      { label: 'Mark it and come back',  next: 'district_hub' },
-    ],
-  },
-
-  zone_arcane_unlock: {
-    id: 'zone_arcane_unlock', type: 'story',
-    text: `ARCANE TREE UNLOCKED.
-
-You sit in the chair for a moment. It's comfortable. This chair has been comfortable for a long time.
-
-The shop cat walks across three shelves and settles on the arm of the chair beside you. It purrs for exactly forty-five seconds, then stops and goes somewhere else.
-
-You sit with the updated interface for a minute. The Arcane tree is deep. Forty nodes, each one suggesting something about how information and intention intersect. It's dense but navigable.
-
-On your way out you pick up a book from the closest shelf. You're not sure why. You put it in your pack. The cat doesn't react.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_lux', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_shadow: {
-    id: 'zone_shadow', type: 'story',
-    text: `The cinema is shut. Has been, officially, for renovations — a sign on the door is dated eight months ago. Someone opened it anyway. Not forced — the lock is intact. Just open.
-
-Inside it's dark the way cinema lobbies are dark at 3am. Not scary. Just past its purpose.
-
-The zone is in one of the smaller screening rooms. You find it by following a current of air that shouldn't exist underground. The door is already open.
-
-The screening room is completely dark except for where the zone is. A circle of shadow deeper than the room around it. Not a void — something present in the absence.
-
-Your interface: ELEMENTAL ZONE — UMBRA. Resonance check: Decay alignment detected. Moral threshold: below 0 recommended, or above 60 with deliberate intent. Loading...
-
-UMBRA SKILL TREE — UNLOCKED.
-
-The darkness doesn't press in on you. It just acknowledges you.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Umbra tree', next: 'zone_shadow_unlock' },
-      { label: 'Mark it and come back',  next: 'district_hub' },
-    ],
-  },
-
-  zone_shadow_unlock: {
-    id: 'zone_shadow_unlock', type: 'story',
-    text: `UMBRA TREE UNLOCKED.
-
-The circle of shadow closes gently — like a hand unclenching. Your interface updates quietly.
-
-The Umbra tree doesn't announce itself the way the other trees did. Forty nodes, each one slightly harder to read than the last, requiring a second look. The descriptions are accurate but oblique. The System isn't hiding anything — it's just being honest about the nature of what decay and shadow actually are. Patient. Precise. Costly in particular ways.
-
-You sit in the dark for a moment. 
-
-When you stand to leave, the door to the hallway is lit by the lobby lights in a way it wasn't when you came in. Warmer.
-
-You walk through it.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_umbra', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_earth: {
-    id: 'zone_earth', type: 'story',
-    text: `The parking structure is three levels of poured concrete and the particular silence of spaces that were built for cars and are now empty of them. Your footsteps echo in a way that makes you sound alone even if you're not.
-
-Level two. The earth zone is between two structural pillars that show hairline cracks — not dangerous, just present. Evidence of weight over time.
-
-The zone is different from the others. Less dramatic. Just a space between the pillars where the concrete floor has cracked in a specific pattern, and through the cracks something slow and warm is moving.
-
-Your interface: ELEMENTAL ZONE — TERRA. Resonance check: Endurance alignment detected. Loading...
-
-TERRA SKILL TREE — UNLOCKED.
-Elemental Focus: Earth. Branch variants: Defense, Offense, Flow, Decay, Arcane.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Terra tree', next: 'zone_earth_unlock' },
-      { label: 'Mark it and come back',  next: 'district_hub' },
-    ],
-  },
-
-  zone_earth_unlock: {
-    id: 'zone_earth_unlock', type: 'story',
-    text: `TERRA TREE UNLOCKED.
-
-The cracks in the floor close slightly — not all the way, but the movement stops. The warmth dissipates. Whatever was moving through has acknowledged you and gone somewhere else.
-
-The Terra tree is straightforward in the way that deep things can be. No tricks. No oblique descriptions. Forty nodes of increasing power, each one clearly labeled. Wall. Weight. Foundation. Growth.
-
-You press one hand briefly to a pillar on your way out. Cold concrete, decades old. Still holding.
-
-Out on the street level, you can see the whole district from here. Birds have landed somewhere on the upper level. They've been there a while.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_terra', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_wind: {
-    id: 'zone_wind', type: 'story',
-    text: `The atrium is the largest interior space in the district — a glass-roofed corridor between two anchor stores, maybe sixty meters long. The roof caved on the west end three panels deep. The crossdraft that moves through has been moving since and has set up a permanent wind through the space.
-
-It's not unpleasant. It carries the smell of the outside — real outside, past the district boundaries.
-
-The wind zone is where the crossdraft is strongest, where the air pressure makes a sound like a long held note. It doesn't announce itself. You just walk into it and your interface registers it immediately.
-
-Your interface: ELEMENTAL ZONE — AERO. Resonance check: Flow-Arcane alignment detected. Loading...
-
-AERO SKILL TREE — UNLOCKED.
-Elemental Focus: Wind. Branch variants: Flow, Arcane, Defense, Offense, Decay.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Aero tree', next: 'zone_wind_unlock' },
-      { label: 'Mark it and come back', next: 'district_hub' },
-    ],
-  },
-
-  zone_wind_unlock: {
-    id: 'zone_wind_unlock', type: 'story',
-    text: `AERO TREE UNLOCKED.
-
-The crossdraft doesn't change when the zone activates — it was already doing what it was going to do. The zone just adds you to that fact.
-
-The Aero tree has forty nodes spread in a pattern that feels less linear than the others. More lateral. Options that branch sideways before they branch upward. It makes sense for wind. Wind goes where it needs to.
-
-Standing in the crossdraft for a minute, your interface processes. The smell of the outside is still there. Somewhere past the district boundary it smells like rain that hasn't arrived yet.
-
-You could use some rain.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_aero', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_plant: {
-    id: 'zone_plant', type: 'story',
-    text: `The garden center near the south exit is the only place in the district where things are still growing. The System didn't stop biology. It just stopped the people.
-
-The plants have had a week to themselves. Vines have crossed the aisle. A fig tree in the back has dropped two cycles of fruit. Ferns have unfurled in the fluorescent light that's still running on generator power. It smells like soil and green things and something almost sweet.
-
-The zone is in the back, past the fig tree. You don't need directions — you follow the warmth. Living things generate heat. This much life together generates a lot of it.
-
-Your interface: ELEMENTAL ZONE — FLORA. Resonance check: Defense-Decay alignment detected. Loading...
-
-FLORA SKILL TREE — UNLOCKED.
-Elemental Focus: Plant. Branch variants: Defense, Decay, Flow, Arcane, Offense.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Flora tree', next: 'zone_plant_unlock' },
-      { label: 'Mark it and come back',  next: 'district_hub' },
-    ],
-  },
-
-  zone_plant_unlock: {
-    id: 'zone_plant_unlock', type: 'story',
-    text: `FLORA TREE UNLOCKED.
-
-The plants don't react. They were going to keep growing regardless.
-
-The Flora tree is the only one that has nodes with a dual character — things that are both growth and decay, both protective and corrosive. Roots that stabilize and roots that split stone. Vines that support and vines that constrict. The System is honest about what plant life actually is: patient, patient, patient, and then suddenly not.
-
-You pick up a fallen fig on your way out. It's good. Fresh. The tree didn't need your permission.
-
-Outside, the south exit is clear. You can see the district boundary from here. Farther out than you thought.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_flora', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  zone_metal: {
-    id: 'zone_metal', type: 'story',
-    text: `The hardware megastore is the largest building in the district by footprint. Twelve aisles. High ceilings. The smell of machine oil and cut lumber and the specific clean smell of new tools still in packaging.
-
-Everything is exactly where it was. No looting here — either no one thought of it or someone made sure no one could get to it. The security shutters over the entrance were opened deliberately, not forced. Whoever opened them had a key.
-
-The metal zone is in the power tool aisle, which seems almost funny until you're standing in it and feel the resonance — precision and function and the particular kind of beauty that comes from something that does exactly one thing extremely well.
-
-Your interface: ELEMENTAL ZONE — FERRO. Resonance check: Offense-Arcane alignment detected. Loading...
-
-FERRO SKILL TREE — UNLOCKED.
-Elemental Focus: Metal. Branch variants: Offense, Arcane, Defense, Flow, Decay.`,
-    xp: 120,
-    choices: [
-      { label: 'Unlock the Ferro tree', next: 'zone_metal_unlock' },
-      { label: 'Mark it and come back',  next: 'district_hub' },
-    ],
-  },
-
-  zone_metal_unlock: {
-    id: 'zone_metal_unlock', type: 'story',
-    text: `FERRO TREE UNLOCKED.
-
-The Ferro tree is exactly as precise as you'd expect. Forty nodes, no ambiguity. Each one does a specific thing. The descriptions are technical where the other trees were evocative. The System respects the nature of metal.
-
-You pick up a wrench from an open display. Good weight. You put it back exactly where you found it.
-
-On your way out, you stop at the front of the store. Whoever opened this place left a note taped to the security panel:
-
-"Took what I needed. Left the rest. It seemed right."
-
-No name. The handwriting is clean and careful.
-
-You go back into the district.`,
-    xp: 50,
-    rewards: [{ itemKey: 'rune_ferro', qty: 2 }],
-    choices: [
-      { label: 'Continue through the district', next: 'district_hub' },
-    ],
-  },
-
-  // ═══════════════════════════════
-  // JUDGE LORE
-  // ═══════════════════════════════
   judge_lore_builders: {
     id: 'judge_lore_builders', type: 'story',
     text: `"Kaelith and Morren," Sera says. "We've been piecing together what we know."
@@ -1023,6 +1361,7 @@ CHAPTER ASSESSMENT COMPLETE.
 MORAL RECORD: Compiled.
 ALLIANCE LOG: Compiled.
 ELEMENTAL RESONANCE: Recorded.
+ELEMENTS ATTEMPTED: Recorded.
 
 TWIN JUDGES: Summoned.
 
@@ -1039,13 +1378,17 @@ Your interface shows both:
 JUDGE KAELITH — Evaluator of Cooperation
 JUDGE MORREN — Evaluator of Dominance
 
-Both present. The record you built brought both.
+Two axes. Two records. Both present.
 
 A system message, the last one before the fight:
 
-"The System adapts to human choices. This is what that looks like."`,
+"The system adapts to human choices. This is what that looks like."
+
+Below it, quieter, as if the system didn't mean for you to read it:
+
+"The form this takes depends on what you built. Both of what you built."`,
     choices: [
-      { label: 'Face the Twin Judges', sub: 'Boss fight — your record determines the encounter', next: 'boss_judges' },
+      { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'boss_judges' },
     ],
   },
 
@@ -1054,18 +1397,21 @@ A system message, the last one before the fight:
   // ═══════════════════════════════
   boss_judges: {
     id: 'boss_judges', type: 'boss',
-    text: `Kaelith arrives like weather — not a dramatic entrance but a presence that was suddenly relevant. Tall. Still. An interface halo that's twice the complexity of any System display you've seen. Eyes that are cataloguing, not judging — or judging in the sense that a scale judges: accurately, without preference.
+    text: `Kaelith arrives like weather — not a dramatic entrance but a presence that was suddenly relevant. Tall. Still. An interface halo twice the complexity of any System display you've seen. Eyes that are cataloguing, not judging — or judging in the sense that a scale judges: accurately, without preference.
 
-Morren is already beside you somehow. No approach. Just — adjacent. Smaller than Kaelith. More compressed. The feeling off Morren is like holding something very sharp — not threatening unless you make a mistake, but the kind of thing where you know exactly what it could do.
+Morren is already beside you somehow. No approach. Just — adjacent. Smaller than Kaelith. More compressed. The feeling off Morren is like holding something very sharp — not threatening unless you make a mistake.
 
 Neither of them speaks.
 
-Their interfaces open simultaneously. Your record scrolls between them — every choice, every alliance, every betrayal, every cooperation. All of it, in precise System notation.
+Their interfaces open simultaneously. Your record scrolls between them — every choice, every alliance, every betrayal, every cooperation, every elemental zone entered. All of it, in precise System notation.
 
 Kaelith's display highlights the cooperative entries. They glow warm.
 Morren's display highlights the decisive entries. They glow cold.
+A third column, narrower than the others: ELEMENTAL RESONANCE. Every zone you entered. One entry, or more.
 
-Both Judges look at you.
+Both Judges look at the third column. Then at each other. Then at you.
+
+The form this fight takes — who leads, whether they stay separate, whether they become something neither of them was before — that was decided before they arrived. By you.
 
 The fight begins.`,
     enemy: {
@@ -1122,6 +1468,8 @@ async function addItem(itemKey, qty) {
     rune_aero:          { name:'Aero Rune',             item_type:'material', rarity:'uncommon', icon:'💨' },
     rune_flora:         { name:'Flora Rune',            item_type:'material', rarity:'uncommon', icon:'🌿' },
     rune_ferro:         { name:'Ferro Rune',            item_type:'material', rarity:'uncommon', icon:'⚙️' },
+    rune_venom:         { name:'Venom Rune',            item_type:'material', rarity:'uncommon', icon:'☠️' },
+    venom_compound:     { name:'Unstable Compound',     item_type:'consumable',rarity:'rare',    icon:'☠️', desc:'Apply in boss fight: poisons both Judges 5%/turn × 3 turns. Cost: 25% own HP.' },
   }
   const def = ITEM_DEF[itemKey] || { name:itemKey, item_type:'material', rarity:'common', icon:'📦' }
   await supabase.from('inventory').insert({ player_id:player.id, item_key:itemKey, quantity:qty, ...def })
@@ -1222,6 +1570,7 @@ const ZONES = [
   { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane' },
   { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay' },
   { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane' },
+  { id:'zone_poison',    icon:'☠️', name:'Pharmacy — Anchor Store', element:'Venom',  color:'#7aad30', branch:'Decay+Offense' },
 ]
 
 const STORY_EVENTS = [
@@ -1289,13 +1638,31 @@ function renderBoss(panel,node) {
   // Scale to player level
   enemy.hp = node.enemy.hp + lvl*20
   enemy.atk = node.enemy.atk + Math.floor(lvl*1.5)
-  buildCombatUI(panel,enemy,node.onWin,node.onLose||'pre_boss_ch2',node.onEscape||'pre_boss_ch2',true)
+  // Count distinct elemental zones the player has entered (via defeated array or skills)
+  const elementsAttempted = (() => {
+    const elementKeys = ['ignis','aqua','volt','arcane','umbra','terra','aero','flora','ferro','venom']
+    const skills = player.skills_unlocked || []
+    const defeated = player.defeated_bosses || []
+    const found = new Set()
+    for (const k of elementKeys) {
+      if (skills.some(s=>s.startsWith(k+'_')) || defeated.includes(k)) found.add(k)
+    }
+    // Also count via current_node history not available, so floor at 1
+    return Math.max(1, found.size)
+  })()
+  buildCombatUI(panel,enemy,node.onWin,node.onLose||'pre_boss_ch2',node.onEscape||'pre_boss_ch2',true,{
+    playerMoral: player.moral_score||0,
+    elementsAttempted,
+  })
 }
 
-function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss) {
+function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   const cid='cb'+Math.random().toString(36).slice(2,7)
   const $=id=>panel.querySelector('#'+cid+'-'+id)
   let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100, over=false
+  // Init AI state for this enemy
+  window._enemyAIState = initEnemyState(enemy)
+  window._combatStatusEffects = {}
 
   function playerATK() { return (player.atk||5)+(player.power||0)*.5+Math.floor(Math.random()*6) }
   function playerDEF() { return (player.def||2)+(player.guard||0)*.5 }
@@ -1374,10 +1741,33 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss) {
       const heal=Math.round(maxPlayerHp*.08); currentHp=Math.min(maxPlayerHp,currentHp+heal)
       msgs.push('You defend. Recovered <strong>'+heal+'</strong> HP.')
     }
-    // Enemy counterattack
+    // Enemy counterattack — use enemyAI if available, else flat calc
     if (enemyHp>0) {
-      const eAtk=Math.max(0,Math.round(enemy.atk-playerDEF()*(action==='defend'?.7:.3)+(Math.random()*6-3)))
-      currentHp=Math.max(0,currentHp-eAtk); msgs.push(enemy.name+' attacks for <strong>'+eAtk+'</strong>.')
+      if (window._enemyAI && window._enemyAIState) {
+        const statusEffects = window._combatStatusEffects || {}
+        window._combatStatusEffects = statusEffects
+        const result = window._enemyAI.resolveEnemyTurn(enemy, {
+          enemyState:      window._enemyAIState,
+          enemyHp,
+          maxEnemyHp,
+          currentHp,
+          maxPlayerHp,
+          playerDEF:       ()=>playerDEF(),
+          defending:       action==='defend',
+          statusEffects,
+          yara:            null,
+          messages:        msgs,
+          triggerAnimation:()=>{},
+          onEnemyDmgPlayer:(dmg)=>{ currentHp=Math.max(0,currentHp-dmg) },
+          onEnemyHealSelf: ()=>{},
+          onEnemyDmgReduced:()=>{},
+          playerMoral:     extraCtx.playerMoral||0,
+          elementsAttempted: extraCtx.elementsAttempted||1,
+        })
+      } else {
+        const eAtk=Math.max(0,Math.round(enemy.atk-playerDEF()*(action==='defend'?.7:.3)+(Math.random()*6-3)))
+        currentHp=Math.max(0,currentHp-eAtk); msgs.push(enemy.name+' attacks for <strong>'+eAtk+'</strong>.')
+      }
     }
     syncBars(); log(msgs.join('<br>'))
     if (enemyHp<=0) { log(msgs.join('<br>')+'<br>'+enemy.name+' is defeated.'); endCombat('win'); return }
