@@ -637,17 +637,17 @@
 <script type="module">
 import { supabase } from '../supabase.js'
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
-import { resolveEnemyTurn, initEnemyState, ANIM } from './enemyAI.js'
-import ZONE_FIRE      from './zones/zone-fire.js'
-import ZONE_WATER     from './zones/zone-water.js'
-import ZONE_LIGHTNING from './zones/zone-lightning.js'
-import ZONE_ARCANE    from './zones/zone-arcane.js'
-import ZONE_SHADOW    from './zones/zone-shadow.js'
-import ZONE_EARTH     from './zones/zone-earth.js'
-import ZONE_WIND      from './zones/zone-wind.js'
-import ZONE_PLANT     from './zones/zone-plant.js'
-import ZONE_METAL     from './zones/zone-metal.js'
-import ZONE_POISON    from './zones/zone-poison.js'
+import { resolveEnemyTurn, initEnemyState } from '../data/enemyAI.js'
+import ZONE_FIRE      from '../zones/zone-fire.js'
+import ZONE_WATER     from '../zones/zone-water.js'
+import ZONE_LIGHTNING from '../zones/zone-lightning.js'
+import ZONE_ARCANE    from '../zones/zone-arcane.js'
+import ZONE_SHADOW    from '../zones/zone-shadow.js'
+import ZONE_EARTH     from '../zones/zone-earth.js'
+import ZONE_WIND      from '../zones/zone-wind.js'
+import ZONE_PLANT     from '../zones/zone-plant.js'
+import ZONE_METAL     from '../zones/zone-metal.js'
+import ZONE_POISON    from '../zones/zone-poison.js'
 window._enemyAI = { resolveEnemyTurn }
 
 const META = {
