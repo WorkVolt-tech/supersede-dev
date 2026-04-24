@@ -105,20 +105,8 @@
       filter: drop-shadow(0 28px 60px rgba(0,0,0,.85));
     }
 
-    /* ── COVER BOARDS (top/bottom visual chrome) ── */
-    .book-body::before,
-    .book-body::after {
-      content:"";
-      position:absolute;
-      left:0; right:0;
-      height:10px;
-      background: linear-gradient(180deg, #14120a, #08111c);
-      border:1px solid #2a2412;
-      z-index:10;
-      pointer-events:none;
-    }
-    .book-body::before { top:-10px; border-bottom:none; }
-    .book-body::after  { bottom:-10px; border-top:none; }
+    /* cover boards removed */
+    .book-body::before, .book-body::after { display:none; }
 
     /* ── LEFT PAGE ── */
     .page-left {
@@ -137,13 +125,18 @@
       background: linear-gradient(90deg, rgba(200,168,74,.018) 0%, transparent 60%);
       pointer-events:none;
     }
-    /* ice corner brackets */
+    /* page-curl shadow cast inward from the binding — left page */
     .page-left::after {
       content:"";
-      position:absolute; top:-1px; left:-1px;
-      width:18px; height:18px;
-      border-top:1px solid var(--gold); border-left:1px solid var(--gold);
+      position:absolute; top:0; bottom:0; right:0;
+      width:36px; height:auto;
+      border:none;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.30) 0%,
+        rgba(0,0,0,.10) 55%,
+        transparent 100%);
       pointer-events:none;
+      z-index:2;
     }
     .page-left .corner-br {
       position:absolute; bottom:-1px; left:-1px;
@@ -151,27 +144,53 @@
       border-bottom:1px solid var(--gold); border-left:1px solid var(--gold);
     }
 
-    /* ── SPINE ── */
+    /* ── SPINE — open book gutter / inner binding ── */
     .spine {
-      width: var(--spine-w);
+      width: 22px;
       flex-shrink: 0;
-      background: linear-gradient(180deg,
-        #14120a 0%, #0e0c06 20%, #141208 50%, #0e0c06 80%, #14120a 100%);
-      border-left:  1px solid #2a2412;
-      border-right: 1px solid #2a2412;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.0)  0%,
+        rgba(0,0,0,.32) 28%,
+        rgba(0,0,0,.55) 46%,
+        rgba(0,0,0,.62) 50%,
+        rgba(0,0,0,.55) 54%,
+        rgba(0,0,0,.32) 72%,
+        rgba(0,0,0,.0)  100%
+      );
+      border-left:  none;
+      border-right: none;
       position: relative;
       z-index: 5;
-      box-shadow:
-        inset 2px 0 6px rgba(0,0,0,.5),
-        inset -2px 0 6px rgba(0,0,0,.5);
+      box-shadow: none;
     }
-    /* spine highlight */
+    /* hairline crease at centre */
     .spine::before {
       content:"";
       position:absolute;
-      top:0; left:50%;
-      width:1px; height:100%;
-      background: linear-gradient(180deg, transparent, rgba(200,168,74,.12) 30%, rgba(200,168,74,.12) 70%, transparent);
+      top:0; bottom:0;
+      left:50%;
+      width:1px;
+      transform:translateX(-50%);
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(0,8,18,.9) 6%,
+        rgba(0,8,18,.9) 94%,
+        transparent 100%);
+    }
+    /* stacked page edge on left side */
+    .spine::after {
+      content:"";
+      position:absolute;
+      top:2px; bottom:2px; left:-3px;
+      width:3px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(200,168,74,.05) 0px,
+        rgba(200,168,74,.02) 1px,
+        rgba(0,0,0,.15)      1px,
+        rgba(0,0,0,.05)      2px
+      );
+      border-left:1px solid rgba(200,168,74,.08);
     }
 
     /* ── RIGHT PAGE ── */
@@ -190,13 +209,23 @@
       background: linear-gradient(270deg, rgba(200,168,74,.014) 0%, transparent 60%);
       pointer-events:none;
     }
-    /* top-right corner bracket */
+    /* page-curl shadow cast inward from the binding — right page */
     .page-right::after {
       content:"";
+      position:absolute; top:0; bottom:0; left:0;
+      width:36px; height:auto;
+      border:none;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.30) 0%,
+        rgba(0,0,0,.10) 55%,
+        transparent 100%);
+      pointer-events:none;
+      z-index:2;
+    }
+    .page-right .corner-tr {
       position:absolute; top:-1px; right:-1px;
       width:18px; height:18px;
       border-top:1px solid var(--gold); border-right:1px solid var(--gold);
-      pointer-events:none;
     }
     .page-right .corner-br {
       position:absolute; bottom:-1px; right:-1px;
@@ -381,6 +410,7 @@
 
       <!-- RIGHT PAGE — player record -->
       <div class="page-right">
+        <div class="corner-tr"></div>
         <div class="corner-br"></div>
 
         <p class="rec-label">Player Record</p>
