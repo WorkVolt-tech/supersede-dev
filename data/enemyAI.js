@@ -776,20 +776,64 @@ function _enemy_fragmentCluster(enemy, ctx, hpPct) {
   return { anim: pickWeighted(moves).exec() }
 }
 
-// ── Dorian — tactical, feints ─────────────────────────────────────────────────
+// ── Dorian — tactical, feints, and lurking backstabs ─────────────────────────
+//
+// Two modes:
+//   Normal fight  (ctx.dorianLurking = false/undefined): standard tactical moves
+//   Lurking mode  (ctx.dorianLurking = true):
+//     - Every 2nd turn: guaranteed BACKSTAB from the shadows (ignores DEF, high dmg)
+//     - Odd turns: he repositions — no damage, but marks player for the next stab
+//
 function _enemy_dorian(enemy, ctx, hpPct) {
   const { enemyState, messages, triggerAnimation, onEnemyDmgPlayer, playerDEF, defending, statusEffects: se } = ctx
 
+  // ── LURKING MODE — Dorian watches from the shadows during the Void Sentinel fight ──
+  if (ctx.dorianLurking) {
+    enemyState.lurkTurn = (enemyState.lurkTurn || 0) + 1
+
+    // Even turns: backstab from the shadows — ignores ALL defence
+    if (enemyState.lurkTurn % 2 === 0) {
+      const dmg = Math.max(3, enemy.atk + 4 + Math.floor(Math.random() * 6))
+      onEnemyDmgPlayer(dmg)
+      messages.push(`🔴 <strong>DORIAN BACKSTABS from the shadows — <strong>${dmg}</strong>! He was never going to hold the deal.</strong>`)
+      triggerAnimation(ANIM.TERROR)
+      return { anim: ANIM.TERROR }
+    }
+
+    // Odd turns: repositioning — taunts but no hit
+    const taunts = [
+      `🔴 Dorian shifts position silently. <em>"Every person I betrayed, I told myself it was the game."</em>`,
+      `🔴 You hear him move behind you. <em>"Force of habit,"</em> he says quietly.`,
+      `🔴 Dorian watches the Sentinel, then you. <em>"I was going to betray you on level four anyway."</em>`,
+      `🔴 A shadow moves. Dorian is repositioning. The backstab is coming.`,
+    ]
+    messages.push(taunts[Math.floor(Math.random() * taunts.length)])
+    triggerAnimation(ANIM.VOID)
+    return { anim: ANIM.VOID }
+  }
+
+  // ── NORMAL FIGHT MODE ────────────────────────────────────────────────────────
   const phase2 = hpPct < 0.40
+
+  // If he had a previous feint queued — land the real hit now
+  if (enemyState.dorianFeintQueued) {
+    enemyState.dorianFeintQueued = false
+    const dmg = Math.max(1, enemy.atk + 8 + Math.floor(Math.random() * 5))  // ignores DEF — he found the gap
+    onEnemyDmgPlayer(dmg)
+    messages.push(`🔴 Dorian <em>closes the feint</em> — real strike hits the gap he created: <strong>${dmg}</strong>! Your defence was already committed elsewhere.`)
+    triggerAnimation(ANIM.TERROR)
+    return { anim: ANIM.TERROR }
+  }
+
   const moves = [
     {
       key: 'calculated_strike', weight: 3,
       exec() {
-        // Calculated: does extra damage if player defended (punishes passivity)
-        const mult = defending ? 1.35 : 1.0
+        // Punishes Defend hard — Dorian specifically trained against passive fighters
+        const mult = defending ? 1.45 : 1.0
         const dmg  = baseDmg(enemy.atk * mult, playerDEF, se, false, 3)
         onEnemyDmgPlayer(dmg)
-        messages.push(`🔴 Dorian's <em>calculated strike</em> — <strong>${dmg}</strong>.${defending ? ' (Punishes passivity.)' : ''}`)
+        messages.push(`🔴 Dorian's <em>calculated strike</em> — <strong>${dmg}</strong>.${defending ? ' <em>He punishes passivity.</em>' : ''}`)
         triggerAnimation(ANIM.SHAKE)
         return ANIM.SHAKE
       },
@@ -797,36 +841,57 @@ function _enemy_dorian(enemy, ctx, hpPct) {
     {
       key: 'feint', weight: 2,
       exec() {
-        // Feint: 20% chance of a miss (his own feint backfires) or big hit
-        if (Math.random() < 0.20) {
-          messages.push(`🔴 Dorian <em>feints</em> — but overcommits. Misses entirely.`)
-          triggerAnimation(ANIM.NONE)
-          return ANIM.NONE
-        }
-        const dmg = baseDmg(enemy.atk * 1.5, playerDEF, se, defending, 2)
-        onEnemyDmgPlayer(dmg)
-        messages.push(`🔴 <em>Feint into real strike</em> — <strong>${dmg}</strong>! He reads you.`)
+        // Feint: sets up a guaranteed big hit next turn (unless player lands the kill)
+        enemyState.dorianFeintQueued = true
+        const tickDmg = baseDmg(enemy.atk * 0.4, playerDEF, se, defending, 1)
+        onEnemyDmgPlayer(tickDmg)
+        messages.push(`🔴 Dorian <em>feints</em> — light pressure for <strong>${tickDmg}</strong>. He's setting something up.`)
         triggerAnimation(ANIM.PULSE)
         return ANIM.PULSE
       },
     },
     {
-      key: 'attrition', weight: phase2 ? 0 : 1,
+      key: 'attrition', weight: phase2 ? 0 : 2,
       exec() {
-        const dmg = baseDmg(enemy.atk * 0.6, playerDEF, se, defending, 1)
+        const dmg = baseDmg(enemy.atk * 0.7, playerDEF, se, defending, 2)
         onEnemyDmgPlayer(dmg)
         applyBleed(se, 3, 2, messages)
-        messages.push(`🔴 <em>Attrition tactic</em> — <strong>${dmg}</strong> + bleed.`)
+        messages.push(`🔴 <em>Attrition tactic</em> — <strong>${dmg}</strong> + bleed. He's playing the long game.`)
         triggerAnimation(ANIM.FLASH)
         return ANIM.FLASH
       },
     },
     {
-      key: 'desperation', weight: phase2 ? 2 : 0,
+      key: 'read_and_exploit', weight: phase2 ? 0 : 1,
+      exec() {
+        // Reads player's last action — applies DEF shred
+        applyDefShred(se, 5, 2, messages)
+        const dmg = baseDmg(enemy.atk * 0.8, playerDEF, se, defending, 2)
+        onEnemyDmgPlayer(dmg)
+        messages.push(`🔴 Dorian <em>reads your pattern</em> — found the gap. <strong>${dmg}</strong> + armour shred.`)
+        triggerAnimation(ANIM.VOID)
+        return ANIM.VOID
+      },
+    },
+    {
+      key: 'desperation', weight: phase2 ? 3 : 0,
       exec() {
         const dmg = baseDmg(enemy.atk * 1.8, playerDEF, se, defending, 4)
         onEnemyDmgPlayer(dmg)
-        messages.push(`🔴 Dorian: "Force of <em>habit</em>." — desperate lunge for <strong>${dmg}</strong>.`)
+        messages.push(`🔴 Dorian: <em>"Force of habit."</em> — desperate lunge for <strong>${dmg}</strong>.`)
+        triggerAnimation(ANIM.TERROR)
+        return ANIM.TERROR
+      },
+    },
+    {
+      key: 'cold_efficiency', weight: phase2 ? 2 : 0,
+      exec() {
+        // Phase 2 signature: bleed + def shred combo — he's done being careful
+        const dmg = baseDmg(enemy.atk * 1.2, playerDEF, se, defending, 3)
+        onEnemyDmgPlayer(dmg)
+        applyBleed(se, 4, 2, messages)
+        applyDefShred(se, 4, 1, messages)
+        messages.push(`🔴 <em>Cold efficiency</em> — <strong>${dmg}</strong> + bleed + armour shred. He stops holding back.`)
         triggerAnimation(ANIM.TERROR)
         return ANIM.TERROR
       },
