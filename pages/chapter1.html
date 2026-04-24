@@ -9,89 +9,96 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-
+    /* ══════════════════════════════════════════════
+       WATCHER THEME — Ice / Blue accent
+       Inventory layout: spine, tilt, corner light.
+    ══════════════════════════════════════════════ */
     :root {
-      --bg-0:     #05080c;
-      --bg-1:     #0a1018;
-      --panel:    #0d131c;
-      --ink:      #dfe7f2;
-      --ink-dim:  #6f7b8d;
-      --ink-faint:#3a4354;
-      --ice:      #8fd8f0;
-      --ice-hot:  #c8eeff;
-      --amber:    #ffb347;
-      --amber-hot:#ffd68a;
-      --warn:     #e05a44;
-      --line:     #1a2230;
-      --green:    #5ec45e;
-      --purple:   #b06eff;
+      --bg-0:      #05080c;
+      --bg-1:      #0a1018;
+      --panel:     #0d131c;
+      --page-l:    #0b1018;
+      --page-r:    #0d1520;
+      --ink:       #dfe7f2;
+      --ink-dim:   #6f7b8d;
+      --ink-faint: #3a4354;
+      --ice:       #8fd8f0;
+      --ice-hot:   #c8eeff;
+      --gold:      #c8a84a;
+      --gold-hot:  #f0d080;
+      --gold-dim:  #7a6430;
+      --amber:     #ffb347;
+      --amber-hot: #ffd68a;
+      --warn:      #e05a44;
+      --line:      #1a2230;
+      --green:     #5ec45e;
+      --purple:    #b06eff;
+      --spine-col: #0d1018;
     }
+    *, *::before, *::after { box-sizing: border-box; }
 
-    /* ── Nav — same placement as inventory (gold accent on hover) ── */
-    #nav { position:relative; z-index:200; }
-    #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
+    /* ── Nav ── */
+    #nav { position: relative; z-index: 200; }
+    #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
     #nav a, #nav button {
-      font-family:'JetBrains Mono',monospace !important;
-      font-size:10px !important; letter-spacing:.28em !important;
-      text-transform:uppercase !important; color:#6f7b8d !important;
-      text-decoration:none !important; border:none !important; padding:0 !important;
-      transition:color .2s !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .28em !important;
+      text-transform: uppercase !important; color: var(--ink-dim) !important;
+      text-decoration: none !important; border: none !important; padding: 0 !important;
+      transition: color .2s !important;
     }
-    #nav a:hover, #nav button:hover { color:#c8a84a !important; }
+    #nav a:hover, #nav button:hover { color: var(--gold) !important; }
     #nav > *, #nav nav, #nav div {
-      border-bottom:1px solid #1a2230 !important;
-      padding:14px 32px !important; display:flex !important;
-      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
+      border-bottom: 1px solid var(--line) !important;
+      padding: 14px 32px !important; display: flex !important;
+      align-items: center !important; gap: 28px !important; flex-wrap: wrap !important;
     }
 
-    /* ── Global reset for watcher look ── */
+    /* ── Global reset ── */
     html, body {
-      background: var(--bg-0) !important;
+      background: radial-gradient(ellipse at 50% 0%, #0e1a28 0%, #05080c 55%, #020406 100%) !important;
       color: var(--ink) !important;
-      font-family: 'Cormorant Garamond', serif !important;
-    }
-    body {
-      background:
-        radial-gradient(ellipse at 50% 0%, #0e1a28 0%, #05080c 55%, #020406 100%) !important;
+      font-family: 'Cormorant Garamond', Georgia, serif !important;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* scanline overlay */
+    /* scanlines — gold tint matching inventory */
     body::after {
       content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
-      background-image: repeating-linear-gradient(
-        180deg,
+      background-image: repeating-linear-gradient(180deg,
         rgba(143,216,240,.012) 0px, rgba(143,216,240,.012) 1px,
-        transparent 1px, transparent 4px
-      );
+        transparent 1px, transparent 4px);
     }
 
-    /* ── Book wrap / layout ── */
+    /* ── Book wrap ── */
     .book-wrap {
       background: transparent !important;
-      max-width: 1100px;
+      max-width: 1060px;
       margin: 0 auto;
-      padding: 0 20px 60px;
+      padding: 24px 24px 60px;
     }
 
-    /* ── The book — side-by-side panels ── */
+    /* ── Book — perspective tilt matching inventory ── */
     .book {
       display: grid !important;
-      grid-template-columns: 1fr 28px 1fr !important;
+      grid-template-columns: 1fr 20px 1fr !important;
       gap: 0 !important;
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      margin-top: 12px !important;
-      max-height: calc(100vh - 120px);
+      border-radius: 0 !important;
+      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
+      transform: perspective(1600px) rotateX(2.5deg) !important;
+      transform-origin: 50% 0 !important;
+      margin-top: 10px !important;
     }
     @media(max-width: 860px) {
-      .book { grid-template-columns: 1fr !important; max-height:none !important; }
+      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
       .spine { display: none !important; }
     }
 
-    /* ── Pages — dark panel with ice corners ── */
+    /* ── Pages ── */
     .parchment, .page-left, .page-right {
       background: var(--panel) !important;
       border: 1px solid var(--line) !important;
@@ -102,35 +109,24 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
-    /* Left page: no right border — spine covers that edge */
-    .page-left {
-      border-right: none !important;
-      box-shadow: none !important;
-    }
-    /* Right page: no left border — spine covers that edge */
-    .page-right {
-      border-left: none !important;
-      box-shadow: none !important;
-    }
-    /* ── Ice corners — outer edges only, never spine side ── */
-    .parchment::before, .parchment::after { content: none; }
+    /* No border on the spine-facing edges */
+    .page-left  { border-right: none !important; background: var(--page-l) !important; }
+    .page-right { border-left:  none !important; background: var(--page-r) !important; }
 
-    .page-left::before {
+    /* Gradient spine-glow lighting — matches inventory */
+    .page-left::before  {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(90deg, rgba(143,216,240,.014) 0%, transparent 55%);
+    }
+    .page-right::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background: linear-gradient(270deg, rgba(143,216,240,.010) 0%, transparent 55%);
+    }
+    /* Gold corner brackets — left page: top-left / right page: bottom-right */
+    .page-left::after {
       content: ""; position: absolute; top: -1px; left: -1px;
       width: 16px; height: 16px;
       border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
-    .page-left::after {
-      content: ""; position: absolute; bottom: -1px; left: -1px;
-      width: 16px; height: 16px;
-      border-bottom: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
-    .page-right::before {
-      content: ""; position: absolute; top: -1px; right: -1px;
-      width: 16px; height: 16px;
-      border-top: 1px solid var(--ice); border-right: 1px solid var(--ice);
       pointer-events: none; z-index: 1;
     }
     .page-right::after {
@@ -139,57 +135,43 @@
       border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
       pointer-events: none; z-index: 1;
     }
-    .page-inner { padding: 22px 24px !important; }
+    /* Fallback for bare .parchment (not left/right) — keep the original two-corner look in gold */
+    .parchment:not(.page-left):not(.page-right)::before {
+      content: ""; position: absolute; top: -1px; left: -1px;
+      width: 16px; height: 16px;
+      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
+      pointer-events: none; z-index: 1;
+    }
+    .parchment:not(.page-left):not(.page-right)::after {
+      content: ""; position: absolute; bottom: -1px; right: -1px;
+      width: 16px; height: 16px;
+      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
+      pointer-events: none; z-index: 1;
+    }
+    .page-inner { padding: 24px 26px !important; }
 
-    /* ── Spine — proper book binding ── */
+    /* ── Spine — gradient with gold centre line, matching inventory ── */
     .spine {
-      background: linear-gradient(
-        to right,
-        #0a0e14 0%,
-        #141c26 18%,
-        #1e2a38 38%,
-        #1e2a38 62%,
-        #141c26 82%,
-        #0a0e14 100%
-      ) !important;
-      width: 28px !important;
+      background: linear-gradient(180deg, #0d1018 0%, #090d14 50%, #0d1018 100%) !important;
+      border-left:  1px solid #1a2230 !important;
+      border-right: 1px solid #1a2230 !important;
+      position: relative; z-index: 5; width: 20px !important;
       margin: 0 !important;
-      border: none !important;
-      position: relative;
-      flex-shrink: 0;
+      box-shadow: inset 2px 0 5px rgba(0,0,0,.5), inset -2px 0 5px rgba(0,0,0,.5) !important;
     }
     .spine::before {
-      content: "";
-      position: absolute;
-      top: 0; bottom: 0;
-      left: 50%;
-      width: 1px;
-      background: linear-gradient(
-        to bottom,
-        transparent 0%,
-        rgba(143,216,240,.18) 8%,
-        rgba(143,216,240,.18) 92%,
-        transparent 100%
-      );
-      transform: translateX(-50%);
-    }
-    .spine::after {
-      content: "";
-      position: absolute;
-      left: 4px; right: 4px;
-      top: 0; bottom: 0;
-      border-left: 1px solid rgba(255,255,255,.04);
-      border-right: 1px solid rgba(255,255,255,.04);
+      content: ""; position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
+      background: linear-gradient(180deg, transparent, rgba(143,216,240,.08) 30%, rgba(143,216,240,.08) 70%, transparent);
     }
 
-    /* ── Chapter label / title ── */
+    /* ── Chapter label / subtitle ── */
     .chapter-label {
       font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important;
-      letter-spacing: .38em !important;
+      font-size: 9.5px !important;
+      letter-spacing: .42em !important;
       text-transform: uppercase !important;
       color: var(--ice) !important;
-      margin-bottom: 6px !important;
+      margin-bottom: 5px !important;
     }
     .chapter-sub {
       font-size: 17px !important;
@@ -202,9 +184,19 @@
     .ink-divider, hr.ink-divider {
       border: none !important;
       border-top: 1px solid var(--line) !important;
-      margin: 14px 0 !important;
+      margin: 12px 0 !important;
       opacity: 1 !important;
     }
+
+    /* ── Body text colour remaps (inline styles use parchment browns) ── */
+    p, li, span { color: var(--ink) !important; }
+    [style*="color:#1a1208"] { color: var(--ink) !important; }
+    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
+    [style*="color:#7a6435"] { color: var(--ink-dim) !important; }
+    [style*="color:#9a8050"] { color: var(--ink-dim) !important; }
+    [style*="color:#c8b96e"] { color: var(--gold) !important; }
+    [style*="background:rgba(200,184,128"] { background: rgba(143,216,240,.06) !important; }
+    [style*="border-color:rgba(139,106,32"] { border-color: rgba(143,216,240,.25) !important; }
 
     /* ── Story text ── */
     .story-text {
@@ -238,13 +230,12 @@
 
     /* ── HUD ── */
     #hud { color: var(--ink) !important; }
-    /* HUD inner elements - override parchment-coloured text */
     #hud p, #hud span, #hud div { color: var(--ink) !important; }
-    #hud .hud-badge-row .hud-seal-label { color: var(--ice) !important; }
+    #hud .hud-badge-row .hud-seal-label { color: var(--gold) !important; }
     #hud .hud-chapter { color: var(--ink-dim) !important; }
     #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
     #hud .stat-val { color: var(--ink) !important; }
-    #hud .stat-bar-wrap { background: rgba(255,255,255,.07) !important; border-radius: 0 !important; }
+    #hud .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
     #hud .stat-box { background: rgba(255,255,255,.03) !important; border: 1px solid var(--line) !important; border-radius: 0 !important; }
     #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; }
     #hud .stat-box-val { color: var(--amber) !important; }
@@ -256,13 +247,29 @@
       font-family: 'JetBrains Mono',monospace !important;
       transition: border-color .2s, color .2s !important;
     }
-    #hud button:hover { border-color: var(--ice) !important; color: var(--ice) !important; }
-    /* skill points bar */
+    #hud button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
     #hud div[onclick] {
       background: rgba(176,110,255,.15) !important;
       border-color: rgba(176,110,255,.35) !important;
       color: var(--ink) !important;
       border-radius: 0 !important;
+    }
+
+    /* ── Buttons / choices — gold theme matching inventory ── */
+    button, .choice, .combat-btn {
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .08em !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+    }
+    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
+      border-color: var(--ice) !important;
+      color: var(--ice) !important;
+      background: rgba(143,216,240,.04) !important;
     }
 
     /* ── Choices panel ── */
@@ -276,7 +283,6 @@
     }
     .choices { display: flex; flex-direction: column; gap: 8px; }
 
-    /* Override the .choice button from main.css entirely */
     button.choice, .choice {
       background: transparent !important;
       border: 1px solid var(--line) !important;
@@ -330,6 +336,11 @@
       margin-top: 3px !important;
     }
 
+    /* ── Stat bars ── */
+    .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
+    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }
+    .stat-val { color: var(--ink) !important; }
+
     /* ── Combat panel ── */
     .combat-panel {
       background: var(--bg-1) !important;
@@ -339,18 +350,16 @@
       position: relative;
     }
     .combat-panel::before {
-      content:""; position:absolute; top:-1px; left:-1px;
-      width:12px; height:12px;
-      border-top:1px solid var(--ice); border-left:1px solid var(--ice);
+      content: ""; position: absolute; top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
     }
     .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
     .combat-enemy-icon { font-size: 2.5rem; }
     .combat-enemy-name {
       font-family: 'Cormorant Garamond', serif !important;
-      font-size: 20px !important;
-      font-weight: 600 !important;
-      letter-spacing: .04em !important;
-      color: var(--ink) !important;
+      font-size: 20px !important; font-weight: 600 !important;
+      letter-spacing: .04em !important; color: var(--ink) !important;
     }
     .combat-log {
       font-family: 'Cormorant Garamond', serif !important;
@@ -365,15 +374,13 @@
       min-height: 3rem !important;
       margin-bottom: 10px !important;
     }
-    .combat-log em  { color: var(--ice) !important; font-style: italic; }
+    .combat-log em     { color: var(--gold) !important; font-style: italic; }
     .combat-log strong { color: var(--warn) !important; font-style: normal; }
     .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
     .stat-bar-wrap {
-      flex: 1;
-      height: 5px !important;
+      flex: 1; height: 5px !important;
       background: rgba(255,255,255,.06) !important;
-      border-radius: 0 !important;
-      overflow: hidden;
+      border-radius: 0 !important; overflow: hidden;
     }
     .stat-bar { height: 100%; transition: width .4s, background .4s; }
     .stat-key {
@@ -390,8 +397,7 @@
     /* combat action buttons */
     .combat-btn {
       font-family: 'JetBrains Mono', monospace !important;
-      font-size: .6rem !important;
-      letter-spacing: .06em !important;
+      font-size: .6rem !important; letter-spacing: .06em !important;
       color: var(--ink) !important;
       background: rgba(255,255,255,.03) !important;
       border: 1px solid var(--line) !important;
@@ -399,26 +405,20 @@
       padding: .45rem .5rem !important;
       cursor: pointer !important;
       transition: border-color .2s, background .2s, color .2s !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
     }
     .combat-btn:hover:not(:disabled) {
       border-color: var(--ice) !important;
       color: var(--ice) !important;
       background: rgba(143,216,240,.06) !important;
     }
-    .combat-btn:disabled {
-      opacity: .35 !important;
-      cursor: not-allowed !important;
-    }
+    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }
 
     /* stat-grid inside HUD */
     .stat-grid {
       display: grid;
       grid-template-columns: repeat(3,1fr);
-      gap: 4px;
-      margin-top: 6px;
+      gap: 4px; margin-top: 6px;
     }
 
     /* ── End screen ── */
@@ -429,8 +429,8 @@
       padding: 20px !important;
       position: relative;
     }
-    .end-box::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--ice); border-left:1px solid var(--ice); }
-    .end-box::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--ice); border-right:1px solid var(--ice); }
+    .end-box::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
+    .end-box::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }
     .end-title {
       font-family: 'Cormorant Garamond', serif !important;
       font-size: 22px !important; font-weight: 600 !important;
@@ -485,7 +485,7 @@
     }
     .animate-shake { animation: animateShake .35s ease; }
 
-    /* ── System overlay messages (showSysOverlay) ── */
+    /* ── System overlay messages ── */
     .sys-overlay, [id="sys-overlay"] {
       background: rgba(5,8,12,.92) !important;
       border: 1px solid var(--ice) !important;
@@ -507,7 +507,7 @@
 
     /* ── Loot window ── */
     #loot-window {
-      background: #0a1018 !important;
+      background: var(--bg-1) !important;
       border-color: rgba(143,216,240,.4) !important;
       border-radius: 0 !important;
       color: var(--ink) !important;
@@ -522,28 +522,25 @@
     }
     #stat-window * { color: var(--ink) !important; }
     #stat-window [style*="background:rgba(200"] {
-      background: rgba(143,216,240,.08) !important;
+      background: rgba(143,216,240,.06) !important;
     }
 
     /* ── Farm zones + location hub ── */
-    /* zone entry cards */
-    #right-panel div[onclick] {
-      border-radius: 0 !important;
-    }
+    #right-panel div[onclick] { border-radius: 0 !important; }
 
-    /* ── Cover / watcher intro image ── */
+    /* ── Watcher image ── */
     #watcher-img {
       border: 1px solid var(--line) !important;
       border-radius: 0 !important;
       filter: drop-shadow(0 0 20px rgba(143,216,240,.15)) !important;
     }
 
-    /* ── Eye encounter overlay inherits watcher colours ── */
+    /* ── Eye encounter overlay ── */
     #eye-encounter-overlay {
       background: rgba(3,5,8,.97) !important;
     }
 
-    /* ── combat-over section inside any combat panel ── */
+    /* ── combat-over ── */
     [id$="-combat-over"] { color: var(--ink) !important; }
     [id$="-combat-over"] button {
       font-family: 'JetBrains Mono', monospace !important;
@@ -554,13 +551,20 @@
       cursor: pointer !important;
       transition: border-color .15s, color .15s !important;
     }
-    [id$="-combat-over"] button:hover { border-color: var(--ice) !important; color: var(--ice) !important; }
+    [id$="-combat-over"] button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
 
-    /* ── scrollbar ── */
-    ::-webkit-scrollbar { width: 6px; }
+    /* ── Modals ── */
+    [id$="-window"] > div, .end-box {
+      background: var(--panel) !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: var(--bg-0); }
     ::-webkit-scrollbar-thumb { background: var(--line); }
-    ::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
   </style>
 </head>
 <body>
@@ -590,7 +594,6 @@
 <script type="module">
 import { supabase } from '../supabase.js'
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
-import { resolveEnemyTurn, initEnemyState, ANIM } from '../data/enemyAI.js'
 
 // ── Chapter data ─────────────────────────────────
 const META = {
@@ -3735,7 +3738,7 @@ function triggerForcedEyeEncounter(encounterType, resumeNextId) {
         min-height: 2.5rem;
       }
       #eye-encounter-overlay .combat-log em {
-        color: #5eaee0 !important;
+        color: #8fd8f0 !important;
       }
       #eye-encounter-overlay .combat-log strong {
         color: #e05555 !important;
@@ -4741,9 +4744,6 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
   const maxPlayerHp = player.max_hp || 100
   let over = false
 
-  // ── Per-enemy AI state (phases, turn count, move history) ──
-  const enemyState = initEnemyState(enemy)
-
   // Cache equipped items for derived stat calculations
   ;(async () => {
     const { data } = await supabase.from('inventory').select('*')
@@ -4891,31 +4891,6 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     if(!w) return
     w.classList.add('animate-shake')
     setTimeout(()=>w.classList.remove('animate-shake'),400)
-  }
-
-  // ── Animation helpers for enemyAI ──────────────────────────
-  function flashScreen(color, opacity) {
-    const el = document.createElement('div')
-    el.style.cssText = `position:fixed;inset:0;z-index:9997;background:${color};opacity:0;pointer-events:none;transition:opacity .12s`
-    document.body.appendChild(el)
-    requestAnimationFrame(() => {
-      el.style.opacity = opacity
-      setTimeout(() => { el.style.opacity = 0; setTimeout(() => el.remove(), 200) }, 180)
-    })
-  }
-
-  function triggerAnimation(animClass) {
-    const wrap = $('combat-wrap')
-    switch (animClass) {
-      case ANIM.SHAKE:  shake(); break
-      case ANIM.PULSE:  if(wrap){wrap.style.boxShadow='0 0 30px 4px rgba(224,90,68,.5)'; setTimeout(()=>wrap.style.boxShadow='',600)} break
-      case ANIM.FLASH:  flashScreen('#e05a44', 0.14); break
-      case ANIM.VOID:   flashScreen('#b06eff', 0.18); break
-      case ANIM.GOLD:   flashScreen('#ffd68a', 0.12); break
-      case ANIM.ICE:    flashScreen('#8fd8f0', 0.15); break
-      case ANIM.TERROR: shake(); flashScreen('#cc000033', 0.30); break
-      default: break
-    }
   }
 
   async function endCombat(result) {
@@ -5170,10 +5145,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
 
   function playerATK()  { return calcATK() }
   function playerDEF()  { return calcDEF() }
-  function playerSPD()  {
-    const base = calcSPD()
-    return statusEffects.playerSlowTurns > 0 ? Math.floor(base / 2) : base
-  }
+  function playerSPD()  { return calcSPD() }
   function enemySPD()   { return enemy.spd || Math.floor((enemy.atk||5) * 0.6) }
 
   // ── Global skill level getter (also used by renderSkillSlots outside doTurn) ─
@@ -5436,28 +5408,23 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       const elIcon = EL_ICON[sk.el] || '✦'
 
       const cdLabel = cd > 0 ? cd + ' turn' + (cd > 1 ? 's' : '') : null
-      const terrorActive = (statusEffects.playerTerrorTurns || 0) > 0
       const border  = isUlt ? `border-color:${sk.color}70` : `border-color:${sk.color}40`
 
       // Build skill button safely — avoid nested template literals and quote hell
-      const cdOverlay = terrorActive
-        ? '<div style="position:absolute;inset:0;background:rgba(80,0,0,.55);display:flex;align-items:center;justify-content:center;border-radius:3px">'
-          + '<span style="font-family:Share Tech Mono,monospace;font-size:.5rem;color:#e07070">😱 TERROR</span>'
-          + '</div>'
-        : cd > 0
+      const cdOverlay = cd > 0
         ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px">'
           + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">' + cdLabel + '</span>'
           + '</div>'
         : ''
-      const iconFilter = (cd > 0 || terrorActive) ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
-      const btnColor   = (cd > 0 || terrorActive) ? 'rgba(200,160,60,.35)' : sk.color
+      const iconFilter = cd > 0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
+      const btnColor   = cd > 0 ? 'rgba(200,160,60,.35)' : sk.color
       const imgTag = '<img src="../assets/skills/' + k + '.webp"'
         + ' style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto"'
         + ' onerror="this.remove()">'
 
       return '<button class="combat-btn" id="' + cid + '-btn-skill-' + k + '"'
         + ' onclick="useSkill_' + cid + '(\'' + k + '\')"'
-        + (cd > 0 || terrorActive ? ' disabled' : '')
+        + (cd > 0 ? ' disabled' : '')
         + ' title="' + (sk.desc || sk.label) + ' (Lv' + lv + ' · ' + pct + '% power)"'
         + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;' + border + ';'
         + 'color:' + btnColor + ';position:relative;overflow:hidden">'
@@ -5484,8 +5451,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       const b = $('btn-skill-'+k)
       if (b && enabled) {
         const cd = statusEffects.skillCooldowns[k] || 0
-        const terror = (statusEffects.playerTerrorTurns || 0) > 0
-        b.disabled = cd > 0 || terror
+        b.disabled = cd > 0
       } else if (b) {
         b.disabled = true
       }
@@ -5556,45 +5522,6 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     Object.keys(statusEffects.skillCooldowns).forEach(k => {
       if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
     })
-
-    // ── Enemy-applied status effects on player ────────────────
-    // These are set by enemyAI move tables and ticked each turn BEFORE player acts.
-    const _preTurnMsgs = []
-    if (statusEffects.playerStunTurns > 0) {
-      statusEffects.playerStunTurns--
-      _preTurnMsgs.push('<strong>You are stunned</strong> — action lost!')
-    }
-    if (statusEffects.playerBleedTurns > 0) {
-      currentHp = Math.max(0, currentHp - (statusEffects.playerBleedDmg || 3))
-      statusEffects.playerBleedTurns--
-      _preTurnMsgs.push('🩸 Bleed: <strong>' + (statusEffects.playerBleedDmg || 3) + '</strong> dmg. (' + statusEffects.playerBleedTurns + ' left)')
-    }
-    if (statusEffects.playerPoisonTurns > 0) {
-      currentHp = Math.max(0, currentHp - (statusEffects.playerPoisonDmg || 3))
-      statusEffects.playerPoisonTurns--
-      _preTurnMsgs.push('☠ Poison: <strong>' + (statusEffects.playerPoisonDmg || 3) + '</strong> dmg. (' + statusEffects.playerPoisonTurns + ' left)')
-    }
-    if (statusEffects.playerSlowTurns > 0) {
-      statusEffects.playerSlowTurns--
-      // Speed effect is passive — just notify on first tick
-    }
-    if (statusEffects.playerDefShredTurns > 0) {
-      statusEffects.playerDefShredTurns--
-    }
-    if (statusEffects.playerTerrorTurns > 0) {
-      statusEffects.playerTerrorTurns--
-    }
-    // If stunned: flash the log and abort the whole turn
-    if (_preTurnMsgs.length) {
-      syncBars()
-      if (statusEffects.playerStunTurns >= 0 && _preTurnMsgs[0].includes('stunned')) {
-        log(_preTurnMsgs.join(' '), '⚠ STUNNED')
-        setButtons(true)
-        return
-      }
-    }
-    // Capture pre-turn messages to prepend later
-    const _preTurnPrefix = _preTurnMsgs.join(' ')
 
     // ── FF-Style Turn Order ───────────────────────────────────
     // Base speed comparison with jitter. Faster player goes first.
@@ -5972,17 +5899,14 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       }
     }
 
-    // ── Enemy action — routed through enemyAI.js ─────────────
+    // ── Enemy action ──────────────────────────────────────
     function resolveEnemyAction() {
       if (enemyHp <= 0) return
-
-      // Stun / root: enemy cannot act
+      // Stun / root check
       if (statusEffects.enemyStunTurns > 0 || statusEffects.rootTrapTurns > 0) {
         messages.push(enemy.name + ' is stunned — cannot attack!')
         return
       }
-
-      // Divine Barrier: absorb and reflect — skip enemy turn entirely
       if (statusEffects.invulnerable) {
         const reflectDmg = Math.floor(enemy.atk * 0.5)
         enemyHp          = Math.max(0, enemyHp - reflectDmg)
@@ -5990,172 +5914,107 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         messages.push('✨ Divine Barrier absorbs! Reflected ' + reflectDmg + ' back.')
         return
       }
-
-      // Phantom Step: untargetable for one turn
-      if (statusEffects.phantomStep) {
-        statusEffects.phantomStep = false
-        messages.push('👻 Phantom Step — you are untargetable. The attack finds nothing.')
-        return
-      }
-
-      // Player dodge check — Nightshroud, Ghost Step, Umbral Veil, Wind passive
+      // Player dodge check — includes Nightshroud first-turn, Ghost Step, Umbral Veil
       let dodgeChance = calcPlayerDodge()
-      if (statusEffects.ghostStep || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
+      if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
       if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
 
       if (Math.random() < dodgeChance) {
         messages.push('You <em>dodge</em> the attack!')
-        if (statusEffects.flicker)                              { statusEffects.flickerReady = true }
+        // Flicker: next strike doubles
+        if (statusEffects.flicker) { statusEffects.flickerReady = true }
+        // Ghost Step / Umbral Veil: counter on dodge
         if (statusEffects.ghostStep || statusEffects.umbralVeil) {
           const counterDmg = Math.max(1, Math.floor(playerATK() * 0.5))
           enemyHp = Math.max(0, enemyHp - counterDmg)
           messages.push('↩ Counter hit for <strong>' + counterDmg + '</strong>!')
         }
+        // Increment consecutive-hit counter on dodge (reset it)
         statusEffects.consecutiveHits = 0
         return
       }
-
-      // Endurig Root: immune to enemy-applied stun/slow effects
-      if (statusEffects.enduringRoot) {
-        statusEffects.playerStunTurns = 0
-        statusEffects.playerSlowTurns = 0
-      }
-
-      // Foresight: pre-multiplier for incoming damage
+      // Foresight active: reduce damage 90%
       let foresightMult = 1.0
-      if (statusEffects.foresight) {
-        foresightMult = 0.10
-        statusEffects.foresight = false
-        messages.push('🔮 Foresight absorbs the blow!')
+      if (statusEffects.foresight) { foresightMult = 0.10; statusEffects.foresight = false; messages.push('🔮 Foresight absorbs the blow!') }
+      // Endurig Root: immune to stun
+      if (statusEffects.enduringRoot) { statusEffects.enemyStunTurns = 0; statusEffects.rootTrapTurns = 0 }
+      const defMult  = defending ? 0.25 : 1
+      const eATKMult = (statusEffects.enemyATKMult || 1.0) * (foresightMult || 1.0)
+      // Apply enemy SPD reduction from heavyGround
+      const eSPDReduced = (statusEffects.enemySPDReduction || 0)
+      const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
+      let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
+
+      // Water shield absorbs
+      if (statusEffects.waterShield > 0 && eDmg > 0) {
+        const absorbed = Math.min(statusEffects.waterShield, eDmg)
+        eDmg -= absorbed
+        statusEffects.waterShield -= absorbed
+        if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + ' damage.')
       }
 
-      // Sixth Sense: 80% reduction if it was correctly triggered
-      if (statusEffects.sixthSense) {
-        foresightMult = Math.min(foresightMult, 0.20)
-        statusEffects.sixthSense = false
-        messages.push('🔮 Sixth Sense — pattern read correctly!')
+      currentHp = Math.max(0, currentHp - eDmg)
+
+      // Metal reflect passive: Lv1 10% → Lv10 28% reflected
+      if (statusEffects.metalReflect && eDmg > 0) {
+        const refLv  = _skillLvGlobal('metal_passive_reflect')
+        const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
+        const refDmg = Math.max(1, Math.floor(eDmg * refPct))
+        enemyHp      = Math.max(0, enemyHp - refDmg)
+        messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' damage reflected!')
+      }
+      // Thornwall: reflect 15% of Defend absorption
+      if (statusEffects.thornwall && defending && eDmg > 0) {
+        const thornDmg = Math.max(1, Math.floor(eDmg * 0.15))
+        enemyHp = Math.max(0, enemyHp - thornDmg)
+        statusEffects.thornwall = false
+        messages.push('🌿 Thornwall — ' + thornDmg + ' thorn damage reflected!')
+      }
+      // Live Wire: 20% stun on being hit
+      if (statusEffects.liveWire && eDmg > 0 && Math.random() < 0.20) {
+        statusEffects.enemyStunTurns = 1
+        messages.push('⚡ Live Wire — shock! Enemy stunned next turn.')
+      }
+      // Tidal Resolve: first time below 50% HP, gain +20 DEF for 2 turns
+      if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
+          currentHp / maxPlayerHp < 0.50 && eDmg > 0) {
+        statusEffects.tidalResolveFired = true
+        statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
+        statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
+        messages.push('🌊 Tidal Resolve — below 50% HP: +20 DEF for 2 turns!')
+      }
+      // Absorption: hit counter — every 3 hits, next Defend heals 15
+      if (statusEffects.absorption && eDmg > 0) {
+        statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
+        if (statusEffects.absorptionCount >= 3) {
+          statusEffects.absorptionCount = 0
+          statusEffects.absorptionHeal  = 15
+          messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
+        }
+      }
+      // Arc Reflex: 3 consecutive hits → auto counter
+      if (statusEffects.arcReflex && eDmg > 0) {
+        statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
+        if (statusEffects.consecutiveHits >= 3) {
+          statusEffects.consecutiveHits = 0
+          const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
+          enemyHp = Math.max(0, enemyHp - arcDmg)
+          messages.push('⚡ Arc Reflex — counter strike for <strong>' + arcDmg + '</strong>!')
+        }
+      }
+      // Tremor Step: 20% chance to stagger enemy (they skip attack next turn)
+      if (statusEffects.tremorStep && Math.random() < 0.20) {
+        statusEffects.enemyStunTurns = 1
+        messages.push('🌍 Tremor Step — ground shakes! Enemy staggered.')
       }
 
-      // ── Hand off to enemyAI for the named move ──────────────
-      // onEnemyDmgPlayer applies all player-reactive effects to the raw damage value
-      // before committing it to currentHp, so every effect fires in the right order.
-      resolveEnemyTurn(enemy, {
-        enemyState,
-        enemyHp,
-        maxEnemyHp,
-        currentHp,
-        maxPlayerHp,
-        playerDEF,
-        defending,
-        statusEffects,
-        yara,
-        messages,
-        triggerAnimation,
-        playerMoral:  player.moral_score || 0,
-        playerAction,
-
-        onEnemyDmgPlayer(rawDmg) {
-          // Apply foresight/sixth-sense reduction
-          let dmg = Math.max(0, Math.round(rawDmg * foresightMult))
-
-          // enemyATKMult from player skills (Void Zone, Tornado, Dread Pulse etc.)
-          // Note: enemyAI already factors this via its own context — but its context
-          // uses the same statusEffects object so enemyATKMult is already applied.
-          // We do NOT double-apply here. foresightMult is the only extra multiplier.
-
-          // Water Shield absorbs first
-          if (statusEffects.waterShield > 0 && dmg > 0) {
-            const absorbed = Math.min(statusEffects.waterShield, dmg)
-            dmg -= absorbed
-            statusEffects.waterShield -= absorbed
-            if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + '.')
-          }
-
-          // Ancient Root shield (dc_ks2 keystone)
-          if (statusEffects.ancientRootShield > 0 && dmg > 0) {
-            const absorbed = Math.min(statusEffects.ancientRootShield, dmg)
-            dmg -= absorbed
-            statusEffects.ancientRootShield -= absorbed
-            if (absorbed > 0) messages.push('🌿 Ancient Root Shield absorbs ' + absorbed + '.')
-          }
-
-          // Absorb-next-hit (Deep Current)
-          if (statusEffects.absorbNextHit && dmg > 0) {
-            statusEffects.absorbNextHit = false
-            messages.push('🌊 Deep Current fully absorbs the hit!')
-            dmg = 0
-          }
-
-          // Iron Mirror: reflect 40% before applying
-          if (statusEffects.ironMirror && dmg > 0) {
-            const reflectDmg = Math.max(1, Math.floor(dmg * 0.40))
-            enemyHp = Math.max(0, enemyHp - reflectDmg)
-            statusEffects.ironMirror = false
-            messages.push('🛡 Iron Mirror reflects ' + reflectDmg + ' back!')
-          }
-
-          currentHp = Math.max(0, currentHp - dmg)
-
-          if (dmg <= 0) return  // fully blocked — no reactive effects
-
-          // Metal reflect passive
-          if (statusEffects.metalReflect) {
-            const refLv  = _skillLvGlobal('metal_passive_reflect')
-            const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
-            const refDmg = Math.max(1, Math.floor(dmg * refPct))
-            enemyHp = Math.max(0, enemyHp - refDmg)
-            messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' reflected!')
-          }
-          // Thornwall
-          if (statusEffects.thornwall && defending) {
-            const thornDmg = Math.max(1, Math.floor(dmg * 0.15))
-            enemyHp = Math.max(0, enemyHp - thornDmg)
-            statusEffects.thornwall = false
-            messages.push('🌿 Thornwall — ' + thornDmg + ' thorn reflected!')
-          }
-          // Live Wire: 20% chance to stun enemy on being hit
-          if (statusEffects.liveWire && Math.random() < 0.20) {
-            statusEffects.enemyStunTurns = 1
-            messages.push('⚡ Live Wire — shock! Enemy stunned.')
-          }
-          // Tidal Resolve: first time below 50% HP
-          if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
-              currentHp / maxPlayerHp < 0.50) {
-            statusEffects.tidalResolveFired = true
-            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
-            statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
-            messages.push('🌊 Tidal Resolve — +20 DEF for 2 turns!')
-          }
-          // Absorption counter
-          if (statusEffects.absorption) {
-            statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
-            if (statusEffects.absorptionCount >= 3) {
-              statusEffects.absorptionCount = 0
-              statusEffects.absorptionHeal  = 15
-              messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
-            }
-          }
-          // Arc Reflex: 3 consecutive hits → auto counter
-          if (statusEffects.arcReflex) {
-            statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
-            if (statusEffects.consecutiveHits >= 3) {
-              statusEffects.consecutiveHits = 0
-              const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
-              enemyHp = Math.max(0, enemyHp - arcDmg)
-              messages.push('⚡ Arc Reflex — counter for <strong>' + arcDmg + '</strong>!')
-            }
-          }
-          // Tremor Step: 20% stagger
-          if (statusEffects.tremorStep && Math.random() < 0.20) {
-            statusEffects.enemyStunTurns = 1
-            messages.push('🌍 Tremor Step — enemy staggered!')
-          }
-        },
-
-        onEnemyHealSelf(amt) {
-          enemyHp = Math.min(maxEnemyHp, enemyHp + Math.max(0, amt))
-        },
-      })
+      if (defending && eDmg === 0) {
+        messages.push(enemy.name + ' attacks — completely blocked!')
+      } else if (defending) {
+        messages.push(enemy.name + ' attacks for <strong>' + eDmg + '</strong> (reduced by defense).')
+      } else {
+        messages.push(enemy.name + ' retaliates for <strong>' + eDmg + '</strong>.')
+      }
     }
 
     if (playerFirst) {
@@ -6213,7 +6072,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     }
 
     shake()
-    log((_preTurnPrefix ? _preTurnPrefix + ' ' : '') + messages.join(' '), turnLabel)
+    log(messages.join(' '), turnLabel)
     syncBars()
     renderSkillSlots()
 
