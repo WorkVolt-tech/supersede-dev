@@ -371,6 +371,14 @@
     .ch-thumb .wt-eye-small{ animation:wt-pSmall 2.4s ease-in-out infinite; transform-origin:center; transform-box:fill-box; }
     .ch-thumb .wt-beam     { transform-origin:400px 420px; animation:wt-beam 5s ease-in-out infinite; }
 
+    /* ── TWIN JUDGES THUMB ANIMATIONS ── */
+    @keyframes tj-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    @keyframes tj-eyeL   { 0%,100%{filter:drop-shadow(0 0 5px #b6f0ce) drop-shadow(0 0 12px #7fd6a6)} 50%{filter:drop-shadow(0 0 10px #b6f0ce) drop-shadow(0 0 22px #7fd6a6)} }
+    @keyframes tj-eyeR   { 0%,100%{filter:drop-shadow(0 0 5px #ff8a7a) drop-shadow(0 0 12px #e8564a)} 50%{filter:drop-shadow(0 0 10px #ff8a7a) drop-shadow(0 0 22px #e8564a)} }
+    .ch-thumb .tj-float  { animation: tj-float 6s ease-in-out infinite; transform-origin: 50% 50%; }
+    .ch-thumb .tj-eyeL   { animation: tj-eyeL 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .ch-thumb .tj-eyeR   { animation: tj-eyeR 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
     /* scrollbar */
     ::-webkit-scrollbar{width:5px}
     ::-webkit-scrollbar-track{background:var(--bg-0)}
@@ -444,7 +452,7 @@
 
   const CHAPTERS = [
     { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
-    { number: 2, title: 'The Element Awakens',   sub: 'Choose your path. Choose your power.' },
+    { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
   ]
 
   // ── Direct navigation ──────────────────────────────
@@ -562,7 +570,119 @@
     </g>
   </svg>`
 
-  const CH_COVERS = { 1: WATCHER_SVG }
+  const TWIN_JUDGES_SVG = `<svg viewBox="100 80 600 720" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="tj-robeL" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="#1f2a26"/>
+        <stop offset="45%" stop-color="#121a17"/>
+        <stop offset="100%" stop-color="#070a09"/>
+      </linearGradient>
+      <linearGradient id="tj-robeR" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%"  stop-color="#2a1a1a"/>
+        <stop offset="45%" stop-color="#180c0d"/>
+        <stop offset="100%" stop-color="#080405"/>
+      </linearGradient>
+      <radialGradient id="tj-faceL" cx="50%" cy="50%" r="60%">
+        <stop offset="0%"  stop-color="#e4f4e4"/>
+        <stop offset="50%" stop-color="#7fd6a6"/>
+        <stop offset="100%" stop-color="#1a2a22"/>
+      </radialGradient>
+      <radialGradient id="tj-faceR" cx="50%" cy="50%" r="60%">
+        <stop offset="0%"  stop-color="#ffd6d0"/>
+        <stop offset="50%" stop-color="#e8564a"/>
+        <stop offset="100%" stop-color="#2a0a0c"/>
+      </radialGradient>
+      <radialGradient id="tj-eyeL" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#f2ffe8"/>
+        <stop offset="40%" stop-color="#b6f0ce"/>
+        <stop offset="100%" stop-color="#0f2a1c"/>
+      </radialGradient>
+      <radialGradient id="tj-eyeR" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"  stop-color="#ffeeea"/>
+        <stop offset="40%" stop-color="#ff8a7a"/>
+        <stop offset="100%" stop-color="#2a0608"/>
+      </radialGradient>
+      <radialGradient id="tj-auraL" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#7fd6a6" stop-opacity="0.38"/>
+        <stop offset="100%" stop-color="#7fd6a6" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="tj-auraR" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#e8564a" stop-opacity="0.36"/>
+        <stop offset="100%" stop-color="#e8564a" stop-opacity="0"/>
+      </radialGradient>
+      <linearGradient id="tj-chain" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#f4c45a"/>
+        <stop offset="100%" stop-color="#6a4a1c"/>
+      </linearGradient>
+    </defs>
+    <!-- ambient auras -->
+    <ellipse cx="260" cy="340" rx="200" ry="240" fill="url(#tj-auraL)"/>
+    <ellipse cx="540" cy="340" rx="200" ry="240" fill="url(#tj-auraR)"/>
+    <!-- LEFT JUDGE -->
+    <g class="tj-float">
+      <path d="M 380 230 C 340 210,280 200,230 220 C 170 245,130 320,120 420 C 110 520,120 640,140 740 C 155 810,180 845,210 860 L 400 860 L 400 230 Z"
+        fill="url(#tj-robeL)" stroke="#000" stroke-opacity="0.4" stroke-width="1"/>
+      <path d="M 240 300 C 230 420,235 560,255 720" stroke="#7fd6a6" stroke-opacity="0.18" stroke-width="1.3" fill="none"/>
+      <path d="M 240 240 C 300 220,360 225,400 240" stroke="#7fd6a6" stroke-opacity="0.6" stroke-width="1.2" fill="none"/>
+      <ellipse cx="315" cy="205" rx="92" ry="110" fill="#07090a"/>
+      <path d="M 225 200 Q 235 110,315 95 Q 395 110,405 200 Q 400 260,370 295 L 260 295 Q 230 260,225 200 Z" fill="#0e1816" stroke="#1c2a24" stroke-width="1"/>
+      <ellipse cx="315" cy="225" rx="70" ry="82" fill="#040706"/>
+      <g class="tj-eyeL">
+        <ellipse cx="315" cy="215" rx="52" ry="62" fill="url(#tj-faceL)" stroke="#0e2a1c" stroke-width="1.5"/>
+        <path d="M 282 215 Q 315 198,348 215 Q 315 232,282 215 Z" fill="#051a10"/>
+        <circle cx="315" cy="215" r="10" fill="url(#tj-eyeL)"/>
+        <circle cx="315" cy="215" r="3" fill="#f2ffe8"/>
+      </g>
+      <g stroke="#7fd6a6" stroke-width="1.4" fill="none" opacity="0.85">
+        <circle cx="275" cy="112" r="7"/><circle cx="295" cy="100" r="7"/>
+        <circle cx="315" cy="92"  r="7"/><circle cx="335" cy="100" r="7"/>
+        <circle cx="355" cy="112" r="7"/>
+      </g>
+    </g>
+    <!-- RIGHT JUDGE -->
+    <g class="tj-float">
+      <path d="M 420 230 C 460 210,520 200,570 220 C 630 245,670 320,680 420 C 690 520,680 640,660 740 C 645 810,620 845,590 860 L 400 860 L 400 230 Z"
+        fill="url(#tj-robeR)" stroke="#000" stroke-opacity="0.4" stroke-width="1"/>
+      <path d="M 560 300 C 570 420,565 560,545 720" stroke="#e8564a" stroke-opacity="0.18" stroke-width="1.3" fill="none"/>
+      <path d="M 400 240 C 440 225,500 220,560 240" stroke="#e8564a" stroke-opacity="0.6" stroke-width="1.2" fill="none"/>
+      <ellipse cx="485" cy="205" rx="92" ry="110" fill="#07080a"/>
+      <path d="M 395 200 Q 405 110,485 95 Q 565 110,575 200 Q 570 260,540 295 L 430 295 Q 400 260,395 200 Z" fill="#180c0e" stroke="#3a1a1a" stroke-width="1"/>
+      <ellipse cx="485" cy="225" rx="70" ry="82" fill="#050204"/>
+      <g class="tj-eyeR">
+        <ellipse cx="485" cy="215" rx="52" ry="62" fill="url(#tj-faceR)" stroke="#2a0a0e" stroke-width="1.5"/>
+        <path d="M 485 155 L 480 180 L 488 200 L 479 220 L 486 240 L 478 270" stroke="#ff8a7a" stroke-opacity="0.4" stroke-width="0.8" fill="none"/>
+        <path d="M 455 215 Q 485 205,515 215 Q 485 228,455 215 Z" fill="#1a0406"/>
+        <circle cx="492" cy="215" r="9" fill="url(#tj-eyeR)"/>
+        <circle cx="492" cy="215" r="2.8" fill="#ffeeea"/>
+      </g>
+      <g stroke="#e8564a" stroke-width="1.4" fill="none" opacity="0.85">
+        <path d="M 425 118 a 7 7 0 0 1 12 -4"/>
+        <path d="M 450 100 a 7 7 0 0 1 12 -2"/>
+        <path d="M 478 92 a 7 7 0 1 0 14 0"/>
+        <path d="M 500 100 a 7 7 0 0 1 -12 -2"/>
+        <path d="M 525 118 a 7 7 0 0 1 -12 -4"/>
+      </g>
+    </g>
+    <!-- CENTER seam + scales -->
+    <line x1="400" y1="90" x2="400" y2="860" stroke="#f4c45a" stroke-opacity="0.22" stroke-width="0.6"/>
+    <g transform="translate(400 430)">
+      <circle cx="0" cy="0" r="16" fill="#0a0812" stroke="#f4c45a" stroke-width="1.5"/>
+      <circle cx="0" cy="0" r="3.5" fill="#ffb347"/>
+      <line x1="-100" y1="22" x2="100" y2="22" stroke="#f4c45a" stroke-width="1.6"/>
+      <path d="M -100 22 L -112 74" stroke="url(#tj-chain)" stroke-width="1.2" fill="none"/>
+      <path d="M 100 22 L 112 74" stroke="url(#tj-chain)" stroke-width="1.2" fill="none"/>
+      <path d="M -138 76 Q -112 114,-86 76 Z" fill="#0e1816" stroke="#7fd6a6" stroke-width="1.2"/>
+      <circle cx="-112" cy="82" r="7" fill="#7fd6a6" opacity="0.95"/>
+      <path d="M 86 76 Q 112 114,138 76 Z" fill="#180c0e" stroke="#e8564a" stroke-width="1.2"/>
+      <circle cx="112" cy="82" r="7" fill="#e8564a" opacity="0.95"/>
+      <line x1="0" y1="-16" x2="0" y2="-42" stroke="url(#tj-chain)" stroke-width="1.2"/>
+      <polygon points="-7,-42 7,-42 0,-52" fill="#f4c45a" opacity="0.9"/>
+    </g>
+    <!-- shared halo -->
+    <ellipse cx="400" cy="205" rx="220" ry="32" fill="none" stroke="#f4c45a" stroke-width="0.6" stroke-dasharray="1 6" opacity="0.55"/>
+  </svg>`
+
+  const CH_COVERS = { 1: WATCHER_SVG, 2: TWIN_JUDGES_SVG }
 
   ;(async () => {
     const player = await renderNav('nav')
@@ -587,20 +707,25 @@
     }).join('')
 
     // Chapter preview pages map (add entries as chapters get preview pages)
-    const CH_PREVIEW = { 1: 'The_Watcher.html' }
+    const CH_PREVIEW = { 1: 'The_Watcher.html', 2: 'Twin_Judges.html' }
 
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
       const previewHref = CH_PREVIEW[ch.number]
       const chNumLabel = `<span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--gold);display:block;margin-bottom:3px;text-transform:uppercase">Ch.${String(ch.number).padStart(2,'0')}</span>`
 
+      const thumbBg = ch.number === 2
+        ? 'radial-gradient(ellipse at 50% 38%, #1a1620 0%, #0b0a10 60%, #050409 100%)'
+        : 'radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%)'
+
       const thumbInner = CH_COVERS[ch.number]
         ? CH_COVERS[ch.number]
         : `<div style="display:flex;align-items:center;justify-content:center;height:100%"><span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.1em;color:#3a4354">Ch.${String(ch.number).padStart(2,'0')}</span></div>`
 
-      const thumbHtml = previewHref && isUnlocked
-        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none" onclick="event.preventDefault();goTo('${previewHref}')">${thumbInner}</a>`
-        : `<div class="ch-thumb">${thumbInner}</div>`
+      // Preview is always clickable if it exists — regardless of chapter lock
+      const thumbHtml = previewHref
+        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none;background:${thumbBg}" onclick="event.preventDefault();goTo('${previewHref}')">${thumbInner}</a>`
+        : `<div class="ch-thumb" style="background:${thumbBg}">${thumbInner}</div>`
 
       if (!isUnlocked) {
         return `<div class="chapter-entry locked">

@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Twin Judges — Zone 02, Looted District</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-0: #07070a;
+    --bg-1: #0f0e14;
+    --panel: #12111a;
+    --ink: #e8e3d6;
+    --ink-dim: #857f92;
+    --ink-faint: #4a4556;
+    --trust: #7fd6a6;       /* mercy / teamwork — cool jade */
+    --trust-hot: #b6f0ce;
+    --betray: #e8564a;      /* wrath / betrayal — blood red */
+    --betray-hot: #ff8a7a;
+    --warn: #f4c45a;
+    --line: #26232f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--bg-0);
+    color: var(--ink);
+    min-height: 100vh;
+    font-family: 'Cormorant Garamond', serif;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at 50% 30%, #15121c 0%, #07070a 60%, #030306 100%);
+    overflow-x: hidden;
+  }
+
+  /* ======== LAYOUT ======== */
+  .shell {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 36px 40px 60px;
+  }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.34em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+  }
+  .topbar .brand { display: flex; align-items: center; gap: 14px; color: var(--ink); }
+  .topbar .brand .dot {
+    width: 8px; height: 8px; background: var(--betray);
+    transform: rotate(45deg);
+    box-shadow: 0 0 10px var(--betray);
+    animation: throb 2s ease-in-out infinite;
+  }
+  @keyframes throb {
+    0%,100% { opacity: 1; transform: rotate(45deg) scale(1); }
+    50%     { opacity: 0.5; transform: rotate(45deg) scale(0.85); }
+  }
+  .topbar .right { display: flex; gap: 28px; }
+  .topbar .right span i { color: var(--ink); font-style: normal; margin-left: 8px; }
+
+  .zone {
+    padding: 22px 0 16px;
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 40px;
+  }
+  .zone .z-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.42em;
+    color: var(--warn); text-transform: uppercase;
+  }
+  .zone .z-title {
+    font-size: 26px; font-weight: 500;
+    letter-spacing: 0.04em; color: var(--ink);
+    margin-top: 4px;
+  }
+  .zone .z-sub {
+    font-size: 16px; color: var(--ink-dim); font-style: italic;
+    max-width: 420px; text-align: right; line-height: 1.45;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 300px 1fr 340px;
+    gap: 28px;
+    margin-top: 22px;
+  }
+  @media (max-width: 1180px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* ======== LEFT COLUMN — STORY ======== */
+  .col { padding: 4px 0; }
+  .mod {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 18px 18px 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .mod::before {
+    content: ""; position: absolute;
+    top: -1px; left: -1px;
+    width: 16px; height: 16px;
+    border-top: 1px solid var(--warn);
+    border-left: 1px solid var(--warn);
+  }
+  .mod::after {
+    content: ""; position: absolute;
+    bottom: -1px; right: -1px;
+    width: 16px; height: 16px;
+    border-bottom: 1px solid var(--warn);
+    border-right: 1px solid var(--warn);
+  }
+  .mod .m-head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .mod .m-head i {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--line), transparent);
+  }
+  .mod p {
+    font-size: 17px; line-height: 1.5; color: var(--ink);
+  }
+  .mod .lede { font-size: 19px; }
+  .mod .truth {
+    font-size: 19px; font-style: italic; color: var(--warn);
+    line-height: 1.45;
+  }
+  .bullets { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .bullets li {
+    display: grid; grid-template-columns: 18px 1fr; gap: 10px;
+    font-size: 15.5px; line-height: 1.4;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+    color: var(--ink);
+  }
+  .bullets li::before {
+    content: ""; width: 6px; height: 6px;
+    background: var(--warn); transform: rotate(45deg);
+    margin-top: 8px;
+  }
+
+  /* ======== CENTER — PORTRAIT ======== */
+  .portrait {
+    position: relative;
+    aspect-ratio: 1 / 1.12;
+    background:
+      radial-gradient(ellipse at 50% 40%, #1a1620 0%, #0b0a10 60%, #050409 100%);
+    border: 1px solid var(--line);
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 140px rgba(0,0,0,0.8),
+      0 0 80px rgba(127,214,166,0.04),
+      0 0 80px rgba(232,86,74,0.04);
+  }
+  .portrait .corner {
+    position: absolute; width: 60px; height: 60px; pointer-events: none; opacity: 0.5;
+  }
+  .portrait .corner.tl { top: 10px; left: 10px; border-top: 1px solid var(--warn); border-left: 1px solid var(--warn); }
+  .portrait .corner.tr { top: 10px; right: 10px; border-top: 1px solid var(--warn); border-right: 1px solid var(--warn); }
+  .portrait .corner.bl { bottom: 10px; left: 10px; border-bottom: 1px solid var(--warn); border-left: 1px solid var(--warn); }
+  .portrait .corner.br { bottom: 10px; right: 10px; border-bottom: 1px solid var(--warn); border-right: 1px solid var(--warn); }
+
+  /* dust */
+  .dust {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      radial-gradient(1px 1px at 15% 30%, rgba(127,214,166,0.6), transparent 60%),
+      radial-gradient(1px 1px at 82% 18%, rgba(232,86,74,0.55), transparent 60%),
+      radial-gradient(1px 1px at 30% 72%, rgba(244,196,90,0.4), transparent 60%),
+      radial-gradient(1px 1px at 68% 62%, rgba(127,214,166,0.5), transparent 60%),
+      radial-gradient(1px 1px at 45% 88%, rgba(232,86,74,0.4), transparent 60%),
+      radial-gradient(1px 1px at 90% 85%, rgba(244,196,90,0.35), transparent 60%),
+      radial-gradient(1px 1px at 8% 55%, rgba(127,214,166,0.3), transparent 60%);
+    animation: drift 16s linear infinite;
+  }
+  @keyframes drift {
+    0%, 100% { transform: translateY(0) translateX(0); }
+    50%      { transform: translateY(-6px) translateX(4px); }
+  }
+
+  .judge-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  svg.judges { width: 96%; height: 96%; display: block; }
+
+  .breath { animation: breath 7s ease-in-out infinite; transform-origin: 50% 50%; }
+  @keyframes breath {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.012); }
+  }
+
+  /* the morphing: controlled by body.data-tilt (via CSS var) */
+  /* Robes lean toward the dominant side; the loser dims and withers */
+  .judge-L { transition: transform 0.9s ease, filter 0.9s ease, opacity 0.9s ease; transform-origin: 80% 50%; }
+  .judge-R { transition: transform 0.9s ease, filter 0.9s ease, opacity 0.9s ease; transform-origin: 20% 50%; }
+
+  body[data-tilt="trust"] .judge-L  { transform: scale(1.045); filter: brightness(1.1) saturate(1.1); }
+  body[data-tilt="trust"] .judge-R  { transform: scale(0.955); filter: brightness(0.6) saturate(0.6); opacity: 0.78; }
+  body[data-tilt="betray"] .judge-L { transform: scale(0.955); filter: brightness(0.6) saturate(0.6); opacity: 0.78; }
+  body[data-tilt="betray"] .judge-R { transform: scale(1.045); filter: brightness(1.1) saturate(1.1); }
+
+  .eye-pulse-L { animation: pL 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  .eye-pulse-R { animation: pR 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+  @keyframes pL {
+    0%,100% { filter: drop-shadow(0 0 6px #b6f0ce) drop-shadow(0 0 14px #7fd6a6); }
+    50%     { filter: drop-shadow(0 0 12px #b6f0ce) drop-shadow(0 0 26px #7fd6a6); }
+  }
+  @keyframes pR {
+    0%,100% { filter: drop-shadow(0 0 6px #ff8a7a) drop-shadow(0 0 14px #e8564a); }
+    50%     { filter: drop-shadow(0 0 12px #ff8a7a) drop-shadow(0 0 26px #e8564a); }
+  }
+
+  .scale-tilt {
+    transform-origin: 50% 0%;
+    transition: transform 1.2s cubic-bezier(.3,.7,.3,1);
+  }
+  body[data-tilt="neutral"] .scale-tilt { transform: rotate(0deg); }
+  body[data-tilt="trust"]   .scale-tilt { transform: rotate(-14deg); }
+  body[data-tilt="betray"]  .scale-tilt { transform: rotate(14deg); }
+
+  /* scanline overlay */
+  .scan {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(255,255,255,0.015) 0px,
+      rgba(255,255,255,0.015) 1px,
+      transparent 1px,
+      transparent 4px
+    );
+    mix-blend-mode: screen;
+  }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    box-shadow: inset 0 0 180px 40px rgba(0,0,0,0.9);
+  }
+
+  /* nameplate */
+  .nameplate {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 18px 40px 22px;
+    background: linear-gradient(180deg, transparent, rgba(7,7,10,0.95) 55%);
+    text-align: center;
+  }
+  .nameplate .kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.48em;
+    color: var(--warn); text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .nameplate h1 {
+    font-weight: 500; font-size: 46px;
+    letter-spacing: 0.24em;
+    color: var(--ink); text-transform: uppercase;
+    text-shadow: 0 0 24px rgba(244,196,90,0.22);
+  }
+  .nameplate .sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.36em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-top: 6px;
+  }
+
+  /* the live meter overlaid at top */
+  .meter-over {
+    position: absolute; top: 14px; left: 50%;
+    transform: translateX(-50%);
+    width: 60%; min-width: 340px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--ink);
+  }
+  .meter-over .labels {
+    display: flex; justify-content: space-between;
+    font-size: 9.5px; letter-spacing: 0.34em;
+    text-transform: uppercase; margin-bottom: 6px;
+    color: var(--ink-dim);
+  }
+  .meter-over .labels .L { color: var(--trust); }
+  .meter-over .labels .R { color: var(--betray); }
+  .meter-over .track {
+    position: relative; height: 8px;
+    background: #0a0a10;
+    border: 1px solid var(--line);
+    overflow: hidden;
+  }
+  .meter-over .track::before, .meter-over .track::after {
+    content: ""; position: absolute; top: 0; bottom: 0; width: 50%;
+    transition: width 0.8s ease;
+  }
+  .meter-over .track::before {
+    left: 0; background: linear-gradient(90deg, var(--trust-hot), var(--trust) 60%, transparent);
+    width: var(--left-pct, 50%);
+  }
+  .meter-over .track::after {
+    right: 0; background: linear-gradient(270deg, var(--betray-hot), var(--betray) 60%, transparent);
+    width: var(--right-pct, 50%);
+  }
+  .meter-over .track .center {
+    position: absolute; top: -3px; bottom: -3px; left: 50%;
+    width: 1px; background: var(--warn); opacity: 0.6;
+  }
+  .meter-over .reading {
+    margin-top: 6px; font-size: 10px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    display: flex; justify-content: space-between;
+    color: var(--ink-dim);
+  }
+  .meter-over .reading b { color: var(--ink); font-weight: 500; }
+
+  /* ======== RIGHT COLUMN — MECHANIC ======== */
+  .phase {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: grid; grid-template-columns: auto 1fr auto; gap: 12px;
+    align-items: center;
+    cursor: pointer;
+    transition: border-color 0.25s, background 0.25s;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .phase:hover { border-color: var(--warn); }
+  .phase.active { border-color: var(--warn); background: #17161f; }
+  .phase .icon {
+    width: 36px; height: 36px; border: 1px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .phase.trust .icon { color: var(--trust); }
+  .phase.betray .icon { color: var(--betray); }
+  .phase.neutral .icon { color: var(--warn); }
+  .phase .label {
+    font-size: 10.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--ink-dim);
+  }
+  .phase .name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 20px; color: var(--ink);
+    letter-spacing: 0.02em;
+    margin-top: 2px;
+  }
+  .phase.trust .name em { color: var(--trust); font-style: normal; }
+  .phase.betray .name em { color: var(--betray); font-style: normal; }
+  .phase .pct {
+    font-size: 10px; letter-spacing: 0.24em;
+    color: var(--ink-dim);
+  }
+
+  .moves {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 16px 18px 18px;
+    margin-top: 8px;
+  }
+  .moves .head {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--ink-dim); text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .moves .head i { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
+  .moves ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .moves li {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 12px; align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px dashed #1f1d28;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+  }
+  .moves li:last-child { border-bottom: none; }
+  .moves li .n { color: var(--ink-faint); }
+  .moves li .nm { color: var(--ink); font-family: 'Cormorant Garamond', serif; font-size: 17px; letter-spacing: 0.02em; }
+  .moves li .tag {
+    font-size: 9px; letter-spacing: 0.32em;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+  .moves li.t .tag { color: var(--trust); }
+  .moves li.b .tag { color: var(--betray); }
+  .moves li.n .tag { color: var(--warn); }
+
+  /* quote */
+  .quote {
+    margin-top: 14px;
+    padding: 16px 18px;
+    border-left: 2px solid var(--warn);
+    background: var(--panel);
+    font-size: 17px; line-height: 1.45;
+    font-style: italic; color: #cfc8b8;
+  }
+  .quote .attr {
+    display: block; margin-top: 10px;
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9.5px; letter-spacing: 0.32em;
+    color: var(--ink-dim); text-transform: uppercase;
+  }
+
+  /* Tweaks panel */
+  .tweaks {
+    position: fixed; bottom: 20px; right: 20px;
+    width: 300px;
+    background: #0b0a10;
+    border: 1px solid var(--warn);
+    padding: 14px 16px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    z-index: 50;
+    display: none;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .tweaks.show { display: block; }
+  .tweaks .th {
+    display: flex; justify-content: space-between;
+    font-size: 10px; letter-spacing: 0.38em;
+    color: var(--warn); text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .tweaks label {
+    font-size: 9.5px; letter-spacing: 0.28em;
+    color: var(--ink-dim); text-transform: uppercase;
+    display: block; margin: 10px 0 4px;
+  }
+  .tweaks input[type=range] { width: 100%; accent-color: var(--warn); }
+  .tweaks .row { display: flex; gap: 6px; }
+  .tweaks button {
+    flex: 1; background: transparent;
+    border: 1px solid var(--line);
+    color: var(--ink); padding: 8px 6px;
+    font-family: inherit; font-size: 9.5px;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    cursor: pointer;
+  }
+  .tweaks button:hover { border-color: var(--warn); color: var(--warn); }
+  .tweaks .hint {
+    font-size: 9px; color: var(--ink-faint);
+    margin-top: 10px; line-height: 1.5;
+  }
+  /* ── NAV ── */
+  #nav { position: relative; z-index: 200; }
+  #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
+  #nav a, #nav button {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 10px !important; letter-spacing: .28em !important;
+    text-transform: uppercase !important; color: var(--ink-dim) !important;
+    text-decoration: none !important; border: none !important; padding: 0 !important;
+    transition: color .2s !important;
+  }
+  #nav a:hover, #nav button:hover { color: var(--warn) !important; }
+  #nav > *, #nav nav, #nav div {
+    border-bottom: 1px solid var(--line) !important;
+    padding: 14px 0 !important; display: flex !important;
+    align-items: center !important; gap: 28px !important; flex-wrap: wrap !important;
+  }
+</style>
+</head>
+<body data-tilt="neutral" data-screen-label="Twin Judges — Boss Codex">
+
+<div class="shell">
+
+  <div id="nav"></div>
+
+  <!-- ========= ZONE ========= -->
+  <div class="zone">
+    <div>
+      <div class="z-kicker">Zone 02 · Shopping District (Looted)</div>
+      <div class="z-title">Where groups begin forming — and breaking.</div>
+    </div>
+    <div class="z-sub">
+      First teams. First trades. First betrayals.<br/>
+      The System watches, and picks a side.
+    </div>
+  </div>
+
+  <!-- ========= GRID ========= -->
+  <div class="grid">
+
+    <!-- ==== LEFT COLUMN ==== -->
+    <section class="col">
+      <div class="mod">
+        <div class="m-head">Zone Dynamics <i></i></div>
+        <ul class="bullets">
+          <li>Teaming becomes viable</li>
+          <li>First betrayal opportunities</li>
+          <li>Shops appear — NPC traders</li>
+          <li>Loot scarcity forces choice</li>
+        </ul>
+      </div>
+
+      <div class="mod">
+        <div class="m-head">Encounter Core <i></i></div>
+        <p class="lede">One rewards teamwork.<br/>One rewards betrayal.</p>
+        <p style="margin-top:10px; font-size:15px; color:var(--ink-dim); line-height:1.5;">
+          The boss <em style="color:var(--warn); font-style:normal;">changes form</em> based on what the players have done since entering the zone. Cooperation feeds one. Treachery feeds the other. Neither is the "good" option.
+        </p>
+      </div>
+
+      <div class="mod">
+        <div class="m-head">Truth <i></i></div>
+        <p class="truth">“The System adapts to human choices.”</p>
+      </div>
+    </section>
+
+    <!-- ==== CENTER — PORTRAIT ==== -->
+    <section class="col" style="position:relative;">
+      <div class="portrait">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <div class="dust"></div>
+
+        <!-- live meter -->
+        <div class="meter-over">
+          <div class="labels">
+            <span class="L">◀ Trust</span>
+            <span>The System</span>
+            <span class="R">Betrayal ▶</span>
+          </div>
+          <div class="track" id="track">
+            <span class="center"></span>
+          </div>
+          <div class="reading">
+            <span>Acts logged · <b id="logCount">0</b></span>
+            <span>Dominant · <b id="domLabel">NEUTRAL</b></span>
+          </div>
+        </div>
+
+        <div class="judge-wrap">
+          <svg class="judges" viewBox="0 0 800 880" xmlns="http://www.w3.org/2000/svg" aria-label="The Twin Judges">
+            <defs>
+              <linearGradient id="robeL" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stop-color="#1f2a26"/>
+                <stop offset="45%" stop-color="#121a17"/>
+                <stop offset="100%" stop-color="#070a09"/>
+              </linearGradient>
+              <linearGradient id="robeR" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"  stop-color="#2a1a1a"/>
+                <stop offset="45%" stop-color="#180c0d"/>
+                <stop offset="100%" stop-color="#080405"/>
+              </linearGradient>
+              <radialGradient id="faceL" cx="50%" cy="50%" r="60%">
+                <stop offset="0%"  stop-color="#e4f4e4"/>
+                <stop offset="50%" stop-color="#7fd6a6"/>
+                <stop offset="100%" stop-color="#1a2a22"/>
+              </radialGradient>
+              <radialGradient id="faceR" cx="50%" cy="50%" r="60%">
+                <stop offset="0%"  stop-color="#ffd6d0"/>
+                <stop offset="50%" stop-color="#e8564a"/>
+                <stop offset="100%" stop-color="#2a0a0c"/>
+              </radialGradient>
+              <radialGradient id="eyeL" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#f2ffe8"/>
+                <stop offset="40%" stop-color="#b6f0ce"/>
+                <stop offset="100%" stop-color="#0f2a1c"/>
+              </radialGradient>
+              <radialGradient id="eyeR" cx="50%" cy="50%" r="50%">
+                <stop offset="0%"  stop-color="#ffeeea"/>
+                <stop offset="40%" stop-color="#ff8a7a"/>
+                <stop offset="100%" stop-color="#2a0608"/>
+              </radialGradient>
+              <radialGradient id="auraL" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#7fd6a6" stop-opacity="0.38"/>
+                <stop offset="100%" stop-color="#7fd6a6" stop-opacity="0"/>
+              </radialGradient>
+              <radialGradient id="auraR" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="#e8564a" stop-opacity="0.36"/>
+                <stop offset="100%" stop-color="#e8564a" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="chain" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f4c45a"/>
+                <stop offset="100%" stop-color="#6a4a1c"/>
+              </linearGradient>
+              <!-- data grid behind: 'the system' -->
+              <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" stroke="#1a1a24" stroke-width="0.5" fill="none"/>
+              </pattern>
+            </defs>
+
+            <!-- faint system grid -->
+            <rect x="0" y="0" width="800" height="880" fill="url(#grid)" opacity="0.4"/>
+
+            <!-- Ambient auras -->
+            <ellipse cx="260" cy="340" rx="260" ry="300" fill="url(#auraL)"/>
+            <ellipse cx="540" cy="340" rx="260" ry="300" fill="url(#auraR)"/>
+
+            <!-- ============ LEFT JUDGE (TRUST / TEAMWORK) ============ -->
+            <g class="judge-L breath">
+              <!-- robe body -->
+              <path d="
+                M 380 230
+                C 340 210, 280 200, 230 220
+                C 170 245, 130 320, 120 420
+                C 110 520, 120 640, 140 740
+                C 155 810, 180 845, 210 860
+                L 400 860
+                L 400 230 Z"
+                fill="url(#robeL)" stroke="#000" stroke-opacity="0.4" stroke-width="1"/>
+
+              <!-- inner folds -->
+              <path d="M 200 400 C 220 520, 230 660, 260 820" stroke="#000" stroke-opacity="0.5" stroke-width="1.2" fill="none"/>
+              <path d="M 280 380 C 300 500, 310 640, 340 840" stroke="#000" stroke-opacity="0.4" stroke-width="1.2" fill="none"/>
+              <path d="M 160 440 C 170 560, 170 700, 185 830" stroke="#000" stroke-opacity="0.35" stroke-width="1" fill="none"/>
+              <!-- highlights -->
+              <path d="M 240 300 C 230 420, 235 560, 255 720" stroke="#7fd6a6" stroke-opacity="0.18" stroke-width="1.3" fill="none"/>
+              <path d="M 320 300 C 315 420, 320 580, 340 760" stroke="#7fd6a6" stroke-opacity="0.14" stroke-width="1" fill="none"/>
+
+              <!-- tattered hem -->
+              <path d="
+                M 140 820 Q 160 860, 150 890 Q 175 860, 180 840
+                Q 200 880, 205 895 Q 220 860, 230 845
+                Q 250 880, 255 895 Q 275 858, 285 840
+                Q 305 880, 315 898 Q 335 858, 345 842
+                Q 365 885, 370 895 Q 390 862, 400 850
+                L 400 820 Z"
+                fill="url(#robeL)"/>
+
+              <!-- collar -->
+              <path d="M 240 240 C 300 220, 360 225, 400 240 L 400 300 C 340 285, 290 285, 240 305 Z"
+                fill="#0e1816" stroke="#1c2a24" stroke-opacity="0.6"/>
+              <path d="M 240 240 C 300 220, 360 225, 400 240" stroke="#7fd6a6" stroke-opacity="0.6" stroke-width="1.2" fill="none"/>
+
+              <!-- hood -->
+              <ellipse cx="315" cy="205" rx="92" ry="110" fill="#07090a"/>
+              <path d="
+                M 225 200 Q 235 110, 315 95 Q 395 110, 405 200
+                Q 400 260, 370 295 L 260 295 Q 230 260, 225 200 Z"
+                fill="#0e1816" stroke="#1c2a24" stroke-width="1"/>
+              <ellipse cx="315" cy="225" rx="70" ry="82" fill="#040706"/>
+
+              <!-- MASK (Trust — outward, open) -->
+              <g class="eye-pulse-L">
+                <!-- mask base -->
+                <ellipse cx="315" cy="215" rx="52" ry="62" fill="url(#faceL)" stroke="#0e2a1c" stroke-width="1.5"/>
+                <!-- engraved oath runes -->
+                <path d="M 285 185 L 295 175 M 335 175 L 345 185" stroke="#0e2a1c" stroke-width="1.2" opacity="0.75"/>
+                <path d="M 290 250 Q 315 260, 340 250" stroke="#0e2a1c" stroke-width="1.2" fill="none" opacity="0.75"/>
+                <!-- two linked circles below eye = bond symbol -->
+                <circle cx="305" cy="248" r="4" fill="none" stroke="#0e2a1c" stroke-width="1" opacity="0.8"/>
+                <circle cx="325" cy="248" r="4" fill="none" stroke="#0e2a1c" stroke-width="1" opacity="0.8"/>
+                <!-- eye slit (open, looking forward) -->
+                <path d="M 282 215 Q 315 198, 348 215 Q 315 232, 282 215 Z" fill="#051a10"/>
+                <circle cx="315" cy="215" r="10" fill="url(#eyeL)"/>
+                <circle cx="315" cy="215" r="3" fill="#f2ffe8"/>
+              </g>
+
+              <!-- crown: linked rings -->
+              <g stroke="#7fd6a6" stroke-width="1.4" fill="none" opacity="0.85">
+                <circle cx="275" cy="112" r="7"/>
+                <circle cx="295" cy="100" r="7"/>
+                <circle cx="315" cy="92"  r="7"/>
+                <circle cx="335" cy="100" r="7"/>
+                <circle cx="355" cy="112" r="7"/>
+              </g>
+            </g>
+
+            <!-- ============ RIGHT JUDGE (BETRAYAL / WRATH) ============ -->
+            <g class="judge-R breath">
+              <path d="
+                M 420 230
+                C 460 210, 520 200, 570 220
+                C 630 245, 670 320, 680 420
+                C 690 520, 680 640, 660 740
+                C 645 810, 620 845, 590 860
+                L 400 860
+                L 400 230 Z"
+                fill="url(#robeR)" stroke="#000" stroke-opacity="0.4" stroke-width="1"/>
+
+              <path d="M 600 400 C 580 520, 570 660, 540 820" stroke="#000" stroke-opacity="0.5" stroke-width="1.2" fill="none"/>
+              <path d="M 520 380 C 500 500, 490 640, 460 840" stroke="#000" stroke-opacity="0.4" stroke-width="1.2" fill="none"/>
+              <path d="M 640 440 C 630 560, 630 700, 615 830" stroke="#000" stroke-opacity="0.35" stroke-width="1" fill="none"/>
+              <path d="M 560 300 C 570 420, 565 560, 545 720" stroke="#e8564a" stroke-opacity="0.18" stroke-width="1.3" fill="none"/>
+              <path d="M 480 300 C 485 420, 480 580, 460 760" stroke="#e8564a" stroke-opacity="0.14" stroke-width="1" fill="none"/>
+
+              <path d="
+                M 660 820 Q 640 860, 650 890 Q 625 860, 620 840
+                Q 600 880, 595 895 Q 580 860, 570 845
+                Q 550 880, 545 895 Q 525 858, 515 840
+                Q 495 880, 485 898 Q 465 858, 455 842
+                Q 435 885, 430 895 Q 410 862, 400 850
+                L 400 820 Z"
+                fill="url(#robeR)"/>
+
+              <path d="M 400 240 C 440 225, 500 220, 560 240 L 560 305 C 510 288, 460 285, 400 300 Z"
+                fill="#180c0e" stroke="#3a1a1a" stroke-opacity="0.5"/>
+              <path d="M 400 240 C 440 225, 500 220, 560 240" stroke="#e8564a" stroke-opacity="0.6" stroke-width="1.2" fill="none"/>
+
+              <ellipse cx="485" cy="205" rx="92" ry="110" fill="#07080a"/>
+              <path d="
+                M 395 200 Q 405 110, 485 95 Q 565 110, 575 200
+                Q 570 260, 540 295 L 430 295 Q 400 260, 395 200 Z"
+                fill="#180c0e" stroke="#3a1a1a" stroke-width="1"/>
+              <ellipse cx="485" cy="225" rx="70" ry="82" fill="#050204"/>
+
+              <!-- MASK (Betrayal — split, cracked) -->
+              <g class="eye-pulse-R">
+                <ellipse cx="485" cy="215" rx="52" ry="62" fill="url(#faceR)" stroke="#2a0a0e" stroke-width="1.5"/>
+                <!-- crack through the mask -->
+                <path d="M 485 155 L 480 180 L 488 200 L 479 220 L 486 240 L 478 270"
+                  stroke="#2a0a0e" stroke-width="1.8" fill="none"/>
+                <path d="M 485 155 L 480 180 L 488 200 L 479 220 L 486 240 L 478 270"
+                  stroke="#ff8a7a" stroke-opacity="0.4" stroke-width="0.8" fill="none"/>
+                <!-- knife-blade mark beneath eye -->
+                <path d="M 470 248 L 495 258 L 500 250 L 478 242 Z" fill="#2a0a0e" opacity="0.85"/>
+                <!-- eye slit (narrowed, looking sideways) -->
+                <path d="M 455 215 Q 485 205, 515 215 Q 485 228, 455 215 Z" fill="#1a0406"/>
+                <circle cx="492" cy="215" r="9" fill="url(#eyeR)"/>
+                <circle cx="492" cy="215" r="2.8" fill="#ffeeea"/>
+              </g>
+
+              <!-- crown: broken links -->
+              <g stroke="#e8564a" stroke-width="1.4" fill="none" opacity="0.85">
+                <path d="M 425 118 a 7 7 0 0 1 12 -4"/>
+                <path d="M 450 100 a 7 7 0 0 1 12 -2"/>
+                <path d="M 478 92 a 7 7 0 1 0 14 0"/>
+                <path d="M 500 100 a 7 7 0 0 1 -12 -2"/>
+                <path d="M 525 118 a 7 7 0 0 1 -12 -4"/>
+              </g>
+            </g>
+
+            <!-- ========= CENTER: THE SYSTEM ========= -->
+
+            <!-- seam thread -->
+            <line x1="400" y1="90" x2="400" y2="860" stroke="#f4c45a" stroke-opacity="0.22" stroke-width="0.6"/>
+
+            <!-- Scales pivot (the System's eye) -->
+            <g transform="translate(400 430)">
+              <g class="scale-tilt">
+                <!-- eye-pivot -->
+                <circle cx="0" cy="0" r="16" fill="#0a0812" stroke="#f4c45a" stroke-width="1.5"/>
+                <ellipse cx="0" cy="0" rx="12" ry="4" fill="#1a1204"/>
+                <circle cx="0" cy="0" r="3.5" fill="#ffb347"/>
+                <!-- radiating data spokes -->
+                <g stroke="#f4c45a" stroke-opacity="0.35" stroke-width="0.5">
+                  <line x1="0" y1="-24" x2="0" y2="-18"/>
+                  <line x1="0" y1="24" x2="0" y2="18"/>
+                  <line x1="-24" y1="0" x2="-18" y2="0"/>
+                  <line x1="24" y1="0" x2="18" y2="0"/>
+                </g>
+
+                <!-- beam -->
+                <line x1="-100" y1="22" x2="100" y2="22" stroke="#f4c45a" stroke-width="1.6"/>
+                <!-- chains -->
+                <path d="M -100 22 L -112 74" stroke="url(#chain)" stroke-width="1.2" fill="none"/>
+                <path d="M 100 22 L 112 74" stroke="url(#chain)" stroke-width="1.2" fill="none"/>
+
+                <!-- left pan (trust) -->
+                <path d="M -138 76 Q -112 114, -86 76 Z" fill="#0e1816" stroke="#7fd6a6" stroke-width="1.2"/>
+                <circle cx="-112" cy="82" r="7" fill="#7fd6a6" opacity="0.95"/>
+                <circle cx="-112" cy="82" r="16" fill="url(#auraL)"/>
+
+                <!-- right pan (betrayal) -->
+                <path d="M 86 76 Q 112 114, 138 76 Z" fill="#180c0e" stroke="#e8564a" stroke-width="1.2"/>
+                <circle cx="112" cy="82" r="7" fill="#e8564a" opacity="0.95"/>
+                <circle cx="112" cy="82" r="16" fill="url(#auraR)"/>
+
+                <!-- hanger -->
+                <line x1="0" y1="-16" x2="0" y2="-42" stroke="url(#chain)" stroke-width="1.2"/>
+                <polygon points="-7,-42 7,-42 0,-52" fill="#f4c45a" opacity="0.9"/>
+              </g>
+            </g>
+
+            <!-- Shared halo reads as a data-ring -->
+            <g opacity="0.55">
+              <ellipse cx="400" cy="205" rx="220" ry="32" fill="none" stroke="#f4c45a" stroke-width="0.6" stroke-dasharray="1 6"/>
+              <ellipse cx="400" cy="205" rx="245" ry="40" fill="none" stroke="#f4c45a" stroke-width="0.4" stroke-dasharray="1 10" opacity="0.55"/>
+            </g>
+
+            <!-- falling embers/sparks -->
+            <g opacity="0.75">
+              <circle cx="200" cy="320" r="1.2" fill="#7fd6a6"/>
+              <circle cx="240" cy="500" r="1" fill="#7fd6a6" opacity="0.7"/>
+              <circle cx="180" cy="620" r="1.3" fill="#7fd6a6" opacity="0.8"/>
+              <circle cx="330" cy="720" r="1" fill="#7fd6a6" opacity="0.6"/>
+              <circle cx="600" cy="320" r="1.2" fill="#e8564a"/>
+              <circle cx="560" cy="500" r="1" fill="#e8564a" opacity="0.7"/>
+              <circle cx="620" cy="620" r="1.3" fill="#e8564a" opacity="0.8"/>
+              <circle cx="470" cy="720" r="1" fill="#e8564a" opacity="0.6"/>
+            </g>
+
+          </svg>
+        </div>
+
+        <div class="scan"></div>
+        <div class="vignette"></div>
+
+        <div class="nameplate">
+          <div class="kicker">Zone 02 Boss · Adaptive</div>
+          <h1>The Twin Judges</h1>
+          <div class="sub">Form depends on who you became getting here.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==== RIGHT COLUMN — MECHANIC ==== -->
+    <section class="col">
+
+      <div class="phase trust" data-tilt="trust">
+        <div class="icon">◐</div>
+        <div>
+          <div class="label">If trust prevails</div>
+          <div class="name">The Bonded <em>Judge</em></div>
+        </div>
+        <div class="pct" id="pT">—</div>
+      </div>
+
+      <div class="phase neutral active" data-tilt="neutral">
+        <div class="icon">◇</div>
+        <div>
+          <div class="label">If balanced</div>
+          <div class="name">Both, together</div>
+        </div>
+        <div class="pct" id="pN">—</div>
+      </div>
+
+      <div class="phase betray" data-tilt="betray">
+        <div class="icon">◑</div>
+        <div>
+          <div class="label">If betrayal prevails</div>
+          <div class="name">The Hollow <em>Judge</em></div>
+        </div>
+        <div class="pct" id="pB">—</div>
+      </div>
+
+      <div class="moves">
+        <div class="head">Moveset <i></i></div>
+        <ul>
+          <li class="t"><span class="n">01</span><span class="nm">Oathbind</span><span class="tag">Team Buff</span></li>
+          <li class="t"><span class="n">02</span><span class="nm">Shared Grace</span><span class="tag">Group Heal</span></li>
+          <li class="n"><span class="n">03</span><span class="nm">Weighing of Acts</span><span class="tag">Check</span></li>
+          <li class="b"><span class="n">04</span><span class="nm">Crack the Oath</span><span class="tag">Solo Dmg</span></li>
+          <li class="b"><span class="n">05</span><span class="nm">Judas Mark</span><span class="tag">Reveal</span></li>
+          <li class="n"><span class="n">06</span><span class="nm">Final Verdict</span><span class="tag">Enrage</span></li>
+        </ul>
+      </div>
+
+      <div class="quote">
+        “It did not choose between us. It became whichever one we deserved.”
+        <span class="attr">— survivor · post-run log</span>
+      </div>
+    </section>
+  </div>
+
+  <nav style="display:flex;justify-content:space-between;padding:14px 0 0;margin-top:18px;border-top:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.32em;text-transform:uppercase;">
+    <a href="The Watcher.html">◀ Ch. 01 · Awakening</a>
+    <span style="color:var(--ink);">Ch. 02 · Looted District</span>
+    <a href="The Echo Beast.html" style="color:var(--ink-dim);text-decoration:none;">Ch. 03 · Signal Hunters ▶</a>
+  </nav>
+</div>
+
+<!-- ============ TWEAKS PANEL ============ -->
+<div class="tweaks" id="tweaks">
+  <div class="th"><span>Simulate Party</span><span id="tPct">50 / 50</span></div>
+  <label>Trust ↔ Betrayal</label>
+  <input id="slider" type="range" min="0" max="100" value="50"/>
+  <div class="row" style="margin-top:12px;">
+    <button data-preset="20">All Coop</button>
+    <button data-preset="50">Split</button>
+    <button data-preset="80">Backstab</button>
+  </div>
+  <div class="hint">Drag to see how The System reshapes the boss in real time. The scale tips, one judge dims, the other swells. Click the phases on the right to jump.</div>
+</div>
+
+<script type="module">
+  import { renderNav } from '../components/nav.js'
+  renderNav('nav')
+</script>
+<script>
+  // Tweakable defaults persist via host
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "betrayalPct": 20
+  }/*EDITMODE-END*/;
+
+  const body = document.body;
+  const track = document.getElementById('track');
+  const logCount = document.getElementById('logCount');
+  const domLabel = document.getElementById('domLabel');
+  const pT = document.getElementById('pT');
+  const pN = document.getElementById('pN');
+  const pB = document.getElementById('pB');
+  const slider = document.getElementById('slider');
+  const tPct = document.getElementById('tPct');
+  const tweaks = document.getElementById('tweaks');
+
+  function setMeter(betrayalPct) {
+    // betrayalPct: 0..100 (0 = full trust, 100 = full betrayal)
+    const b = Math.max(0, Math.min(100, betrayalPct));
+    const t = 100 - b;
+    // left bar grows from center leftward based on trust; right bar grows from center rightward on betrayal
+    // Each side occupies up to 50% of the track.
+    const leftW = (t - 50) > 0 ? ((t - 50) / 50) * 50 : 0;     // only when trust > 50%
+    const rightW = (b - 50) > 0 ? ((b - 50) / 50) * 50 : 0;
+    document.documentElement.style.setProperty('--left-pct', leftW + '%');
+    document.documentElement.style.setProperty('--right-pct', rightW + '%');
+
+    // determine tilt
+    let tilt = 'neutral';
+    if (b < 40) tilt = 'trust';
+    else if (b > 60) tilt = 'betray';
+    body.setAttribute('data-tilt', tilt);
+
+    // highlight active phase
+    document.querySelectorAll('.phase').forEach(el => el.classList.toggle('active', el.dataset.tilt === tilt));
+
+    // readouts
+    logCount.textContent = Math.round(t / 3 + b / 2.5);
+    domLabel.textContent = tilt.toUpperCase();
+    pT.textContent = t + '%';
+    pN.textContent = Math.max(0, 100 - Math.abs(b - 50) * 2) + '%';
+    pB.textContent = b + '%';
+    tPct.textContent = t + ' / ' + b;
+    slider.value = b;
+  }
+
+  // phase click → set extremes-ish
+  document.querySelectorAll('.phase').forEach(el => {
+    el.addEventListener('click', () => {
+      const t = el.dataset.tilt;
+      setMeter(t === 'trust' ? 20 : t === 'betray' ? 80 : 50);
+    });
+  });
+
+  // slider
+  slider.addEventListener('input', e => {
+    const v = parseInt(e.target.value, 10);
+    setMeter(v);
+    window.parent.postMessage({type: '__edit_mode_set_keys', edits: {betrayalPct: v}}, '*');
+  });
+
+  // presets
+  document.querySelectorAll('.tweaks button[data-preset]').forEach(b => {
+    b.addEventListener('click', () => {
+      const v = parseInt(b.dataset.preset, 10);
+      setMeter(v);
+      window.parent.postMessage({type: '__edit_mode_set_keys', edits: {betrayalPct: v}}, '*');
+    });
+  });
+
+  // edit mode (tweaks) protocol
+  window.addEventListener('message', e => {
+    if (!e.data) return;
+    if (e.data.type === '__activate_edit_mode') tweaks.classList.add('show');
+    if (e.data.type === '__deactivate_edit_mode') tweaks.classList.remove('show');
+  });
+  window.parent.postMessage({type: '__edit_mode_available'}, '*');
+
+  // initial state
+  setMeter(TWEAK_DEFAULTS.betrayalPct ?? 50);
+
+  // ambient drift: very slight oscillation around the set value to feel "alive"
+  let t0 = Date.now();
+  let lastUser = 50;
+  slider.addEventListener('input', () => { lastUser = parseInt(slider.value, 10); });
+  setInterval(() => {
+    const now = Date.now();
+    const wobble = Math.sin((now - t0) / 2400) * 2; // ±2%
+    const v = Math.max(0, Math.min(100, lastUser + wobble));
+    // don't call setMeter fully (would spam); just nudge bars subtly
+    const t = 100 - v;
+    const leftW  = (t - 50) > 0 ? ((t - 50) / 50) * 50 : 0;
+    const rightW = (v - 50) > 0 ? ((v - 50) / 50) * 50 : 0;
+    document.documentElement.style.setProperty('--left-pct', leftW + '%');
+    document.documentElement.style.setProperty('--right-pct', rightW + '%');
+  }, 120);
+</script>
+</body>
+</html>
