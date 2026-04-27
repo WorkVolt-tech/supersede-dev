@@ -41,7 +41,7 @@ The secondary compound is still on the shelf. You leave it there.
 
 Your interface: Commitment to Venom recorded.`,
     xp: 50,
-    rewards: [{ itemKey: 'rune_venom', qty: 2 }],
+    rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Continue through the district', next: 'district_hub' }],
   },
 
@@ -63,7 +63,7 @@ By the time you reach the exit you're running lower than you started. The compou
 
 Your interface: Commitment to Venom recorded. Compound: Secured.`,
     xp: 80,
-    rewards: [{ itemKey: 'rune_venom', qty: 2 }, { itemKey: 'venom_compound', qty: 1 }],
+    rewards: [{ itemKey: 'rune_venin', qty: 2 }, { itemKey: 'venom_compound', qty: 1 }],
     choices: [{ label: 'Continue through the district', next: 'district_hub' }],
   },
 
@@ -85,7 +85,7 @@ You exit through the locked door. Leave it the way it was.
 
 Your interface: Commitment to Venom recorded.`,
     xp: 50,
-    rewards: [{ itemKey: 'rune_venom', qty: 2 }],
+    rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Continue through the district', next: 'district_hub' }],
   },
 
