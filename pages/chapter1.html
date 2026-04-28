@@ -5202,13 +5202,21 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         if (isBoss) {
           const unlocked = player.chapters_unlocked || [1]
           if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
-          // ── 1 SP for boss kill (the bonus kill SP) ──
-          const ch1Bonus = 1
-          updates.skill_points = (player.skill_points || 0) + ch1Bonus
-          updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
-          player.skill_points  = updates.skill_points
-          player.sp_claimed    = updates.sp_claimed
-          showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+          // ── 1 SP for boss kill — only once ever ──
+          const spKey = 'watcher_sp_claimed'
+          const alreadyClaimed = (player.defeated_bosses||[]).includes(spKey)
+          if (!alreadyClaimed) {
+            const d2 = markBossDefeated(spKey)
+            updates.defeated_bosses = d2
+            const ch1Bonus = 1
+            updates.skill_points = (player.skill_points || 0) + ch1Bonus
+            updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
+            player.skill_points  = updates.skill_points
+            player.sp_claimed    = updates.sp_claimed
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+          } else {
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
+          }
           // ── Watcher Item Set — rare drop (35% per piece) ──
           await dropWatcherSet()
         } else {
