@@ -276,6 +276,9 @@ export function resolveEnemyTurn(enemy, ctx) {
   if (name.includes('Dorian')) {
     return _enemy_dorian(enemy, ctx, hpPct)
   }
+  if (name.includes('Twin Judges') || name.includes('Judge Kaelith') || name.includes('Judge Morren') || name.includes('Verdict')) {
+    return _boss_twinJudges(enemy, ctx, hpPct)
+  }
 
   // ── Generic fallback ──────────────────────────────────────────────────────
   return _genericEnemy(enemy, ctx, hpPct)
@@ -1642,4 +1645,553 @@ function _boss_watcher(enemy, ctx, hpPct) {
   }
 
   return { anim }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CHAPTER 2 BOSS — THE TWIN JUDGES
+// ═══════════════════════════════════════════════════════════════════════════════
+//
+// The Twin Judges evaluate TWO axes simultaneously:
+//   1. Cooperation vs Betrayal  → read from ctx.playerMoral  (positive = cooperative)
+//   2. Commitment vs Greed      → read from ctx.elementsAttempted (1 = committed, 2+ = greedy)
+//
+// Seven battle scenarios, determined once at the first turn and locked in:
+//
+//   SCENARIO A — Mercy Alone          moral >= 40  AND elementsAttempted === 1
+//   SCENARIO B — Wrath Alone          moral <= -40 AND elementsAttempted === 1
+//   SCENARIO C — Dual Conflict        moral between -39 and 39, elementsAttempted === 1
+//   SCENARIO D — Wrath absorbs Mercy  moral <= -40 AND elementsAttempted >= 2
+//   SCENARIO E — Mercy absorbs Wrath  moral >= 40  AND elementsAttempted >= 2
+//   SCENARIO F — Synchronized Judges  moral between -39 and 39, elementsAttempted >= 2
+//   SCENARIO G — Fused Form (Verdict) moral extremes (>=70 or <=-70) AND elementsAttempted >= 3
+//
+// Each scenario has distinct move tables, dialogue tone, and phase escalation.
+// The fight always has 3 phases based on HP: phase 1 (>66%), phase 2 (33–66%), phase 3 (<33%).
+//
+// ctx.elementsAttempted — number of elemental zones the player entered (defaults to 1 if absent)
+// ctx.playerMoral       — player moral score (-100 to 100)
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+function _boss_twinJudges(enemy, ctx, hpPct) {
+  const {
+    enemyState,
+    enemyHp,
+    maxEnemyHp,
+    currentHp,
+    maxPlayerHp,
+    playerDEF,
+    defending,
+    statusEffects: se,
+    yara,
+    messages,
+    triggerAnimation,
+    onEnemyDmgPlayer,
+    onEnemyHealSelf,
+  } = ctx
+
+  const moral    = ctx.playerMoral       ?? 0
+  const elements = ctx.elementsAttempted ?? 1
+
+  // ── Determine scenario once, on first turn ──────────────────────────────────
+  if (!enemyState.judgeScenario) {
+    const greedy  = elements >= 2
+    const hungry  = elements >= 3
+    const extreme = Math.abs(moral) >= 70
+
+    if (extreme && hungry) {
+      enemyState.judgeScenario = 'G_verdict'
+    } else if (moral >= 40 && !greedy) {
+      enemyState.judgeScenario = 'A_mercy'
+    } else if (moral <= -40 && !greedy) {
+      enemyState.judgeScenario = 'B_wrath'
+    } else if (!greedy) {
+      enemyState.judgeScenario = 'C_dual'
+    } else if (moral <= -40 && greedy) {
+      enemyState.judgeScenario = 'D_wrath_absorbs'
+    } else if (moral >= 40 && greedy) {
+      enemyState.judgeScenario = 'E_mercy_absorbs'
+    } else {
+      enemyState.judgeScenario = 'F_dual_powered'
+    }
+
+    // Opening announcement — one line, cold
+    const openers = {
+      A_mercy:        `⚖️ Kaelith steps forward. Morren observes from distance. <em>"The record is clear. We proceed accordingly."</em>`,
+      B_wrath:        `⚖️ Morren steps forward. Kaelith stands still. <em>"The record does not lie."</em>`,
+      C_dual:         `⚖️ Both Judges read your record simultaneously. Neither speaks first. The silence is its own judgment.`,
+      D_wrath_absorbs:`⚖️ Morren's presence expands. Kaelith recedes. <em>"Dominance without discipline. Noted."</em>`,
+      E_mercy_absorbs:`⚖️ Kaelith's presence expands. Morren recedes. <em>"Cooperation without commitment is performance."</em>`,
+      F_dual_powered:         `⚖️ The Judges move in perfect unison. Their interfaces merge. <em>"Instability documented. Parameters escalating."</em>`,
+      G_verdict:        `⚖️ The two figures collapse into one. The new form looks at you without recognition. <em>"You exceeded all defined parameters. The System has authorized a new response."</em>`,
+    }
+    messages.push(openers[enemyState.judgeScenario])
+    triggerAnimation(ANIM.VOID)
+  }
+
+  // ── Phase transitions ───────────────────────────────────────────────────────
+  if (hpPct < 0.33 && enemyState.phase < 3) {
+    enemyState.phase = 3
+    const p3lines = {
+      A_mercy:        `⚖️ Kaelith: <em>"You will not be spared the difficulty. Mercy does not mean easy."</em>`,
+      B_wrath:        `⚖️ Morren: <em>"I have seen every version of this choice. You are consistent. I respect that."</em>`,
+      C_dual:         `⚖️ Both Judges simultaneously: <em>"The middle is not neutral. It is a choice to avoid choosing."</em>`,
+      D_wrath_absorbs:`⚖️ Morren: <em>"Power taken from every direction. Let us see if you can hold it."</em>`,
+      E_mercy_absorbs:`⚖️ Kaelith: <em>"You wanted everything. Now carry it."</em>`,
+      F_dual_powered:         `⚖️ The synchronized voice: <em>"FINAL PARAMETERS. SURVIVE THIS."</em>`,
+      G_verdict:        `⚖️ Verdict, The Collapsed Form: <em>"..."</em> — silence, then a force you cannot name.`,
+    }
+    messages.push(p3lines[enemyState.judgeScenario])
+    triggerAnimation(ANIM.TERROR)
+  } else if (hpPct < 0.66 && enemyState.phase < 2) {
+    enemyState.phase = 2
+    const p2lines = {
+      A_mercy:        `⚖️ Kaelith: <em>"Good. You are still here. So are we."</em>`,
+      B_wrath:        `⚖️ Morren: <em>"You built nothing that could protect you."</em>`,
+      C_dual:         `⚖️ Kaelith and Morren exchange a glance. No words. They accelerate.`,
+      D_wrath_absorbs:`⚖️ Morren steps closer. The cold in the air intensifies.`,
+      E_mercy_absorbs:`⚖️ Kaelith: <em>"Your cooperation was real. Your commitment was not. I will show you the difference."</em>`,
+      F_dual_powered:         `⚖️ The Judges' movements tighten. Coordinated. Inevitable.`,
+      G_verdict:        `⚖️ Verdict does not speak. It compounds.`,
+    }
+    messages.push(p2lines[enemyState.judgeScenario])
+    triggerAnimation(ANIM.FLASH)
+  }
+
+  // ── Route to scenario-specific move table ───────────────────────────────────
+  const sc = enemyState.judgeScenario
+  const ph = enemyState.phase || 1
+
+  // ── SCENARIO A — Mercy Alone: Kaelith leads, Morren observes ────────────────
+  // Fair but relentless. High moral players face a respectful opponent who doesn't pull punches.
+  if (sc === 'A_mercy') {
+    const moves = [
+      {
+        key: 'measured_strike', weight: ph < 3 ? 4 : 2,
+        exec() {
+          const dmg = baseDmg(enemy.atk, playerDEF, se, defending, 4)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"Your cooperation is noted."</em> — measured strike for <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.FLASH)
+          return ANIM.FLASH
+        },
+      },
+      {
+        key: 'parallel_record', weight: 2,
+        exec() {
+          // Morren briefly interjects — small hit, DEF shred. Even cooperative players face scrutiny.
+          const dmg = baseDmg(enemy.atk * 0.7, playerDEF, se, defending, 2)
+          onEnemyDmgPlayer(dmg)
+          applyDefShred(se, 3, 1, messages)
+          messages.push(`⚖️ Morren, from distance: <em>"And what you took."</em> — <strong>${dmg}</strong> + brief armour shred.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'kaelith_press', weight: ph >= 2 ? 3 : 1,
+        exec() {
+          // Kaelith tests genuinely — harder hit in phase 2+
+          const mult = ph === 3 ? 1.45 : 1.2
+          const dmg  = baseDmg(enemy.atk * mult, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"The System respects what you built. It tests it the same way."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ph === 3 ? ANIM.TERROR : ANIM.FLASH)
+          return ph === 3 ? ANIM.TERROR : ANIM.FLASH
+        },
+      },
+      {
+        key: 'moral_weight', weight: ph === 3 ? 3 : 0,
+        exec() {
+          // Phase 3 only: damage scales with how cooperative the player was — respect, not punishment
+          const moralBonus = Math.max(0, moral - 40) * 0.01  // +1% per moral point above 40
+          const dmg = baseDmg(enemy.atk * (1.3 + moralBonus), playerDEF, se, defending, 4)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"You built something real. Now prove it survives contact with consequence."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+    ]
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+  }
+
+  // ── SCENARIO B — Wrath Alone: Morren leads, Kaelith withdraws ───────────────
+  // Relentless and cold. Betrayal-aligned players face an entity that agrees with what they did —
+  // and measures them against it with no mercy.
+  if (sc === 'B_wrath') {
+    const moves = [
+      {
+        key: 'dominance_strike', weight: ph < 3 ? 4 : 2,
+        exec() {
+          // Punishes defending — Morren read that players who betray use passive tactics
+          const mult = defending ? 1.35 : 1.0
+          const dmg  = baseDmg(enemy.atk * mult, playerDEF, se, false, 4)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Morren: <em>"You understand dominance. Then you understand this."</em> — <strong>${dmg}</strong>.${defending ? ' <em>Defending is weakness here.</em>' : ''}`)
+          triggerAnimation(ANIM.FLASH)
+          return ANIM.FLASH
+        },
+      },
+      {
+        key: 'the_ledger', weight: 2,
+        exec() {
+          // Ledger: damage based on how far negative moral is — consistency respected, efficiency demonstrated
+          const ledgerMult = 1.0 + Math.max(0, Math.abs(moral) - 40) * 0.008
+          const dmg = baseDmg(enemy.atk * ledgerMult, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Morren: <em>"The ledger is balanced. Everything you took — I can account for it."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'kaelith_withdrawal', weight: 1,
+        exec() {
+          // Kaelith briefly appears — applies terror as reminder of what player gave up
+          applyTerror(se, 1, messages)
+          messages.push(`⚖️ Kaelith, fading: <em>"I have nothing to evaluate here."</em> — your choices haunt you for 1 turn.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'morren_verdict', weight: ph === 3 ? 4 : 0,
+        exec() {
+          // Phase 3: Morren's full attention — ignores 50% of DEF, applies bleed
+          const rawDef = Math.floor(effectiveDEF(playerDEF, se, defending) * 0.5)
+          const dmg    = Math.max(1, enemy.atk + 10 + Math.floor(Math.random()*6) - rawDef)
+          onEnemyDmgPlayer(dmg)
+          applyBleed(se, 4, 2, messages)
+          messages.push(`⚖️ Morren: <em>"You were exactly what you were. I have no argument with that."</em> — <strong>${dmg}</strong>!`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+      {
+        key: 'clean_accounting', weight: ph >= 2 ? 2 : 0,
+        exec() {
+          const dmg = baseDmg(enemy.atk * 1.3, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Morren: <em>"Efficient. Decisive. Costly."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.FLASH)
+          return ANIM.FLASH
+        },
+      },
+    ]
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+  }
+
+  // ── SCENARIO C — Dual Conflict: Both Judges present, competing ──────────────
+  // Neither Judge has full authority. They interrupt each other. Player gets caught between forces
+  // that disagree about what their record means.
+  if (sc === 'C_dual') {
+    // Alternates between Kaelith and Morren strictly
+    const isMorrenTurn = enemyState.rotationIndex % 2 === 1
+    enemyState.rotationIndex = (enemyState.rotationIndex || 0) + 1
+
+    if (!isMorrenTurn) {
+      // Kaelith turn
+      const moves = [
+        {
+          key: 'kaelith_probe', weight: 3,
+          exec() {
+            const dmg = baseDmg(enemy.atk * 0.9, playerDEF, se, defending, 3)
+            onEnemyDmgPlayer(dmg)
+            messages.push(`⚖️ Kaelith: <em>"There is cooperation in your record. It counts."</em> — <strong>${dmg}</strong>.`)
+            triggerAnimation(ANIM.FLASH)
+            return ANIM.FLASH
+          },
+        },
+        {
+          key: 'kaelith_shield_test', weight: 2,
+          exec() {
+            // Kaelith tests Defend — it is less effective against her (she honors it, but not infinitely)
+            const dmg = baseDmg(enemy.atk, playerDEF, se, defending ? false : defending, 2)
+            onEnemyDmgPlayer(dmg)
+            messages.push(`⚖️ Kaelith: <em>"Defence is not the same as construction."</em> — <strong>${dmg}</strong>.`)
+            triggerAnimation(ANIM.FLASH)
+            return ANIM.FLASH
+          },
+        },
+      ]
+      return { anim: pickWeighted(moves).exec() }
+    } else {
+      // Morren turn — interrupts, harder
+      const moves = [
+        {
+          key: 'morren_interrupt', weight: 3,
+          exec() {
+            const dmg = baseDmg(enemy.atk * 1.1, playerDEF, se, defending, 4)
+            onEnemyDmgPlayer(dmg)
+            messages.push(`⚖️ Morren, cutting in: <em>"There is also betrayal. Let us not romanticize the record."</em> — <strong>${dmg}</strong>.`)
+            triggerAnimation(ANIM.VOID)
+            return ANIM.VOID
+          },
+        },
+        {
+          key: 'morren_weight', weight: ph >= 2 ? 3 : 1,
+          exec() {
+            const dmg = baseDmg(enemy.atk * 1.25, playerDEF, se, defending, 3)
+            onEnemyDmgPlayer(dmg)
+            applyDefShred(se, 3, 1, messages)
+            messages.push(`⚖️ Morren: <em>"Every choice leaves a mark. Including the ones you are not proud of."</em> — <strong>${dmg}</strong>.`)
+            triggerAnimation(ph === 3 ? ANIM.TERROR : ANIM.VOID)
+            return ph === 3 ? ANIM.TERROR : ANIM.VOID
+          },
+        },
+      ]
+      return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+    }
+  }
+
+  // ── SCENARIO D — Wrath Absorbs Mercy: Morren dominant, greed compounds ───────
+  // Morren recognizes that the player's betrayal-pattern combined with element-greed
+  // makes for a specific kind of person. He doesn't condemn. He demonstrates.
+  if (sc === 'D_wrath_absorbs') {
+    const greedMult = 1 + (Math.min(elements, 4) - 1) * 0.15  // +15% per extra element, cap at 4
+
+    const moves = [
+      {
+        key: 'absorbed_weight', weight: 3,
+        exec() {
+          const dmg = baseDmg(enemy.atk * greedMult, playerDEF, se, defending, 4)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Morren: <em>"You reached for everything. Feel the weight of that reach."</em> — <strong>${dmg}</strong>. (Greed multiplier active.)`)
+          triggerAnimation(ANIM.FLASH)
+          return ANIM.FLASH
+        },
+      },
+      {
+        key: 'kaelith_echo', weight: 1,
+        exec() {
+          // Ghost of Kaelith — terror only, no damage. The cooperative path Morren absorbed.
+          applyTerror(se, 1, messages)
+          messages.push(`⚖️ Something like Kaelith's voice, but wrong: <em>"There was another path."</em> — terror for 1 turn.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'dominance_and_greed', weight: ph >= 2 ? 3 : 1,
+        exec() {
+          const dmg = baseDmg(enemy.atk * greedMult * 1.2, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          applyBleed(se, 3, 2, messages)
+          messages.push(`⚖️ Morren: <em>"You took with both hands and called it strategy."</em> — <strong>${dmg}</strong> + bleed.`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+      {
+        key: 'final_accounting_D', weight: ph === 3 ? 4 : 0,
+        exec() {
+          // Phase 3: Morren's final statement — ignores DEF, scales with element count
+          const rawDmg = Math.max(1, Math.round(enemy.atk * greedMult * 1.5) + Math.floor(Math.random()*8))
+          onEnemyDmgPlayer(rawDmg)
+          messages.push(`⚖️ Morren: <em>"The System gave you a path. You took every path. Now stand still and receive all of them."</em> — <strong>${rawDmg}</strong>!`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+    ]
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+  }
+
+  // ── SCENARIO E — Mercy Absorbs Wrath: Kaelith dominant, greed contradicts ───
+  // The player cooperated but reached for too many elements. Kaelith finds this
+  // specifically disappointing — the cooperation was real, but the greed undermines it.
+  if (sc === 'E_mercy_absorbs') {
+    const greedPenalty = 1 + (Math.min(elements, 4) - 1) * 0.12
+
+    const moves = [
+      {
+        key: 'disappointed_precision', weight: 3,
+        exec() {
+          const dmg = baseDmg(enemy.atk * greedPenalty, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"The cooperation was genuine. The greed contradicted it. I am not angry. I am accurate."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.FLASH)
+          return ANIM.FLASH
+        },
+      },
+      {
+        key: 'morren_ghost_E', weight: 1,
+        exec() {
+          // Morren briefly surfaces — punishing hit representing the greed Kaelith absorbed
+          const dmg = baseDmg(enemy.atk * 1.3, playerDEF, se, defending, 2)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Something like Morren, absorbed into Kaelith: <em>"This is what the other hand was doing."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'cooperation_without_commitment', weight: ph >= 2 ? 3 : 1,
+        exec() {
+          // DEF shred — cooperation without commitment leaves you exposed
+          applyDefShred(se, 4, 2, messages)
+          const dmg = baseDmg(enemy.atk * greedPenalty * 1.1, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"You helped people. You also reached for everything you found. The contradiction is your vulnerability."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'final_accounting_E', weight: ph === 3 ? 3 : 0,
+        exec() {
+          const dmg = baseDmg(enemy.atk * greedPenalty * 1.4, playerDEF, se, defending, 4)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Kaelith: <em>"You had a path. You kept taking others. You cannot carry all of them and still be what you chose to be."</em> — <strong>${dmg}</strong>.`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+    ]
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+  }
+
+  // ── SCENARIO F — Synchronized Judges: Both present, both in agreement ────────
+  // The player's ambiguous record combined with multi-element greed produces
+  // a unique outcome: both Judges synchronized against instability itself.
+  // Coldest, most mechanical scenario. The system has stopped trying to understand you.
+  if (sc === 'F_dual_powered') {
+    const greedMult = 1 + (Math.min(elements, 5) - 1) * 0.18
+
+    // Strict alternating rotation: Suppress → Record → Escalate → repeat
+    const syncRotation = ['suppress', 'record', 'escalate']
+    const syncKey      = syncRotation[enemyState.rotationIndex % syncRotation.length]
+    enemyState.rotationIndex = (enemyState.rotationIndex || 0) + 1
+
+    if (syncKey === 'suppress') {
+      const dmg = baseDmg(enemy.atk * greedMult, playerDEF, se, defending, 3)
+      onEnemyDmgPlayer(dmg)
+      applySlow(se, 1, messages)
+      messages.push(`⚖️ [SYNCHRONIZED]: <em>"Instability detected. Suppression applied."</em> — <strong>${dmg}</strong> + slowed.`)
+      triggerAnimation(ANIM.FLASH)
+      return { anim: ANIM.FLASH }
+    }
+    if (syncKey === 'record') {
+      // No damage — but marks for escalation
+      enemyState.syncMarked = true
+      messages.push(`⚖️ [SYNCHRONIZED]: <em>"Behavioral pattern recorded. Deviation from chosen path: ${elements - 1} instance${elements > 2 ? 's' : ''}. Escalating."</em>`)
+      triggerAnimation(ANIM.VOID)
+      return { anim: ANIM.VOID }
+    }
+    if (syncKey === 'escalate') {
+      const mult   = enemyState.syncMarked ? greedMult * 1.4 : greedMult * 1.1
+      enemyState.syncMarked = false
+      const dmg    = baseDmg(enemy.atk * mult * (ph === 3 ? 1.3 : 1.0), playerDEF, se, defending, 4)
+      onEnemyDmgPlayer(dmg)
+      applyDefShred(se, 4, 2, messages)
+      messages.push(`⚖️ [SYNCHRONIZED — ESCALATION]: <em>"Power without commitment is instability. Instability requires correction."</em> — <strong>${dmg}</strong>.`)
+      triggerAnimation(ANIM.TERROR)
+      return { anim: ANIM.TERROR }
+    }
+    // Fallback
+    const dmg = baseDmg(enemy.atk * greedMult, playerDEF, se, defending, 3)
+    onEnemyDmgPlayer(dmg)
+    messages.push(`⚖️ [SYNCHRONIZED] — <strong>${dmg}</strong>.`)
+    triggerAnimation(ANIM.FLASH)
+    return { anim: ANIM.FLASH }
+  }
+
+  // ── SCENARIO G — Fused Form (Verdict, The Collapsed Form) ────────────────
+  // Extreme morality + 3+ elements = the Judges have no framework for this player.
+  // They collapse into a single entity: Verdict. No dialogue. Only force.
+  // All phase multipliers are escalated. This is the hardest possible encounter.
+  if (sc === 'G_verdict') {
+    const greedMult = 1 + (Math.min(elements, 6) - 1) * 0.20
+    const moralEdge = Math.abs(moral) >= 70 ? 1.15 : 1.0  // extreme moral scores pushed further
+
+    // Phase 3: Verdict stops holding back entirely
+    if (ph === 3) {
+      const moves = [
+        {
+          key: 'collapsed_verdict', weight: 3,
+          exec() {
+            // Ignores 60% of DEF — Verdict has moved beyond framework
+            const rawDef = Math.floor(effectiveDEF(playerDEF, se, defending) * 0.4)
+            const dmg    = Math.max(1, Math.round(enemy.atk * greedMult * moralEdge * 1.5) + Math.floor(Math.random()*8) - rawDef)
+            onEnemyDmgPlayer(dmg)
+            messages.push(`⚖️ Verdict — <em>[no words. weight without language]</em> — <strong>${dmg}</strong>.`)
+            triggerAnimation(ANIM.TERROR)
+            return ANIM.TERROR
+          },
+        },
+        {
+          key: 'total_recall_vaelith', weight: 2,
+          exec() {
+            // Every element attempted = additional hits
+            const extraHits = Math.max(0, elements - 1)
+            let total = 0
+            for (let i = 0; i <= extraHits; i++) {
+              const h = Math.max(1, Math.round(enemy.atk * 0.5 * greedMult) - Math.floor(effectiveDEF(playerDEF, se, defending) * 0.3))
+              total += h
+            }
+            onEnemyDmgPlayer(total)
+            messages.push(`⚖️ Verdict recalls every path you took — ${extraHits + 1} strikes, one per element chosen — <strong>${total}</strong> total.`)
+            triggerAnimation(ANIM.TERROR)
+            return ANIM.TERROR
+          },
+        },
+        {
+          key: 'vaelith_silence', weight: 1,
+          exec() {
+            // No damage — applies every debuff simultaneously
+            applyTerror(se, 2, messages)
+            applyDefShred(se, 6, 2, messages)
+            applySlow(se, 2, messages)
+            messages.push(`⚖️ Verdict simply <em>exists</em> fully in the space around you. The weight of all accumulated choices presses in at once.`)
+            triggerAnimation(ANIM.TERROR)
+            return ANIM.TERROR
+          },
+        },
+      ]
+      return { anim: pickWeighted(moves).exec() }
+    }
+
+    // Phase 1–2 for Verdict: building dread
+    const moves = [
+      {
+        key: 'vaelith_press', weight: 4,
+        exec() {
+          const dmg = baseDmg(enemy.atk * greedMult * moralEdge, playerDEF, se, defending, 5)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Verdict — <em>[the record is too large to read aloud]</em> — <strong>${dmg}</strong>. (Elements attempted: ${elements})`)
+          triggerAnimation(ph === 2 ? ANIM.FLASH : ANIM.SHAKE)
+          return ph === 2 ? ANIM.FLASH : ANIM.SHAKE
+        },
+      },
+      {
+        key: 'vaelith_accumulate', weight: 2,
+        exec() {
+          // Stacks — each use increases future damage slightly (stored in state)
+          enemyState.vaelithStack = (enemyState.vaelithStack || 0) + 1
+          const stackMult = 1 + enemyState.vaelithStack * 0.08
+          const dmg = baseDmg(enemy.atk * greedMult * moralEdge * stackMult, playerDEF, se, defending, 3)
+          onEnemyDmgPlayer(dmg)
+          messages.push(`⚖️ Verdict accumulates — stack ${enemyState.vaelithStack} — <strong>${dmg}</strong>. It is still adding up.`)
+          triggerAnimation(ANIM.VOID)
+          return ANIM.VOID
+        },
+      },
+      {
+        key: 'vaelith_mark', weight: 1,
+        exec() {
+          applyDefShred(se, 5, 2, messages)
+          applyTerror(se, 1, messages)
+          messages.push(`⚖️ Verdict does not speak. It marks you with everything you reached for and did not commit to.`)
+          triggerAnimation(ANIM.TERROR)
+          return ANIM.TERROR
+        },
+      },
+    ]
+    return { anim: pickWeighted(moves).exec() }
+  }
+
+  // ── Fallback — should never be reached, but safe ────────────────────────────
+  return _genericEnemy(enemy, ctx, hpPct)
 }
