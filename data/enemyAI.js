@@ -276,7 +276,7 @@ export function resolveEnemyTurn(enemy, ctx) {
   if (name.includes('Dorian')) {
     return _enemy_dorian(enemy, ctx, hpPct)
   }
-  if (name.includes('Twin Judges') || name.includes('Judge Kaelith') || name.includes('Judge Morren') || name.includes('Verdict')) {
+  if (name.includes('Twin Judges') || name.includes('Judge Mercy') || name.includes('Judge Wrath') || name.includes('Verdict')) {
     return _boss_twinJudges(enemy, ctx, hpPct)
   }
 
@@ -1718,11 +1718,11 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
 
     // Opening announcement — one line, cold
     const openers = {
-      A_mercy:        `⚖️ Kaelith steps forward. Morren observes from distance. <em>"The record is clear. We proceed accordingly."</em>`,
-      B_wrath:        `⚖️ Morren steps forward. Kaelith stands still. <em>"The record does not lie."</em>`,
+      A_mercy:        `⚖️ Mercy steps forward. Wrath observes from distance. <em>"The record is clear. We proceed accordingly."</em>`,
+      B_wrath:        `⚖️ Wrath steps forward. Mercy stands still. <em>"The record does not lie."</em>`,
       C_dual:         `⚖️ Both Judges read your record simultaneously. Neither speaks first. The silence is its own judgment.`,
-      D_wrath_absorbs:`⚖️ Morren's presence expands. Kaelith recedes. <em>"Dominance without discipline. Noted."</em>`,
-      E_mercy_absorbs:`⚖️ Kaelith's presence expands. Morren recedes. <em>"Cooperation without commitment is performance."</em>`,
+      D_wrath_absorbs:`⚖️ Wrath's presence expands. Mercy recedes. <em>"Dominance without discipline. Noted."</em>`,
+      E_mercy_absorbs:`⚖️ Mercy's presence expands. Wrath recedes. <em>"Cooperation without commitment is performance."</em>`,
       F_dual_powered:         `⚖️ The Judges move in perfect unison. Their interfaces merge. <em>"Instability documented. Parameters escalating."</em>`,
       G_verdict:        `⚖️ The two figures collapse into one. The new form looks at you without recognition. <em>"You exceeded all defined parameters. The System has authorized a new response."</em>`,
     }
@@ -1734,11 +1734,11 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
   if (hpPct < 0.33 && enemyState.phase < 3) {
     enemyState.phase = 3
     const p3lines = {
-      A_mercy:        `⚖️ Kaelith: <em>"You will not be spared the difficulty. Mercy does not mean easy."</em>`,
-      B_wrath:        `⚖️ Morren: <em>"I have seen every version of this choice. You are consistent. I respect that."</em>`,
+      A_mercy:        `⚖️ Mercy: <em>"You will not be spared the difficulty. Mercy does not mean easy."</em>`,
+      B_wrath:        `⚖️ Wrath: <em>"I have seen every version of this choice. You are consistent. I respect that."</em>`,
       C_dual:         `⚖️ Both Judges simultaneously: <em>"The middle is not neutral. It is a choice to avoid choosing."</em>`,
-      D_wrath_absorbs:`⚖️ Morren: <em>"Power taken from every direction. Let us see if you can hold it."</em>`,
-      E_mercy_absorbs:`⚖️ Kaelith: <em>"You wanted everything. Now carry it."</em>`,
+      D_wrath_absorbs:`⚖️ Wrath: <em>"Power taken from every direction. Let us see if you can hold it."</em>`,
+      E_mercy_absorbs:`⚖️ Mercy: <em>"You wanted everything. Now carry it."</em>`,
       F_dual_powered:         `⚖️ The synchronized voice: <em>"FINAL PARAMETERS. SURVIVE THIS."</em>`,
       G_verdict:        `⚖️ Verdict, The Collapsed Form: <em>"..."</em> — silence, then a force you cannot name.`,
     }
@@ -1747,11 +1747,11 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
   } else if (hpPct < 0.66 && enemyState.phase < 2) {
     enemyState.phase = 2
     const p2lines = {
-      A_mercy:        `⚖️ Kaelith: <em>"Good. You are still here. So are we."</em>`,
-      B_wrath:        `⚖️ Morren: <em>"You built nothing that could protect you."</em>`,
-      C_dual:         `⚖️ Kaelith and Morren exchange a glance. No words. They accelerate.`,
-      D_wrath_absorbs:`⚖️ Morren steps closer. The cold in the air intensifies.`,
-      E_mercy_absorbs:`⚖️ Kaelith: <em>"Your cooperation was real. Your commitment was not. I will show you the difference."</em>`,
+      A_mercy:        `⚖️ Mercy: <em>"Good. You are still here. So are we."</em>`,
+      B_wrath:        `⚖️ Wrath: <em>"You built nothing that could protect you."</em>`,
+      C_dual:         `⚖️ Mercy and Wrath exchange a glance. No words. They accelerate.`,
+      D_wrath_absorbs:`⚖️ Wrath steps closer. The cold in the air intensifies.`,
+      E_mercy_absorbs:`⚖️ Mercy: <em>"Your cooperation was real. Your commitment was not. I will show you the difference."</em>`,
       F_dual_powered:         `⚖️ The Judges' movements tighten. Coordinated. Inevitable.`,
       G_verdict:        `⚖️ Verdict does not speak. It compounds.`,
     }
@@ -1763,7 +1763,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
   const sc = enemyState.judgeScenario
   const ph = enemyState.phase || 1
 
-  // ── SCENARIO A — Mercy Alone: Kaelith leads, Morren observes ────────────────
+  // ── SCENARIO A — Mercy Alone: Mercy leads, Wrath observes ────────────────
   // Fair but relentless. High moral players face a respectful opponent who doesn't pull punches.
   if (sc === 'A_mercy') {
     const moves = [
@@ -1772,7 +1772,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         exec() {
           const dmg = baseDmg(enemy.atk, playerDEF, se, defending, 4)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"Your cooperation is noted."</em> — measured strike for <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"Your cooperation is noted."</em> — measured strike for <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.FLASH)
           return ANIM.FLASH
         },
@@ -1780,23 +1780,23 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
       {
         key: 'parallel_record', weight: 2,
         exec() {
-          // Morren briefly interjects — small hit, DEF shred. Even cooperative players face scrutiny.
+          // Wrath briefly interjects — small hit, DEF shred. Even cooperative players face scrutiny.
           const dmg = baseDmg(enemy.atk * 0.7, playerDEF, se, defending, 2)
           onEnemyDmgPlayer(dmg)
           applyDefShred(se, 3, 1, messages)
-          messages.push(`⚖️ Morren, from distance: <em>"And what you took."</em> — <strong>${dmg}</strong> + brief armour shred.`)
+          messages.push(`⚖️ Wrath, from distance: <em>"And what you took."</em> — <strong>${dmg}</strong> + brief armour shred.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
       },
       {
-        key: 'kaelith_press', weight: ph >= 2 ? 3 : 1,
+        key: 'mercy_press', weight: ph >= 2 ? 3 : 1,
         exec() {
-          // Kaelith tests genuinely — harder hit in phase 2+
+          // Mercy tests genuinely — harder hit in phase 2+
           const mult = ph === 3 ? 1.45 : 1.2
           const dmg  = baseDmg(enemy.atk * mult, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"The System respects what you built. It tests it the same way."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"The System respects what you built. It tests it the same way."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ph === 3 ? ANIM.TERROR : ANIM.FLASH)
           return ph === 3 ? ANIM.TERROR : ANIM.FLASH
         },
@@ -1808,7 +1808,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           const moralBonus = Math.max(0, moral - 40) * 0.01  // +1% per moral point above 40
           const dmg = baseDmg(enemy.atk * (1.3 + moralBonus), playerDEF, se, defending, 4)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"You built something real. Now prove it survives contact with consequence."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"You built something real. Now prove it survives contact with consequence."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.TERROR)
           return ANIM.TERROR
         },
@@ -1817,7 +1817,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
     return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
   }
 
-  // ── SCENARIO B — Wrath Alone: Morren leads, Kaelith withdraws ───────────────
+  // ── SCENARIO B — Wrath Alone: Wrath leads, Mercy withdraws ───────────────
   // Relentless and cold. Betrayal-aligned players face an entity that agrees with what they did —
   // and measures them against it with no mercy.
   if (sc === 'B_wrath') {
@@ -1825,11 +1825,11 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
       {
         key: 'dominance_strike', weight: ph < 3 ? 4 : 2,
         exec() {
-          // Punishes defending — Morren read that players who betray use passive tactics
+          // Punishes defending — Wrath read that players who betray use passive tactics
           const mult = defending ? 1.35 : 1.0
           const dmg  = baseDmg(enemy.atk * mult, playerDEF, se, false, 4)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Morren: <em>"You understand dominance. Then you understand this."</em> — <strong>${dmg}</strong>.${defending ? ' <em>Defending is weakness here.</em>' : ''}`)
+          messages.push(`⚖️ Wrath: <em>"You understand dominance. Then you understand this."</em> — <strong>${dmg}</strong>.${defending ? ' <em>Defending is weakness here.</em>' : ''}`)
           triggerAnimation(ANIM.FLASH)
           return ANIM.FLASH
         },
@@ -1841,30 +1841,30 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           const ledgerMult = 1.0 + Math.max(0, Math.abs(moral) - 40) * 0.008
           const dmg = baseDmg(enemy.atk * ledgerMult, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Morren: <em>"The ledger is balanced. Everything you took — I can account for it."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Wrath: <em>"The ledger is balanced. Everything you took — I can account for it."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
       },
       {
-        key: 'kaelith_withdrawal', weight: 1,
+        key: 'mercy_withdrawal', weight: 1,
         exec() {
-          // Kaelith briefly appears — applies terror as reminder of what player gave up
+          // Mercy briefly appears — applies terror as reminder of what player gave up
           applyTerror(se, 1, messages)
-          messages.push(`⚖️ Kaelith, fading: <em>"I have nothing to evaluate here."</em> — your choices haunt you for 1 turn.`)
+          messages.push(`⚖️ Mercy, fading: <em>"I have nothing to evaluate here."</em> — your choices haunt you for 1 turn.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
       },
       {
-        key: 'morren_verdict', weight: ph === 3 ? 4 : 0,
+        key: 'wrath_verdict', weight: ph === 3 ? 4 : 0,
         exec() {
-          // Phase 3: Morren's full attention — ignores 50% of DEF, applies bleed
+          // Phase 3: Wrath's full attention — ignores 50% of DEF, applies bleed
           const rawDef = Math.floor(effectiveDEF(playerDEF, se, defending) * 0.5)
           const dmg    = Math.max(1, enemy.atk + 10 + Math.floor(Math.random()*6) - rawDef)
           onEnemyDmgPlayer(dmg)
           applyBleed(se, 4, 2, messages)
-          messages.push(`⚖️ Morren: <em>"You were exactly what you were. I have no argument with that."</em> — <strong>${dmg}</strong>!`)
+          messages.push(`⚖️ Wrath: <em>"You were exactly what you were. I have no argument with that."</em> — <strong>${dmg}</strong>!`)
           triggerAnimation(ANIM.TERROR)
           return ANIM.TERROR
         },
@@ -1874,7 +1874,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         exec() {
           const dmg = baseDmg(enemy.atk * 1.3, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Morren: <em>"Efficient. Decisive. Costly."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Wrath: <em>"Efficient. Decisive. Costly."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.FLASH)
           return ANIM.FLASH
         },
@@ -1887,30 +1887,30 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
   // Neither Judge has full authority. They interrupt each other. Player gets caught between forces
   // that disagree about what their record means.
   if (sc === 'C_dual') {
-    // Alternates between Kaelith and Morren strictly
-    const isMorrenTurn = enemyState.rotationIndex % 2 === 1
+    // Alternates between Mercy and Wrath strictly
+    const isWrathTurn = enemyState.rotationIndex % 2 === 1
     enemyState.rotationIndex = (enemyState.rotationIndex || 0) + 1
 
-    if (!isMorrenTurn) {
-      // Kaelith turn
+    if (!isWrathTurn) {
+      // Mercy turn
       const moves = [
         {
-          key: 'kaelith_probe', weight: 3,
+          key: 'mercy_probe', weight: 3,
           exec() {
             const dmg = baseDmg(enemy.atk * 0.9, playerDEF, se, defending, 3)
             onEnemyDmgPlayer(dmg)
-            messages.push(`⚖️ Kaelith: <em>"There is cooperation in your record. It counts."</em> — <strong>${dmg}</strong>.`)
+            messages.push(`⚖️ Mercy: <em>"There is cooperation in your record. It counts."</em> — <strong>${dmg}</strong>.`)
             triggerAnimation(ANIM.FLASH)
             return ANIM.FLASH
           },
         },
         {
-          key: 'kaelith_shield_test', weight: 2,
+          key: 'mercy_shield_test', weight: 2,
           exec() {
-            // Kaelith tests Defend — it is less effective against her (she honors it, but not infinitely)
+            // Mercy tests Defend — it is less effective against her (she honors it, but not infinitely)
             const dmg = baseDmg(enemy.atk, playerDEF, se, defending ? false : defending, 2)
             onEnemyDmgPlayer(dmg)
-            messages.push(`⚖️ Kaelith: <em>"Defence is not the same as construction."</em> — <strong>${dmg}</strong>.`)
+            messages.push(`⚖️ Mercy: <em>"Defence is not the same as construction."</em> — <strong>${dmg}</strong>.`)
             triggerAnimation(ANIM.FLASH)
             return ANIM.FLASH
           },
@@ -1918,25 +1918,25 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
       ]
       return { anim: pickWeighted(moves).exec() }
     } else {
-      // Morren turn — interrupts, harder
+      // Wrath turn — interrupts, harder
       const moves = [
         {
-          key: 'morren_interrupt', weight: 3,
+          key: 'wrath_interrupt', weight: 3,
           exec() {
             const dmg = baseDmg(enemy.atk * 1.1, playerDEF, se, defending, 4)
             onEnemyDmgPlayer(dmg)
-            messages.push(`⚖️ Morren, cutting in: <em>"There is also betrayal. Let us not romanticize the record."</em> — <strong>${dmg}</strong>.`)
+            messages.push(`⚖️ Wrath, cutting in: <em>"There is also betrayal. Let us not romanticize the record."</em> — <strong>${dmg}</strong>.`)
             triggerAnimation(ANIM.VOID)
             return ANIM.VOID
           },
         },
         {
-          key: 'morren_weight', weight: ph >= 2 ? 3 : 1,
+          key: 'wrath_weight', weight: ph >= 2 ? 3 : 1,
           exec() {
             const dmg = baseDmg(enemy.atk * 1.25, playerDEF, se, defending, 3)
             onEnemyDmgPlayer(dmg)
             applyDefShred(se, 3, 1, messages)
-            messages.push(`⚖️ Morren: <em>"Every choice leaves a mark. Including the ones you are not proud of."</em> — <strong>${dmg}</strong>.`)
+            messages.push(`⚖️ Wrath: <em>"Every choice leaves a mark. Including the ones you are not proud of."</em> — <strong>${dmg}</strong>.`)
             triggerAnimation(ph === 3 ? ANIM.TERROR : ANIM.VOID)
             return ph === 3 ? ANIM.TERROR : ANIM.VOID
           },
@@ -1946,8 +1946,8 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
     }
   }
 
-  // ── SCENARIO D — Wrath Absorbs Mercy: Morren dominant, greed compounds ───────
-  // Morren recognizes that the player's betrayal-pattern combined with element-greed
+  // ── SCENARIO D — Wrath Absorbs Mercy: Wrath dominant, greed compounds ───────
+  // Wrath recognizes that the player's betrayal-pattern combined with element-greed
   // makes for a specific kind of person. He doesn't condemn. He demonstrates.
   if (sc === 'D_wrath_absorbs') {
     const greedMult = 1 + (Math.min(elements, 4) - 1) * 0.15  // +15% per extra element, cap at 4
@@ -1958,17 +1958,17 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         exec() {
           const dmg = baseDmg(enemy.atk * greedMult, playerDEF, se, defending, 4)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Morren: <em>"You reached for everything. Feel the weight of that reach."</em> — <strong>${dmg}</strong>. (Greed multiplier active.)`)
+          messages.push(`⚖️ Wrath: <em>"You reached for everything. Feel the weight of that reach."</em> — <strong>${dmg}</strong>. (Greed multiplier active.)`)
           triggerAnimation(ANIM.FLASH)
           return ANIM.FLASH
         },
       },
       {
-        key: 'kaelith_echo', weight: 1,
+        key: 'mercy_echo', weight: 1,
         exec() {
-          // Ghost of Kaelith — terror only, no damage. The cooperative path Morren absorbed.
+          // Ghost of Mercy — terror only, no damage. The cooperative path Wrath absorbed.
           applyTerror(se, 1, messages)
-          messages.push(`⚖️ Something like Kaelith's voice, but wrong: <em>"There was another path."</em> — terror for 1 turn.`)
+          messages.push(`⚖️ Something like Mercy's voice, but wrong: <em>"There was another path."</em> — terror for 1 turn.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
@@ -1979,7 +1979,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           const dmg = baseDmg(enemy.atk * greedMult * 1.2, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
           applyBleed(se, 3, 2, messages)
-          messages.push(`⚖️ Morren: <em>"You took with both hands and called it strategy."</em> — <strong>${dmg}</strong> + bleed.`)
+          messages.push(`⚖️ Wrath: <em>"You took with both hands and called it strategy."</em> — <strong>${dmg}</strong> + bleed.`)
           triggerAnimation(ANIM.TERROR)
           return ANIM.TERROR
         },
@@ -1987,10 +1987,10 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
       {
         key: 'final_accounting_D', weight: ph === 3 ? 4 : 0,
         exec() {
-          // Phase 3: Morren's final statement — ignores DEF, scales with element count
+          // Phase 3: Wrath's final statement — ignores DEF, scales with element count
           const rawDmg = Math.max(1, Math.round(enemy.atk * greedMult * 1.5) + Math.floor(Math.random()*8))
           onEnemyDmgPlayer(rawDmg)
-          messages.push(`⚖️ Morren: <em>"The System gave you a path. You took every path. Now stand still and receive all of them."</em> — <strong>${rawDmg}</strong>!`)
+          messages.push(`⚖️ Wrath: <em>"The System gave you a path. You took every path. Now stand still and receive all of them."</em> — <strong>${rawDmg}</strong>!`)
           triggerAnimation(ANIM.TERROR)
           return ANIM.TERROR
         },
@@ -1999,8 +1999,8 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
     return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
   }
 
-  // ── SCENARIO E — Mercy Absorbs Wrath: Kaelith dominant, greed contradicts ───
-  // The player cooperated but reached for too many elements. Kaelith finds this
+  // ── SCENARIO E — Mercy Absorbs Wrath: Mercy dominant, greed contradicts ───
+  // The player cooperated but reached for too many elements. Mercy finds this
   // specifically disappointing — the cooperation was real, but the greed undermines it.
   if (sc === 'E_mercy_absorbs') {
     const greedPenalty = 1 + (Math.min(elements, 4) - 1) * 0.12
@@ -2011,18 +2011,18 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         exec() {
           const dmg = baseDmg(enemy.atk * greedPenalty, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"The cooperation was genuine. The greed contradicted it. I am not angry. I am accurate."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"The cooperation was genuine. The greed contradicted it. I am not angry. I am accurate."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.FLASH)
           return ANIM.FLASH
         },
       },
       {
-        key: 'morren_ghost_E', weight: 1,
+        key: 'wrath_ghost_E', weight: 1,
         exec() {
-          // Morren briefly surfaces — punishing hit representing the greed Kaelith absorbed
+          // Wrath briefly surfaces — punishing hit representing the greed Mercy absorbed
           const dmg = baseDmg(enemy.atk * 1.3, playerDEF, se, defending, 2)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Something like Morren, absorbed into Kaelith: <em>"This is what the other hand was doing."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Something like Wrath, absorbed into Mercy: <em>"This is what the other hand was doing."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
@@ -2034,7 +2034,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           applyDefShred(se, 4, 2, messages)
           const dmg = baseDmg(enemy.atk * greedPenalty * 1.1, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"You helped people. You also reached for everything you found. The contradiction is your vulnerability."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"You helped people. You also reached for everything you found. The contradiction is your vulnerability."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
@@ -2044,7 +2044,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         exec() {
           const dmg = baseDmg(enemy.atk * greedPenalty * 1.4, playerDEF, se, defending, 4)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Kaelith: <em>"You had a path. You kept taking others. You cannot carry all of them and still be what you chose to be."</em> — <strong>${dmg}</strong>.`)
+          messages.push(`⚖️ Mercy: <em>"You had a path. You kept taking others. You cannot carry all of them and still be what you chose to be."</em> — <strong>${dmg}</strong>.`)
           triggerAnimation(ANIM.TERROR)
           return ANIM.TERROR
         },
@@ -2122,7 +2122,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           },
         },
         {
-          key: 'total_recall_vaelith', weight: 2,
+          key: 'total_recall_verdict', weight: 2,
           exec() {
             // Every element attempted = additional hits
             const extraHits = Math.max(0, elements - 1)
@@ -2138,7 +2138,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           },
         },
         {
-          key: 'vaelith_silence', weight: 1,
+          key: 'verdict_silence', weight: 1,
           exec() {
             // No damage — applies every debuff simultaneously
             applyTerror(se, 2, messages)
@@ -2156,7 +2156,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
     // Phase 1–2 for Verdict: building dread
     const moves = [
       {
-        key: 'vaelith_press', weight: 4,
+        key: 'verdict_press', weight: 4,
         exec() {
           const dmg = baseDmg(enemy.atk * greedMult * moralEdge, playerDEF, se, defending, 5)
           onEnemyDmgPlayer(dmg)
@@ -2166,20 +2166,20 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         },
       },
       {
-        key: 'vaelith_accumulate', weight: 2,
+        key: 'verdict_accumulate', weight: 2,
         exec() {
           // Stacks — each use increases future damage slightly (stored in state)
-          enemyState.vaelithStack = (enemyState.vaelithStack || 0) + 1
-          const stackMult = 1 + enemyState.vaelithStack * 0.08
+          enemyState.verdictStack = (enemyState.verdictStack || 0) + 1
+          const stackMult = 1 + enemyState.verdictStack * 0.08
           const dmg = baseDmg(enemy.atk * greedMult * moralEdge * stackMult, playerDEF, se, defending, 3)
           onEnemyDmgPlayer(dmg)
-          messages.push(`⚖️ Verdict accumulates — stack ${enemyState.vaelithStack} — <strong>${dmg}</strong>. It is still adding up.`)
+          messages.push(`⚖️ Verdict accumulates — stack ${enemyState.verdictStack} — <strong>${dmg}</strong>. It is still adding up.`)
           triggerAnimation(ANIM.VOID)
           return ANIM.VOID
         },
       },
       {
-        key: 'vaelith_mark', weight: 1,
+        key: 'verdict_mark', weight: 1,
         exec() {
           applyDefShred(se, 5, 2, messages)
           applyTerror(se, 1, messages)
