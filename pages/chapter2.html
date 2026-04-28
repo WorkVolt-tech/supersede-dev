@@ -1705,10 +1705,35 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
       const updates={xp:newXp,hp:currentHp}
       if (isBoss) {
         const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
-        updates.chapters_unlocked=uls; updates.skill_points=(player.skill_points||0)+2
+        updates.chapters_unlocked=uls
         if (enemy.loot) for (const l of enemy.loot) await addItem(l.itemKey,l.qty)
+        const node=NODES[nodeId]
         if (node?.bossKey) { const d=markBossDefeated(node.bossKey); updates.defeated_bosses=d }
-        showToast('Chapter 2 Complete! +2 Bonus SP!')
+
+        // ── Per-form SP — 1 SP each, awarded once ever per form ──
+        const moral = extraCtx.playerMoral    || 0
+        const elems = extraCtx.elementsAttempted || 1
+        let formKey
+        if      (Math.abs(moral)>=70 && elems>=3) formKey='verdict'
+        else if (Math.abs(moral)<40  && elems>=2) formKey='dual_powered'
+        else if (moral>=40  && elems>=2)          formKey='mercy_powered'
+        else if (moral<=-40 && elems>=2)          formKey='wrath_powered'
+        else if (Math.abs(moral)<40)              formKey='dual'
+        else if (moral>=40)                        formKey='mercy'
+        else                                       formKey='wrath'
+
+        const spKey = 'judges_sp_'+formKey
+        const alreadyClaimed = (player.defeated_bosses||[]).includes(spKey)
+        if (!alreadyClaimed) {
+          const d2=markBossDefeated(spKey); updates.defeated_bosses=d2
+          updates.skill_points=(player.skill_points||0)+1
+          updates.sp_claimed=(player.sp_claimed||0)+1
+          player.skill_points=updates.skill_points
+          player.sp_claimed=updates.sp_claimed
+          showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP · +1 SP')
+        } else {
+          showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP')
+        }
       }
       const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
       await save(updates)
