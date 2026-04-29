@@ -1448,31 +1448,56 @@ function markBossDefeated(key) { const d=[...getDefeatedBosses()]; if(!d.include
 
 async function addItem(itemKey, qty) {
   const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
-  if (ex) return supabase.from('inventory').update({ quantity: ex.quantity + qty }).eq('id', ex.id)
+  if (ex) { await supabase.from('inventory').update({ quantity: ex.quantity + qty }).eq('id', ex.id); return }
   const ITEM_DEF = {
-    builders_cache_key: { name:"Builder's Cache Key", item_type:'key',     rarity:'uncommon', icon:'🗝️' },
-    district_map:       { name:'District Map',         item_type:'material', rarity:'common',   icon:'🗺️' },
-    ignis_seed:         { name:'Ignis Seed',            item_type:'material', rarity:'uncommon', icon:'🔥' },
-    aqua_cord:          { name:'Aqua Cord',             item_type:'material', rarity:'uncommon', icon:'💧' },
-    stabilizer_pack:    { name:'Stabilizer Pack',       item_type:'consumable',rarity:'common',  icon:'💊', hp_restore:40 },
-    medical_pack:       { name:'Medical Pack',          item_type:'consumable',rarity:'common',  icon:'🩹', hp_restore:30 },
-    scrap_metal:        { name:'Scrap Metal',           item_type:'material', rarity:'common',   icon:'⚙️' },
-    rare_component:     { name:'Rare Component',        item_type:'material', rarity:'rare',     icon:'🔮' },
-    judges_seal:        { name:"Judges' Seal",          item_type:'accessory',rarity:'legendary',icon:'⚖️' },
-    rune_ignis:         { name:'Ignis Rune',            item_type:'material', rarity:'uncommon', icon:'🔥' },
-    rune_aqua:          { name:'Aqua Rune',             item_type:'material', rarity:'uncommon', icon:'💧' },
-    rune_volt:          { name:'Volt Rune',             item_type:'material', rarity:'uncommon', icon:'⚡' },
-    rune_lux:           { name:'Lux Rune',              item_type:'material', rarity:'uncommon', icon:'✨' },
-    rune_umbra:         { name:'Umbra Rune',            item_type:'material', rarity:'uncommon', icon:'🌑' },
-    rune_terra:         { name:'Terra Rune',            item_type:'material', rarity:'uncommon', icon:'🪨' },
-    rune_aero:          { name:'Aero Rune',             item_type:'material', rarity:'uncommon', icon:'💨' },
-    rune_flora:         { name:'Flora Rune',            item_type:'material', rarity:'uncommon', icon:'🌿' },
-    rune_ferro:         { name:'Ferro Rune',            item_type:'material', rarity:'uncommon', icon:'⚙️' },
-    rune_venin:         { name:'Venin Rune',            item_type:'material', rarity:'uncommon', icon:'☠️' },
-    venom_compound:     { name:'Unstable Compound',     item_type:'consumable',rarity:'rare',    icon:'☠️', desc:'Apply in boss fight: poisons both Judges 5%/turn × 3 turns. Cost: 25% own HP.' },
+    builders_cache_key: { name:"Builder's Cache Key", item_type:'key',      rarity:'uncommon',  icon:'🗝️' },
+    district_map:       { name:'District Map',         item_type:'material', rarity:'common',    icon:'🗺️' },
+    ignis_seed:         { name:'Ignis Seed',           item_type:'material', rarity:'uncommon',  icon:'🔥' },
+    aqua_cord:          { name:'Aqua Cord',            item_type:'material', rarity:'uncommon',  icon:'💧' },
+    stabilizer_pack:    { name:'Stabilizer Pack',      item_type:'consumable',rarity:'common',   icon:'💊', hp_restore:40 },
+    medical_pack:       { name:'Medical Pack',         item_type:'consumable',rarity:'common',   icon:'🩹', hp_restore:30 },
+    scrap_metal:        { name:'Scrap Metal',          item_type:'material', rarity:'common',    icon:'⚙️' },
+    rare_component:     { name:'Rare Component',       item_type:'material', rarity:'rare',      icon:'🔮' },
+    judges_seal:        { name:"Judges' Seal",         item_type:'accessory',rarity:'legendary', icon:'⚖️' },
+    rune_ignis:         { name:'Ignis Rune',           item_type:'material', rarity:'uncommon',  icon:'🔥' },
+    rune_aqua:          { name:'Aqua Rune',            item_type:'material', rarity:'uncommon',  icon:'💧' },
+    rune_volt:          { name:'Volt Rune',            item_type:'material', rarity:'uncommon',  icon:'⚡' },
+    rune_lux:           { name:'Lux Rune',             item_type:'material', rarity:'uncommon',  icon:'✨' },
+    rune_umbra:         { name:'Umbra Rune',           item_type:'material', rarity:'uncommon',  icon:'🌑' },
+    rune_terra:         { name:'Terra Rune',           item_type:'material', rarity:'uncommon',  icon:'🪨' },
+    rune_aero:          { name:'Aero Rune',            item_type:'material', rarity:'uncommon',  icon:'💨' },
+    rune_flora:         { name:'Flora Rune',           item_type:'material', rarity:'uncommon',  icon:'🌿' },
+    rune_ferro:         { name:'Ferro Rune',           item_type:'material', rarity:'uncommon',  icon:'⚙️' },
+    rune_venin:         { name:'Venin Rune',           item_type:'material', rarity:'uncommon',  icon:'☠️' },
+    venom_compound:     { name:'Unstable Compound',    item_type:'consumable',rarity:'rare',     icon:'☠️', hp_restore:0 },
   }
   const def = ITEM_DEF[itemKey] || { name:itemKey, item_type:'material', rarity:'common', icon:'📦' }
-  await supabase.from('inventory').insert({ player_id:player.id, item_key:itemKey, quantity:qty, ...def })
+  const { error } = await supabase.from('inventory').insert({
+    player_id:     player.id,
+    item_key:      itemKey,
+    quantity:      qty,
+    name:          def.name,
+    item_type:     def.item_type      || 'material',
+    rarity:        def.rarity         || 'common',
+    icon:          def.icon           || '📦',
+    element:       def.element        || 'none',
+    hp_restore:    def.hp_restore     || 0,
+    atk_bonus:     def.atk_bonus      || 0,
+    def_bonus:     def.def_bonus      || 0,
+    power_bonus:   def.power_bonus    || 0,
+    guard_bonus:   def.guard_bonus    || 0,
+    speed_bonus:   def.speed_bonus    || 0,
+    control_bonus: def.control_bonus  || 0,
+    insight_bonus: def.insight_bonus  || 0,
+    luck_bonus:    def.luck_bonus     || 0,
+    agility_bonus: def.agility_bonus  || 0,
+    max_hp_bonus:  def.max_hp_bonus   || 0,
+    two_handed:    def.two_handed     || false,
+    sockets_total: 0,
+    sockets_used:  0,
+    socketed_runes:[],
+  })
+  if (error) console.error('[ch2 addItem]', itemKey, error.message)
 }
 
 async function save(updates) {
