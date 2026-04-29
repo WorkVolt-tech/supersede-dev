@@ -71,15 +71,15 @@
         transparent 1px, transparent 4px);
     }
 
-    /* ── Book wrap ── */
+    /* ── Book wrap — surface it sits on ── */
     .book-wrap {
       background: transparent !important;
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 24px 60px;
+      padding: 40px 24px 80px;
     }
 
-    /* ── Book — perspective tilt matching inventory ── */
+    /* ── Book — full physical object ── */
     .book {
       display: grid !important;
       grid-template-columns: 1fr 22px 1fr !important;
@@ -87,15 +87,26 @@
       gap: 0 !important;
       background: transparent !important;
       border: none !important;
-      box-shadow: none !important;
       border-radius: 0 !important;
-      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
-      transform: perspective(1600px) rotateX(2.5deg) !important;
+      /* Physical book sitting on surface */
+      filter:
+        drop-shadow(0 2px 0px rgba(0,0,0,.9))
+        drop-shadow(0 8px 16px rgba(0,0,0,.7))
+        drop-shadow(0 32px 60px rgba(0,0,0,.6))
+        drop-shadow(0 2px 4px rgba(0,0,0,.9)) !important;
+      transform: perspective(1800px) rotateX(4deg) rotateY(0deg) !important;
       transform-origin: 50% 0 !important;
-      margin-top: 10px !important;
+      margin-top: 16px !important;
+      /* Hard cover thickness illusion — bottom edge */
+      border-bottom: 3px solid rgba(0,0,0,.5) !important;
     }
     @media(max-width: 860px) {
-      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
+      .book {
+        grid-template-columns: 1fr !important;
+        transform: none !important;
+        border-bottom: none !important;
+        filter: drop-shadow(0 8px 24px rgba(0,0,0,.7)) !important;
+      }
       .spine { display: none !important; }
     }
 
@@ -109,59 +120,108 @@
       position: relative;
       overflow-y: auto;
       overflow-x: hidden;
+      /* Subtle paper noise texture */
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+      background-size: 300px 300px !important;
     }
     /* No border on the spine-facing edges */
-    .page-left  { border-right: none !important; background: var(--page-l) !important; }
-    .page-right { border-left:  none !important; background: var(--page-r) !important; }
+    .page-left  {
+      border-right: none !important;
+      background-color: var(--page-l) !important;
+      /* Hard cover left edge with thickness */
+      border-left: 3px solid rgba(0,0,0,.55) !important;
+      box-shadow: inset 3px 0 6px rgba(0,0,0,.25) !important;
+    }
+    .page-right {
+      border-left: none !important;
+      background-color: var(--page-r) !important;
+      /* Hard cover right edge with thickness */
+      border-right: 3px solid rgba(0,0,0,.45) !important;
+      box-shadow: inset -3px 0 6px rgba(0,0,0,.2) !important;
+    }
 
-    /* Gradient spine-glow lighting — matches inventory */
-    .page-left::before  {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(143,216,240,.014) 0%, transparent 55%);
+    /* Page stack — stacked pages visible on outer edges */
+    .page-left::before {
+      content: "";
+      position: absolute;
+      top: 2px; bottom: 2px;
+      left: -6px;
+      width: 6px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(143,216,240,.05) 0px,
+        rgba(143,216,240,.01) 1px,
+        rgba(0,0,0,.18) 1px,
+        rgba(0,0,0,.06) 2px
+      );
+      border-left: 1px solid rgba(0,0,0,.4);
+      pointer-events: none;
+      z-index: 0;
     }
     .page-right::before {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(270deg, rgba(143,216,240,.010) 0%, transparent 55%);
+      content: "";
+      position: absolute;
+      top: 2px; bottom: 2px;
+      right: -6px;
+      width: 6px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(143,216,240,.05) 0px,
+        rgba(143,216,240,.01) 1px,
+        rgba(0,0,0,.18) 1px,
+        rgba(0,0,0,.06) 2px
+      );
+      border-right: 1px solid rgba(0,0,0,.4);
+      pointer-events: none;
+      z-index: 0;
     }
-    /* Gold corner brackets — left page: top-left / right page: bottom-right */
-    .page-left::after {
-      content: ""; position: absolute; top: -1px; left: -1px;
-      width: 16px; height: 16px;
-      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
+
+    /* Page curl — bottom-right corner of right page lifts */
     .page-right::after {
-      content: ""; position: absolute; bottom: -1px; right: -1px;
-      width: 16px; height: 16px;
-      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
+      content: "" !important;
+      position: absolute !important;
+      bottom: 0 !important; right: 0 !important;
+      width: 40px !important; height: 40px !important;
+      top: auto !important; left: auto !important;
+      background: linear-gradient(
+        225deg,
+        var(--bg-0) 0%,
+        var(--bg-0) 40%,
+        rgba(0,0,0,.15) 50%,
+        transparent 60%
+      ) !important;
+      border-top-left-radius: 2px !important;
+      box-shadow: -2px -2px 6px rgba(0,0,0,.4) !important;
+      pointer-events: none !important;
+      z-index: 10 !important;
     }
-    /* Fallback for bare .parchment (not left/right) — keep the original two-corner look in gold */
-    .parchment:not(.page-left):not(.page-right)::before {
-      content: ""; position: absolute; top: -1px; left: -1px;
-      width: 16px; height: 16px;
-      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
+    /* Binding shadow — spine onto left page */
+    .page-left::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 40px !important; height: auto !important;
+      left: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.32) 0%,
+        rgba(0,0,0,.12) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
-    .parchment:not(.page-left):not(.page-right)::after {
-      content: ""; position: absolute; bottom: -1px; right: -1px;
-      width: 16px; height: 16px;
-      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
-    .page-inner { padding: 24px 26px !important; }
+    .page-inner { padding: 24px 26px !important; position: relative; z-index: 1; }
 
     /* ── Spine — open book gutter / inner binding ── */
-    /* Simulates the crease and shadow of pages meeting at the centre of an open book */
     .spine {
-      /* Deep crease shadow: dark at centre, fading out to page colour on each edge */
       background: linear-gradient(90deg,
         rgba(0,0,0,.0)  0%,
-        rgba(0,0,0,.32) 28%,
-        rgba(0,0,0,.55) 46%,
-        rgba(0,0,0,.62) 50%,
-        rgba(0,0,0,.55) 54%,
-        rgba(0,0,0,.32) 72%,
+        rgba(0,0,0,.38) 25%,
+        rgba(0,0,0,.65) 45%,
+        rgba(0,0,0,.72) 50%,
+        rgba(0,0,0,.65) 55%,
+        rgba(0,0,0,.38) 75%,
         rgba(0,0,0,.0)  100%
       ) !important;
       border-left:  none !important;
@@ -171,73 +231,31 @@
       min-width: 22px !important;
       margin: 0 !important;
       overflow: visible;
-      box-shadow: none !important;
+      box-shadow:
+        4px 0 12px rgba(0,0,0,.5),
+        -4px 0 12px rgba(0,0,0,.5) !important;
     }
-
     /* Hairline crease at the very centre */
     .spine::before {
       content: "";
-      position: absolute;
-      top: 0; bottom: 0;
-      left: 50%;
-      width: 1px;
-      transform: translateX(-50%);
+      position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1px; transform: translateX(-50%);
       background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(0,8,18,.9) 8%,
-        rgba(0,8,18,.9) 92%,
-        transparent 100%);
+        transparent 0%, rgba(0,0,8,.95) 8%, rgba(0,0,8,.95) 92%, transparent 100%);
       z-index: 2;
     }
-
-    /* Stacked-page edge: left side (right-hand page stack visible on left edge) */
+    /* Stacked-page lines on left edge */
     .spine::after {
       content: "";
-      position: absolute;
-      top: 2px; bottom: 2px;
-      left: -3px;
-      width: 3px;
+      position: absolute; top: 2px; bottom: 2px; left: -4px; width: 4px;
       background: repeating-linear-gradient(
         180deg,
-        rgba(143,216,240,.06) 0px,
-        rgba(143,216,240,.02) 1px,
-        rgba(0,0,0,.15)       1px,
-        rgba(0,0,0,.05)       2px
+        rgba(143,216,240,.07) 0px, rgba(143,216,240,.02) 1px,
+        rgba(0,0,0,.2) 1px, rgba(0,0,0,.06) 2px
       );
-      border-left: 1px solid rgba(143,216,240,.10);
+      border-left: 1px solid rgba(143,216,240,.12);
       z-index: 1;
     }
-
-    /* Page curl shadow cast onto left page from the binding */
-    .page-left::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; right: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(270deg,
-        rgba(0,0,0,.28) 0%,
-        rgba(0,0,0,.10) 50%,
-        transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
-    }
-
-    /* Page curl shadow cast onto right page from the binding */
-    .page-right::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; left: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(90deg,
-        rgba(0,0,0,.28) 0%,
-        rgba(0,0,0,.10) 50%,
-        transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
-    }
-
     .spine-inner, .spine-highlight, .spine-shadow,
     .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
 
