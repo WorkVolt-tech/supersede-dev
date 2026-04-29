@@ -1491,7 +1491,84 @@ function calcBadge(moral, pvpKills, helpsGiven) {
   return 'neutral'
 }
 
+// ── Chapter Resonance ─────────────────────────────────────────────────────────
+// Resonance is set when the player defeats their first zone boss.
+// It persists for the chapter run. Restarting the chapter resets it.
+const ELEMENT_NAMES = {
+  fire:'Ignis', water:'Aqua', lightning:'Volt', arcane:'Arcane',
+  shadow:'Umbra', earth:'Terra', wind:'Aero', plant:'Flora',
+  metal:'Ferro', poison:'Venom'
+}
+const RESONANCE_PREFIX = 'element_resonance_'
+
+function getChapterResonance() {
+  const d = player.defeated_bosses || []
+  const entry = d.find(k => k.startsWith(RESONANCE_PREFIX))
+  return entry ? entry.replace(RESONANCE_PREFIX, '') : null
+}
+
+async function setChapterResonance(elementKey) {
+  const flag = RESONANCE_PREFIX + elementKey
+  if ((player.defeated_bosses||[]).includes(flag)) return // already set
+  const d = markBossDefeated(flag)
+  await save({ defeated_bosses: d })
+  const elName = ELEMENT_NAMES[elementKey] || elementKey
+  showSysOverlay(
+    `Resonance established: ${elName}.\nFor this chapter, the System recognizes you as this.\nThe Judges will evaluate accordingly.`,
+    'info'
+  )
+}
+
+function isDeviating(zoneElement) {
+  const resonance = getChapterResonance()
+  if (!resonance) return false
+  return resonance !== zoneElement
+}
+
+// Zone element map — which element each zone entry node represents
+const ZONE_ELEMENT_MAP = {
+  zone_fire:'fire', zone_water:'water', zone_lightning:'lightning',
+  zone_arcane:'arcane', zone_shadow:'shadow', zone_earth:'earth',
+  zone_wind:'wind', zone_plant:'plant', zone_metal:'metal', zone_poison:'poison'
+}
+
 window.goTo = async function goTo(nextId, choice={}) {
+  if (!NODES[nextId]) return
+
+  // ── Resonance deviation warning ───────────────────────────────────────────
+  // If player has a chapter resonance and is entering a different element zone,
+  // show a confirmation overlay before proceeding.
+  const zoneElement = ZONE_ELEMENT_MAP[nextId]
+  if (zoneElement && isDeviating(zoneElement)) {
+    const resonance   = getChapterResonance()
+    const resName     = ELEMENT_NAMES[resonance]  || resonance
+    const zoneName    = ELEMENT_NAMES[zoneElement] || zoneElement
+    const existing    = document.getElementById('deviation-warning')
+    if (existing) existing.remove()
+    const el = document.createElement('div')
+    el.id = 'deviation-warning'
+    el.style.cssText = 'position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:1rem'
+    el.innerHTML = `<div style="max-width:400px;background:#12111a;border:1px solid #f4c45a44;padding:1.5rem;border-radius:4px;text-align:center">
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#f4c45a;letter-spacing:.12em;margin-bottom:.75rem">DEVIATION DETECTED</p>
+      <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8e3d6;line-height:1.6;margin-bottom:.5rem">Your chapter resonance is <strong style="color:#f4c45a">${resName}</strong>.</p>
+      <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:#857f92;line-height:1.6;margin-bottom:1.25rem">Entering the ${zoneName} zone will escalate enemy parameters. The Judges will note the deviation.<br><br>This path again?</p>
+      <div style="display:flex;gap:.75rem;justify-content:center">
+        <button onclick="document.getElementById('deviation-warning').remove();window._goToConfirmed('${nextId}',${JSON.stringify(choice)})" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
+        <button onclick="document.getElementById('deviation-warning').remove()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92;background:transparent;border:1px solid #26232f;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
+      </div>
+    </div>`
+    document.body.appendChild(el)
+    return
+  }
+
+  await _goToCore(nextId, choice)
+}
+
+window._goToConfirmed = async function(nextId, choice) {
+  await _goToCore(nextId, choice)
+}
+
+async function _goToCore(nextId, choice={}) {
   if (!NODES[nextId]) return
   const cur = NODES[nodeId]
   const oldXp=player.xp||0, oldLvl=player.level||1
@@ -1507,6 +1584,19 @@ window.goTo = async function goTo(nextId, choice={}) {
   if (choice.outcome) outcome=choice.outcome
   if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
   if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
+
+  // ── Set chapter resonance on first zone boss kill ─────────────────────────
+  const WIN_ELEMENT_MAP = {
+    zone_fire_boss_win:'fire',      zone_water_boss_win:'water',
+    zone_lightning_boss_win:'lightning', zone_arcane_boss_win:'arcane',
+    zone_shadow_boss_win:'shadow',  zone_earth_boss_win:'earth',
+    zone_wind_boss_win:'wind',      zone_plant_boss_win:'plant',
+    zone_metal_boss_win:'metal',    zone_poison_boss_win:'poison',
+  }
+  if (WIN_ELEMENT_MAP[nextId] && !getChapterResonance()) {
+    await setChapterResonance(WIN_ELEMENT_MAP[nextId])
+  }
+
   await save(updates)
   const lp=document.getElementById('left-page')
   lp.style.cssText+='transition:opacity .3s,transform .3s;opacity:0;transform:translateX(-8px)'
@@ -1587,12 +1677,18 @@ function renderDistrictHub(panel) {
   const hasAlliance = (player.alliance_log||[]).includes('builders')
 
   const stEl=document.getElementById('story-text')
-  stEl.textContent=`The shopping district spreads out before you. Nine elemental zones pulse across your radar — some bright and accessible, others dim, waiting for the right resonance to open them.
+  const resonance = getChapterResonance()
+  const resDisplay = resonance
+    ? `CHAPTER RESONANCE: ${ELEMENT_NAMES[resonance]} — established this run`
+    : `CHAPTER RESONANCE: None — defeat a zone boss to establish`
+
+  stEl.textContent=`The shopping district spreads out before you. Ten elemental zones pulse across your radar — some bright and accessible, others dim, waiting for the right resonance to open them.
 
 Your interface shows the faction positions, the zone locations, and below it all, a quiet indicator:
 
 ALLIANCE LOG: ${hasAlliance?'Builders (Active)':'No alliances recorded'}
 MORAL SCORE: ${moral>0?'+':''}${moral}
+${resDisplay}
 JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
 
   let zonesHtml = ZONES.map(z=>{
