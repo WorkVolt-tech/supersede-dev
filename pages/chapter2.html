@@ -113,16 +113,14 @@
     .page-left {
       background-color: var(--page-l) !important;
       box-shadow:
-        inset -28px 0 40px rgba(0,0,0,.65),
-        inset -6px 0 12px rgba(0,0,0,.5),
-        inset 0 0 100px rgba(0,0,0,.18) !important;
+        inset -50px 0 60px rgba(0,0,0,.8),
+        inset -12px 0 20px rgba(0,0,0,.6) !important;
     }
     .page-right {
       background-color: var(--page-r) !important;
       box-shadow:
-        inset 28px 0 40px rgba(0,0,0,.65),
-        inset 6px 0 12px rgba(0,0,0,.5),
-        inset 0 0 100px rgba(0,0,0,.18) !important;
+        inset 50px 0 60px rgba(0,0,0,.8),
+        inset 12px 0 20px rgba(0,0,0,.6) !important;
     }
     .page-left::before {
       content: ""; position: absolute; top: 0; bottom: 0; left: -5px; width: 5px;
@@ -171,43 +169,9 @@
       text-transform: uppercase !important; color: var(--ink-faint) !important;
     }
     .page-footer .page-num { color: var(--ink-dim) !important; font-size: 9px !important; }
-    .page-left::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; right: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(270deg,
-        rgba(0,0,0,.28) 0%,
-        rgba(0,0,0,.10) 50%,
-        transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
-    }
-    .page-right::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; left: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(90deg,
-        rgba(0,0,0,.28) 0%,
-        rgba(0,0,0,.10) 50%,
-        transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
-    }
 
-    
     .spine {
-      background: linear-gradient(90deg,
-        rgba(0,0,0,.18) 0%,
-        rgba(0,0,0,.42) 35%,
-        rgba(0,0,0,.58) 48%,
-        rgba(0,0,0,.58) 52%,
-        rgba(0,0,0,.42) 65%,
-        rgba(0,0,0,.18) 100%
-      ) !important;
+      background: #26232f !important;
       border-left: none !important; border-right: none !important;
       position: relative; z-index: 5;
       width: 22px !important; min-width: 22px !important; margin: 0 !important;
