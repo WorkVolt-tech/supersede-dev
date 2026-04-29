@@ -1561,16 +1561,16 @@ function renderChoices(panel,node) {
 
 // District hub — 9 elemental zones
 const ZONES = [
-  { id:'zone_fire',      icon:'🔥', name:'Kitchen Supply Store',    element:'Ignis',  color:'#ff5500', branch:'Offense' },
-  { id:'zone_water',     icon:'💧', name:'Food Court Basement',     element:'Aqua',   color:'#0088ff', branch:'Defense' },
-  { id:'zone_lightning', icon:'⚡', name:'Electronics Hub',         element:'Volt',   color:'#ffee58', branch:'Flow' },
-  { id:'zone_arcane',    icon:'✨', name:'Kessler Bookshop',        element:'Arcane', color:'#b06eff', branch:'Arcane' },
-  { id:'zone_shadow',    icon:'🌑', name:'Closed Cinema',           element:'Umbra',  color:'#9a6fd8', branch:'Decay' },
-  { id:'zone_earth',     icon:'🪨', name:'Parking Structure',        element:'Terra',  color:'#8b5e3c', branch:'Defense+Offense' },
-  { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane' },
-  { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay' },
-  { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane' },
-  { id:'zone_poison',    icon:'☠️', name:'Pharmacy — Anchor Store', element:'Venom',  color:'#7aad30', branch:'Decay+Offense' },
+  { id:'zone_fire',      icon:'🔥', name:'Kitchen Supply Store',    element:'Ignis',  color:'#ff5500', branch:'Offense',        img:'../assets/zones/zone_fire.webp' },
+  { id:'zone_water',     icon:'💧', name:'Food Court Basement',     element:'Aqua',   color:'#0088ff', branch:'Defense',        img:'../assets/zones/zone_water_clean.webp' },
+  { id:'zone_lightning', icon:'⚡', name:'Electronics Hub',         element:'Volt',   color:'#ffee58', branch:'Flow',           img:'../assets/zones/zone_lightning_clean.webp' },
+  { id:'zone_arcane',    icon:'✨', name:'Kessler Bookshop',        element:'Arcane', color:'#b06eff', branch:'Arcane',         img:'../assets/zones/zone_arcane_clean.webp' },
+  { id:'zone_shadow',    icon:'🌑', name:'Closed Cinema',           element:'Umbra',  color:'#9a6fd8', branch:'Decay',          img:'../assets/zones/zone_shadow_clean.webp' },
+  { id:'zone_earth',     icon:'🪨', name:'Parking Structure',        element:'Terra',  color:'#8b5e3c', branch:'Defense+Offense', img:'../assets/zones/zone_earth.webp' },
+  { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane',    img:'../assets/zones/zone_wind_clean.webp' },
+  { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay',  img:'../assets/zones/zone_plant_clean.webp' },
+  { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane', img:'../assets/zones/zone_metal_clean.webp' },
+  { id:'zone_poison',    icon:'☠️', name:'Pharmacy — Anchor Store', element:'Venom',  color:'#7aad30', branch:'Decay+Offense',  img:'../assets/zones/zone_poison.webp' },
 ]
 
 const STORY_EVENTS = [
@@ -1596,17 +1596,19 @@ MORAL SCORE: ${moral>0?'+':''}${moral}
 JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
 
   let zonesHtml = ZONES.map(z=>{
-    const unlockNode = z.id+'_unlock'
-    const done = player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))||defeated.includes(z.element.toLowerCase())
-    return `<div onclick="goTo('${z.id}')" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;padding:.55rem .65rem;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
-      onmouseover="this.style.background='${z.color}28'" onmouseout="this.style.background='${z.color}${done?'18':'08'}'">
-      <div style="display:flex;align-items:center;gap:.5rem">
+    const bossKey = 'zone_boss_'+z.id.replace('zone_','')
+    const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
+    const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
+    return `<div onclick="goTo('${z.id}')" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
+      onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      ${imgHtml}
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
         <span style="font-size:1rem">${z.icon}</span>
         <div style="flex:1;min-width:0">
           <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'#9a8050'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${z.branch} branch · ${done?'✓ UNLOCKED':'Enter to unlock'}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
         </div>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'ACTIVE':'ZONE'}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
       </div>
     </div>`
   }).join('')
