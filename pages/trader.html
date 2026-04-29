@@ -181,7 +181,7 @@
     [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
     [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
     [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
-    [style*="color:var(--gold)"] { color: var(--gold) !important; }
+    [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
     /* ── BUTTONS / CHOICES ── */
@@ -234,7 +234,7 @@
         <hr class="ink-divider">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);letter-spacing:.08em">GOLD</span>
-          <span id="gold-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:var(--gold)">◈ 0</span>
+          <span id="gold-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#c8b96e">◈ 0</span>
         </div>
       </div>
     </div>
@@ -538,7 +538,7 @@
             ${hasRune?'<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#e05555;margin:1px 0 0">⚠ Runes lost on sell</p>':''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:var(--gold)">◈${sellPrice}${(item.quantity||1)>1?' ea':''}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:#c8b96e">◈${sellPrice}${(item.quantity||1)>1?' ea':''}</span>
             ${!traderSellMode ? `<button onclick="traderSellOne('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell${(item.quantity||1)>1?' ×1':''}</button>` : ''}
             ${!traderSellMode && (item.quantity||1)>1 ? `<button onclick="traderSellAll('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--ink);background:rgba(200,184,128,.25);border:1px solid rgba(139,106,32,.4);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell All ◈${sellPrice*(item.quantity||1)}</button>` : ''}
           </div>
@@ -628,23 +628,43 @@
     await supabase.from('players').update({gold:newGold}).eq('id',player.id)
     player.gold = newGold
     document.getElementById('gold-display').textContent = `◈ ${newGold}`
-    // Add to inventory
-    const {data:ex} = await supabase.from('inventory').select('*').eq('player_id',player.id).eq('item_key',itemKey).eq('item_type','consumable').maybeSingle()
-    if (ex) { await supabase.from('inventory').update({quantity:ex.quantity+1}).eq('id',ex.id) }
-    else {
+    // Add to inventory — stack if same item_key already exists
+    const {data:ex} = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    if (ex) {
+      await supabase.from('inventory').update({quantity:ex.quantity+1}).eq('id',ex.id)
+    } else {
       await supabase.from('inventory').insert({
-        player_id:player.id, item_key:item.item_key, name:item.name,
-        item_type:item.item_type, subtype:item.subtype, rarity:item.rarity,
-        atk_bonus:item.atk_bonus, def_bonus:item.def_bonus, hp_restore:item.hp_restore,
-        two_handed:item.two_handed, icon:item.icon, quantity:1,
-        element:item.element||'none',
-        power_bonus:item.power_bonus||0, control_bonus:item.control_bonus||0,
-        guard_bonus:item.guard_bonus||0, speed_bonus:item.speed_bonus||0,
-        insight_bonus:item.insight_bonus||0, luck_bonus:item.luck_bonus||0,
-        special_effect:item.special_effect||null
+        player_id:     player.id,
+        item_key:      item.item_key,
+        name:          item.name,
+        item_type:     item.item_type,
+        subtype:       item.subtype       || null,
+        rarity:        item.rarity,
+        icon:          item.icon,
+        element:       item.element       || 'none',
+        quantity:      1,
+        atk_bonus:     item.atk_bonus     || 0,
+        def_bonus:     item.def_bonus     || 0,
+        hp_restore:    item.hp_restore    || 0,
+        two_handed:    item.two_handed    || false,
+        power_bonus:   item.power_bonus   || 0,
+        control_bonus: item.control_bonus || 0,
+        guard_bonus:   item.guard_bonus   || 0,
+        speed_bonus:   item.speed_bonus   || 0,
+        insight_bonus: item.insight_bonus || 0,
+        luck_bonus:    item.luck_bonus    || 0,
+        agility_bonus: item.agility_bonus || 0,
+        max_hp_bonus:  item.max_hp_bonus  || 0,
+        special_effect:item.special_effect|| null,
       })
     }
-    await supabase.from('trade_log').insert({player_id:player.id,trader_key:activeNPC.key,item_key:itemKey,quantity:1,gold_spent:item.buy_price})
+    // Log the trade — use correct column names
+    await supabase.from('trade_log').insert({
+      to_player:      player.id,
+      item_key:       itemKey,
+      quantity:       1,
+      gold_exchanged: item.buy_price,
+    })
     showToast(`Bought ${item.name}`)
     renderNPCPanel()
   }
