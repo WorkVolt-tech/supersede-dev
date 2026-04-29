@@ -289,6 +289,96 @@
     /* ── ANIMATE-IN ── */
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
     .animate-in{animation:fadeIn .4s ease forwards}
+
+    /* ── ESP Overlay ───────────────────────────────── */
+    #esp-overlay {
+      display:none; position:fixed; inset:0; z-index:950;
+      background:#07070a; flex-direction:column;
+    }
+    #esp-overlay.open { display:flex; }
+    #esp-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.5rem 1rem; background:#0f0e14;
+      border-bottom:1px solid #26232f; flex-shrink:0; gap:.75rem; flex-wrap:wrap;
+    }
+    #esp-topbar h2 { font-family:'Cinzel',serif; font-size:.95rem; color:#f4c45a; margin:0; }
+    .esp-badge { font-family:'Share Tech Mono',monospace; font-size:.72rem; color:#f4c45a;
+      background:rgba(244,196,90,.1); border:.5px solid rgba(244,196,90,.3);
+      padding:3px 10px; border-radius:20px; }
+    .esp-close-btn { font-family:'Share Tech Mono',monospace; font-size:.6rem;
+      color:#a08050; background:none; border:.5px solid rgba(200,160,60,.4);
+      padding:4px 10px; cursor:pointer; border-radius:3px; }
+    #esp-body {
+      display:grid; grid-template-columns:240px 1fr;
+      flex:1; overflow:hidden;
+    }
+    @media(max-width:700px){ #esp-body{grid-template-columns:1fr;} }
+    #esp-sidebar {
+      background:#0f0e14; border-right:1px solid #26232f;
+      padding:14px 12px; display:flex; flex-direction:column;
+      gap:8px; overflow-y:auto;
+    }
+    #esp-main-panel {
+      background:#12111a; padding:20px; overflow-y:auto;
+    }
+    .esp-el-btn {
+      display:flex; align-items:center; gap:8px; padding:7px 10px;
+      border:.5px solid #26232f; background:transparent; cursor:pointer;
+      width:100%; text-align:left; transition:all .15s; color:#e8e3d6;
+      font-family:'Cormorant Garamond',serif; font-size:14px;
+    }
+    .esp-el-btn:hover:not(.esp-el-locked) { border-color:#f4c45a; background:rgba(244,196,90,.04); }
+    .esp-el-btn.esp-el-active { border-color:#f4c45a; background:rgba(244,196,90,.08); }
+    .esp-el-locked { opacity:.38; cursor:default; }
+    .esp-branch-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(175px,1fr)); gap:10px; margin-bottom:16px; }
+    .esp-branch-card { background:#0f0e14; border:.5px solid #26232f; padding:12px; }
+    .esp-branch-title { font-family:'Share Tech Mono',monospace; font-size:8px;
+      letter-spacing:.18em; text-transform:uppercase; padding-bottom:6px;
+      margin-bottom:6px; border-bottom:.5px solid #26232f; }
+    .esp-node {
+      display:flex; align-items:center; gap:7px; padding:5px 7px;
+      border:.5px solid #26232f; margin-bottom:4px; cursor:pointer;
+      transition:all .15s; background:transparent; width:100%; text-align:left;
+    }
+    .esp-node:last-child { margin-bottom:0; }
+    .esp-node:hover:not(.esp-node-locked) { border-color:#f4c45a; background:rgba(244,196,90,.04); }
+    .esp-node.esp-node-unlocked { border-color:rgba(127,214,166,.4); background:rgba(127,214,166,.05); }
+    .esp-node.esp-node-locked { opacity:.35; cursor:default; }
+    .esp-node.esp-node-available { border-color:rgba(244,196,90,.35); }
+    .esp-node-dot { width:9px; height:9px; border-radius:50%; border:1.5px solid #857f92; flex-shrink:0; }
+    .esp-node-dot.unlocked { border-color:#7fd6a6; background:rgba(127,214,166,.4); }
+    .esp-node-dot.notable { border-radius:0; transform:rotate(45deg); border-color:#f4c45a; width:10px; height:10px; }
+    .esp-node-dot.notable.unlocked { background:rgba(244,196,90,.4); }
+    .esp-node-dot.keystone { border-radius:0; border-color:#b06eff; width:12px; height:12px; }
+    .esp-node-dot.keystone.unlocked { background:rgba(176,110,255,.4); }
+    .esp-node-name { font-family:'Cinzel',serif; font-size:11px; color:#e8e3d6; flex:1; }
+    .esp-node-stat { font-family:'Share Tech Mono',monospace; font-size:8px; color:#857f92; display:block; }
+    .esp-node-cost { font-family:'Share Tech Mono',monospace; font-size:8px; color:#f4c45a; flex-shrink:0; }
+    /* Slots section */
+    .esp-slots-title { font-family:'Share Tech Mono',monospace; font-size:8px;
+      letter-spacing:.18em; text-transform:uppercase; color:#857f92; margin-bottom:8px; margin-top:4px; }
+    .esp-slot-row {
+      display:flex; align-items:center; gap:8px; padding:8px 10px;
+      border:.5px dashed rgba(176,110,255,.3); margin-bottom:5px; cursor:pointer; transition:all .15s;
+    }
+    .esp-slot-row:hover { border-color:#b06eff; background:rgba(176,110,255,.04); }
+    .esp-slot-row.filled { border-style:solid; border-color:#b06eff; background:rgba(176,110,255,.07); }
+    .esp-slot-label { font-family:'Share Tech Mono',monospace; font-size:8px; color:#857f92; min-width:100px; }
+    .esp-slot-name { font-family:'Cinzel',serif; font-size:12px; color:#b06eff; }
+    .esp-slot-stat { font-family:'Share Tech Mono',monospace; font-size:8px; color:#857f92; }
+    .esp-slot-empty { font-family:'Share Tech Mono',monospace; font-size:8px; color:#4a4556; font-style:italic; }
+    .esp-slot-remove { background:none; border:none; color:#e8564a; font-size:11px; cursor:pointer; margin-left:auto; flex-shrink:0; }
+    /* Collected panel */
+    .esp-collected-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(155px,1fr)); gap:6px; margin-top:8px; }
+    .esp-col-card { border:.5px solid rgba(176,110,255,.25); padding:8px 10px; cursor:pointer; transition:all .15s; background:rgba(176,110,255,.03); }
+    .esp-col-card:hover { border-color:#b06eff; background:rgba(176,110,255,.08); }
+    .esp-col-card.in-use { border-color:#7fd6a6; background:rgba(127,214,166,.05); }
+    /* Slot chooser */
+    #esp-slot-chooser { position:fixed; inset:0; z-index:960; background:rgba(0,0,0,.85);
+      display:none; align-items:center; justify-content:center; padding:1rem; }
+    #esp-slot-chooser.open { display:flex; }
+    .esp-chooser-inner { background:#0f0e14; border:1px solid #26232f; padding:1.25rem;
+      max-width:400px; width:100%; max-height:80vh; overflow-y:auto; }
   </style>
 
 </head>
@@ -315,8 +405,14 @@
         <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem">Unlocked nodes</p>
         <div id="unlocked-summary" style="display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:.75rem"></div>
         <hr class="ink-divider">
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem">Elemental paths — sealed until Chapter 2</p>
-        <div id="elemental-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.75rem"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+          <div>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0">ELEMENTAL SP</p>
+            <p id="esp-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#b06eff;margin:0">0</p>
+          </div>
+          <button onclick="openESP()" style="font-family:'Cinzel',serif;font-size:.75rem;color:#e8e3d6;background:rgba(176,110,255,.15);border:1px solid rgba(176,110,255,.4);border-radius:3px;padding:.4rem .9rem;cursor:pointer">⬡ Elemental Tree</button>
+        </div>
+        <div id="esp-unlocked-summary" style="display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:.75rem"></div>
         <hr class="ink-divider">
 
       </div>
@@ -370,6 +466,39 @@
 <div id="node-detail">
   <button id="detail-close" onclick="closeDetail()">✕</button>
   <div id="detail-inner"></div>
+</div>
+
+<!-- ESP Overlay -->
+<div id="esp-overlay">
+  <div id="esp-topbar">
+    <h2>⬡ Elemental Skill Tree</h2>
+    <span class="esp-badge" id="esp-badge">0 ESP</span>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+      <button class="esp-close-btn" onclick="openCollectedPanel()" style="color:#b06eff;border-color:rgba(176,110,255,.4)">⬡ Collected</button>
+      <button class="esp-close-btn" onclick="closeESP()">✕ Close</button>
+    </div>
+  </div>
+  <div id="esp-body">
+    <div id="esp-sidebar">
+      <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#f4c45a;margin-bottom:4px">Elements</p>
+      <div id="esp-el-tabs"></div>
+    </div>
+    <div id="esp-main-panel">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.5rem;opacity:.35">
+        <div style="font-size:2rem">⬡</div>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92">Select an element</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ESP Slot Chooser -->
+<div id="esp-slot-chooser">
+  <div class="esp-chooser-inner">
+    <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#f4c45a;margin-bottom:.75rem">Choose a node to place</p>
+    <div id="esp-chooser-list"></div>
+    <button onclick="closeESPChooser()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#857f92;background:none;border:.5px solid #26232f;padding:5px 14px;margin-top:.75rem;width:100%;cursor:pointer">Cancel</button>
+  </div>
 </div>
 
 <script type="module">
@@ -700,7 +829,6 @@ pendingBattleSkills = [...battleSkills]  // init draft from saved state
 updateSPDisplay()
 renderPageSummary()
 renderBattleSlotsPage()
-renderElementalTags()
 
 function renderElementalTags() {
   const chapter = player.current_chapter || 1
@@ -1386,6 +1514,449 @@ window._ELEMENTS=ELEMENTS
 window._ELEMENTAL_SKILLS=ELEMENTAL_SKILLS
 window._SKILL_TREE_NODES=NODES
 window._skillsUnlocked=()=>skillsUnlocked
+
+// ════════════════════════════════════════════════════
+// ESP — ELEMENTAL SKILL TREE
+// ════════════════════════════════════════════════════
+const ESP_ELEMENTS = [
+  { key:'fire',      icon:'🔥', name:'Ignis',  bossKey:'zone_boss_fire',      color:'#ff5500' },
+  { key:'water',     icon:'💧', name:'Aqua',   bossKey:'zone_boss_water',     color:'#0088ff' },
+  { key:'lightning', icon:'⚡', name:'Volt',   bossKey:'zone_boss_lightning', color:'#ffee58' },
+  { key:'arcane',    icon:'✨', name:'Arcane', bossKey:'zone_boss_arcane',    color:'#b06eff' },
+  { key:'shadow',    icon:'🌑', name:'Umbra',  bossKey:'zone_boss_shadow',    color:'#9a6fd8' },
+  { key:'earth',     icon:'🪨', name:'Terra',  bossKey:'zone_boss_earth',     color:'#8b5e3c' },
+  { key:'wind',      icon:'💨', name:'Aero',   bossKey:'zone_boss_wind',      color:'#a8d8ea' },
+  { key:'plant',     icon:'🌿', name:'Flora',  bossKey:'zone_boss_plant',     color:'#66bb6a' },
+  { key:'metal',     icon:'⚙️', name:'Ferro',  bossKey:'zone_boss_metal',     color:'#90a4ae' },
+  { key:'poison',    icon:'☠️', name:'Venin',  bossKey:'zone_boss_poison',    color:'#7aad30' },
+]
+
+const ESP_BRANCHES = [
+  { key:'off', label:'Offense',  color:'#e05a2b', stats:'ATK · Power' },
+  { key:'def', label:'Defense',  color:'#3ab8d8', stats:'DEF · Guard' },
+  { key:'flo', label:'Flow',     color:'#66bb6a', stats:'Speed · Agility' },
+  { key:'arc', label:'Arcane',   color:'#b06eff', stats:'Insight · Control' },
+  { key:'dec', label:'Decay',    color:'#90a4ae', stats:'Luck' },
+]
+
+const ESP_BASE = {
+  off:['off_1','off_2','off_3','off_4','off_5','off_6'],
+  def:['def_1','def_2','def_3','def_4','def_5','def_6'],
+  flo:['flo_1','flo_2','flo_3','flo_4','flo_5','flo_6'],
+  arc:['arc_1','arc_2','arc_3','arc_4','arc_5','arc_6'],
+  dec:['dec_1','dec_2','dec_3','dec_4','dec_5','dec_6'],
+}
+
+const ESP_BASE_DEF = {
+  off_1:{label:'Strike I',    stat:'+1 ATK',     cost:1,branch:'off',col:'atk'},
+  off_2:{label:'Strike II',   stat:'+1 ATK',     cost:1,branch:'off',col:'atk'},
+  off_3:{label:'Surge I',     stat:'+1 Power',   cost:1,branch:'off',col:'power'},
+  off_4:{label:'Surge II',    stat:'+1 Power',   cost:1,branch:'off',col:'power'},
+  off_5:{label:'Strike III',  stat:'+2 ATK',     cost:2,branch:'off',col:'atk',   val:2},
+  off_6:{label:'Surge III',   stat:'+2 Power',   cost:2,branch:'off',col:'power', val:2},
+  def_1:{label:'Shield I',    stat:'+1 DEF',     cost:1,branch:'def',col:'def'},
+  def_2:{label:'Shield II',   stat:'+1 DEF',     cost:1,branch:'def',col:'def'},
+  def_3:{label:'Ward I',      stat:'+1 Guard',   cost:1,branch:'def',col:'guard'},
+  def_4:{label:'Ward II',     stat:'+1 Guard',   cost:1,branch:'def',col:'guard'},
+  def_5:{label:'Shield III',  stat:'+2 DEF',     cost:2,branch:'def',col:'def',   val:2},
+  def_6:{label:'Ward III',    stat:'+2 Guard',   cost:2,branch:'def',col:'guard', val:2},
+  flo_1:{label:'Stride I',    stat:'+1 Speed',   cost:1,branch:'flo',col:'speed'},
+  flo_2:{label:'Stride II',   stat:'+1 Speed',   cost:1,branch:'flo',col:'speed'},
+  flo_3:{label:'Reflex I',    stat:'+1 Agility', cost:1,branch:'flo',col:'agility'},
+  flo_4:{label:'Reflex II',   stat:'+1 Agility', cost:1,branch:'flo',col:'agility'},
+  flo_5:{label:'Stride III',  stat:'+2 Speed',   cost:2,branch:'flo',col:'speed',   val:2},
+  flo_6:{label:'Reflex III',  stat:'+2 Agility', cost:2,branch:'flo',col:'agility', val:2},
+  arc_1:{label:'Focus I',     stat:'+1 Insight', cost:1,branch:'arc',col:'insight'},
+  arc_2:{label:'Focus II',    stat:'+1 Insight', cost:1,branch:'arc',col:'insight'},
+  arc_3:{label:'Bind I',      stat:'+1 Control', cost:1,branch:'arc',col:'control'},
+  arc_4:{label:'Bind II',     stat:'+1 Control', cost:1,branch:'arc',col:'control'},
+  arc_5:{label:'Focus III',   stat:'+2 Insight', cost:2,branch:'arc',col:'insight', val:2},
+  arc_6:{label:'Bind III',    stat:'+2 Control', cost:2,branch:'arc',col:'control', val:2},
+  dec_1:{label:'Drift I',     stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+  dec_2:{label:'Drift II',    stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+  dec_3:{label:'Fracture I',  stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+  dec_4:{label:'Fracture II', stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+  dec_5:{label:'Drift III',   stat:'+2 Luck',    cost:2,branch:'dec',col:'luck', val:2},
+  dec_6:{label:'Fracture III',stat:'+2 Luck',    cost:2,branch:'dec',col:'luck', val:2},
+}
+
+const ESP_EL_NODES = {
+  fire_off_n:{el:'fire',branch:'off',type:'notable', label:'Ember Will',    stat:'+2 ATK · burn on hit',            cost:3,col:'atk',val:2},
+  fire_def_n:{el:'fire',branch:'def',type:'notable', label:'Ashen Guard',   stat:'+2 DEF · reduce fire dmg taken',  cost:3,col:'def',val:2},
+  fire_flo_n:{el:'fire',branch:'flo',type:'notable', label:'Flash Step',    stat:'+2 Speed · act first after burn', cost:3,col:'speed',val:2},
+  fire_arc_n:{el:'fire',branch:'arc',type:'notable', label:'Heat Read',     stat:'+2 Insight · see enemy HP',       cost:3,col:'insight',val:2},
+  fire_dec_n:{el:'fire',branch:'dec',type:'notable', label:'Cinder Curse',  stat:'+2 Luck · burn spreads on crit',  cost:3,col:'luck',val:2},
+  fire_off_k:{el:'fire',branch:'off',type:'keystone',label:'Inferno Core',  stat:'+3 ATK+Power · all hits burn',    cost:5,col:'atk',val:3},
+  fire_def_k:{el:'fire',branch:'def',type:'keystone',label:'Pyre Wall',     stat:'+3 DEF+Guard · reflect fire',     cost:5,col:'def',val:3},
+  fire_flo_k:{el:'fire',branch:'flo',type:'keystone',label:'Blazing Rush',  stat:'+3 Speed+AGI · always first',     cost:5,col:'speed',val:3},
+  fire_arc_k:{el:'fire',branch:'arc',type:'keystone',label:'Forge Mind',    stat:'+3 INS+CTR · burn = skill -1',    cost:5,col:'insight',val:3},
+  fire_dec_k:{el:'fire',branch:'dec',type:'keystone',label:'Ashfall',       stat:'+3 Luck · crits ignite all',      cost:5,col:'luck',val:3},
+  water_off_n:{el:'water',branch:'off',type:'notable', label:'Tide Strike',  stat:'+2 ATK · hit twice below 50%',   cost:3,col:'atk',val:2},
+  water_def_n:{el:'water',branch:'def',type:'notable', label:'Current Ward', stat:'+2 DEF · redirect 15% dmg',      cost:3,col:'def',val:2},
+  water_flo_n:{el:'water',branch:'flo',type:'notable', label:'Flow State',   stat:'+2 Speed · retry failed action', cost:3,col:'speed',val:2},
+  water_arc_n:{el:'water',branch:'arc',type:'notable', label:'Deep Read',    stat:'+2 Insight · see next action',   cost:3,col:'insight',val:2},
+  water_dec_n:{el:'water',branch:'dec',type:'notable', label:'Undertow',     stat:'+2 Luck · slow enemy on hit',    cost:3,col:'luck',val:2},
+  water_off_k:{el:'water',branch:'off',type:'keystone',label:'Rip Current',  stat:'+3 ATK+Power · ignore DEF <40%', cost:5,col:'atk',val:3},
+  water_def_k:{el:'water',branch:'def',type:'keystone',label:'Ocean Skin',   stat:'+3 DEF+Guard · absorb first hit',cost:5,col:'def',val:3},
+  water_flo_k:{el:'water',branch:'flo',type:'keystone',label:'Tidal Rush',   stat:'+3 Speed+AGI · act twice turn 1',cost:5,col:'speed',val:3},
+  water_arc_k:{el:'water',branch:'arc',type:'keystone',label:'Still Waters', stat:'+3 INS+CTR · immune to stun',    cost:5,col:'insight',val:3},
+  water_dec_k:{el:'water',branch:'dec',type:'keystone',label:'Drowning Pull',stat:'+3 Luck · enemy cannot flee',    cost:5,col:'luck',val:3},
+  lightning_off_n:{el:'lightning',branch:'off',type:'notable', label:'Arc Strike',   stat:'+2 ATK · chain to 2nd',      cost:3,col:'atk',val:2},
+  lightning_def_n:{el:'lightning',branch:'def',type:'notable', label:'Static Shell', stat:'+2 DEF · stun on block',     cost:3,col:'def',val:2},
+  lightning_flo_n:{el:'lightning',branch:'flo',type:'notable', label:'Surge Step',   stat:'+2 Speed · first odd turns',  cost:3,col:'speed',val:2},
+  lightning_arc_n:{el:'lightning',branch:'arc',type:'notable', label:'Overcharge',   stat:'+2 Insight · +10% after skip',cost:3,col:'insight',val:2},
+  lightning_dec_n:{el:'lightning',branch:'dec',type:'notable', label:'Shock Luck',   stat:'+2 Luck · crit stuns 1 turn', cost:3,col:'luck',val:2},
+  lightning_off_k:{el:'lightning',branch:'off',type:'keystone',label:'Storm Caller',  stat:'+3 ATK+Power · every hit chains',cost:5,col:'atk',val:3},
+  lightning_def_k:{el:'lightning',branch:'def',type:'keystone',label:'Faraday',       stat:'+3 DEF+Guard · absorb lightning',cost:5,col:'def',val:3},
+  lightning_flo_k:{el:'lightning',branch:'flo',type:'keystone',label:'Thunderstep',   stat:'+3 Speed+AGI · untargetable T1',cost:5,col:'speed',val:3},
+  lightning_arc_k:{el:'lightning',branch:'arc',type:'keystone',label:'Circuit Mind',  stat:'+3 INS+CTR · see resistances',  cost:5,col:'insight',val:3},
+  lightning_dec_k:{el:'lightning',branch:'dec',type:'keystone',label:'Voltage Surge', stat:'+3 Luck · chain crits refresh',  cost:5,col:'luck',val:3},
+  arcane_off_n:{el:'arcane',branch:'off',type:'notable', label:'Runic Blade',  stat:'+2 ATK · +10% if INS > enemy',  cost:3,col:'atk',val:2},
+  arcane_def_n:{el:'arcane',branch:'def',type:'notable', label:'Arcane Veil',  stat:'+2 DEF · negate status effects', cost:3,col:'def',val:2},
+  arcane_flo_n:{el:'arcane',branch:'flo',type:'notable', label:'Phase Shift',  stat:'+2 Speed · dodge scales w INS',  cost:3,col:'speed',val:2},
+  arcane_arc_n:{el:'arcane',branch:'arc',type:'notable', label:'Third Eye',    stat:'+2 Insight · see hidden paths',  cost:3,col:'insight',val:2},
+  arcane_dec_n:{el:'arcane',branch:'dec',type:'notable', label:'Spell Siphon', stat:'+2 Luck · crit restores AP',     cost:3,col:'luck',val:2},
+  arcane_off_k:{el:'arcane',branch:'off',type:'keystone',label:'Void Strike',  stat:'+3 ATK+Power · bypass resist',   cost:5,col:'atk',val:3},
+  arcane_def_k:{el:'arcane',branch:'def',type:'keystone',label:'Null Field',   stat:'+3 DEF+Guard · immune debuffs',  cost:5,col:'def',val:3},
+  arcane_flo_k:{el:'arcane',branch:'flo',type:'keystone',label:'Blink',        stat:'+3 Speed+AGI · teleport dodge',  cost:5,col:'speed',val:3},
+  arcane_arc_k:{el:'arcane',branch:'arc',type:'keystone',label:'Omniscience',  stat:'+3 INS+CTR · predict actions',   cost:5,col:'insight',val:3},
+  arcane_dec_k:{el:'arcane',branch:'dec',type:'keystone',label:'Ley Fracture', stat:'+3 Luck · crits ignore DEF',     cost:5,col:'luck',val:3},
+  shadow_off_n:{el:'shadow',branch:'off',type:'notable', label:'Shade Slash',  stat:'+2 ATK · uncounterable strike',  cost:3,col:'atk',val:2},
+  shadow_def_n:{el:'shadow',branch:'def',type:'notable', label:'Dark Shroud',  stat:'+2 DEF · +20% dodge physical',   cost:3,col:'def',val:2},
+  shadow_flo_n:{el:'shadow',branch:'flo',type:'notable', label:'Ghost Walk',   stat:'+2 Speed · pass first hit',      cost:3,col:'speed',val:2},
+  shadow_arc_n:{el:'shadow',branch:'arc',type:'notable', label:'Void Sight',   stat:'+2 Insight · see weaknesses',    cost:3,col:'insight',val:2},
+  shadow_dec_n:{el:'shadow',branch:'dec',type:'notable', label:'Death Mark',   stat:'+2 Luck · marked = +15% dmg',    cost:3,col:'luck',val:2},
+  shadow_off_k:{el:'shadow',branch:'off',type:'keystone',label:'Abyss Edge',   stat:'+3 ATK+Power · 2x from stealth', cost:5,col:'atk',val:3},
+  shadow_def_k:{el:'shadow',branch:'def',type:'keystone',label:'Shadow Form',  stat:'+3 DEF+Guard · 30% vanish on hit',cost:5,col:'def',val:3},
+  shadow_flo_k:{el:'shadow',branch:'flo',type:'keystone',label:'Phantom',      stat:'+3 Speed+AGI · untarget every 3',cost:5,col:'speed',val:3},
+  shadow_arc_k:{el:'shadow',branch:'arc',type:'keystone',label:'Void Eye',     stat:'+3 INS+CTR · immune blind',      cost:5,col:'insight',val:3},
+  shadow_dec_k:{el:'shadow',branch:'dec',type:'keystone',label:'Reaper',       stat:'+3 Luck · instakill below 10%',  cost:5,col:'luck',val:3},
+  earth_off_n:{el:'earth',branch:'off',type:'notable', label:'Bedrock Fist',   stat:'+2 ATK · stagger on hit',        cost:3,col:'atk',val:2},
+  earth_def_n:{el:'earth',branch:'def',type:'notable', label:'Stone Skin',     stat:'+2 DEF · reduce phys 10%',       cost:3,col:'def',val:2},
+  earth_flo_n:{el:'earth',branch:'flo',type:'notable', label:'Landslide',      stat:'+2 Speed · slow after block',    cost:3,col:'speed',val:2},
+  earth_arc_n:{el:'earth',branch:'arc',type:'notable', label:'Geomancy',       stat:'+2 Insight · terrain favors you',cost:3,col:'insight',val:2},
+  earth_dec_n:{el:'earth',branch:'dec',type:'notable', label:'Fault Line',     stat:'+2 Luck · crits knock down',     cost:3,col:'luck',val:2},
+  earth_off_k:{el:'earth',branch:'off',type:'keystone',label:'Tectonic',       stat:'+3 ATK+Power · dmg scales DEF',  cost:5,col:'atk',val:3},
+  earth_def_k:{el:'earth',branch:'def',type:'keystone',label:'Fortress',       stat:'+3 DEF+Guard · no one-shot',     cost:5,col:'def',val:3},
+  earth_flo_k:{el:'earth',branch:'flo',type:'keystone',label:'Earthbound',     stat:'+3 Speed+AGI · immune knockback',cost:5,col:'speed',val:3},
+  earth_arc_k:{el:'earth',branch:'arc',type:'keystone',label:'Deep Root',      stat:'+3 INS+CTR · regen 5HP/turn',    cost:5,col:'insight',val:3},
+  earth_dec_k:{el:'earth',branch:'dec',type:'keystone',label:'Avalanche',      stat:'+3 Luck · crits deal AoE',       cost:5,col:'luck',val:3},
+  wind_off_n:{el:'wind',branch:'off',type:'notable', label:'Gale Slash',       stat:'+2 ATK · hits twice 50% dmg',    cost:3,col:'atk',val:2},
+  wind_def_n:{el:'wind',branch:'def',type:'notable', label:'Wind Veil',        stat:'+2 DEF · 25% dodge all',         cost:3,col:'def',val:2},
+  wind_flo_n:{el:'wind',branch:'flo',type:'notable', label:'Tailwind',         stat:'+2 Speed · +1 action turn 1',    cost:3,col:'speed',val:2},
+  wind_arc_n:{el:'wind',branch:'arc',type:'notable', label:'Eye of Storm',     stat:'+2 Insight · calm = +20% hit',   cost:3,col:'insight',val:2},
+  wind_dec_n:{el:'wind',branch:'dec',type:'notable', label:'Scatter',          stat:'+2 Luck · dodge = crit chance',  cost:3,col:'luck',val:2},
+  wind_off_k:{el:'wind',branch:'off',type:'keystone',label:'Cyclone',          stat:'+3 ATK+Power · hit all enemies', cost:5,col:'atk',val:3},
+  wind_def_k:{el:'wind',branch:'def',type:'keystone',label:'Zephyr Shield',    stat:'+3 DEF+Guard · reflect projectiles',cost:5,col:'def',val:3},
+  wind_flo_k:{el:'wind',branch:'flo',type:'keystone',label:'Gale Force',       stat:'+3 Speed+AGI · act 3x turn 1',   cost:5,col:'speed',val:3},
+  wind_arc_k:{el:'wind',branch:'arc',type:'keystone',label:'Wind Reader',      stat:'+3 INS+CTR · predict crits',     cost:5,col:'insight',val:3},
+  wind_dec_k:{el:'wind',branch:'dec',type:'keystone',label:'Tempest',          stat:'+3 Luck · dodge compounds',      cost:5,col:'luck',val:3},
+  plant_off_n:{el:'plant',branch:'off',type:'notable', label:'Thorn Lash',     stat:'+2 ATK · attacker takes 3 dmg',  cost:3,col:'atk',val:2},
+  plant_def_n:{el:'plant',branch:'def',type:'notable', label:'Bark Skin',      stat:'+2 DEF · regen 3HP/turn',        cost:3,col:'def',val:2},
+  plant_flo_n:{el:'plant',branch:'flo',type:'notable', label:'Root Grasp',     stat:'+2 Speed · slow enemy on hit',   cost:3,col:'speed',val:2},
+  plant_arc_n:{el:'plant',branch:'arc',type:'notable', label:'Spore Sense',    stat:'+2 Insight · detect immunity',   cost:3,col:'insight',val:2},
+  plant_dec_n:{el:'plant',branch:'dec',type:'notable', label:'Overgrowth',     stat:'+2 Luck · heals compound',       cost:3,col:'luck',val:2},
+  plant_off_k:{el:'plant',branch:'off',type:'keystone',label:'Thornwall',      stat:'+3 ATK+Power · reflect 20% phys',cost:5,col:'atk',val:3},
+  plant_def_k:{el:'plant',branch:'def',type:'keystone',label:'Ancient Grove',  stat:'+3 DEF+Guard · regen 8HP/turn',  cost:5,col:'def',val:3},
+  plant_flo_k:{el:'plant',branch:'flo',type:'keystone',label:'Vine Rush',      stat:'+3 Speed+AGI · entangle every hit',cost:5,col:'speed',val:3},
+  plant_arc_k:{el:'plant',branch:'arc',type:'keystone',label:'Root Mind',      stat:'+3 INS+CTR · control enemy 1T',  cost:5,col:'insight',val:3},
+  plant_dec_k:{el:'plant',branch:'dec',type:'keystone',label:'Bloom',          stat:'+3 Luck · heal every crit',      cost:5,col:'luck',val:3},
+  metal_off_n:{el:'metal',branch:'off',type:'notable', label:'Iron Edge',      stat:'+2 ATK · stack +5% per hit',     cost:3,col:'atk',val:2},
+  metal_def_n:{el:'metal',branch:'def',type:'notable', label:'Plate Ward',     stat:'+2 DEF · reflect 10% phys',      cost:3,col:'def',val:2},
+  metal_flo_n:{el:'metal',branch:'flo',type:'notable', label:'Gear Drive',     stat:'+2 Speed · 3rd hit free',        cost:3,col:'speed',val:2},
+  metal_arc_n:{el:'metal',branch:'arc',type:'notable', label:'Alloy Mind',     stat:'+2 Insight · read armor value',  cost:3,col:'insight',val:2},
+  metal_dec_n:{el:'metal',branch:'dec',type:'notable', label:'Serration',      stat:'+2 Luck · crit causes bleed',    cost:3,col:'luck',val:2},
+  metal_off_k:{el:'metal',branch:'off',type:'keystone',label:'Magnetar',       stat:'+3 ATK+Power · pull = guaranteed',cost:5,col:'atk',val:3},
+  metal_def_k:{el:'metal',branch:'def',type:'keystone',label:'Iron Bastion',   stat:'+3 DEF+Guard · no stun',         cost:5,col:'def',val:3},
+  metal_flo_k:{el:'metal',branch:'flo',type:'keystone',label:'Arc Forge',      stat:'+3 Speed+AGI · every hit chains', cost:5,col:'speed',val:3},
+  metal_arc_k:{el:'metal',branch:'arc',type:'keystone',label:'Precision Core', stat:'+3 INS+CTR · never miss',        cost:5,col:'insight',val:3},
+  metal_dec_k:{el:'metal',branch:'dec',type:'keystone',label:'Shrapnel',       stat:'+3 Luck · crits fragment',       cost:5,col:'luck',val:3},
+  poison_off_n:{el:'poison',branch:'off',type:'notable', label:'Toxic Strike',  stat:'+2 ATK · poison 2 turns',        cost:3,col:'atk',val:2},
+  poison_def_n:{el:'poison',branch:'def',type:'notable', label:'Antitoxin',    stat:'+2 DEF · immune own poison',     cost:3,col:'def',val:2},
+  poison_flo_n:{el:'poison',branch:'flo',type:'notable', label:'Miasma Step',  stat:'+2 Speed · dodge poisons attacker',cost:3,col:'speed',val:2},
+  poison_arc_n:{el:'poison',branch:'arc',type:'notable', label:'Dose Read',    stat:'+2 Insight · see poison stacks', cost:3,col:'insight',val:2},
+  poison_dec_n:{el:'poison',branch:'dec',type:'notable', label:'Virulence',    stat:'+2 Luck · poison 2x below 50%',  cost:3,col:'luck',val:2},
+  poison_off_k:{el:'poison',branch:'off',type:'keystone',label:'Plague Fang',  stat:'+3 ATK+Power · poison per hit',  cost:5,col:'atk',val:3},
+  poison_def_k:{el:'poison',branch:'def',type:'keystone',label:'Toxin Shell',  stat:'+3 DEF+Guard · attackers poisoned',cost:5,col:'def',val:3},
+  poison_flo_k:{el:'poison',branch:'flo',type:'keystone',label:'Venom Rush',   stat:'+3 Speed+AGI · before poison tick',cost:5,col:'speed',val:3},
+  poison_arc_k:{el:'poison',branch:'arc',type:'keystone',label:'Alchemist',    stat:'+3 INS+CTR · poison → HP',       cost:5,col:'insight',val:3},
+  poison_dec_k:{el:'poison',branch:'dec',type:'keystone',label:'Death Bloom',  stat:'+3 Luck · kill = explosion',     cost:5,col:'luck',val:3},
+}
+
+// ── ESP State ─────────────────────────────────────────────────────────────────
+let espBalance, espTree, espActiveEl = null, espPendingSlot = null
+
+function initESP() {
+  espBalance = player.esp || 0
+  espTree    = player.esp_tree || {}
+  if (!espTree.base)      espTree.base      = []
+  if (!espTree.slots)     espTree.slots     = {}
+  if (!espTree.collected) espTree.collected = []
+  document.getElementById('esp-display').textContent = espBalance
+  updateESPBadge()
+  renderESPSummary()
+  renderESPElTabs()
+}
+
+function updateESPBadge() {
+  document.getElementById('esp-badge').textContent = espBalance + ' ESP'
+  document.getElementById('esp-display').textContent = espBalance
+}
+
+function renderESPSummary() {
+  const el = document.getElementById('esp-unlocked-summary')
+  if (!el) return
+  const placed = Object.entries(espTree.slots).filter(([,v])=>v).map(([k,v])=>{
+    const nd = ESP_EL_NODES[v]
+    const elDef = nd ? ESP_ELEMENTS.find(e=>e.key===nd.el) : null
+    return nd ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;padding:2px 7px;border-radius:12px;border:.5px solid rgba(176,110,255,.3);color:#b06eff;background:rgba(176,110,255,.08)">${elDef?.icon||'⬡'} ${nd.label}</span>` : ''
+  }).join('')
+  el.innerHTML = placed || `<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#4a4556;font-style:italic">No elemental nodes placed yet</span>`
+}
+
+// ── Open/Close ────────────────────────────────────────────────────────────────
+window.openESP = function() {
+  document.getElementById('esp-overlay').classList.add('open')
+  document.body.style.overflow = 'hidden'
+  renderESPElTabs()
+}
+window.closeESP = function() {
+  document.getElementById('esp-overlay').classList.remove('open')
+  document.body.style.overflow = ''
+  renderESPSummary()
+}
+
+// ── Element tabs ──────────────────────────────────────────────────────────────
+function renderESPElTabs() {
+  const defeated = player.defeated_bosses || []
+  const container = document.getElementById('esp-el-tabs')
+  container.innerHTML = ESP_ELEMENTS.map(el => {
+    const unlocked = defeated.includes(el.bossKey)
+    const collected = espTree.collected.filter(k=>k.startsWith(el.key+'_')).length
+    return `<button class="esp-el-btn ${espActiveEl===el.key?'esp-el-active':''} ${unlocked?'':'esp-el-locked'}"
+      onclick="${unlocked?`espSelectEl('${el.key}')`:'void(0)'}"
+      style="${espActiveEl===el.key?`border-color:${el.color};background:${el.color}18`:''}"
+    >
+      <span style="font-size:16px">${el.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Cinzel',serif;font-size:13px;color:${unlocked?'#e8e3d6':'#4a4556'}">${el.name}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">${unlocked?collected+' nodes':'defeat zone boss'}</div>
+      </div>
+      <span style="font-family:'Share Tech Mono',monospace;font-size:8px;padding:1px 5px;border-radius:10px;background:${unlocked?'rgba(127,214,166,.1)':'rgba(255,255,255,.03)'};color:${unlocked?'#7fd6a6':'#4a4556'};border:.5px solid ${unlocked?'rgba(127,214,166,.3)':'#26232f'}">${unlocked?'✓':'🔒'}</span>
+    </button>`
+  }).join('')
+}
+
+window.espSelectEl = function(elKey) {
+  espActiveEl = elKey
+  renderESPElTabs()
+  renderESPMain()
+}
+
+// ── Render main ───────────────────────────────────────────────────────────────
+function renderESPMain() {
+  const main = document.getElementById('esp-main-panel')
+  const el   = ESP_ELEMENTS.find(e=>e.key===espActiveEl)
+  if (!el) return
+
+  main.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:1.4rem">${el.icon}</span>
+      <div>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;color:${el.color};margin:0">${el.name} — Base Nodes</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">Spend ESP to unlock stat bonuses</p>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">Balance</p>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;color:#f4c45a">${espBalance} ESP</p>
+      </div>
+    </div>
+    <div class="esp-branch-grid">
+      ${ESP_BRANCHES.map(b=>renderESPBranch(b)).join('')}
+    </div>
+    <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#857f92;margin:14px 0 8px">Elemental Slots — place collected ${el.name} nodes anywhere</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+      ${ESP_BRANCHES.map(b => {
+        const nKey = espTree.slots[b.key+'_notable']
+        const kKey = espTree.slots[b.key+'_keystone']
+        const nNode = nKey ? ESP_EL_NODES[nKey] : null
+        const kNode = kKey ? ESP_EL_NODES[kKey] : null
+        const nEl = nNode ? ESP_ELEMENTS.find(e=>e.key===nNode.el) : null
+        const kEl = kNode ? ESP_ELEMENTS.find(e=>e.key===kNode.el) : null
+        return `
+          <div class="esp-slot-row ${nKey?'filled':''}" onclick="espOpenSlotChooser('${b.key}_notable')">
+            <div class="esp-slot-label" style="color:${b.color}">${b.label} Notable</div>
+            <div style="flex:1">${nNode?`<div class="esp-slot-name">${nEl?.icon||''} ${nNode.label}</div><div class="esp-slot-stat">${nNode.stat}</div>`:`<div class="esp-slot-empty">— empty —</div>`}</div>
+            ${nKey?`<button class="esp-slot-remove" onclick="event.stopPropagation();espRemoveSlot('${b.key}_notable')">✕</button>`:''}
+          </div>
+          <div class="esp-slot-row ${kKey?'filled':''}" onclick="espOpenSlotChooser('${b.key}_keystone')">
+            <div class="esp-slot-label" style="color:${b.color}">${b.label} Keystone</div>
+            <div style="flex:1">${kNode?`<div class="esp-slot-name">${kEl?.icon||''} ${kNode.label}</div><div class="esp-slot-stat">${kNode.stat}</div>`:`<div class="esp-slot-empty">— empty —</div>`}</div>
+            ${kKey?`<button class="esp-slot-remove" onclick="event.stopPropagation();espRemoveSlot('${b.key}_keystone')">✕</button>`:''}
+          </div>`
+      }).join('')}
+    </div>`
+}
+
+function renderESPBranch(branch) {
+  const nodes = ESP_BASE[branch.key]
+  const html = nodes.map((id,i) => {
+    const nd = ESP_BASE_DEF[id]
+    const unlocked  = espTree.base.includes(id)
+    const prevOk    = i===0 || espTree.base.includes(nodes[i-1])
+    const canAfford = espBalance >= nd.cost
+    const available = !unlocked && prevOk
+    const cls = unlocked ? 'esp-node-unlocked' : (available&&canAfford) ? 'esp-node-available' : 'esp-node-locked'
+    return `<button class="esp-node ${cls}" onclick="espUnlockBase('${id}')">
+      <div class="esp-node-dot ${unlocked?'unlocked':''}"></div>
+      <div style="flex:1">
+        <span class="esp-node-name">${nd.label}</span>
+        <span class="esp-node-stat">${nd.stat}</span>
+      </div>
+      <span class="esp-node-cost">${unlocked?'✓':`${nd.cost}e`}</span>
+    </button>`
+  }).join('')
+  return `<div class="esp-branch-card">
+    <div class="esp-branch-title" style="color:${branch.color}">${branch.label} <span style="color:#4a4556;font-size:7px">${branch.stats}</span></div>
+    ${html}
+  </div>`
+}
+
+// ── Unlock base node ──────────────────────────────────────────────────────────
+window.espUnlockBase = async function(nodeId) {
+  if (espTree.base.includes(nodeId)) return
+  const nd = ESP_BASE_DEF[nodeId]
+  if (!nd) return
+  const branchNodes = ESP_BASE[nd.branch]
+  const idx = branchNodes.indexOf(nodeId)
+  if (idx > 0 && !espTree.base.includes(branchNodes[idx-1])) { showToast('Unlock previous node first'); return }
+  if (espBalance < nd.cost) { showToast('Not enough ESP'); return }
+  espBalance -= nd.cost
+  espTree.base.push(nodeId)
+  const val = nd.val || 1
+  const statUpdates = {}
+  player[nd.col] = (player[nd.col]||0) + val
+  statUpdates[nd.col] = player[nd.col]
+  await espSave(statUpdates)
+  showToast(`✦ ${nd.label} — +${val} ${nd.col}`)
+  renderESPMain()
+}
+
+// ── Slot chooser ──────────────────────────────────────────────────────────────
+window.espOpenSlotChooser = function(slotKey) {
+  espPendingSlot = slotKey
+  const isKeystone = slotKey.endsWith('_keystone')
+  const branchKey  = slotKey.replace('_notable','').replace('_keystone','')
+  const available  = espTree.collected
+    .filter(k => {
+      const nd = ESP_EL_NODES[k]
+      if (!nd) return false
+      if (nd.type !== (isKeystone?'keystone':'notable')) return false
+      if (nd.branch !== branchKey) return false
+      return true
+    })
+  const list = document.getElementById('esp-chooser-list')
+  if (!available.length) {
+    list.innerHTML = `<p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#857f92;font-style:italic">No ${isKeystone?'keystone':'notable'} nodes collected for ${ESP_BRANCHES.find(b=>b.key===branchKey)?.label||branchKey} branch yet.</p>`
+  } else {
+    list.innerHTML = available.map(k => {
+      const nd = ESP_EL_NODES[k]
+      const elDef = ESP_ELEMENTS.find(e=>e.key===nd.el)
+      const inUse = Object.values(espTree.slots).includes(k)
+      return `<button onclick="espPlaceNode('${k}')" style="width:100%;text-align:left;background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.3);padding:9px 12px;margin-bottom:5px;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(176,110,255,.14)'" onmouseout="this.style.background='rgba(176,110,255,.06)'">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:15px">${elDef?.icon||'⬡'}</span>
+          <div>
+            <div style="font-family:'Cinzel',serif;font-size:12px;color:#b06eff">${nd.label} ${inUse?'<span style="color:#7fd6a6;font-size:9px">✓ placed</span>':''}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">${nd.stat}</div>
+          </div>
+        </div>
+      </button>`
+    }).join('')
+  }
+  document.getElementById('esp-slot-chooser').classList.add('open')
+}
+
+window.closeESPChooser = function() {
+  document.getElementById('esp-slot-chooser').classList.remove('open')
+  espPendingSlot = null
+}
+
+window.espPlaceNode = async function(nodeKey) {
+  if (!espPendingSlot) return
+  const nd = ESP_EL_NODES[nodeKey]
+  if (!nd) return
+  // Remove from any existing slot
+  Object.entries(espTree.slots).forEach(([k,v])=>{ if(v===nodeKey) espTree.slots[k]=null })
+  espTree.slots[espPendingSlot] = nodeKey
+  closeESPChooser()
+  await espSave()
+  showToast(`✦ ${nd.label} placed!`)
+  renderESPMain()
+}
+
+window.espRemoveSlot = async function(slotKey) {
+  espTree.slots[slotKey] = null
+  await espSave()
+  renderESPMain()
+}
+
+// ── Collected panel ───────────────────────────────────────────────────────────
+window.openCollectedPanel = function() {
+  espActiveEl = null
+  renderESPElTabs()
+  const main = document.getElementById('esp-main-panel')
+  const all = espTree.collected.map(k=>({key:k,node:ESP_EL_NODES[k]})).filter(x=>x.node)
+  if (!all.length) {
+    main.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;opacity:.35;gap:.5rem"><div style="font-size:2rem">⬡</div><p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#857f92">No nodes collected yet — defeat zone bosses in Chapter 2</p></div>`
+    return
+  }
+  main.innerHTML = `
+    <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#857f92;margin-bottom:10px">All collected elemental nodes (${all.length})</p>
+    <div class="esp-collected-grid">
+      ${all.map(({key,node})=>{
+        const elDef = ESP_ELEMENTS.find(e=>e.key===node.el)
+        const inUse = Object.values(espTree.slots).includes(key)
+        return `<div class="esp-col-card ${inUse?'in-use':''}" onclick="espOpenSlotFromCollected('${key}')">
+          <div style="font-size:14px;margin-bottom:2px">${elDef?.icon||'⬡'}</div>
+          <div style="font-family:'Cinzel',serif;font-size:11px;color:#e8e3d6">${node.label}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">${node.stat}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:7px;padding:1px 5px;border-radius:10px;margin-top:3px;display:inline-block;background:${node.type==='keystone'?'rgba(176,110,255,.1)':'rgba(244,196,90,.1)'};color:${node.type==='keystone'?'#b06eff':'#f4c45a'};border:.5px solid ${node.type==='keystone'?'rgba(176,110,255,.3)':'rgba(244,196,90,.3)'}">${node.type}</div>
+          ${inUse?`<div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:#7fd6a6;margin-top:2px">✓ placed</div>`:''}
+        </div>`
+      }).join('')}
+    </div>`
+}
+
+window.espOpenSlotFromCollected = function(nodeKey) {
+  const nd = ESP_EL_NODES[nodeKey]
+  if (!nd) return
+  espPendingSlot = nd.branch+'_'+nd.type
+  const list = document.getElementById('esp-chooser-list')
+  const elDef = ESP_ELEMENTS.find(e=>e.key===nd.el)
+  list.innerHTML = `<button onclick="espPlaceNode('${nodeKey}')" style="width:100%;text-align:left;background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.3);padding:9px 12px;cursor:pointer">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:15px">${elDef?.icon||'⬡'}</span>
+      <div>
+        <div style="font-family:'Cinzel',serif;font-size:12px;color:#b06eff">${nd.label}</div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#857f92">${nd.stat}</div>
+      </div>
+    </div>
+  </button>`
+  document.getElementById('esp-slot-chooser').classList.add('open')
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+async function espSave(statUpdates={}) {
+  const updates = { esp:espBalance, esp_tree:espTree, ...statUpdates }
+  const { data, error } = await supabase.from('players').update(updates).eq('id',player.id).select().single()
+  if (error) { console.error('[ESP save]', error.message); showToast('ESP save error', true); return }
+  if (data) Object.assign(player, data)
+  updateESPBadge()
+}
+
+// ── Boot ESP ──────────────────────────────────────────────────────────────────
+initESP()
 </script>
 </body>
 </html>
