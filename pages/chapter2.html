@@ -839,6 +839,136 @@ The question is where to go first.`,
   // ═══════════════════════════════
   // PLAZA — THE THREE FACTIONS
   // ═══════════════════════════════
+  meet_builders_first: {
+    id: 'meet_builders_first', type: 'story',
+    text: `The salvage crew doesn't stop working when you approach. One of them — compact, wearing a faded orange vest with extra pockets — looks up and keeps moving without breaking stride.
+
+"You're new." Not a question.
+
+"Sera." She extends her hand briefly. When you take it, she's already turning back to the crate she was sorting. "We're the Builders. If you want to help, we can use you. If you're just passing through, don't touch the stack."
+
+She gestures to a neat pile of salvage in the corner. Someone has actually labeled each item.
+
+"We're building something stable here. Most people don't get why that matters yet. They will."
+
+She says it without bitterness. Like it's just true and she's made her peace with waiting.
+
+Behind her, the rest of the crew watches you with the careful assessment of people who've been burned before.`,
+    xp: 60,
+    moral: 5,
+    choices: [
+      { label: 'Offer to help with the salvage',  sub: 'Moral +10 — makes a good first impression', next: 'builders_deep', moral: 10 },
+      { label: 'Ask about the elemental zones',    sub: 'Get information first',                     next: 'builders_deep' },
+      { label: 'Keep it neutral for now',          sub: 'Don\'t commit yet',                         next: 'plaza_arrival' },
+    ],
+  },
+
+  meet_ghosts_first: {
+    id: 'meet_ghosts_first', type: 'story',
+    text: `The solo player doesn't move when you get close. They're crouched behind a half-collapsed wall, watching the Builder crew across the lot. When you settle into the same position, they glance over once.
+
+"Rue." No handshake. Just the name.
+
+They hand you something without looking — a folded map of the district, hand-drawn, surprisingly detailed. Twelve locations marked. Three of them labeled in a shorthand you don't recognize.
+
+"I mapped the whole district three days ago. Kept it to myself." A pause. "You look like someone who won't waste it."
+
+They go back to watching the Builders. After a moment:
+
+"There are ten elemental zones in this district. Most players don't know that yet. The factions will tell you about four or five, maybe six, depending on what they want from you."
+
+Another pause. Longer.
+
+"I'll tell you about all ten. If you come back."`,
+    xp: 60,
+    rewards: [{ itemKey: 'district_map', qty: 1 }],
+    choices: [
+      { label: 'Ask about the zones now',          sub: 'They\'re willing to talk',               next: 'ghosts_deep' },
+      { label: 'Take the map and keep scouting',   sub: 'Collect more information first',         next: 'plaza_arrival' },
+      { label: 'Ask about the factions',            sub: 'Get a neutral read on the situation',   next: 'ghosts_deep' },
+    ],
+  },
+
+  meet_builders: {
+    id: 'meet_builders', type: 'story',
+    text: `Sera notices you walking toward her group before you're halfway across the plaza. She doesn't react visibly — just sets down what she was carrying and meets you at the edge of their perimeter.
+
+"Good." She says it before you've spoken. "We need people who actually make decisions."
+
+She steps aside and shows you the inside of their setup. More organized than it looked from across the plaza. Food stores. Tools. A medical kit. Someone has drawn a map of the district on the back of a menu and stuck it to the wall with a piece of metal.
+
+"We're not trying to control the district. We're trying to make it survivable. There's a difference."
+
+Behind her, a few of the crew have stopped to watch. One of them — younger, holding a tablet — gives you a small nod.
+
+Sera extends her hand.
+
+"You in or not?"`,
+    xp: 80,
+    moral: 10,
+    choices: [
+      { label: 'Shake her hand — join the Builders', sub: 'Moral +10 · Alliance log: Builders',  next: 'builders_alliance', moral: 10 },
+      { label: 'Ask what joining actually means',     sub: 'Get details before committing',       next: 'builders_deep' },
+      { label: 'Tell her you\'re not ready to commit', sub: 'Keep your options open',             next: 'plaza_arrival' },
+    ],
+  },
+
+  meet_hunters: {
+    id: 'meet_hunters', type: 'story',
+    text: `The lean figure with the cracked visor is already walking toward you before you've crossed half the plaza. The others stay where they are — watching, not moving.
+
+"Voss." He stops a few feet short of you. Not aggressive. Calculated. "You've got the look of someone who made it through Chapter 1 the hard way."
+
+He looks you over like he's reading something.
+
+"We don't build. We don't ghost. We find resources, we secure them, and we move. The other groups want to tell you what the district means. We just want to know what you found in there and what you're willing to trade for better information."
+
+He holds up his interface. It shows a map — more detailed than anything you have. Cache locations. Timer countdowns. Patrol routes of something you can't identify.
+
+"Stay clean if you want. Just know that the caches run out. The zones don't wait. And the Builders will ask for your loyalty before they give you anything useful."
+
+He tilts his head.
+
+"We just ask for information. That's a better deal."`,
+    xp: 80,
+    moral: -5,
+    choices: [
+      { label: 'Ask what information they want',   sub: 'Hear the terms',                    next: 'hunters_deep' },
+      { label: 'Ask about the caches on that map', sub: 'Direct — Voss respects it',         next: 'hunters_deep' },
+      { label: 'Walk away from this',              sub: 'Keep your record clean',             next: 'plaza_arrival' },
+    ],
+  },
+
+  meet_ghosts: {
+    id: 'meet_ghosts', type: 'story',
+    text: `The three players near the fountain's edge don't look up when you sit down. They give you room. That's all.
+
+After a minute, the one closest to you — small, patient, wearing mismatched gear — says: "Rue."
+
+You give your name.
+
+"I know," she says. Which shouldn't be possible but lands like it is.
+
+She's watching both other factions across the plaza with the same neutral attention she'd give weather.
+
+"Most people pick a side in the first ten minutes. Then spend the rest of the chapter defending the choice." A pause. "You sat here instead."
+
+She slides something across the fountain edge without looking — a folded map of the district, hand-drawn. More detailed than anything your interface is showing.
+
+"I mapped all of it. Ten zones. The factions will tell you about some of them. I'll tell you about all of them, if you want that."
+
+Rue looks at you directly for the first time.
+
+"No alliance required."`,
+    xp: 60,
+    rewards: [{ itemKey: 'district_map', qty: 1 }],
+    choices: [
+      { label: 'Ask about the ten zones',          sub: 'Get the full picture',               next: 'ghosts_deep' },
+      { label: 'Ask about the factions',           sub: 'Neutral read on the situation',      next: 'ghosts_deep' },
+      { label: 'Sit here a while longer',          sub: 'Observe before acting',              next: 'plaza_center' },
+    ],
+  },
+
   plaza_arrival: {
     id: 'plaza_arrival', type: 'story',
     text: `The plaza is a wide open square at the center of the district. A fountain in the middle, dry, full of broken glass. Around the edges, three distinct groups.
