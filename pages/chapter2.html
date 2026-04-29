@@ -177,10 +177,10 @@
 
     /* ── Body text colour remaps ── */
     p, li, span { color: var(--ink) !important; }
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--ink-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(143,216,240,.06) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(143,216,240,.25) !important; }
@@ -1701,8 +1701,8 @@ JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
       <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
         <span style="font-size:1rem">${z.icon}</span>
         <div style="flex:1;min-width:0">
-          <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'#9a8050'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
+          <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'var(--ink-dim)'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
         </div>
         <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
       </div>
@@ -1710,18 +1710,18 @@ JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
   }).join('')
 
   let eventsHtml = `<div style="margin-top:.75rem">
-    <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#7a6435;letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
+    <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
     <div onclick="goTo('cache_betrayal_offer')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
       <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">⚖️ The Cache Offer</p>
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">A decision waits in the east corridor</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">A decision waits in the east corridor</p>
     </div>
     <div onclick="goTo('trader_intro')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
       <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">Neutral trader — open for business</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
     </div>
     <div onclick="goTo('pre_boss_ch2')" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s" onmouseover="this.style.background='rgba(200,81,42,.12)'" onmouseout="this.style.background='rgba(200,81,42,.06)'">
       <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
     </div>
   </div>`
 
@@ -1769,11 +1769,11 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   panel.innerHTML=`
     <div style="font-family:'Cinzel',serif;font-size:.9rem;color:#c8b96e;margin-bottom:.5rem">${enemy.icon||'👁'} ${enemy.name}</div>
     <div style="margin-bottom:.5rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;margin-bottom:2px"><span>ENEMY HP</span><span id="${cid}-ehp-txt">${enemyHp}/${maxEnemyHp}</span></div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>ENEMY HP</span><span id="${cid}-ehp-txt">${enemyHp}/${maxEnemyHp}</span></div>
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-ebar" style="height:100%;width:100%;background:#e05555;border-radius:3px;transition:width .3s"></div></div>
     </div>
     <div style="margin-bottom:.75rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;margin-bottom:2px"><span>YOUR HP</span><span id="${cid}-php-txt">${currentHp}/${maxPlayerHp}</span></div>
+      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>YOUR HP</span><span id="${cid}-php-txt">${currentHp}/${maxPlayerHp}</span></div>
       <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-pbar" style="height:100%;width:100%;background:#5ec45e;border-radius:3px;transition:width .3s"></div></div>
     </div>
     <div id="${cid}-log" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#c8b96e;min-height:3rem;margin-bottom:.75rem;line-height:1.55"></div>
@@ -1964,7 +1964,7 @@ Chapter 3 is waiting.`,
     document.getElementById('story-text').textContent=b.text
     panel.innerHTML=`
       <div class="end-box">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.1em;margin-bottom:.4rem">${beatIdx+1} / ${END_BEATS.length}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx+1} / ${END_BEATS.length}</p>
         <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${b.title}</p>
         <button class="end-btn" id="beat-btn" style="display:block;width:100%">${isLast?'→ Chapter 3':'Continue ›'}</button>
       </div>`
@@ -1979,9 +1979,9 @@ Chapter 3 is waiting.`,
     <div class="end-box">
       <p class="end-title">Chapter 2 Complete</p>
       <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.08em;margin-bottom:2px">EVALUATION COMPLETE</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:2px">EVALUATION COMPLETE</p>
         <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${morality.toUpperCase()}</p>
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#9a8050;margin-top:2px">Moral score: ${moral>0?'+':''}${moral}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);margin-top:2px">Moral score: ${moral>0?'+':''}${moral}</p>
       </div>
       <p class="end-sub" style="margin-bottom:.75rem">The Twin Judges have rendered their verdict.<br>Chapter 3 awaits.</p>
       <button class="end-btn" id="continue-ch2" style="display:block;width:100%;margin-bottom:.75rem">Continue ›</button>
@@ -2035,33 +2035,33 @@ window.openStatWindow = function() {
   modal.innerHTML=`
     <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">Character Stats</p>
-        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#1a1208">✕</button>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
+        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
       </div>
       <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
           ${[['ATK',calcATK(),'#e05555'],['DEF',calcDEF(),'#5ec45e'],['SPD',calcSPD(),'#a8d8ea'],
              ['HP',player.max_hp||100,'#5eaee0'],['LVL',player.level||1,'#c8b96e'],['GOLD',player.gold||0,'#c8b96e']
-          ].map(([k,v,c])=>'<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#3a2008;display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
+          ].map(([k,v,c])=>'<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
         </div>
       </div>
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:var(--ink-dim)">· Unlocked via Skill Tree</span></p>
       ${STATS.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
         <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
         <div style="flex:1">
           <div style="display:flex;align-items:baseline;gap:4px">
-            <span style="font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;font-weight:600">${s.label}</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208">${s.val}</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#3a2008;margin-left:auto">${s.derived}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);font-weight:600">${s.label}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink)">${s.val}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin-left:auto">${s.derived}</span>
           </div>
-          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:#3a2008;margin:0">${s.desc}</p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:var(--ink-dim);margin:0">${s.desc}</p>
         </div></div>`).join('')}
       <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
-        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:#1a1208;margin:0">${eqItems.map(i=>i.name).join(', ')||'None'}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
+        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${eqItems.map(i=>i.name).join(', ')||'None'}</p>
       </div>
-      ${(player.skill_points||0)>0?`<button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
+      ${(player.skill_points||0)>0?`<button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
     </div>`
   modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
   document.body.appendChild(modal)
@@ -2103,22 +2103,22 @@ function renderHUD() {
     </div>
     <div style="margin-bottom:5px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;letter-spacing:.07em">REPUTATION</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);letter-spacing:.07em">REPUTATION</span>
         <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
       </div>
       <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
         <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
       </div>
     </div>
-    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
     <div class="stat-grid">
       <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
       <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
       <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
     </div>
     <div style="display:flex;gap:4px;margin-top:6px">
-      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
     </div>`
 }
 
