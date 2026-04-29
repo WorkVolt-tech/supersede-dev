@@ -114,16 +114,14 @@
     .page-left {
       background-color: var(--page-l) !important;
       box-shadow:
-        inset -28px 0 40px rgba(0,0,0,.65),
-        inset -6px 0 12px rgba(0,0,0,.5),
-        inset 0 0 100px rgba(0,0,0,.18) !important;
+        inset -50px 0 60px rgba(0,0,0,.8),
+        inset -12px 0 20px rgba(0,0,0,.6) !important;
     }
     .page-right {
       background-color: var(--page-r) !important;
       box-shadow:
-        inset 28px 0 40px rgba(0,0,0,.65),
-        inset 6px 0 12px rgba(0,0,0,.5),
-        inset 0 0 100px rgba(0,0,0,.18) !important;
+        inset 50px 0 60px rgba(0,0,0,.8),
+        inset 12px 0 20px rgba(0,0,0,.6) !important;
     }
 
     /* Outer cover edge */
@@ -166,16 +164,8 @@
       z-index: 2;
     }
 
-    
     .spine {
-      background: linear-gradient(90deg,
-        rgba(0,0,0,.18) 0%,
-        rgba(0,0,0,.42) 35%,
-        rgba(0,0,0,.58) 48%,
-        rgba(0,0,0,.58) 52%,
-        rgba(0,0,0,.42) 65%,
-        rgba(0,0,0,.18) 100%
-      ) !important;
+      background: var(--bg-0) !important;
       border-left: none !important;
       border-right: none !important;
       position: relative; z-index: 5;
@@ -186,7 +176,6 @@
     .spine::before { display: none !important; }
     .spine::after  { display: none !important; }
     .spine-inner, .spine-highlight, .spine-shadow,
-    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
     .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
 
     /* ── Page footer — running title + page number ── */
