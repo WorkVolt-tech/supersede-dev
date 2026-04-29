@@ -76,7 +76,7 @@
       background: transparent !important;
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 24px 60px;
+      padding: 40px 24px 80px;
     }
 
     /* ── Book ── */
@@ -87,15 +87,23 @@
       gap: 0 !important;
       background: transparent !important;
       border: none !important;
-      box-shadow: none !important;
       border-radius: 0 !important;
-      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
-      transform: perspective(1600px) rotateX(2.5deg) !important;
+      filter:
+        drop-shadow(0 2px 0px rgba(0,0,0,.9))
+        drop-shadow(0 8px 16px rgba(0,0,0,.7))
+        drop-shadow(0 32px 60px rgba(0,0,0,.6)) !important;
+      transform: perspective(1800px) rotateX(4deg) rotateY(0deg) !important;
       transform-origin: 50% 0 !important;
-      margin-top: 10px !important;
+      margin-top: 16px !important;
+      border-bottom: 3px solid rgba(0,0,0,.5) !important;
     }
     @media(max-width: 860px) {
-      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
+      .book {
+        grid-template-columns: 1fr !important;
+        transform: none !important;
+        border-bottom: none !important;
+        filter: drop-shadow(0 8px 24px rgba(0,0,0,.7)) !important;
+      }
       .spine { display: none !important; }
     }
 
@@ -109,18 +117,61 @@
       position: relative;
       overflow-y: auto;
       overflow-x: hidden;
+      background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+      background-size: 300px 300px !important;
     }
-    .page-left  { border-right: none !important; background: var(--page-l) !important; }
-    .page-right { border-left:  none !important; background: var(--page-r) !important; }
-
-    .page-left::before  {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(244,196,90,.008) 0%, transparent 55%);
+    .page-left  {
+      border-right: none !important;
+      background-color: var(--page-l) !important;
+      border-left: 3px solid rgba(0,0,0,.55) !important;
+      box-shadow: inset 3px 0 6px rgba(0,0,0,.25) !important;
+    }
+    .page-right {
+      border-left: none !important;
+      background-color: var(--page-r) !important;
+      border-right: 3px solid rgba(0,0,0,.45) !important;
+      box-shadow: inset -3px 0 6px rgba(0,0,0,.2) !important;
+    }
+    /* Page stack on outer edges */
+    .page-left::before {
+      content: ""; position: absolute; top: 2px; bottom: 2px; left: -6px; width: 6px;
+      background: repeating-linear-gradient(180deg,
+        rgba(244,196,90,.04) 0px, rgba(244,196,90,.01) 1px,
+        rgba(0,0,0,.18) 1px, rgba(0,0,0,.06) 2px);
+      border-left: 1px solid rgba(0,0,0,.4); pointer-events: none; z-index: 0;
     }
     .page-right::before {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(270deg, rgba(244,196,90,.006) 0%, transparent 55%);
+      content: ""; position: absolute; top: 2px; bottom: 2px; right: -6px; width: 6px;
+      background: repeating-linear-gradient(180deg,
+        rgba(244,196,90,.04) 0px, rgba(244,196,90,.01) 1px,
+        rgba(0,0,0,.18) 1px, rgba(0,0,0,.06) 2px);
+      border-right: 1px solid rgba(0,0,0,.4); pointer-events: none; z-index: 0;
     }
+    /* Page curl bottom-right corner */
+    .page-right::after {
+      content: "" !important; position: absolute !important;
+      bottom: 0 !important; right: 0 !important;
+      width: 40px !important; height: 40px !important;
+      top: auto !important; left: auto !important;
+      background: linear-gradient(225deg,
+        var(--bg-0) 0%, var(--bg-0) 40%,
+        rgba(0,0,0,.15) 50%, transparent 60%) !important;
+      border-top-left-radius: 2px !important;
+      box-shadow: -2px -2px 6px rgba(0,0,0,.4) !important;
+      pointer-events: none !important; z-index: 10 !important;
+    }
+    /* Binding shadow onto left page */
+    .page-left::after {
+      content: "" !important; position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 40px !important; height: auto !important; left: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.32) 0%, rgba(0,0,0,.12) 50%, transparent 100%) !important;
+      pointer-events: none !important; z-index: 2 !important;
+    }
+    .page-inner { padding: 24px 26px !important; position: relative; z-index: 1; }
     .page-left::after {
       content: "" !important;
       position: absolute !important;
@@ -148,10 +199,38 @@
       z-index: 2 !important;
     }
 
+    /* ── Spine ── */
+    .spine {
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.0)  0%,
+        rgba(0,0,0,.38) 25%,
+        rgba(0,0,0,.65) 45%,
+        rgba(0,0,0,.72) 50%,
+        rgba(0,0,0,.65) 55%,
+        rgba(0,0,0,.38) 75%,
+        rgba(0,0,0,.0)  100%
+      ) !important;
+      border-left:  none !important; border-right: none !important;
+      position: relative; z-index: 5;
+      width: 22px !important; min-width: 22px !important; margin: 0 !important;
+      overflow: visible;
+      box-shadow: 4px 0 12px rgba(0,0,0,.5), -4px 0 12px rgba(0,0,0,.5) !important;
+    }
+    .spine::before {
+      content: ""; position: absolute; top: 0; bottom: 0; left: 50%;
+      width: 1px; transform: translateX(-50%);
+      background: linear-gradient(180deg, transparent 0%, rgba(0,0,8,.95) 8%, rgba(0,0,8,.95) 92%, transparent 100%);
+      z-index: 2;
+    }
+    .spine::after {
+      content: ""; position: absolute; top: 2px; bottom: 2px; left: -4px; width: 4px;
+      background: repeating-linear-gradient(180deg,
+        rgba(244,196,90,.06) 0px, rgba(244,196,90,.02) 1px,
+        rgba(0,0,0,.2) 1px, rgba(0,0,0,.06) 2px);
+      border-left: 1px solid rgba(244,196,90,.12); z-index: 1;
+    }
     .spine-inner, .spine-highlight, .spine-shadow,
     .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
-
-    /* ── Chapter label / subtitle ── */
     .chapter-label {
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 9.5px !important;
@@ -1610,7 +1689,7 @@ async function _goToCore(nextId, choice={}) {
   if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
   if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
 
-  // ── Set chapter resonance on first zone boss kill ─────────────────────────
+  // ── Set chapter resonance on first zone kill ─────────────────────────────
   const WIN_ELEMENT_MAP = {
     zone_fire_boss_win:'fire',      zone_water_boss_win:'water',
     zone_lightning_boss_win:'lightning', zone_arcane_boss_win:'arcane',
@@ -1620,6 +1699,34 @@ async function _goToCore(nextId, choice={}) {
   }
   if (WIN_ELEMENT_MAP[nextId] && !getChapterResonance()) {
     await setChapterResonance(WIN_ELEMENT_MAP[nextId])
+  }
+
+  // ── Award ESP on zone boss first kill (+3) or regular combat win (+1) ────
+  const ZONE_BOSS_NODES = Object.keys(WIN_ELEMENT_MAP)
+  if (ZONE_BOSS_NODES.includes(nextId)) {
+    const elKey = WIN_ELEMENT_MAP[nextId]
+    const espBossKey = 'esp_awarded_'+nextId
+    const alreadyAwarded = (player.defeated_bosses||[]).includes(espBossKey)
+    const espGain = alreadyAwarded ? 1 : 3
+    const newEsp = (player.esp||0) + espGain
+    player.esp = newEsp
+    updates.esp = newEsp
+    if (!alreadyAwarded) {
+      const d = markBossDefeated(espBossKey)
+      updates.defeated_bosses = d
+      // Collect all 10 elemental nodes for this element
+      const espTree = player.esp_tree || { base:[], slots:{}, collected:[] }
+      if (!espTree.collected) espTree.collected = []
+      const elNodes = ['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k']
+        .map(suffix => elKey+'_'+suffix)
+        .filter(k => !espTree.collected.includes(k))
+      if (elNodes.length) {
+        espTree.collected.push(...elNodes)
+        player.esp_tree = espTree
+        updates.esp_tree = espTree
+      }
+    }
+    showToast((alreadyAwarded ? '+1 ESP' : '+3 ESP · '+elKey+' nodes collected!'))
   }
 
   await save(updates)
@@ -2142,8 +2249,11 @@ function renderHUD() {
       <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
     </div>
     <div style="display:flex;gap:4px;margin-top:6px">
-      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(244,196,90,.1);border:.5px solid rgba(244,196,90,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.1);border:.5px solid rgba(160,125,224,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+    </div>
+    <div style="margin-top:4px">
+      <button onclick="window.location.href='elemental_skills.html'" style="width:100%;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--gold);background:rgba(244,196,90,.08);border:.5px solid rgba(244,196,90,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚡ ESP ${(player.esp||0) > 0 ? '· '+player.esp+' points' : '· Elemental Skills'}</button>
     </div>`
 }
 
