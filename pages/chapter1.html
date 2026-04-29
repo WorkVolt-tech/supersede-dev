@@ -5204,10 +5204,14 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
           if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
           // ── 1 SP for boss kill — only once ever ──
           const spKey = 'watcher_sp_claimed'
-          const alreadyClaimed = (player.defeated_bosses||[]).includes(spKey)
+          // Use updates.defeated_bosses (already has bossKey in it) not player.defeated_bosses
+          const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
+          const alreadyClaimed = currentDefeated.includes(spKey)
           if (!alreadyClaimed) {
-            const d2 = markBossDefeated(spKey)
-            updates.defeated_bosses = d2
+            // Add sp key to same array — don't overwrite
+            const merged = [...new Set([...currentDefeated, spKey])]
+            updates.defeated_bosses = merged
+            player.defeated_bosses  = merged
             const ch1Bonus = 1
             updates.skill_points = (player.skill_points || 0) + ch1Bonus
             updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
