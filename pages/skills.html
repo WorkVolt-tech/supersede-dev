@@ -59,7 +59,7 @@
     }
     #node-detail.open { display:block; }
     #detail-close { position:absolute; top:.6rem; right:.75rem;
-      background:none; border:none; color:#7a6435; font-size:1rem; cursor:pointer; }
+      background:none; border:none; color:var(--ink-dim); font-size:1rem; cursor:pointer; }
     #slots-bar {
       position:fixed; top:0; right:0; bottom:0; width:210px; z-index:905;
       background:#140f08; border-left:1px solid rgba(200,184,128,.2);
@@ -248,10 +248,10 @@
     /* body text */
     p, li, span { color: var(--ink) !important; }
     /* ── INLINE COLOURS — remap parchment browns to gold tones ── */
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
@@ -303,19 +303,19 @@
         <hr class="ink-divider">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
           <div>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#3a2008;margin:0">SKILL POINTS</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0">SKILL POINTS</p>
             <p id="sp-display" style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:600;color:#c8b96e;margin:0">0</p>
           </div>
           <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
-            <button onclick="openTree()" style="font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);border-radius:3px;padding:.45rem 1rem;cursor:pointer">⬡ Open Skill Tree</button>
+            <button onclick="openTree()" style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);border-radius:3px;padding:.45rem 1rem;cursor:pointer">⬡ Open Skill Tree</button>
             <button onclick="openResetConfirm()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.3rem .75rem;cursor:pointer">↺ Reset Skills</button>
           </div>
         </div>
         <hr class="ink-divider">
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#3a2008;margin-bottom:.4rem">Unlocked nodes</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem">Unlocked nodes</p>
         <div id="unlocked-summary" style="display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:.75rem"></div>
         <hr class="ink-divider">
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#3a2008;margin-bottom:.4rem">Elemental paths — sealed until Chapter 2</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem">Elemental paths — sealed until Chapter 2</p>
         <div id="elemental-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:.75rem"></div>
         <hr class="ink-divider">
 
@@ -328,7 +328,7 @@
       <div class="page-inner">
         <p class="chapter-label">Battle Setup</p>
         <h2 class="page-title">Combat Skills</h2>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#3a2008;margin-bottom:.5rem">
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim);margin-bottom:.5rem">
           Assign unlocked skills to battle slots. Max 4 active skills in combat.
         </p>
         <hr class="ink-divider">
@@ -955,12 +955,12 @@ function showNodeDetail(nd) {
           ${nd.battleType === 'passive' && isUnlocked(nd) ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#b06eff88;margin:2px 0 0;letter-spacing:.05em">Slot into P1–P2 to enable the combat ability</p>` : ''}
         </div>
         <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
-          ${canUnlock(nd) ? `<button onclick="doUnlock('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.55);border:1px solid rgba(139,106,32,.7);border-radius:3px;padding:.3rem .8rem;cursor:pointer">✦ Unlock (${nd.cost} SP)</button>` : ''}
+          ${canUnlock(nd) ? `<button onclick="doUnlock('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.55);border:1px solid rgba(139,106,32,.7);border-radius:3px;padding:.3rem .8rem;cursor:pointer">✦ Unlock (${nd.cost} SP)</button>` : ''}
           ${!isUnlocked(nd) && !pMet ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#a08858">🔒 Unlock a connected node first</span>` : ''}
           ${!isUnlocked(nd) && pMet && skillPoints < nd.cost ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#c04040">Need ${nd.cost} SP (have ${skillPoints})</span>` : ''}
-          ${!isUnlocked(nd) && pMet && unmetReqs.length > 0 && metVia.length > 0 ? `<div style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:#7a6435;margin-top:3px">✓ Reachable via ${metVia.map(r=>{ const n=NODES.find(x=>x.id===r); return n?.label||r }).join(', ')}</div>` : ''}
+          ${!isUnlocked(nd) && pMet && unmetReqs.length > 0 && metVia.length > 0 ? `<div style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:var(--ink-dim);margin-top:3px">✓ Reachable via ${metVia.map(r=>{ const n=NODES.find(x=>x.id===r); return n?.label||r }).join(', ')}</div>` : ''}
           ${isUnlocked(nd) && canEquip && !inBattle && !battleFull
-            ? `<button onclick="stageAddToBattle('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(94,174,224,.3);border:1px solid rgba(94,174,224,.5);border-radius:3px;padding:.3rem .8rem;cursor:pointer">+ Add to Battle</button>` : ''}
+            ? `<button onclick="stageAddToBattle('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(94,174,224,.3);border:1px solid rgba(94,174,224,.5);border-radius:3px;padding:.3rem .8rem;cursor:pointer">+ Add to Battle</button>` : ''}
           ${isUnlocked(nd) && inBattle
             ? `<button onclick="stageRemoveFromBattle('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:#e05555;background:rgba(192,64,64,.12);border:.5px solid rgba(192,64,64,.4);border-radius:3px;padding:.3rem .8rem;cursor:pointer">− Remove from Battle</button>` : ''}
           ${isUnlocked(nd) && canEquip && !inBattle && battleFull
@@ -1156,7 +1156,7 @@ function renderSlotsBar() {
       </div>
       <button onclick="stageRemoveFromBattle('${id}')" title="Remove" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:22px;height:22px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">−</button>`
     }
-    return `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.7rem;color:#7a6435;flex:1">Empty</span>
+    return `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.7rem;color:var(--ink-dim);flex:1">Empty</span>
       <button onclick="openSkillPicker(${slotIdx},${isPassive})" title="Add skill" style="background:${btCol}26;border:.5px solid ${btCol}66;color:${btCol};border-radius:3px;width:22px;height:22px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">+</button>`
   }
 
@@ -1180,7 +1180,7 @@ function renderSlotsBar() {
     </div>`
   }
   html += `<div style="margin-top:.6rem;display:flex;gap:5px">
-    <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.72rem;color:#1a1208;background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.4rem;cursor:pointer;transition:all .2s">
+    <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.72rem;color:var(--ink);background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.4rem;cursor:pointer;transition:all .2s">
       ${slotsDirty ? '💾 Save Changes' : '✓ Saved'}
     </button>
     ${slotsDirty ? `<button onclick="cancelSlotEdits()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.4rem .6rem;cursor:pointer">↩ Undo</button>` : ''}
@@ -1192,7 +1192,7 @@ function renderBattleSlotsPage() {
   const c = document.getElementById('battle-slots-page')
   if (!c) return
   const ACTIVE_SLOTS = 4, PASSIVE_SLOTS = 2
-  let html = `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#9a8050;letter-spacing:.08em;margin-bottom:5px">⚔ ACTIVE SLOTS — used each turn in combat</p>`
+  let html = `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:5px">⚔ ACTIVE SLOTS — used each turn in combat</p>`
   for (let i = 0; i < ACTIVE_SLOTS; i++) {
     const id  = pendingBattleSkills[i] || null
     const nd  = id ? NODES.find(n => n.id === id) : null
@@ -1205,11 +1205,11 @@ function renderBattleSlotsPage() {
              <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#a08858;margin:0">${nd.branch.toUpperCase()} · ${nd.type.toUpperCase()}</p>
            </div>
            <button onclick="stageRemoveFromBattle('${id}')" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>`
-        : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#7a6435;flex:1">Empty</span>
+        : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);flex:1">Empty</span>
            <button onclick="openSkillPicker(${i},false)" style="background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.4);color:#5eaee0;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>`}
     </div>`
   }
-  html += `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#9a8050;letter-spacing:.08em;margin:.6rem 0 5px">⚡ PASSIVE SLOTS — auto-active every fight</p>`
+  html += `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin:.6rem 0 5px">⚡ PASSIVE SLOTS — auto-active every fight</p>`
   for (let i = 0; i < PASSIVE_SLOTS; i++) {
     const idx = ACTIVE_SLOTS + i
     const id  = pendingBattleSkills[idx] || null
@@ -1223,12 +1223,12 @@ function renderBattleSlotsPage() {
              <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#a08858;margin:0">${nd.branch.toUpperCase()} · ${nd.type.toUpperCase()} · auto-passive</p>
            </div>
            <button onclick="stageRemoveFromBattle('${id}')" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>`
-        : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#7a6435;flex:1">Empty</span>
+        : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);flex:1">Empty</span>
            <button onclick="openSkillPicker(${i},true)" style="background:rgba(176,110,255,.15);border:.5px solid rgba(176,110,255,.4);color:#b06eff;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>`}
     </div>`
   }
   html += `<div style="display:flex;gap:6px;margin-top:.5rem">
-    <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.45rem;cursor:pointer;transition:all .2s">
+    <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.45rem;cursor:pointer;transition:all .2s">
       ${slotsDirty ? '💾 Save Changes' : '✓ Saved'}
     </button>
     ${slotsDirty ? `<button onclick="cancelSlotEdits()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.45rem .75rem;cursor:pointer">↩ Undo</button>` : ''}
@@ -1260,7 +1260,7 @@ window.openResetConfirm = () => {
   m.innerHTML = `
     <div style="background:#1a1208;border:1px solid rgba(200,184,128,.25);border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px">
       <p style="font-family:'Cinzel',serif;font-size:.95rem;color:#c8b96e;margin:0 0 .5rem;font-weight:600">Reset Skill Tree</p>
-      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#9a8050;margin:0 0 1rem">
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink-dim);margin:0 0 1rem">
         All ${skillsUnlocked.length} nodes will be unlearned and ${spent} SP refunded. Battle skills cleared.
       </p>
       <div style="display:flex;gap:8px">
