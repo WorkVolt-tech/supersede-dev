@@ -177,11 +177,11 @@
     /* body text */
     p, li, span { color: var(--ink) !important; }
     /* ── INLINE COLOURS — remap parchment browns to gold tones ── */
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
     [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
     [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
-    [style*="color:#c8b96e"] { color: var(--gold) !important; }
+    [style*="color:var(--gold)"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
     /* ── BUTTONS / CHOICES ── */
@@ -233,8 +233,8 @@
         <div id="npc-list"></div>
         <hr class="ink-divider">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#1a1208;letter-spacing:.08em">GOLD</span>
-          <span id="gold-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#c8b96e">◈ 0</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);letter-spacing:.08em">GOLD</span>
+          <span id="gold-display" style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:var(--gold)">◈ 0</span>
         </div>
       </div>
     </div>
@@ -243,7 +243,7 @@
       <div class="page-inner" id="npc-panel">
         <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:.5rem">
           <span style="font-size:2.5rem">🧭</span>
-          <p style="font-family:'IM Fell English',serif;font-style:italic;color:#1a1208">Select an NPC to interact.</p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;color:var(--ink)">Select an NPC to interact.</p>
         </div>
       </div>
     </div>
@@ -337,10 +337,10 @@
     <div class="equip-slot" data-npc="${n.key}" style="cursor:pointer;margin-bottom:4px">
       <span class="slot-icon">${n.icon}</span>
       <div style="flex:1">
-        <p style="font-family:'Cinzel',serif;font-size:.9rem;color:#1a1208;margin:0 0 1px">${n.name}</p>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${n.title}</p>
+        <p style="font-family:'Cinzel',serif;font-size:.9rem;color:var(--ink);margin:0 0 1px">${n.name}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink);margin:0">${n.title}</p>
       </div>
-      <span style="color:#1a1208">›</span>
+      <span style="color:var(--ink)">›</span>
     </div>
   `).join('')
 
@@ -368,13 +368,13 @@
               ? `<img src="${imgSrc}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.2rem\\'>${item.icon}</span>'">`
               : `<span style="font-size:1.2rem">${item.icon}</span>`}
             <div style="flex:1;min-width:0">
-              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:${RARITY[item.rarity]||'#2a1208'};margin:0 0 1px">${item.name}</p>
-              <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#1a1208;margin:0">
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:${RARITY[item.rarity]||'var(--ink-dim)'};margin:0 0 1px">${item.name}</p>
+              <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:var(--ink);margin:0">
                 ${item.element&&item.element!=='none'?`[${item.element.toUpperCase()}] `:''}${item.item_type}${item.atk_bonus>0?` · ATK +${item.atk_bonus}`:''}${item.def_bonus>0?` · DEF +${item.def_bonus}`:''}${item.hp_restore>0?` · +${item.hp_restore}HP`:''}${(item.power_bonus||0)>0?` · PWR +${item.power_bonus}`:''}${(item.speed_bonus||0)>0?` · SPD +${item.speed_bonus}`:''}${(item.insight_bonus||0)>0?` · INS +${item.insight_bonus}`:''}
               </p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${item.buy_price}</span>
-            <button onclick="buyItem('${s.itemKey}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Buy</button>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${item.buy_price}</span>
+            <button onclick="buyItem('${s.itemKey}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Buy</button>
           </div>
         `
       }).join('')
@@ -382,11 +382,11 @@
       panel.innerHTML = `
         <p class="chapter-label">${n.title}</p>
         <h2 class="page-title">${n.name}</h2>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:var(--ink);margin-bottom:.5rem">${n.dialogue}</p>
         <hr class="ink-divider">
         <div style="display:flex;gap:6px;margin-bottom:.75rem">
-          <button id="tab-buy"  onclick="switchTab('buy',  '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">BUY</button>
-          <button id="tab-sell" onclick="switchTab('sell', '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#1a1208">SELL</button>
+          <button id="tab-buy"  onclick="switchTab('buy',  '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:var(--ink)">BUY</button>
+          <button id="tab-sell" onclick="switchTab('sell', '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:var(--ink)">SELL</button>
         </div>
         <div id="tab-content-buy">${rows}</div>
         <div id="tab-content-sell" style="display:none"></div>
@@ -397,20 +397,20 @@
         return `
           <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
             <div style="flex:1">
-              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;margin:0 0 1px">${s.label}</p>
-              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${s.desc}</p>
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${s.label}</p>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink);margin:0">${s.desc}</p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
-            <button onclick="runesmith('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${s.goldCost}</span>
+            <button onclick="runesmith('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
           </div>
         `
       }).join('')
       panel.innerHTML = `
         <p class="chapter-label">${n.title}</p>
         <h2 class="page-title">${n.name}</h2>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:var(--ink);margin-bottom:.5rem">${n.dialogue}</p>
         <hr class="ink-divider">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;letter-spacing:.06em;margin-bottom:.75rem">Select the rarity of item you want to socket. Maximum sockets: Common=1, Uncommon=2, Rare=3, Epic=4, Legendary=5</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);letter-spacing:.06em;margin-bottom:.75rem">Select the rarity of item you want to socket. Maximum sockets: Common=1, Uncommon=2, Rare=3, Epic=4, Legendary=5</p>
         <div>${rows}</div>
         <hr class="ink-divider">
         <a href="crafting.html" style="font-family:'Cinzel',serif;font-size:.78rem;letter-spacing:.08em;color:#a07de0;text-decoration:none;border:.5px solid #a07de040;padding:.35rem .9rem;border-radius:2px">
@@ -423,11 +423,11 @@
         return `
           <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
             <div style="flex:1">
-              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;margin:0 0 1px">${s.label}</p>
-              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#1a1208;margin:0">${s.desc}</p>
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${s.label}</p>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink);margin:0">${s.desc}</p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
-            <button onclick="heal('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${s.goldCost}</span>
+            <button onclick="heal('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
           </div>
         `
       }).join('')
@@ -435,7 +435,7 @@
       panel.innerHTML = `
         <p class="chapter-label">${n.title}</p>
         <h2 class="page-title">${n.name}</h2>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#1a1208;margin-bottom:.5rem">${n.dialogue}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:var(--ink);margin-bottom:.5rem">${n.dialogue}</p>
         <hr class="ink-divider">
         <div>${rows}</div>
       `
@@ -470,19 +470,19 @@
   }
 
   async function renderSellTab(sellDiv) {
-    sellDiv.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:#1a1208">Loading...</p>'
+    sellDiv.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink)">Loading...</p>'
     const { data: inv } = await supabase.from('inventory').select('*')
       .eq('player_id', player.id)
       .order('item_type')
 
     if (!inv || !inv.length) {
-      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:#1a1208">Nothing to sell.</p>'
+      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:var(--ink)">Nothing to sell.</p>'
       return
     }
 
     const sellable = inv.filter(i => !i.equipped_slot)
     if (!sellable.length) {
-      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:#1a1208">All items are currently equipped.</p>'
+      sellDiv.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.85rem;color:var(--ink)">All items are currently equipped.</p>'
       return
     }
 
@@ -501,11 +501,11 @@
       ? `<div style="display:flex;gap:5px;margin-bottom:.5rem;flex-wrap:wrap;align-items:center">
           <button onclick="traderToggleMode()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.5);color:#c04040">✕ Cancel</button>
           ${traderSellSelected.size>0
-            ? `<button onclick="traderSellSelected_action()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:#1a1208">Sell ${traderSellSelected.size} items ◈${totalSell}</button>
-               <button onclick="traderSelectAll()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">Select All</button>`
-            : '<span style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.72rem;color:#3a2008">Click items to select</span>'}
+            ? `<button onclick="traderSellSelected_action()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:var(--ink)">Sell ${traderSellSelected.size} items ◈${totalSell}</button>
+               <button onclick="traderSelectAll()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:var(--ink-dim)">Select All</button>`
+            : '<span style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.72rem;color:var(--ink-dim)">Click items to select</span>'}
          </div>`
-      : `<div style="margin-bottom:.5rem"><button onclick="traderToggleMode()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:#3a2008">⊞ Multi-Sell</button></div>`
+      : `<div style="margin-bottom:.5rem"><button onclick="traderToggleMode()" style="font-family:'Share Tech Mono',monospace;font-size:.55rem;padding:2px 8px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:var(--ink-dim)">⊞ Multi-Sell</button></div>`
 
     sellDiv.innerHTML = modeBar + sellable.map(item => {
       const sellPrice = item.sell_price || Math.max(1, Math.floor((item.buy_price||20) * 0.4))
@@ -519,16 +519,16 @@
       return `
         <div onclick="${traderSellMode ? `traderToggleItem('${item.id}')` : ''}"
           style="display:flex;align-items:center;gap:.6rem;padding:.65rem 0;border-bottom:.5px solid rgba(139,106,32,.15);cursor:${traderSellMode?'pointer':'default'};${isSelected?'background:rgba(200,184,128,.2);margin:0 -4px;padding-left:4px;padding-right:4px;border-radius:3px;':''}">
-          ${traderSellMode ? `<div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${isSelected?'#c8b96e':'rgba(139,106,32,.4)'};background:${isSelected?'#c8b96e':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSelected?'<span style="font-size:.5rem;color:#1a1208">✓</span>':''}</div>` : ''}
+          ${traderSellMode ? `<div style="width:14px;height:14px;border-radius:3px;border:1.5px solid ${isSelected?'#c8b96e':'rgba(139,106,32,.4)'};background:${isSelected?'#c8b96e':'transparent'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${isSelected?'<span style="font-size:.5rem;color:var(--ink)">✓</span>':''}</div>` : ''}
           ${imgSrc
             ? `<img src="${imgSrc}" style="width:32px;height:32px;object-fit:contain;border-radius:3px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.1rem\\'>${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>'">`
             : `<span style="font-size:1.1rem">${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>`}
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${RC[item.rarity]||'#2a1208'};margin:0 0 1px">
+            <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${RC[item.rarity]||'var(--ink-dim)'};margin:0 0 1px">
               ${item.name}
               ${hasSocket?`<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a07de0;margin-left:4px">[${item.sockets_used||0}/${item.sockets_total}◈]</span>`:''}
             </p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;margin:0">
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);margin:0">
               ${item.rarity} ${item.subtype||item.item_type}
               ${item.atk_bonus>0?` · ATK +${item.atk_bonus}`:''}
               ${item.def_bonus>0?` · DEF +${item.def_bonus}`:''}
@@ -538,9 +538,9 @@
             ${hasRune?'<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#e05555;margin:1px 0 0">⚠ Runes lost on sell</p>':''}
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:#c8b96e">◈${sellPrice}${(item.quantity||1)>1?' ea':''}</span>
-            ${!traderSellMode ? `<button onclick="traderSellOne('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:#1a1208;background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell${(item.quantity||1)>1?' ×1':''}</button>` : ''}
-            ${!traderSellMode && (item.quantity||1)>1 ? `<button onclick="traderSellAll('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:#1a1208;background:rgba(200,184,128,.25);border:1px solid rgba(139,106,32,.4);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell All ◈${sellPrice*(item.quantity||1)}</button>` : ''}
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:var(--gold)">◈${sellPrice}${(item.quantity||1)>1?' ea':''}</span>
+            ${!traderSellMode ? `<button onclick="traderSellOne('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell${(item.quantity||1)>1?' ×1':''}</button>` : ''}
+            ${!traderSellMode && (item.quantity||1)>1 ? `<button onclick="traderSellAll('${item.id}','${item.name}',${sellPrice},${item.quantity||1})" style="font-family:'Cinzel',serif;font-size:.65rem;color:var(--ink);background:rgba(200,184,128,.25);border:1px solid rgba(139,106,32,.4);padding:2px .6rem;cursor:pointer;border-radius:2px">Sell All ◈${sellPrice*(item.quantity||1)}</button>` : ''}
           </div>
         </div>
       `
