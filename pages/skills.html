@@ -136,9 +136,9 @@
       background: transparent !important;
       max-width: 1060px;
       margin: 0 auto;
-      padding: 24px 24px 60px;
+      padding: 48px 32px 100px;
     }
-    /* ── BOOK — open-book layout ── */
+    /* ── BOOK ── */
     .book, .craft-grid {
       display: grid !important;
       grid-template-columns: 1fr 22px 1fr !important;
@@ -147,87 +147,83 @@
       border: none !important;
       box-shadow: none !important;
       border-radius: 0 !important;
-      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
-      transform: perspective(1600px) rotateX(2.5deg) !important;
+      filter:
+        drop-shadow(0 1px 2px rgba(0,0,0,1))
+        drop-shadow(0 6px 14px rgba(0,0,0,.9))
+        drop-shadow(0 24px 48px rgba(0,0,0,.75))
+        drop-shadow(0 50px 100px rgba(0,0,0,.55)) !important;
+      transform: perspective(2400px) rotateX(2.5deg) !important;
       transform-origin: 50% 0 !important;
-      margin-top: 10px !important;
+      margin-top: 0 !important;
     }
     @media(max-width:860px){
-      .book, .craft-grid { grid-template-columns:1fr !important; transform:none !important; }
+      .book, .craft-grid { grid-template-columns:1fr !important; transform:none !important; filter:drop-shadow(0 8px 24px rgba(0,0,0,.7)) !important; }
       .spine { display:none !important; }
     }
     /* ── PAGES ── */
     .parchment, .page-left, .page-right {
-      background: var(--panel) !important;
-      border: 1px solid var(--line) !important;
+      border: none !important;
       border-radius: 0 !important;
-      box-shadow: none !important;
       color: var(--ink) !important;
       position: relative;
+      overflow-x: hidden !important;
+      overflow-y: visible !important;
     }
-    .page-left  { border-right: none !important; }
-    .page-right { border-left:  none !important; }
-    /* gradient lighting from spine */
-    .page-left::before  { content:""; position:absolute; inset:0; background:linear-gradient(90deg,  rgba(200,168,74,.018) 0%, transparent 55%); pointer-events:none; }
-    .page-right::before { content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(200,168,74,.014) 0%, transparent 55%); pointer-events:none; }
-    /* gold corner brackets */
-    /* page-curl shadow — left page */
+    .page-left {
+      background-color: var(--page-l) !important;
+      box-shadow:
+        inset -30px 0 35px rgba(0,0,0,.55),
+        inset -6px 0 10px rgba(0,0,0,.4) !important;
+    }
+    .page-right {
+      background-color: var(--page-r) !important;
+      box-shadow:
+        inset 30px 0 35px rgba(0,0,0,.55),
+        inset 6px 0 10px rgba(0,0,0,.4) !important;
+    }
+    /* Outer cover edge */
+    .page-left::before {
+      content: ""; position: absolute; top: 0; bottom: 0; left: -5px; width: 5px;
+      background: linear-gradient(90deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.3) 100%);
+      border-left: 1px solid rgba(0,0,0,.9);
+      pointer-events: none; z-index: 4;
+    }
+    .page-right::before {
+      content: ""; position: absolute; top: 0; bottom: 0; right: -5px; width: 5px;
+      background: linear-gradient(270deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.3) 100%);
+      border-right: 1px solid rgba(0,0,0,.9);
+      pointer-events: none; z-index: 4;
+    }
+    /* Paper texture + gold tint */
     .page-left::after {
-      content:""; position:absolute; top:0; bottom:0; right:0;
-      width:36px; height:auto; border:none;
-      background: linear-gradient(270deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,.10) 55%, transparent 100%);
-      pointer-events:none; z-index:1;
+      content: "" !important; position: absolute !important; inset: 0 !important;
+      pointer-events: none !important; z-index: 1 !important;
+      background:
+        linear-gradient(90deg, rgba(200,168,74,.018) 0%, rgba(200,168,74,.006) 20%, transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.1) 0%, transparent 12%, transparent 88%, rgba(0,0,0,.08) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='500' height='500' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+      background-size: auto, auto, 500px 500px !important;
     }
-    /* page-curl shadow — right page */
     .page-right::after {
-      content:""; position:absolute; top:0; bottom:0; left:0;
-      width:36px; height:auto; border:none;
-      background: linear-gradient(90deg, rgba(0,0,0,.30) 0%, rgba(0,0,0,.10) 55%, transparent 100%);
-      pointer-events:none; z-index:1;
+      content: "" !important; position: absolute !important; inset: 0 !important;
+      pointer-events: none !important; z-index: 1 !important;
+      background:
+        linear-gradient(270deg, rgba(200,168,74,.014) 0%, rgba(200,168,74,.005) 20%, transparent 55%),
+        linear-gradient(180deg, rgba(0,0,0,.1) 0%, transparent 12%, transparent 88%, rgba(0,0,0,.08) 100%),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='500' height='500'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='500' height='500' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E") !important;
+      background-size: auto, auto, 500px 500px !important;
     }
-    .page-inner { padding: 24px 26px !important; }
-    /* ── SPINE — open book gutter / inner binding ── */
+    .page-inner { padding: 28px 30px !important; position: relative; z-index: 2; }
+    /* ── SPINE ── */
     .spine {
-      background: linear-gradient(90deg,
-        rgba(0,0,0,.0)  0%,
-        rgba(0,0,0,.32) 28%,
-        rgba(0,0,0,.55) 46%,
-        rgba(0,0,0,.62) 50%,
-        rgba(0,0,0,.55) 54%,
-        rgba(0,0,0,.32) 72%,
-        rgba(0,0,0,.0)  100%
-      ) !important;
-      border-left:  none !important;
-      border-right: none !important;
-      position: relative; z-index: 5; width: 22px !important;
-      box-shadow: none !important;
+      background: var(--spine-col) !important;
+      border-left: none !important; border-right: none !important;
+      position: relative; z-index: 5; width: 22px !important; box-shadow: none !important;
     }
-    .spine::before {
-      content:"";
-      position:absolute;
-      top:0; bottom:0; left:50%;
-      width:1px;
-      transform:translateX(-50%);
-      background: linear-gradient(180deg,
-        transparent 0%,
-        rgba(0,8,18,.9) 6%,
-        rgba(0,8,18,.9) 94%,
-        transparent 100%);
-    }
-    .spine::after {
-      content:"";
-      position:absolute;
-      top:2px; bottom:2px; left:-3px;
-      width:3px;
-      background: repeating-linear-gradient(
-        180deg,
-        rgba(200,168,74,.05) 0px,
-        rgba(200,168,74,.02) 1px,
-        rgba(0,0,0,.15)      1px,
-        rgba(0,0,0,.05)      2px
-      );
-      border-left:1px solid rgba(200,168,74,.08);
-    }
+    .spine::before { display: none !important; }
+    .spine::after  { display: none !important; }
+    .spine-inner, .spine-highlight, .spine-shadow,
+    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
     /* ── TYPOGRAPHY ── */
     .chapter-label, .page-label {
       font-family: 'JetBrains Mono', monospace !important;
