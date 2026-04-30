@@ -17,11 +17,11 @@
       --page-l:    #0b1208;
       --page-r:    #0d1408;
       --ink:       #e8dfc8;
-      --ink-dim:   #7a7055;
-      --ink-faint: #3a3420;
+      --ink-dim:   #b8aa88;
+      --ink-faint: #7a6e50;
       --gold:      #c8a84a;
       --gold-hot:  #f0d080;
-      --gold-dim:  #7a6430;
+      --gold-dim:  #9a7e3a;
       --amber:     #e09020;
       --warm:      #e8b840;
       --warn:      #e05a44;
@@ -97,8 +97,8 @@
     .page-left  { border-right: none !important; }
     .page-right { border-left:  none !important; }
     /* gradient lighting from spine */
-    .page-left::before  { content:""; position:absolute; inset:0; background:linear-gradient(90deg,  rgba(200,168,74,.018) 0%, transparent 55%); pointer-events:none; }
-    .page-right::before { content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(200,168,74,.014) 0%, transparent 55%); pointer-events:none; }
+    .page-left::before { display: none !important; }
+    .page-right::before { display: none !important; }
     /* gold corner brackets */
     /* page-curl shadow — left page */
     .page-left::after {
@@ -179,10 +179,10 @@
     /* body text */
     p, li, span { color: var(--ink) !important; }
     /* ── INLINE COLOURS — remap parchment browns to gold tones ── */
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
@@ -257,12 +257,12 @@
       <div class="page-inner">
         <p class="chapter-label">Equipment</p>
         <h1 class="page-title">Loadout</h1>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#3a2008;margin-bottom:.5rem" id="equip-hint">Select an item from the right, then click a slot.</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink-dim);margin-bottom:.5rem" id="equip-hint">Select an item from the right, then click a slot.</p>
         <hr class="ink-divider">
         <div id="equip-slots"></div>
         <div id="set-bonus-panel" style="margin-top:.5rem"></div>
         <hr class="ink-divider">
-        <div id="total-stats" style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#3a2008;display:flex;gap:1.5rem;letter-spacing:.06em"></div>
+        <div id="total-stats" style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--ink-dim);display:flex;gap:1.5rem;letter-spacing:.06em"></div>
       </div>
     </div>
 
@@ -477,11 +477,11 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
           <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin-bottom:2px">
             👁 WATCHER SET (${equippedWatcher.length}/4) — ${bonus.label}
           </p>
-          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#3a2008;line-height:1.4;margin:0">${bonus.effect}</p>
-          ${equippedWatcher.length < 4 ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;margin-top:3px">${4-equippedWatcher.length} more piece${equippedWatcher.length<3?'s':''} for next bonus</p>` : ''}
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:var(--ink-dim);line-height:1.4;margin:0">${bonus.effect}</p>
+          ${equippedWatcher.length < 4 ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin-top:3px">${4-equippedWatcher.length} more piece${equippedWatcher.length<3?'s':''} for next bonus</p>` : ''}
         </div>`
     } else if (equippedWatcher.length === 1) {
-      panel.innerHTML = `<p style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:#7a6435;letter-spacing:.06em">👁 Watcher Set: 1/4 equipped — equip 1 more for set bonus</p>`
+      panel.innerHTML = `<p style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:var(--ink-dim);letter-spacing:.06em">👁 Watcher Set: 1/4 equipped — equip 1 more for set bonus</p>`
     } else {
       panel.innerHTML = ''
     }
@@ -1320,14 +1320,14 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
     // Toggle
     if (picker.style.display !== 'none') { picker.style.display = 'none'; return }
     picker.style.display = 'block'
-    picker.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#3a2008">Loading runes…</p>'
+    picker.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:var(--ink-dim)">Loading runes…</p>'
 
     // Load runes from inventory
     const { data: runeItems } = await supabase.from('inventory')
       .select('*').eq('player_id', player.id).like('item_key','rune_%').gt('quantity',0)
 
     if (!runeItems || !runeItems.length) {
-      picker.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#3a2008">No runes in inventory.<br>Farm enemies to find runes.</p>'
+      picker.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No runes in inventory.<br>Farm enemies to find runes.</p>'
       return
     }
 
@@ -1346,7 +1346,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
           return `<button onclick="socketRuneToItem('${itemId}','${r.id}','${key}','${itemType}')"
             style="display:flex;align-items:center;gap:4px;background:${color}18;border:1px solid ${color}60;border-radius:4px;padding:4px 8px;cursor:pointer;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:${color}">
             <img src="../assets/runes/rune_${key}.png" style="width:16px;height:16px;object-fit:contain;border-radius:2px" onerror="this.outerHTML='<span>${icon}</span>'">
-            <span>${name}</span><span style="color:#3a2008;font-size:.5rem">×${r.quantity}</span>
+            <span>${name}</span><span style="color:var(--ink-dim);font-size:.5rem">×${r.quantity}</span>
           </button>`
         }).join('')}
       </div>
@@ -1508,7 +1508,7 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
 
   // Filter tabs
   document.getElementById('filter-tabs').innerHTML = FILTERS.map(f => `
-    <button onclick="setFilter('${f}')" id="ftab-${f}" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;background:none;border:.5px solid rgba(139,106,32,.2);border-radius:20px;padding:2px 9px;cursor:pointer;color:#3a2008;transition:all .15s">${f}</button>
+    <button onclick="setFilter('${f}')" id="ftab-${f}" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;background:none;border:.5px solid rgba(139,106,32,.2);border-radius:20px;padding:2px 9px;cursor:pointer;color:var(--ink-dim);transition:all .15s">${f}</button>
   `).join('')
 
   window.setFilter = (f) => {

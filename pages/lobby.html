@@ -17,11 +17,11 @@
       --page-l:    #0b1208;
       --page-r:    #0d1408;
       --ink:       #e8dfc8;
-      --ink-dim:   #7a7055;
-      --ink-faint: #3a3420;
+      --ink-dim:   #b8aa88;
+      --ink-faint: #7a6e50;
       --gold:      #c8a84a;
       --gold-hot:  #f0d080;
-      --gold-dim:  #7a6430;
+      --gold-dim:  #9a7e3a;
       --amber:     #e09020;
       --warm:      #e8b840;
       --warn:      #e05a44;
@@ -97,8 +97,8 @@
     .page-left  { border-right: none !important; }
     .page-right { border-left:  none !important; }
     /* gradient lighting from spine */
-    .page-left::before  { content:""; position:absolute; inset:0; background:linear-gradient(90deg,  rgba(200,168,74,.018) 0%, transparent 55%); pointer-events:none; }
-    .page-right::before { content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(200,168,74,.014) 0%, transparent 55%); pointer-events:none; }
+    .page-left::before { display: none !important; }
+    .page-right::before { display: none !important; }
     /* gold corner brackets */
     /* page-curl shadow — left page */
     .page-left::after {
@@ -177,10 +177,10 @@
     /* body text */
     p, li, span { color: var(--ink) !important; }
     /* ── INLINE COLOURS — remap parchment browns to gold tones ── */
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
@@ -238,11 +238,11 @@
         <h1 class="page-title">Nearby Players</h1>
         <div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem">
           <span class="blink" style="width:6px;height:6px;border-radius:50%;background:#5ec45e;box-shadow:0 0 4px #5ec45e;display:inline-block;flex-shrink:0"></span>
-          <span id="count" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#7a6435;letter-spacing:.06em">scanning…</span>
+          <span id="count" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.06em">scanning…</span>
         </div>
         <hr class="ink-divider">
         <div id="ping-log" style="background:rgba(0,0,0,.06);border-left:2px solid rgba(139,106,32,.3);padding:.6rem .75rem;min-height:44px;border-radius:0 2px 2px 0;margin-bottom:.75rem">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#7a6435;letter-spacing:.06em">System scanning…</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink-dim);letter-spacing:.06em">System scanning…</p>
         </div>
         <div id="player-list"></div>
       </div>
@@ -256,7 +256,7 @@
         <div id="own-stats"></div>
         <hr class="ink-divider">
         <div style="margin-top:.75rem">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#7a6435;letter-spacing:.08em;margin-bottom:.4rem">FIGHT MODES</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem">FIGHT MODES</p>
           <div style="background:rgba(224,85,85,.06);border:.5px solid rgba(224,85,85,.2);border-radius:4px;padding:.5rem .65rem;margin-bottom:.4rem">
             <p style="font-family:'Cinzel',serif;font-size:.72rem;color:#e05555;margin-bottom:2px">⚔ PVP Challenge</p>
             <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#6b5a35;line-height:1.4">Target is online. They receive a notification and must accept to fight.</p>
@@ -326,8 +326,8 @@ document.getElementById('own-stats').innerHTML = [
   ['Status',  `<span style="color:#5ec45e">● Online</span>`],
 ].map(([k,v]) => `
   <div style="display:flex;justify-content:space-between;padding:.55rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
-    <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#9a8050;letter-spacing:.08em">${k}</span>
-    <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#1a1208;font-weight:500">${v}</span>
+    <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.08em">${k}</span>
+    <span style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--ink);font-weight:500">${v}</span>
   </div>`).join('')
 
 // ── Presence ──────────────────────────────────────────────
@@ -376,7 +376,7 @@ function isPlayerOnline(p) {
 function renderList() {
   const el = document.getElementById('player-list')
   if (!nearby.length) {
-    el.innerHTML = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#7a6435">No other players in this chapter yet.</p>`
+    el.innerHTML = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink-dim)">No other players in this chapter yet.</p>`
     return
   }
   el.innerHTML = nearby.map(p => {
@@ -390,8 +390,8 @@ function renderList() {
             ? `<img src='../assets/mysterious_cloaked_player.png' style='width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #00ffe7;box-shadow:0 0 10px #00ffe750;flex-shrink:0'>`
             : `<div style='width:32px;height:32px;border-radius:50%;border:1px solid ${bc.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-family:Cinzel,serif;color:${bc.color};background:rgba(0,0,0,.15);flex-shrink:0'>${p.username[0].toUpperCase()}</div>`}
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;margin:0 0 1px">${p.username}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:#7a6435;margin:0;letter-spacing:.04em">
+            <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${p.username}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:var(--ink-dim);margin:0;letter-spacing:.04em">
               Lvl ${p.level} · <span style="color:${online?'#5ec45e':'#888'}">${online?'● Online':'○ Away'}</span>
             </p>
           </div>
@@ -444,16 +444,16 @@ function showPvpModal(targetId, targetName) {
   modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
   modal.innerHTML = `
     <div style="background:#b8a568;border:1px solid #e05555;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
-      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208;margin-bottom:.4rem">⚔ PVP Challenge</p>
-      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#1a1208;margin-bottom:.4rem">
+      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.4rem">⚔ PVP Challenge</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.4rem">
         Challenge <strong>${targetName}</strong> to live combat?
       </p>
       <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#c04040;margin-bottom:.75rem">
         ⚠ They must accept within 30s. Combat resolves in real time.
       </p>
       <div style="display:flex;gap:6px">
-        <button onclick="confirmPvp('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(224,85,85,.25);border:1px solid #e05555;border-radius:3px;padding:.45rem;cursor:pointer">⚔ Send Challenge</button>
-        <button onclick="document.getElementById('pvp-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        <button onclick="confirmPvp('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(224,85,85,.25);border:1px solid #e05555;border-radius:3px;padding:.45rem;cursor:pointer">⚔ Send Challenge</button>
+        <button onclick="document.getElementById('pvp-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
       </div>
     </div>`
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
@@ -506,12 +506,12 @@ async function showRaidModal(targetId, targetName) {
   modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
   modal.innerHTML = `
     <div style="background:#b8a568;border:1px solid #b06eff;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
-      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208;margin-bottom:.4rem">🌑 Raid Attack</p>
-      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#1a1208;margin-bottom:.4rem">
+      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.4rem">🌑 Raid Attack</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink);margin-bottom:.4rem">
         Auto-resolved using your current stats vs <strong>${targetName}</strong>'s defense.
       </p>
       <div style="background:rgba(176,110,255,.08);border:.5px solid rgba(176,110,255,.25);border-radius:4px;padding:.5rem .65rem;margin-bottom:.6rem">
-        <div style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#3a2008;line-height:2">
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);line-height:2">
           Your ATK: <span style="color:#e05555">${myAtk}</span> &nbsp;·&nbsp;
           Their DEF: <span style="color:#5ec45e">${theirDef}</span> &nbsp;·&nbsp;
           Damage: <span style="color:#c8b96e">${raidDmg}</span><br>
@@ -522,8 +522,8 @@ async function showRaidModal(targetId, targetName) {
         They will receive a Revenge notice on their next login.
       </p>
       <div style="display:flex;gap:6px">
-        <button onclick="confirmRaid('${targetId}','${targetName}',${raidDmg},'${outcome}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(176,110,255,.25);border:1px solid #b06eff;border-radius:3px;padding:.45rem;cursor:pointer">🌑 Execute Raid</button>
-        <button onclick="document.getElementById('raid-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        <button onclick="confirmRaid('${targetId}','${targetName}',${raidDmg},'${outcome}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(176,110,255,.25);border:1px solid #b06eff;border-radius:3px;padding:.45rem;cursor:pointer">🌑 Execute Raid</button>
+        <button onclick="document.getElementById('raid-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
       </div>
     </div>`
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
@@ -560,13 +560,13 @@ async function showObserveModal(targetId, targetName) {
   modal.innerHTML = `
     <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:300px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">Player Profile</p>
-        <button onclick="document.getElementById('observe-modal').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#1a1208">✕</button>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Player Profile</p>
+        <button onclick="document.getElementById('observe-modal').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
       </div>
       <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;padding:.6rem;background:rgba(0,0,0,.08);border-radius:4px">
         <div style="width:44px;height:44px;border-radius:50%;border:2px solid ${bc2.color};display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.1rem;font-weight:600;color:${bc2.color};background:rgba(0,0,0,.2);flex-shrink:0">${targetName[0].toUpperCase()}</div>
         <div>
-          <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:#1a1208;margin:0 0 2px">${targetName}</p>
+          <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:var(--ink);margin:0 0 2px">${targetName}</p>
           <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:${bc2.color};margin:0;letter-spacing:.06em">${bc2.label} · Level ${tp?.level||'?'}</p>
         </div>
       </div>
@@ -574,9 +574,9 @@ async function showObserveModal(targetId, targetName) {
         ${[['Reputation',tp?.reputation||'neutral','#c8b96e'],['Element',tp?.element||'—','#a8d8ea'],
            ['⚔ PVP Kills',tp?.pvp_kills||0,'#e05555'],['🤝 Helps',tp?.helps_given||0,'#5ec45e'],
            ['🗡 Backstabs',tp?.backstabs||0,'#b06eff'],['Chapter',tp?.current_chapter||1,'#c8b96e']
-          ].map(([k,v,c])=>`<div style="background:rgba(0,0,0,.1);border-radius:3px;padding:5px 7px"><span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#3a2008;display:block">${k}</span><span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:${c}">${v}</span></div>`).join('')}
+          ].map(([k,v,c])=>`<div style="background:rgba(0,0,0,.1);border-radius:3px;padding:5px 7px"><span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);display:block">${k}</span><span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:${c}">${v}</span></div>`).join('')}
       </div>
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#3a2008;letter-spacing:.06em">
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.06em">
         Status: <span style="color:${(SC[tpres?.status||'online']||SC.online).color}">${(SC[tpres?.status||'online']||SC.online).label}</span>
       </p>
     </div>`
@@ -593,11 +593,11 @@ function showTeamModal(targetId, targetName) {
   modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
   modal.innerHTML = `
     <div style="background:#b8a568;border:1px solid #5ec45e;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
-      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208;margin-bottom:.5rem">🤝 Alliance Request</p>
-      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#1a1208;margin-bottom:.75rem">Send a team request to <strong>${targetName}</strong>?</p>
+      <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.5rem">🤝 Alliance Request</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.75rem">Send a team request to <strong>${targetName}</strong>?</p>
       <div style="display:flex;gap:6px">
-        <button onclick="confirmTeam('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(94,196,94,.3);border:1px solid #5ec45e;border-radius:3px;padding:.45rem;cursor:pointer">🤝 Send</button>
-        <button onclick="document.getElementById('team-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        <button onclick="confirmTeam('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(94,196,94,.3);border:1px solid #5ec45e;border-radius:3px;padding:.45rem;cursor:pointer">🤝 Send</button>
+        <button onclick="document.getElementById('team-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
       </div>
     </div>`
   modal.addEventListener('click', e => { if (e.target===modal) modal.remove() })
@@ -655,7 +655,7 @@ function showIncomingModal(type, fromName, fromId, encounterId) {
     <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#d4c090;margin-bottom:.5rem"><strong>${fromName}</strong> wants to ${isPvp?'fight you':'team up'}.</p>
     ${isPvp?`<p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#e07070;margin-bottom:.5rem">30 seconds to respond.</p>`:''}
     <div style="display:flex;gap:6px">
-      <button onclick="respondRequest('accept','${type}','${fromId}','${fromName}','${encounterId||''}')" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#1a1208;background:rgba(${isPvp?'224,85,85':'94,196,94'},.4);border:1px solid ${isPvp?'#e05555':'#5ec45e'};border-radius:3px;padding:.4rem;cursor:pointer">✓ Accept</button>
+      <button onclick="respondRequest('accept','${type}','${fromId}','${fromName}','${encounterId||''}')" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:var(--ink);background:rgba(${isPvp?'224,85,85':'94,196,94'},.4);border:1px solid ${isPvp?'#e05555':'#5ec45e'};border-radius:3px;padding:.4rem;cursor:pointer">✓ Accept</button>
       <button onclick="respondRequest('decline','${type}','${fromId}','${fromName}','${encounterId||''}')" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#c8c0a0;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.3);border-radius:3px;padding:.4rem;cursor:pointer">✕ Decline</button>
     </div>`
   document.body.appendChild(modal)
@@ -745,7 +745,7 @@ function renderPvpCombat() {
     <div style="background:#0f0c09;border:1px solid #e05555;border-radius:8px;padding:1.25rem;width:100%;max-width:420px;box-shadow:0 0 60px rgba(224,85,85,.25)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
         <span style="font-family:'Cinzel',serif;font-size:.75rem;color:#e05555;font-weight:600">⚔ PVP COMBAT</span>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#7a6435">Round ${s.round}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">Round ${s.round}</span>
       </div>
       <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
         <div style="flex:1">
@@ -768,20 +768,20 @@ function renderPvpCombat() {
           </div>
         </div>
       </div>
-      <div style="background:rgba(0,0,0,.4);border:.5px solid rgba(200,184,128,.1);border-radius:4px;padding:.5rem .65rem;min-height:52px;max-height:90px;overflow-y:auto;margin-bottom:.6rem;font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#9a8050;line-height:1.7">
+      <div style="background:rgba(0,0,0,.4);border:.5px solid rgba(200,184,128,.1);border-radius:4px;padding:.5rem .65rem;min-height:52px;max-height:90px;overflow-y:auto;margin-bottom:.6rem;font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);line-height:1.7">
         ${s.log.length ? s.log.slice(-5).map(l=>`<div>${l}</div>`).join('') : '<div style="color:#5a4825">Both players choose…</div>'}
       </div>
       <div style="font-family:'Share Tech Mono',monospace;font-size:.5rem;letter-spacing:.07em;margin-bottom:.5rem;text-align:center;color:${s.myPick?'#5ec45e':'#c8b96e'}">
         ${s.myPick ? (s.opPick ? '⚡ RESOLVING…' : `✓ ${s.myPick.toUpperCase()} locked — waiting for ${s.opponentName}…`) : 'CHOOSE YOUR ACTION'}
       </div>
       <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
-        <button onclick="pvpPick('strike')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(224,85,85,${s.myPick==='strike'?.5:.25});border:${s.myPick==='strike'?'2px':'1px'} solid #e05555;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='strike'?.4:1}">
+        <button onclick="pvpPick('strike')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(224,85,85,${s.myPick==='strike'?.5:.25});border:${s.myPick==='strike'?'2px':'1px'} solid #e05555;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='strike'?.4:1}">
           ⚔ Strike<br><span style="font-size:.48rem;color:#6a2a2a">${s.myAtk} ATK</span>
         </button>
-        <button onclick="pvpPick('defend')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(94,196,94,${s.myPick==='defend'?.4:.18});border:${s.myPick==='defend'?'2px':'1px'} solid #5ec45e;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='defend'?.4:1}">
+        <button onclick="pvpPick('defend')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(94,196,94,${s.myPick==='defend'?.4:.18});border:${s.myPick==='defend'?'2px':'1px'} solid #5ec45e;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='defend'?.4:1}">
           🛡 Defend<br><span style="font-size:.48rem;color:#2a6a2a">${s.myDef} DEF</span>
         </button>
-        <button onclick="pvpPick('heavy')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;background:rgba(200,184,128,${s.myPick==='heavy'?.4:.18});border:${s.myPick==='heavy'?'2px':'1px'} solid rgba(200,184,128,.6);border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='heavy'?.4:1}">
+        <button onclick="pvpPick('heavy')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,${s.myPick==='heavy'?.4:.18});border:${s.myPick==='heavy'?'2px':'1px'} solid rgba(200,184,128,.6);border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='heavy'?.4:1}">
           💥 Heavy<br><span style="font-size:.48rem;color:#5a4825">×1.5 −HP</span>
         </button>
       </div>
@@ -936,7 +936,7 @@ async function endPvpCombat(won, fromRemote) {
     <div style="background:#0f0c09;border:2px solid ${borderCol};border-radius:8px;padding:1.75rem 1.5rem;text-align:center;max-width:300px;box-shadow:0 0 50px ${glowCol}">
       <p style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:800;color:${titleCol};margin-bottom:.35rem;letter-spacing:.1em">${titleText}</p>
       <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:#c8b96e;margin-bottom:1.25rem">${subText}</p>
-      <button id="pvp-result-btn" style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208;background:rgba(200,184,128,.45);border:1px solid rgba(200,184,128,.7);border-radius:4px;padding:.5rem 1.75rem;cursor:pointer;width:100%">← Return to Lobby</button>
+      <button id="pvp-result-btn" style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);background:rgba(200,184,128,.45);border:1px solid rgba(200,184,128,.7);border-radius:4px;padding:.5rem 1.75rem;cursor:pointer;width:100%">← Return to Lobby</button>
     </div>`
   document.body.appendChild(el)
 
@@ -983,7 +983,7 @@ function showRaidNotice(raid, attackerName) {
       Result: <span style="color:${raid.result==='victory'?'#e05555':'#c8b96e'}">${raid.result==='victory'?'YOU WERE DEFEATED':'PARTIAL HIT'}</span> · Damage: <span style="color:#e05555">${raid.damage_dealt||0}</span>
     </p>
     <div style="display:flex;gap:6px">
-      <button onclick="takeRevenge('${raid.initiator_id}','${attackerName}',this.closest('[style]'))" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#1a1208;background:rgba(176,110,255,.4);border:1px solid #b06eff;border-radius:3px;padding:.4rem;cursor:pointer">⚔ Revenge</button>
+      <button onclick="takeRevenge('${raid.initiator_id}','${attackerName}',this.closest('[style]'))" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:var(--ink);background:rgba(176,110,255,.4);border:1px solid #b06eff;border-radius:3px;padding:.4rem;cursor:pointer">⚔ Revenge</button>
       <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#c8c0a0;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.3);border-radius:3px;padding:.4rem;cursor:pointer">Dismiss</button>
     </div>`
   document.body.appendChild(modal)

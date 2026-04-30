@@ -17,11 +17,11 @@
       --page-l:    #0b1208;
       --page-r:    #0d1408;
       --ink:       #e8dfc8;
-      --ink-dim:   #7a7055;
-      --ink-faint: #3a3420;
+      --ink-dim:   #b8aa88;
+      --ink-faint: #7a6e50;
       --gold:      #c8a84a;
       --gold-hot:  #f0d080;
-      --gold-dim:  #7a6430;
+      --gold-dim:  #9a7e3a;
       --amber:     #e09020;
       --warm:      #e8b840;
       --warn:      #e05a44;
@@ -97,8 +97,8 @@
     .page-left  { border-right: none !important; }
     .page-right { border-left:  none !important; }
     /* gradient lighting from spine */
-    .page-left::before  { content:""; position:absolute; inset:0; background:linear-gradient(90deg,  rgba(200,168,74,.018) 0%, transparent 55%); pointer-events:none; }
-    .page-right::before { content:""; position:absolute; inset:0; background:linear-gradient(270deg, rgba(200,168,74,.014) 0%, transparent 55%); pointer-events:none; }
+    .page-left::before { display: none !important; }
+    .page-right::before { display: none !important; }
     /* gold corner brackets */
     /* page-curl shadow — left page */
     .page-left::after {
@@ -179,8 +179,8 @@
     /* ── INLINE COLOURS — remap parchment browns to gold tones ── */
     [style*="color:var(--ink)"] { color: var(--ink) !important; }
     [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--gold-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--gold-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
@@ -368,12 +368,12 @@
               ? `<img src="${imgSrc}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.2rem\\'>${item.icon}</span>'">`
               : `<span style="font-size:1.2rem">${item.icon}</span>`}
             <div style="flex:1;min-width:0">
-              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:${RARITY[item.rarity]||'var(--ink-dim)'};margin:0 0 1px">${item.name}</p>
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:${RARITY[item.rarity]||'#2a1208'};margin:0 0 1px">${item.name}</p>
               <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:var(--ink);margin:0">
                 ${item.element&&item.element!=='none'?`[${item.element.toUpperCase()}] `:''}${item.item_type}${item.atk_bonus>0?` · ATK +${item.atk_bonus}`:''}${item.def_bonus>0?` · DEF +${item.def_bonus}`:''}${item.hp_restore>0?` · +${item.hp_restore}HP`:''}${(item.power_bonus||0)>0?` · PWR +${item.power_bonus}`:''}${(item.speed_bonus||0)>0?` · SPD +${item.speed_bonus}`:''}${(item.insight_bonus||0)>0?` · INS +${item.insight_bonus}`:''}
               </p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${item.buy_price}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${item.buy_price}</span>
             <button onclick="buyItem('${s.itemKey}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Buy</button>
           </div>
         `
@@ -400,7 +400,7 @@
               <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${s.label}</p>
               <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink);margin:0">${s.desc}</p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${s.goldCost}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
             <button onclick="runesmith('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
           </div>
         `
@@ -426,7 +426,7 @@
               <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${s.label}</p>
               <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink);margin:0">${s.desc}</p>
             </div>
-            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${s.goldCost}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'#8b6010':'#c04040'}">◈${s.goldCost}</span>
             <button onclick="heal('${s.action}','${s.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Use</button>
           </div>
         `
@@ -524,7 +524,7 @@
             ? `<img src="${imgSrc}" style="width:32px;height:32px;object-fit:contain;border-radius:3px;flex-shrink:0" onerror="this.outerHTML='<span style=\\'font-size:1.1rem\\'>${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>'">`
             : `<span style="font-size:1.1rem">${isRune?(RUNE_ICONS[runeKey]||'💎'):(item.icon||'📦')}</span>`}
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${RC[item.rarity]||'var(--ink-dim)'};margin:0 0 1px">
+            <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${RC[item.rarity]||'#2a1208'};margin:0 0 1px">
               ${item.name}
               ${hasSocket?`<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a07de0;margin-left:4px">[${item.sockets_used||0}/${item.sockets_total}◈]</span>`:''}
             </p>
@@ -628,43 +628,23 @@
     await supabase.from('players').update({gold:newGold}).eq('id',player.id)
     player.gold = newGold
     document.getElementById('gold-display').textContent = `◈ ${newGold}`
-    // Add to inventory — stack if same item_key already exists
-    const {data:ex} = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
-    if (ex) {
-      await supabase.from('inventory').update({quantity:ex.quantity+1}).eq('id',ex.id)
-    } else {
+    // Add to inventory
+    const {data:ex} = await supabase.from('inventory').select('*').eq('player_id',player.id).eq('item_key',itemKey).eq('item_type','consumable').maybeSingle()
+    if (ex) { await supabase.from('inventory').update({quantity:ex.quantity+1}).eq('id',ex.id) }
+    else {
       await supabase.from('inventory').insert({
-        player_id:     player.id,
-        item_key:      item.item_key,
-        name:          item.name,
-        item_type:     item.item_type,
-        subtype:       item.subtype       || null,
-        rarity:        item.rarity,
-        icon:          item.icon,
-        element:       item.element       || 'none',
-        quantity:      1,
-        atk_bonus:     item.atk_bonus     || 0,
-        def_bonus:     item.def_bonus     || 0,
-        hp_restore:    item.hp_restore    || 0,
-        two_handed:    item.two_handed    || false,
-        power_bonus:   item.power_bonus   || 0,
-        control_bonus: item.control_bonus || 0,
-        guard_bonus:   item.guard_bonus   || 0,
-        speed_bonus:   item.speed_bonus   || 0,
-        insight_bonus: item.insight_bonus || 0,
-        luck_bonus:    item.luck_bonus    || 0,
-        agility_bonus: item.agility_bonus || 0,
-        max_hp_bonus:  item.max_hp_bonus  || 0,
-        special_effect:item.special_effect|| null,
+        player_id:player.id, item_key:item.item_key, name:item.name,
+        item_type:item.item_type, subtype:item.subtype, rarity:item.rarity,
+        atk_bonus:item.atk_bonus, def_bonus:item.def_bonus, hp_restore:item.hp_restore,
+        two_handed:item.two_handed, icon:item.icon, quantity:1,
+        element:item.element||'none',
+        power_bonus:item.power_bonus||0, control_bonus:item.control_bonus||0,
+        guard_bonus:item.guard_bonus||0, speed_bonus:item.speed_bonus||0,
+        insight_bonus:item.insight_bonus||0, luck_bonus:item.luck_bonus||0,
+        special_effect:item.special_effect||null
       })
     }
-    // Log the trade — use correct column names
-    await supabase.from('trade_log').insert({
-      to_player:      player.id,
-      item_key:       itemKey,
-      quantity:       1,
-      gold_exchanged: item.buy_price,
-    })
+    await supabase.from('trade_log').insert({player_id:player.id,trader_key:activeNPC.key,item_key:itemKey,quantity:1,gold_spent:item.buy_price})
     showToast(`Bought ${item.name}`)
     renderNPCPanel()
   }
