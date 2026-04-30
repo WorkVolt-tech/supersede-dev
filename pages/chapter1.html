@@ -267,10 +267,10 @@
 
     /* ── Body text colour remaps (inline styles use parchment browns) ── */
     p, li, span { color: var(--ink) !important; }
-    [style*="color:#1a1208"] { color: var(--ink) !important; }
-    [style*="color:#3a2008"] { color: var(--ink-dim) !important; }
-    [style*="color:#7a6435"] { color: var(--ink-dim) !important; }
-    [style*="color:#9a8050"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
     [style*="background:rgba(200,184,128"] { background: rgba(143,216,240,.06) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(143,216,240,.25) !important; }
@@ -3459,24 +3459,24 @@ function renderHUD() {
     </div>
     <div style="margin-bottom:5px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a6435;letter-spacing:.07em">REPUTATION</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);letter-spacing:.07em">REPUTATION</span>
         <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
       </div>
       <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
         <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
       </div>
     </div>
-    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208;cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
     <div class="stat-grid">
       <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
       <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
       <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
     </div>
     <div style="display:flex;gap:4px;margin-top:6px">
-      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
     </div>
-    ${getDefeatedBosses().length>0?`<button onclick="goTo('district_hub')" style="width:100%;margin-top:4px;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.35);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚔ FARM ZONES</button>`:''}
+    ${getDefeatedBosses().length>0?`<button onclick="goTo('district_hub')" style="width:100%;margin-top:4px;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.35);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚔ FARM ZONES</button>`:''}
   `
 }
 
@@ -3556,20 +3556,20 @@ function showLootWindow() {
   win.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(200,184,128,.2)">
       <span style="font-size:.62rem;letter-spacing:.1em;color:#c8b880">ITEMS OBTAINED</span>
-      <button onclick="document.getElementById('loot-window').remove()" style="background:none;border:none;color:#7a6435;cursor:pointer;font-size:1rem;line-height:1;padding:0 2px">✕</button>
+      <button onclick="document.getElementById('loot-window').remove()" style="background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px">✕</button>
     </div>
     <div style="padding:6px 0;max-height:280px;overflow-y:auto">
       ${drops.map(d => `
         <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:.5px solid rgba(200,184,128,.1)">
           ${d.img ? `<img src="${d.img}" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">` : `<span style="font-size:1.1rem;flex-shrink:0">📦</span>`}
           <span style="font-size:.68rem;color:#e8d8a8;flex:1">${d.name}</span>
-          ${d.qty > 1 ? `<span style="font-size:.58rem;color:#7a6435">×${d.qty}</span>` : ''}
+          ${d.qty > 1 ? `<span style="font-size:.58rem;color:var(--ink-dim)">×${d.qty}</span>` : ''}
           <button onclick="declineDrop('${d.name}',this)" style="background:none;border:.5px solid rgba(224,85,85,.3);color:#e05555;cursor:pointer;font-size:.55rem;padding:1px 5px;border-radius:2px;font-family:'Share Tech Mono',monospace">skip</button>
         </div>
       `).join('')}
     </div>
     <div style="padding:8px 12px;display:flex;justify-content:flex-end">
-      <button onclick="document.getElementById('loot-window').remove()" style="font-family:'Cinzel',serif;font-size:.68rem;color:#1a1208;background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);padding:4px 14px;border-radius:2px;cursor:pointer">Keep All</button>
+      <button onclick="document.getElementById('loot-window').remove()" style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);padding:4px 14px;border-radius:2px;cursor:pointer">Keep All</button>
     </div>
   `
   document.body.appendChild(win)
@@ -3852,8 +3852,8 @@ function triggerForcedEyeEncounter(encounterType, resumeNextId) {
       #eye-encounter-overlay .stat-bar-wrap {
         background: rgba(255,255,255,.08) !important;
       }
-      #eye-encounter-overlay p[style*="color:#1a1208"],
-      #eye-encounter-overlay span[style*="color:#1a1208"] {
+      #eye-encounter-overlay p[style*="color:var(--ink)"],
+      #eye-encounter-overlay span[style*="color:var(--ink)"] {
         color: #c8b96e !important;
       }
       #eye-encounter-overlay .combat-btn {
@@ -3914,7 +3914,7 @@ function triggerForcedEyeEncounter(encounterType, resumeNextId) {
 
     <!-- Combat phase (hidden until engaged) -->
     <div id="eye-combat-phase" style="display:none;width:100%;max-width:460px;padding:1rem;max-height:90vh;overflow-y:auto">
-      <p style="font-size:.58rem;color:#7a6435;letter-spacing:.08em;margin-bottom:.75rem;text-align:center">
+      <p style="font-size:.58rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.75rem;text-align:center">
         ${isSwarm ? '👁 WATCHER\'S EYE SWARM' : '👁 WATCHER\'S EYE'} — FORCED ENGAGEMENT
       </p>
       <div id="eye-combat-inner"></div>
@@ -4079,41 +4079,41 @@ window.openStatWindow = function() {
   modal.innerHTML = `
     <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:#1a1208">Character Stats</p>
-        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:#1a1208">✕</button>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
+        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
       </div>
 
       <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
           ${[['ATK', finalATK, '#e05555'],['DEF', finalDEF, '#5ec45e'],['SPD', finalSPD, '#a8d8ea'],
              ['HP', (player.max_hp||100), '#5eaee0'],['LVL', (player.level||1), '#c8b96e'],['GOLD', (player.gold||0), '#c8b96e']
-          ].map(([k,v,c]) => '<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#3a2008;display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
+          ].map(([k,v,c]) => '<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
         </div>
       </div>
 
-      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
       ${STATS.map(s => `
         <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
           <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
           <div style="flex:1">
             <div style="display:flex;align-items:baseline;gap:4px">
-              <span style="font-family:'Cinzel',serif;font-size:.78rem;color:#1a1208;font-weight:600">${s.label}</span>
-              <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#1a1208">${s.val}</span>
-              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#3a2008;margin-left:auto">${s.derived}</span>
+              <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);font-weight:600">${s.label}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink)">${s.val}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin-left:auto">${s.derived}</span>
             </div>
-            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:#3a2008;margin:0">${s.desc}</p>
+            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:var(--ink-dim);margin:0">${s.desc}</p>
           </div>
         </div>
       `).join('')}
 
       <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#1a1208;letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
-        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:#1a1208;margin:0">${equippedNames}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
+        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${equippedNames}</p>
       </div>
 
       ${(player.skill_points||0)>0?`
-        <button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">
+        <button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">
           ⬡ Spend ${player.skill_points} Skill Points → Skills Page
         </button>
       `:''}
@@ -4311,10 +4311,10 @@ The Watcher won't show itself until every guardian is defeated.`
           onmouseover="this.style.background='${z.color}20'" onmouseout="this.style.background='${z.color}10'">
           <div style="display:flex;align-items:center;gap:.5rem">
             <span style="font-size:1rem">${z.icon}</span>
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208">${z.name}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${z.name}</span>
             <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:${z.color};margin-left:auto">✓ FARM</span>
           </div>
-          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:#7a6435;margin:3px 0 0">${z.guardian} — defeated. Tap to farm.</p>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:var(--ink-dim);margin:3px 0 0">${z.guardian} — defeated. Tap to farm.</p>
         </div>
       ` : `
         <div onclick="goTo('${z.introNode}')" style="border:.5px solid rgba(224,85,85,.4);border-radius:5px;padding:.65rem .75rem;background:rgba(80,20,20,.08);cursor:pointer;transition:all .2s"
@@ -4388,10 +4388,10 @@ function renderLocationHub(panel, node) {
             <div style="padding:.65rem .75rem">
               <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:3px">
                 <span style="font-size:1rem">${loc.icon}</span>
-                <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#1a1208;font-weight:500">${loc.name}</span>
+                <span style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--ink);font-weight:500">${loc.name}</span>
                 <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:${loc.color};border:.5px solid ${loc.color}50;padding:1px 6px;border-radius:12px;margin-left:auto">${loc.level}</span>
               </div>
-              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#7a6435;margin:0">${loc.desc}</p>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin:0">${loc.desc}</p>
             </div>
           </div>`
         } else {
@@ -4448,7 +4448,7 @@ function renderFarmZone(panel, loc) {
   panel.innerHTML = `
     ${zoneImg ? `<div style="width:100%;height:110px;background:url('${zoneImg}') center/cover;border-radius:6px;margin-bottom:.75rem;opacity:.85;border:.5px solid rgba(139,106,32,.3)"></div>` : ''}
     <p class="choices-label">${loc.icon} ${loc.name} — <span style="color:${loc.color}">${loc.level}</span></p>
-    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#7a6435;margin-bottom:.75rem">
+    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.75rem">
       Enemies respawn indefinitely. Fight as many times as you need.
     </p>
     <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem">
@@ -4456,7 +4456,7 @@ function renderFarmZone(panel, loc) {
         const drops = e.loot.map(l => {
           const pct = Math.round(l.chance * 100)
           const label = l.itemKey.replace('rune_','').replace(/_/g,' ')
-          return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#9a8050">${label} ${pct}%</span>`
+          return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">${label} ${pct}%</span>`
         }).join(' · ')
         const eImgs = {
           'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
@@ -4492,8 +4492,8 @@ function renderFarmZone(panel, loc) {
           onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background='rgba(0,0,0,.04)'">
           <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:3px">
             ${eImg ? `<img src="${eImg}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(0,0,0,.5))">` : `<span style="font-size:1.1rem">${e.icon}</span>`}
-            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:#1a1208">${e.name}</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#7a6435;margin-left:auto">HP ${e.hp} · ATK ${e.atk} · ${e.xp} XP</span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${e.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin-left:auto">HP ${e.hp} · ATK ${e.atk} · ${e.xp} XP</span>
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap">${drops}</div>
         </div>`
@@ -4502,11 +4502,11 @@ function renderFarmZone(panel, loc) {
     <div style="display:flex;gap:6px">
       <button class="choice" onclick="returnToZoneHub()" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
         <span class="choice-arrow">←</span>
-        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:#1a1208">Back to zones</span>
+        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Back to zones</span>
       </button>
       <button class="choice" onclick="goTo('district_hub')" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
         <span class="choice-arrow">→</span>
-        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:#1a1208">Return to story</span>
+        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Return to story</span>
       </button>
     </div>
   `
@@ -4651,9 +4651,9 @@ ${systemText}`
     <div class="end-box">
       <p class="end-title">Chapter 1 Complete</p>
       <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.08em;margin-bottom:2px">REPUTATION RECORDED</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:2px">REPUTATION RECORDED</p>
         <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${mLabel}</p>
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#9a8050;margin-top:2px">Moral score: ${moral > 0 ? '+' : ''}${moral}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);margin-top:2px">Moral score: ${moral > 0 ? '+' : ''}${moral}</p>
       </div>
       <p class="end-sub" style="margin-bottom:.75rem">The Watcher has been defeated.<br>The Eyes have scattered across every road out of the city.</p>
       <button class="end-btn" id="continue-btn" style="display:block;margin-bottom:.75rem;width:100%">Continue ›</button>
@@ -4735,7 +4735,7 @@ The garage is yours.`
     const isLast = beatIdx === GARAGE_BEATS.length - 1
     panel.innerHTML = `
       <div class="end-box">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6435;letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
         <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
         <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#c8b96e;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
         <button class="end-btn" id="beat-btn" style="display:block;width:100%">
@@ -4916,16 +4916,16 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
           <div class="stat-bar-wrap">
             <div class="stat-bar" id="${cid}-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div>
           </div>
-          <p id="${cid}-e-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#7a6435;margin-top:2px">${enemyHp} / ${maxEnemyHp} HP</p>
+          <p id="${cid}-e-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">${enemyHp} / ${maxEnemyHp} HP</p>
         </div>
       </div>
       <div class="combat-log" id="${cid}-combat-log">${isBoss ? 'The eye opens. It sees everything.' : 'The encounter begins.'}</div>
       <div class="stat-row" style="margin-bottom:.4rem">
-        <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#1a1208">YOUR HP</span>
+        <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>
         <div class="stat-bar-wrap">
           <div class="stat-bar" id="${cid}-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div>
         </div>
-        <span id="${cid}-c-player-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#1a1208;min-width:50px;text-align:right">${currentHp}/${maxPlayerHp}</span>
+        <span id="${cid}-c-player-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">${currentHp}/${maxPlayerHp}</span>
       </div>
       ${yara ? `
       <div class="stat-row" style="margin-bottom:${dorianLurking ? '.3rem' : '1rem'}">
@@ -4944,7 +4944,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         <span id="${cid}-c-dorian-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e05555;min-width:50px;text-align:right">?? / 40</span>
       </div>` : ''}
       <div id="${cid}-combat-actions">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#1a1208;letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>
 
         <!-- Basic actions always visible -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">
@@ -4983,7 +4983,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       <div id="${cid}-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05);animation:fadeIn .2s ease">
         <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>
         <div id="${cid}-items-list"></div>
-        <button onclick="document.getElementById('${cid}-items-panel').style.display='none'" style="font-family:'IM Fell English',serif;font-size:.78rem;color:#7a6435;background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>
+        <button onclick="document.getElementById('${cid}-items-panel').style.display='none'" style="font-family:'IM Fell English',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>
       </div>
       <div id="${cid}-combat-over" style="display:none;text-align:center;padding:.5rem"></div>
     </div>
@@ -5109,7 +5109,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         overEl.style.display = 'block'
         overEl.innerHTML = '<p style="font-family:Cinzel,serif;font-size:1rem;font-weight:600;color:'+resultColor+';letter-spacing:.1em;margin-bottom:.5rem">'+resultLabel+'</p>'
           + '<p style="font-family:&quot;IM Fell English&quot;,serif;font-style:italic;font-size:.82rem;color:#c8b96e;line-height:1.55;margin-bottom:.6rem">'+resultMsg+'</p>'
-          + '<p style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:.55rem;color:#7a6435;letter-spacing:.08em">Returning to your story\u2026</p>'
+          + '<p style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.08em">Returning to your story\u2026</p>'
       }
       // Award XP for eye fight
       const eyeXp  = result==='win' ? (enemy.xp || 80) : Math.floor((enemy.xp || 80) * 0.2)
@@ -5130,9 +5130,9 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       const resultLabel = result==='win' ? '✦ Victory ✦' : result==='escape' ? '✦ Escaped ✦' : '✦ Defeated ✦'
 
       if (isFarm) {
-        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
+        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
         overEl.innerHTML =
-          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:#1a1208;letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
+          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
           '<div style="display:flex;flex-direction:column;gap:4px">' +
           '<button onclick="returnToZone()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Fight Again (same zone)</button>' +
           '<button onclick="returnToZoneHub()" style="' + btnStyle + ';background:rgba(200,184,128,.25)">← Pick a Different Zone</button>' +
@@ -5140,9 +5140,9 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
           '</div>'
       } else {
         // Boss or story fight — show navigation buttons
-        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:#1a1208;border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
+        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
         overEl.innerHTML =
-          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:#1a1208;letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
+          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
           '<div style="display:flex;flex-direction:column;gap:4px">' +
           (result === 'win' ? '' :
             '<button onclick="returnToBoss()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Try Again</button>' +
@@ -5202,13 +5202,23 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         if (isBoss) {
           const unlocked = player.chapters_unlocked || [1]
           if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
-          // ── 1 SP for boss kill (the bonus kill SP) ──
-          const ch1Bonus = 1
-          updates.skill_points = (player.skill_points || 0) + ch1Bonus
-          updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
-          player.skill_points  = updates.skill_points
-          player.sp_claimed    = updates.sp_claimed
-          showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+          // ── 1 SP for boss kill — only once ever ──
+          const spKey = 'watcher_sp_claimed'
+          const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
+          const alreadyClaimed = currentDefeated.includes(spKey)
+          if (!alreadyClaimed) {
+            const merged = [...new Set([...currentDefeated, spKey])]
+            updates.defeated_bosses = merged
+            player.defeated_bosses  = merged
+            const ch1Bonus = 1
+            updates.skill_points = (player.skill_points || 0) + ch1Bonus
+            updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
+            player.skill_points  = updates.skill_points
+            player.sp_claimed    = updates.sp_claimed
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+          } else {
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
+          }
           // ── Watcher Item Set — rare drop (35% per piece) ──
           await dropWatcherSet()
         } else {
@@ -5519,14 +5529,14 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
 
     if (!activeSkills.length) {
       row.innerHTML = passiveStrip +
-        '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:#7a6435;padding:4px 0">' +
+        '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">' +
         'No active skills assigned — visit Skills page</p>'
       return
     }
 
     // Skills header
     let html = passiveStrip
-    html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:#1a1208;letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
+    html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
 
     // Skills grid — same 3-column layout as basic actions
     html += '<div style="display:grid;grid-template-columns:' +
@@ -6297,7 +6307,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
       return
     }
     itemsPanel.style.display = 'block'
-    list.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:#9a8050">Loading...</p>'
+    list.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
 
     // Fetch consumables and usable keys from inventory
     const { data } = await supabase
@@ -6310,7 +6320,7 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
     const usable = (data||[]).filter(i => i.hp_restore > 0 || ['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
 
     if (!usable.length) {
-      list.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:#7a6435">No usable items in bag.</p>'
+      list.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'
       return
     }
 
@@ -6323,11 +6333,11 @@ function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = nul
         ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">'):(item.icon||'📦')})()}
         <div style="flex:1;min-width:0">
           <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#9a8050;margin:0">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">
             ${item.hp_restore>0 ? `+${item.hp_restore} HP` : item.special_effect || 'Special effect'}
           </p>
         </div>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#7a6435;flex-shrink:0">×${item.quantity||1}</span>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
       </div>
     `).join('')
   })
