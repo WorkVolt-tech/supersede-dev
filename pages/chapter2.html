@@ -1748,32 +1748,38 @@ async function _goToCore(nextId, choice={}) {
     await setChapterResonance(WIN_ELEMENT_MAP[nextId])
   }
 
-  // ── Award ESP on zone boss first kill (+3) or regular combat win (+1) ────
+  // ── Award ESP on zone boss first kill (+3) or repeat (+1) ────────────────
   const ZONE_BOSS_NODES = Object.keys(WIN_ELEMENT_MAP)
   if (ZONE_BOSS_NODES.includes(nextId)) {
-    const elKey = WIN_ELEMENT_MAP[nextId]
-    const espBossKey = 'esp_awarded_'+nextId
-    const alreadyAwarded = (player.defeated_bosses||[]).includes(espBossKey)
-    const espGain = alreadyAwarded ? 1 : 3
-    const newEsp = (player.esp||0) + espGain
-    player.esp = newEsp
-    updates.esp = newEsp
+    const elKey      = WIN_ELEMENT_MAP[nextId]
+    const espBossKey = 'esp_awarded_' + nextId
+    // Use already-merged defeated_bosses from updates, not stale player object
+    const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
+    const alreadyAwarded  = currentDefeated.includes(espBossKey)
+    const espGain  = alreadyAwarded ? 1 : 3
+    const newEsp   = (player.esp || 0) + espGain
+    player.esp     = newEsp
+    updates.esp    = newEsp
     if (!alreadyAwarded) {
-      const d = markBossDefeated(espBossKey)
-      updates.defeated_bosses = d
+      // Merge esp boss key into defeated_bosses
+      const merged = [...new Set([...currentDefeated, espBossKey])]
+      updates.defeated_bosses = merged
+      player.defeated_bosses  = merged
       // Collect all 10 elemental nodes for this element
       const espTree = player.esp_tree || { base:[], slots:{}, collected:[] }
       if (!espTree.collected) espTree.collected = []
       const elNodes = ['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k']
-        .map(suffix => elKey+'_'+suffix)
+        .map(suffix => elKey + '_' + suffix)
         .filter(k => !espTree.collected.includes(k))
       if (elNodes.length) {
         espTree.collected.push(...elNodes)
-        player.esp_tree = espTree
+        player.esp_tree  = espTree
         updates.esp_tree = espTree
       }
+      showToast('⬡ +3 ESP · ' + elKey.charAt(0).toUpperCase()+elKey.slice(1) + ' elemental nodes unlocked!')
+    } else {
+      showToast('⬡ +1 ESP')
     }
-    showToast((alreadyAwarded ? '+1 ESP' : '+3 ESP · '+elKey+' nodes collected!'))
   }
 
   await save(updates)
