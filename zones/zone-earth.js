@@ -57,7 +57,7 @@ It doesn't rush. It doesn't need to.`,
 
 You can hear it moving through the rubble.`,
     xp: 50,
-    choices: [{ label: 'Fight it while it's slowed', next: 'zone_earth_enemy_1b' }],
+    choices: [{ label: "Fight it while it's slowed", next: 'zone_earth_enemy_1b' }],
   },
 
   zone_earth_enemy_1: {
