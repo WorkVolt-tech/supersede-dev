@@ -94,9 +94,9 @@
       transform-origin: 50% 0 !important;
       margin-top: 10px !important;
     }
-    @media(max-width:860px){
-      .book{ grid-template-columns:1fr !important; transform:none !important; }
-      .spine{ display:none !important; }
+    @media(max-width: 860px) {
+      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
+      .spine { display: none !important; }
     }
 
     /* ── Pages ── */
@@ -115,39 +115,43 @@
 
     .page-left::before  {
       content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(244,196,90,.014) 0%, transparent 55%);
+      background: linear-gradient(90deg, rgba(244,196,90,.008) 0%, transparent 55%);
     }
     .page-right::before {
       content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(270deg, rgba(244,196,90,.012) 0%, transparent 55%);
+      background: linear-gradient(270deg, rgba(244,196,90,.006) 0%, transparent 55%);
     }
     .page-left::after {
-      content: "" !important; position: absolute !important;
+      content: "" !important;
+      position: absolute !important;
       top: 0 !important; bottom: 0 !important; right: 0 !important;
-      width: 32px !important; border: none !important;
-      background: linear-gradient(270deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.10) 50%, transparent 100%) !important;
-      pointer-events: none !important; z-index: 2 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
     .page-right::after {
-      content: "" !important; position: absolute !important;
+      content: "" !important;
+      position: absolute !important;
       top: 0 !important; bottom: 0 !important; left: 0 !important;
-      width: 32px !important; border: none !important;
-      background: linear-gradient(90deg, rgba(0,0,0,.28) 0%, rgba(0,0,0,.10) 50%, transparent 100%) !important;
-      pointer-events: none !important; z-index: 2 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.28) 0%,
+        rgba(0,0,0,.10) 50%,
+        transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
-    .page-inner { padding: 24px 26px !important; }
 
-    /* ── Spine ── */
-    .spine {
-      background: #26232f !important;
-      border-left: none !important; border-right: none !important;
-      position: relative; z-index: 5;
-      width: 22px !important; min-width: 22px !important; margin: 0 !important;
-    }
-    .spine::before { display: none !important; }
-    .spine::after  { display: none !important; }
     .spine-inner, .spine-highlight, .spine-shadow,
     .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
+
+    /* ── Chapter label / subtitle ── */
     .chapter-label {
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 9.5px !important;
@@ -538,7 +542,7 @@
     /* ── Right panel zone cards ── */
     #right-panel div[onclick] { border-radius: 0 !important; }
 
-    
+    /* ── Spine ── */
     .spine {
       background: linear-gradient(90deg,
         rgba(0,0,0,.0)  0%,
@@ -756,136 +760,6 @@ The question is where to go first.`,
   // ═══════════════════════════════
   // PLAZA — THE THREE FACTIONS
   // ═══════════════════════════════
-  meet_builders_first: {
-    id: 'meet_builders_first', type: 'story',
-    text: `The salvage crew doesn't stop working when you approach. One of them — compact, wearing a faded orange vest with extra pockets — looks up and keeps moving without breaking stride.
-
-"You're new." Not a question.
-
-"Sera." She extends her hand briefly. When you take it, she's already turning back to the crate she was sorting. "We're the Builders. If you want to help, we can use you. If you're just passing through, don't touch the stack."
-
-She gestures to a neat pile of salvage in the corner. Someone has actually labeled each item.
-
-"We're building something stable here. Most people don't get why that matters yet. They will."
-
-She says it without bitterness. Like it's just true and she's made her peace with waiting.
-
-Behind her, the rest of the crew watches you with the careful assessment of people who've been burned before.`,
-    xp: 60,
-    moral: 5,
-    choices: [
-      { label: 'Offer to help with the salvage',  sub: 'Moral +10 — makes a good first impression', next: 'builders_deep', moral: 10 },
-      { label: 'Ask about the elemental zones',    sub: 'Get information first',                     next: 'builders_deep' },
-      { label: 'Keep it neutral for now',          sub: 'Don\'t commit yet',                         next: 'plaza_arrival' },
-    ],
-  },
-
-  meet_ghosts_first: {
-    id: 'meet_ghosts_first', type: 'story',
-    text: `The solo player doesn't move when you get close. They're crouched behind a half-collapsed wall, watching the Builder crew across the lot. When you settle into the same position, they glance over once.
-
-"Rue." No handshake. Just the name.
-
-They hand you something without looking — a folded map of the district, hand-drawn, surprisingly detailed. Twelve locations marked. Three of them labeled in a shorthand you don't recognize.
-
-"I mapped the whole district three days ago. Kept it to myself." A pause. "You look like someone who won't waste it."
-
-They go back to watching the Builders. After a moment:
-
-"There are ten elemental zones in this district. Most players don't know that yet. The factions will tell you about four or five, maybe six, depending on what they want from you."
-
-Another pause. Longer.
-
-"I'll tell you about all ten. If you come back."`,
-    xp: 60,
-    rewards: [{ itemKey: 'district_map', qty: 1 }],
-    choices: [
-      { label: 'Ask about the zones now',          sub: 'They\'re willing to talk',               next: 'ghosts_deep' },
-      { label: 'Take the map and keep scouting',   sub: 'Collect more information first',         next: 'plaza_arrival' },
-      { label: 'Ask about the factions',            sub: 'Get a neutral read on the situation',   next: 'ghosts_deep' },
-    ],
-  },
-
-  meet_builders: {
-    id: 'meet_builders', type: 'story',
-    text: `Sera notices you walking toward her group before you're halfway across the plaza. She doesn't react visibly — just sets down what she was carrying and meets you at the edge of their perimeter.
-
-"Good." She says it before you've spoken. "We need people who actually make decisions."
-
-She steps aside and shows you the inside of their setup. More organized than it looked from across the plaza. Food stores. Tools. A medical kit. Someone has drawn a map of the district on the back of a menu and stuck it to the wall with a piece of metal.
-
-"We're not trying to control the district. We're trying to make it survivable. There's a difference."
-
-Behind her, a few of the crew have stopped to watch. One of them — younger, holding a tablet — gives you a small nod.
-
-Sera extends her hand.
-
-"You in or not?"`,
-    xp: 80,
-    moral: 10,
-    choices: [
-      { label: 'Shake her hand — join the Builders', sub: 'Moral +10 · Alliance log: Builders',  next: 'builders_alliance', moral: 10 },
-      { label: 'Ask what joining actually means',     sub: 'Get details before committing',       next: 'builders_deep' },
-      { label: 'Tell her you\'re not ready to commit', sub: 'Keep your options open',             next: 'plaza_arrival' },
-    ],
-  },
-
-  meet_hunters: {
-    id: 'meet_hunters', type: 'story',
-    text: `The lean figure with the cracked visor is already walking toward you before you've crossed half the plaza. The others stay where they are — watching, not moving.
-
-"Voss." He stops a few feet short of you. Not aggressive. Calculated. "You've got the look of someone who made it through Chapter 1 the hard way."
-
-He looks you over like he's reading something.
-
-"We don't build. We don't ghost. We find resources, we secure them, and we move. The other groups want to tell you what the district means. We just want to know what you found in there and what you're willing to trade for better information."
-
-He holds up his interface. It shows a map — more detailed than anything you have. Cache locations. Timer countdowns. Patrol routes of something you can't identify.
-
-"Stay clean if you want. Just know that the caches run out. The zones don't wait. And the Builders will ask for your loyalty before they give you anything useful."
-
-He tilts his head.
-
-"We just ask for information. That's a better deal."`,
-    xp: 80,
-    moral: -5,
-    choices: [
-      { label: 'Ask what information they want',   sub: 'Hear the terms',                    next: 'hunters_deep' },
-      { label: 'Ask about the caches on that map', sub: 'Direct — Voss respects it',         next: 'hunters_deep' },
-      { label: 'Walk away from this',              sub: 'Keep your record clean',             next: 'plaza_arrival' },
-    ],
-  },
-
-  meet_ghosts: {
-    id: 'meet_ghosts', type: 'story',
-    text: `The three players near the fountain's edge don't look up when you sit down. They give you room. That's all.
-
-After a minute, the one closest to you — small, patient, wearing mismatched gear — says: "Rue."
-
-You give your name.
-
-"I know," she says. Which shouldn't be possible but lands like it is.
-
-She's watching both other factions across the plaza with the same neutral attention she'd give weather.
-
-"Most people pick a side in the first ten minutes. Then spend the rest of the chapter defending the choice." A pause. "You sat here instead."
-
-She slides something across the fountain edge without looking — a folded map of the district, hand-drawn. More detailed than anything your interface is showing.
-
-"I mapped all of it. Ten zones. The factions will tell you about some of them. I'll tell you about all of them, if you want that."
-
-Rue looks at you directly for the first time.
-
-"No alliance required."`,
-    xp: 60,
-    rewards: [{ itemKey: 'district_map', qty: 1 }],
-    choices: [
-      { label: 'Ask about the ten zones',          sub: 'Get the full picture',               next: 'ghosts_deep' },
-      { label: 'Ask about the factions',           sub: 'Neutral read on the situation',      next: 'ghosts_deep' },
-      { label: 'Sit here a while longer',          sub: 'Observe before acting',              next: 'plaza_center' },
-    ],
-  },
-
   plaza_arrival: {
     id: 'plaza_arrival', type: 'story',
     text: `The plaza is a wide open square at the center of the district. A fountain in the middle, dry, full of broken glass. Around the edges, three distinct groups.
@@ -1736,7 +1610,7 @@ async function _goToCore(nextId, choice={}) {
   if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
   if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
 
-  // ── Set chapter resonance on first zone kill ─────────────────────────────
+  // ── Set chapter resonance on first zone boss kill ─────────────────────────
   const WIN_ELEMENT_MAP = {
     zone_fire_boss_win:'fire',      zone_water_boss_win:'water',
     zone_lightning_boss_win:'lightning', zone_arcane_boss_win:'arcane',
@@ -1746,40 +1620,6 @@ async function _goToCore(nextId, choice={}) {
   }
   if (WIN_ELEMENT_MAP[nextId] && !getChapterResonance()) {
     await setChapterResonance(WIN_ELEMENT_MAP[nextId])
-  }
-
-  // ── Award ESP on zone boss first kill (+3) or repeat (+1) ────────────────
-  const ZONE_BOSS_NODES = Object.keys(WIN_ELEMENT_MAP)
-  if (ZONE_BOSS_NODES.includes(nextId)) {
-    const elKey      = WIN_ELEMENT_MAP[nextId]
-    const espBossKey = 'esp_awarded_' + nextId
-    // Use already-merged defeated_bosses from updates, not stale player object
-    const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
-    const alreadyAwarded  = currentDefeated.includes(espBossKey)
-    const espGain  = alreadyAwarded ? 1 : 3
-    const newEsp   = (player.esp || 0) + espGain
-    player.esp     = newEsp
-    updates.esp    = newEsp
-    if (!alreadyAwarded) {
-      // Merge esp boss key into defeated_bosses
-      const merged = [...new Set([...currentDefeated, espBossKey])]
-      updates.defeated_bosses = merged
-      player.defeated_bosses  = merged
-      // Collect all 10 elemental nodes for this element
-      const espTree = player.esp_tree || { base:[], slots:{}, collected:[] }
-      if (!espTree.collected) espTree.collected = []
-      const elNodes = ['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k']
-        .map(suffix => elKey + '_' + suffix)
-        .filter(k => !espTree.collected.includes(k))
-      if (elNodes.length) {
-        espTree.collected.push(...elNodes)
-        player.esp_tree  = espTree
-        updates.esp_tree = espTree
-      }
-      showToast('⬡ +3 ESP · ' + elKey.charAt(0).toUpperCase()+elKey.slice(1) + ' elemental nodes unlocked!')
-    } else {
-      showToast('⬡ +1 ESP')
-    }
   }
 
   await save(updates)
@@ -1837,14 +1677,14 @@ function renderChoices(panel,node) {
 // District hub — 9 elemental zones
 const ZONES = [
   { id:'zone_fire',      icon:'🔥', name:'Kitchen Supply Store',    element:'Ignis',  color:'#ff5500', branch:'Offense',        img:'../assets/zones/zone_fire.webp' },
-  { id:'zone_water',     icon:'💧', name:'Food Court Basement',     element:'Aqua',   color:'#0088ff', branch:'Defense',        img:'../assets/zones/zone_water.webp' },
-  { id:'zone_lightning', icon:'⚡', name:'Electronics Hub',         element:'Volt',   color:'#ffee58', branch:'Flow',           img:'../assets/zones/zone_lightning.webp' },
-  { id:'zone_arcane',    icon:'✨', name:'Kessler Bookshop',        element:'Arcane', color:'#b06eff', branch:'Arcane',         img:'../assets/zones/zone_arcane.webp' },
-  { id:'zone_shadow',    icon:'🌑', name:'Closed Cinema',           element:'Umbra',  color:'#9a6fd8', branch:'Decay',          img:'../assets/zones/zone_shadow.webp' },
+  { id:'zone_water',     icon:'💧', name:'Food Court Basement',     element:'Aqua',   color:'#0088ff', branch:'Defense',        img:'../assets/zones/zone_water_clean.webp' },
+  { id:'zone_lightning', icon:'⚡', name:'Electronics Hub',         element:'Volt',   color:'#ffee58', branch:'Flow',           img:'../assets/zones/zone_lightning_clean.webp' },
+  { id:'zone_arcane',    icon:'✨', name:'Kessler Bookshop',        element:'Arcane', color:'#b06eff', branch:'Arcane',         img:'../assets/zones/zone_arcane_clean.webp' },
+  { id:'zone_shadow',    icon:'🌑', name:'Closed Cinema',           element:'Umbra',  color:'#9a6fd8', branch:'Decay',          img:'../assets/zones/zone_shadow_clean.webp' },
   { id:'zone_earth',     icon:'🪨', name:'Parking Structure',        element:'Terra',  color:'#8b5e3c', branch:'Defense+Offense', img:'../assets/zones/zone_earth.webp' },
-  { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane',    img:'../assets/zones/zone_wind.webp' },
-  { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay',  img:'../assets/zones/zone_plant.webp' },
-  { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane', img:'../assets/zones/zone_metal.webp' },
+  { id:'zone_wind',      icon:'💨', name:'Glass Atrium',            element:'Aero',   color:'#a8d8ea', branch:'Flow+Arcane',    img:'../assets/zones/zone_wind_clean.webp' },
+  { id:'zone_plant',     icon:'🌿', name:'Garden Centre',           element:'Flora',  color:'#66bb6a', branch:'Defense+Decay',  img:'../assets/zones/zone_plant_clean.webp' },
+  { id:'zone_metal',     icon:'⚙️', name:'Hardware Megastore',      element:'Ferro',  color:'#90a4ae', branch:'Offense+Arcane', img:'../assets/zones/zone_metal_clean.webp' },
   { id:'zone_poison',    icon:'☠️', name:'Pharmacy — Anchor Store', element:'Venom',  color:'#7aad30', branch:'Decay+Offense',  img:'../assets/zones/zone_poison.webp' },
 ]
 
@@ -1921,7 +1761,16 @@ function renderBoss(panel,node) {
   // Scale to player level
   enemy.hp = node.enemy.hp + lvl*20
   enemy.atk = node.enemy.atk + Math.floor(lvl*1.5)
-  // Count distinct elemental zones the player has entered (via defeated array or skills)
+
+  // Is this a zone boss (not the Twin Judges)?
+  const isZoneBoss = node.bossKey && node.bossKey !== 'twin_judges'
+  const isBoss = !isZoneBoss  // only Twin Judges triggers chapter-end logic
+
+  // Zone bosses use their own onLose/onEscape (back to approach node)
+  // Twin Judges fall back to pre_boss_ch2
+  const onLose   = node.onLose   || (isZoneBoss ? 'district_hub' : 'pre_boss_ch2')
+  const onEscape = node.onEscape || (isZoneBoss ? 'district_hub' : 'pre_boss_ch2')
+
   const elementsAttempted = (() => {
     const elementKeys = ['ignis','aqua','volt','arcane','umbra','terra','aero','flora','ferro','venom']
     const skills = player.skills_unlocked || []
@@ -1930,10 +1779,10 @@ function renderBoss(panel,node) {
     for (const k of elementKeys) {
       if (skills.some(s=>s.startsWith(k+'_')) || defeated.includes(k)) found.add(k)
     }
-    // Also count via current_node history not available, so floor at 1
     return Math.max(1, found.size)
   })()
-  buildCombatUI(panel,enemy,node.onWin,node.onLose||'pre_boss_ch2',node.onEscape||'pre_boss_ch2',true,{
+
+  buildCombatUI(panel,enemy,node.onWin,onLose,onEscape,isBoss,{
     playerMoral: player.moral_score||0,
     elementsAttempted,
   })
@@ -1942,147 +1791,573 @@ function renderBoss(panel,node) {
 function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   const cid='cb'+Math.random().toString(36).slice(2,7)
   const $=id=>panel.querySelector('#'+cid+'-'+id)
-  let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100, over=false
-  // Init AI state for this enemy
+
+  let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100
+  let over=false, defending=false
+  let currentHp = player.hp || 100
+
   window._enemyAIState = initEnemyState(enemy)
-  window._combatStatusEffects = {}
 
-  function playerATK() { return (player.atk||5)+(player.power||0)*.5+Math.floor(Math.random()*6) }
-  function playerDEF() { return (player.def||2)+(player.guard||0)*.5 }
-  function pctBar(v,m) { return Math.max(0,Math.round(v/m*100)) }
+  function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
+  function playerDEF() { return (player.def||2)+(player.guard||0)*.5+(player.armor||0) }
+  function playerSPD() { return (player.speed||5)+(player.agility||0)*.5 }
+  function enemySPD()  { return enemy.spd||5 }
+  const eqLuck = player.luck||0
 
-  panel.innerHTML=`
-    <div style="font-family:'Cinzel',serif;font-size:.9rem;color:#c8b96e;margin-bottom:.5rem">${enemy.icon||'👁'} ${enemy.name}</div>
-    <div style="margin-bottom:.5rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>ENEMY HP</span><span id="${cid}-ehp-txt">${enemyHp}/${maxEnemyHp}</span></div>
-      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-ebar" style="height:100%;width:100%;background:#e05555;border-radius:3px;transition:width .3s"></div></div>
-    </div>
-    <div style="margin-bottom:.75rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>YOUR HP</span><span id="${cid}-php-txt">${currentHp}/${maxPlayerHp}</span></div>
-      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-pbar" style="height:100%;width:100%;background:#5ec45e;border-radius:3px;transition:width .3s"></div></div>
-    </div>
-    <div id="${cid}-log" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#c8b96e;min-height:3rem;margin-bottom:.75rem;line-height:1.55"></div>
-    <div id="${cid}-actions" style="display:flex;flex-direction:column;gap:6px">
-      <button class="choice" onclick="doAction_${cid}('strike')"><span class="choice-arrow">⚔</span><span class="choice-body">Strike<span class="choice-sub">Deal ~${Math.round(playerATK())} damage</span></span></button>
-      <button class="choice" onclick="doAction_${cid}('heavy')"><span class="choice-arrow">💥</span><span class="choice-body">Heavy Strike<span class="choice-sub">More damage, slow</span></span></button>
-      <button class="choice" onclick="doAction_${cid}('defend')"><span class="choice-arrow">🛡</span><span class="choice-body">Defend<span class="choice-sub">Reduce incoming damage, heal slightly</span></span></button>
-      ${onEscape?`<button class="choice" onclick="doAction_${cid}('escape')"><span class="choice-arrow">↩</span><span class="choice-body">Escape<span class="choice-sub">Flee the fight</span></span></button>`:''}
-    </div>
-    <div id="${cid}-over" style="display:none;margin-top:.75rem"></div>`
-
-  function syncBars() {
-    $('ebar').style.width=pctBar(enemyHp,maxEnemyHp)+'%'
-    $('pbar').style.width=pctBar(currentHp,maxPlayerHp)+'%'
-    $('ehp-txt').textContent=Math.max(0,Math.round(enemyHp))+'/'+maxEnemyHp
-    $('php-txt').textContent=Math.max(0,Math.round(currentHp))+'/'+maxPlayerHp
-    $('pbar').style.background=currentHp/maxPlayerHp>0.6?'#5ec45e':currentHp/maxPlayerHp>0.3?'#c8b96e':'#e05555'
+  // ── SKILL DEFINITIONS ────────────────────────────────────────────────────
+  const BATTLE_SKILLS = {
+    darkness_passive_backstab:      {label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff'},
+    darkness_skill_shadow_step:     {label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores DEF',         fn:'shadowStep'},
+    darkness_ultimate_void_zone:    {label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',       fn:'voidZone'},
+    earth_passive_damage_reduction: {label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c'},
+    earth_skill_rock_armor:         {label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',              fn:'rockArmor'},
+    earth_ultimate_earthquake:      {label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',      fn:'earthquake'},
+    fire_passive_burn:              {label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500'},
+    fire_skill_fire_blast:          {label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',     fn:'fireBlast'},
+    fire_ultimate_inferno_zone:     {label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',          fn:'infernoZone'},
+    light_passive_boost_allies:     {label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700'},
+    light_skill_heal_pulse:         {label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                    fn:'healPulse'},
+    light_ultimate_divine_barrier:  {label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',    fn:'divineBarrier'},
+    lightning_passive_chain_damage: {label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff'},
+    lightning_skill_lightning_strike:{label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',          fn:'lightningStrike'},
+    lightning_ultimate_thunderstorm:{label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',              fn:'thunderstorm'},
+    metal_passive_reflect:          {label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0'},
+    metal_skill_blade_form:         {label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK+20, SPD+5 for 2 turns',        fn:'bladeForm'},
+    metal_ultimate_iron_domain:     {label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',          fn:'ironDomain'},
+    plant_passive_heal_still:       {label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e'},
+    plant_skill_root_trap:          {label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',          fn:'rootTrap'},
+    plant_ultimate_nature_overgrowth:{label:'Overgrowth',    type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',             fn:'overgrowth'},
+    water_passive_regen:            {label:'Flow',           type:'passive',  el:'water',     color:'#0088ff'},
+    water_skill_water_shield:       {label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',            fn:'waterShield'},
+    water_ultimate_tsunami:         {label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',       fn:'tsunami'},
+    wind_passive_dodge:             {label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea'},
+    wind_skill_dash_strike:         {label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',        fn:'dashStrike'},
+    wind_ultimate_tornado_field:    {label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, SPD×2',             fn:'tornadoField'},
   }
-  function log(msg) { const el=$('log'); el.innerHTML=msg }
+  const NOTABLE_SKILLS = {
+    ofn1:{label:'Warbound',      type:'active',  branch:'offense',color:'#e05555',desc:'ATK +15% this turn.',                                 fn:'warbound'},
+    ofn2:{label:'Amplifier',     type:'passive', branch:'offense',color:'#992222',desc:'Power contributes ×0.4 extra ATK.'},
+    ofn3:{label:'Spellblade',    type:'passive', branch:'offense',color:'#e05555',desc:'15% chance to poison on Strike.'},
+    ofn4:{label:'Executioner',   type:'active',  branch:'offense',color:'#e05555',desc:'+25% dmg to enemies below 30% HP.',                  fn:'embersEnd'},
+    ofn5:{label:'Hex Cannon',    type:'active',  branch:'offense',color:'#992222',desc:'Heavy Strike poisons: 5 dmg/turn × 3 turns.',        fn:'venomLance'},
+    ofn6:{label:'Predator',      type:'active',  branch:'offense',color:'#e05555',desc:'Gain +20 ATK for 2 turns.',                          fn:'predator'},
+    of_ks1:{label:'Bloodthirst', type:'active',  branch:'offense',color:'#c8512a',desc:'On kill: +20% HP & +10 ATK for 2 turns.',            fn:'bloodthirst'},
+    of_ks2:{label:'Spell Surge', type:'active',  branch:'offense',color:'#b06eff',desc:'Next skill: ×1.5 dmg, ignores 50% DEF.',             fn:'spellSurge'},
+    dfn1:{label:'Iron Tide',     type:'passive', branch:'defense',color:'#5ec45e',desc:'First time below 50% HP: +20 DEF for 2 turns.'},
+    dfn2:{label:'Absorption',    type:'passive', branch:'defense',color:'#3db89a',desc:'Every 3 hits taken: Defend heals 15 HP.'},
+    dfn3:{label:'Thorns',        type:'passive', branch:'defense',color:'#5ec45e',desc:'20% chance to stun enemy when hit.'},
+    dfn4:{label:'Fortress',      type:'active',  branch:'defense',color:'#5ec45e',desc:'Below 30% HP: +20 DEF & +15 dmg.',                  fn:'pressureWave'},
+    dfn5:{label:'Retaliation',   type:'passive', branch:'defense',color:'#3db89a',desc:'After 3 hits in a row: auto counter 50% ATK.'},
+    dfn6:{label:'Bulwark',       type:'active',  branch:'defense',color:'#5ec45e',desc:'DEF doubled next turn.',                             fn:'chargedStance'},
+    df_ks1:{label:'Deep Current',type:'active',  branch:'defense',color:'#3db89a',desc:'+30 DEF 2 turns, absorb next hit.',                  fn:'deepCurrent'},
+    df_ks2:{label:'Iron Mirror', type:'active',  branch:'defense',color:'#5ec45e',desc:'Reflect 40% of next hit, +15 DEF.',                  fn:'ironMirror'},
+    fln1:{label:'Razor Tempo',   type:'passive', branch:'flow',   color:'#5eaee0',desc:'Strike always goes first.'},
+    fln2:{label:'Ghost Step',    type:'passive', branch:'flow',   color:'#5eaee0',desc:'15% dodge; on dodge, free counter.'},
+    fln3:{label:'Lockdown',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Reduce enemy SPD by 6.',                             fn:'heavyGround'},
+    fln4:{label:'Flicker',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'After dodging: next Strike deals ×2 dmg.'},
+    fln5:{label:'Stagger',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'20% chance per turn: enemy misses.'},
+    fln6:{label:'Momentum',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Ground spike: 20 dmg, ignores 30% DEF.',             fn:'earthSpike'},
+    fl_ks1:{label:'Phantom Step',type:'active',  branch:'flow',   color:'#5eaee0',desc:'Untargetable 1 turn + guaranteed crit.',             fn:'phantomStep'},
+    fl_ks2:{label:'Time Lock',   type:'active',  branch:'flow',   color:'#88ccff',desc:'Freeze enemy 1 turn, next attack ×2.',               fn:'timeLock'},
+    arn1:{label:'Sharp Mind',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight +1 ATK per 3 pts.'},
+    arn2:{label:'Hex Weave',     type:'active',  branch:'arcane', color:'#b06eff',desc:'Reduce incoming dmg 90% this turn.',                 fn:'foresight'},
+    arn3:{label:'Wild Proc',     type:'passive', branch:'arcane', color:'#d4a843',desc:'Each Luck pt +0.5% crit dmg.'},
+    arn4:{label:'Prescience',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight reduces enemy crit chance.'},
+    arn5:{label:'Ricochet',      type:'passive', branch:'arcane', color:'#d4a843',desc:'20% chance attacks hit twice (40% dmg).'},
+    arn6:{label:'Mind Pierce',   type:'active',  branch:'arcane', color:'#b06eff',desc:'Next attack crits ×1.75.',                           fn:'preciseStrike'},
+    ar_ks1:{label:'Sixth Sense', type:'active',  branch:'arcane', color:'#b06eff',desc:'Know enemy move, -80% dmg if correct.',              fn:'sixthSense'},
+    ar_ks2:{label:'Chaos Engine',type:'active',  branch:'arcane', color:'#d4a843',desc:'Random powerful effect.',                            fn:'chaosEngine'},
+    dcn1:{label:'Nightshroud',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'First turn free dodge + 50% ATK counter.',          fn:'nightshroud'},
+    dcn2:{label:'Umbral Veil',   type:'passive', branch:'decay',  color:'#9a6fd8',desc:'15% dodge; on dodge, 50% ATK counter.'},
+    dcn3:{label:'Thornwall',     type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Defend reflects 15% dmg as thorns.',                fn:'thornwall'},
+    dcn4:{label:'Shade Walk',    type:'passive', branch:'decay',  color:'#9a6fd8',desc:'+5 SPD, +4 Power. On kill +15 SPD.'},
+    dcn5:{label:'Enduring Root', type:'passive', branch:'decay',  color:'#9a6fd8',desc:'Cannot be stunned or rooted.'},
+    dcn6:{label:'Dread Pulse',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Each hit reduces enemy ATK by 2 (×3 max).',        fn:'dreadPulse'},
+    dc_ks1:{label:'Reaper Form', type:'active',  branch:'decay',  color:'#9a6fd8',desc:'ATK ×1.5, ignore DEF for 2 turns.',                 fn:'reaperForm'},
+    dc_ks2:{label:'Ancient Root',type:'active',  branch:'decay',  color:'#5ec45e',desc:'Shield 20% max HP at battle start.',                fn:'ancientRoot'},
+  }
+  Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
 
+  const battleSkillKeys = player.battle_skills || []
+
+  // ── Status effects ───────────────────────────────────────────────────────
+  let statusEffects = {
+    playerATKBonus:0, playerDEFBonus:0, playerSPDBonus:0,
+    ignoreEnemyDEF:false, invulnerable:false, waterShield:0,
+    enemyATKMult:1.0, enemyStunTurns:0,
+    burnTurns:0, burnDmg:3, infernoTurns:0, regenTurns:0, rootTrapTurns:0,
+    skillCooldowns:{},
+  }
+
+  const T=[0,10,25,50,90,150,240,380,590,900]
+  function _skillLv(key) {
+    const sl=(player.skill_levels||{})[key]; if(!sl) return 1
+    let lv=1; for(let i=1;i<T.length;i++){if(sl.uses>=T[i])lv=i+1;else break} return Math.min(10,lv)
+  }
+  function skillScale(key){return 0.5+(_skillLv(key)-1)*(0.5/9)}
+  async function recordSkillUse(key){
+    const sl=player.skill_levels||{}; if(!sl[key])sl[key]={uses:0}
+    const prev=_skillLv(key); sl[key].uses++; player.skill_levels=sl
+    const nw=_skillLv(key); if(nw>prev){const sk=BATTLE_SKILLS[key];showToast('✦ '+(sk?.label||key)+' Lv'+nw+'!')}
+    await supabase.from('players').update({skill_levels:sl}).eq('id',player.id)
+  }
+
+  // ── Apply passives ────────────────────────────────────────────────────────
+  const unlocked=player.skills_unlocked||[], inBattle=player.battle_skills||[]
+  const has=k=>inBattle.includes(k)
+  if(unlocked.includes('water_passive_regen'))            statusEffects.regenTurns=999
+  if(unlocked.includes('earth_passive_damage_reduction')){const lv=_skillLv('earth_passive_damage_reduction');statusEffects.playerDEFBonus+=Math.round(5+(lv-1))}
+  if(unlocked.includes('metal_passive_reflect'))          statusEffects.metalReflect=true
+  if(has('ofn2')) statusEffects.flameFist=true
+  if(has('ofn3')) statusEffects.venomFang=true
+  if(has('dfn1')) statusEffects.tidalResolve=true
+  if(has('dfn2')) statusEffects.absorption=true
+  if(has('dfn3')) statusEffects.liveWire=true
+  if(has('dfn5')) statusEffects.arcReflex=true
+  if(has('fln1')) statusEffects.razorTempo=true
+  if(has('fln2')) statusEffects.ghostStep=true
+  if(has('fln4')) statusEffects.flicker=true
+  if(has('fln5')) statusEffects.tremorStep=true
+  if(has('arn1')) statusEffects.sharpMind=true
+  if(has('arn3')) statusEffects.razorLuck=true
+  if(has('arn4')) statusEffects.prescience=true
+  if(has('arn5')) statusEffects.ricochet=true
+  if(has('dcn2')) statusEffects.umbralVeil=true
+  if(has('dcn4')) statusEffects.shadeWalk=true
+  if(has('dcn5')) statusEffects.enduringRoot=true
+  if(has('dc_ks2'))statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2)
+
+  // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
+  const enemyImg = enemy.img
+    ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
+    : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
+
+  panel.innerHTML =
+    '<div class="combat-panel" id="'+cid+'-combat-wrap">'
+    + '<div class="combat-enemy-row">'
+    + enemyImg
+    + '<div style="flex:1">'
+    + '<p class="combat-enemy-name">'+enemy.name+'</p>'
+    + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div></div>'
+    + '<p id="'+cid+'-e-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">'+enemyHp+' / '+maxEnemyHp+' HP</p>'
+    + '</div></div>'
+    + '<div class="combat-log" id="'+cid+'-combat-log">The encounter begins.</div>'
+    + '<div class="stat-row" style="margin-bottom:.4rem">'
+    + '<span class="stat-key" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>'
+    + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div></div>'
+    + '<span id="'+cid+'-c-player-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">'+currentHp+'/'+maxPlayerHp+'</span>'
+    + '</div>'
+    + '<div id="'+cid+'-combat-actions">'
+    + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">'
+    + '<button class="combat-btn" id="'+cid+'-btn-strike" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Fast attack. Always goes first."><span style="font-size:1.1rem;line-height:1">⚔</span><span>Strike</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">FAST · FIRST</span></button>'
+    + '<button class="combat-btn" id="'+cid+'-btn-heavy"  style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="High damage but slower."><span style="font-size:1.1rem;line-height:1">💥</span><span>Heavy</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">HIGH DMG · SLOW</span></button>'
+    + '<button class="combat-btn" id="'+cid+'-btn-defend" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Halve incoming damage."><span style="font-size:1.1rem;line-height:1">🛡</span><span>Defend</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">BLOCK · FIRST</span></button>'
+    + '</div>'
+    + '<div id="'+cid+'-skill-slots-row" style="margin-bottom:4px"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+    + '<button class="combat-btn" id="'+cid+'-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>'
+    + (onEscape ? '<button class="combat-btn" id="'+cid+'-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>' : '<span></span>')
+    + '</div>'
+    + '</div>'
+    + '<div id="'+cid+'-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05)">'
+    + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>'
+    + '<div id="'+cid+'-items-list"></div>'
+    + '<button onclick="document.getElementById(\''+cid+'-items-panel\').style.display=\'none\'" style="font-family:\'IM Fell English\',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>'
+    + '</div>'
+    + '<div id="'+cid+'-combat-over" style="display:none;text-align:center;padding:.5rem"></div>'
+    + '</div>'
+  function syncBars() {
+    const ePct=Math.max(0,Math.round(enemyHp/maxEnemyHp*100))
+    const pPct=Math.max(0,Math.round(currentHp/maxPlayerHp*100))
+    const eBar=$('e-bar'), eHp=$('e-hp'), pBar=$('c-player-bar'), pHp=$('c-player-hp')
+    if(eBar){eBar.style.width=ePct+'%'; eBar.style.background=ePct>50?'#e05555':'#c8b96e'}
+    if(eHp) eHp.textContent=enemyHp+' / '+maxEnemyHp+' HP'
+    if(pBar){pBar.style.width=pPct+'%'; pBar.style.background=pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555'}
+    if(pHp) pHp.textContent=currentHp+'/'+maxPlayerHp
+    updateHpBar(currentHp)
+  }
+
+  function log(msg) {
+    const el=$('combat-log')
+    if(el){el.innerHTML=msg; el.style.animation='none'; void el.offsetWidth; el.style.animation='fadeIn .3s ease'}
+  }
+
+  // ── Render battle skill slots — exact mirror of chapter1 ─────────────────
+  function renderSkillSlots() {
+    const row=$('skill-slots-row')
+    if(!row) return
+
+    const activeSkills  = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type!=='passive'})
+    const passiveSkills = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type==='passive'})
+
+    const passiveStrip = passiveSkills.length
+      ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'
+        + passiveSkills.map(k=>{
+            const sk=BATTLE_SKILLS[k]
+            return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:'+sk.color+';border:.5px solid '+sk.color+'50;border-radius:12px;padding:1px 6px;background:'+sk.color+'12;letter-spacing:.04em">⚡ '+sk.label+' (passive)</span>'
+          }).join('')
+        + '</div>'
+      : ''
+
+    if(!activeSkills.length) {
+      row.innerHTML = passiveStrip
+        + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">'
+        + (battleSkillKeys.length===0
+            ? 'No active skills assigned — visit Skills page'
+            : battleSkillKeys.length+' skill key(s) found but not recognized — visit Skills page to re-save')
+        + '</p>'
+      return
+    }
+
+    const EL_ICON={fire:'🔥',water:'💧',earth:'🪨',wind:'💨',dark:'🌑',light:'✨',lightning:'⚡',metal:'⚙',plant:'🌿'}
+    let html = passiveStrip
+    html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
+    html += '<div style="display:grid;grid-template-columns:'+(activeSkills.length===1?'1fr':activeSkills.length===2?'1fr 1fr':'1fr 1fr 1fr')+';gap:4px">'
+
+    html += activeSkills.map(k=>{
+      const sk     = BATTLE_SKILLS[k]
+      const cd     = statusEffects.skillCooldowns[k]||0
+      const isUlt  = sk.type==='ultimate'
+      const lv     = _skillLv(k)
+      const lvColor= lv>=10?'#ffd700':lv>=7?'#c8b96e':lv>=4?'#a0c080':'#9a8858'
+      const pct    = Math.round((0.5+(lv-1)*(0.5/9))*100)
+      const elIcon = EL_ICON[sk.el]||'✦'
+      const cdLabel= cd>0 ? cd+' turn'+(cd>1?'s':'') : null
+      const border = isUlt ? 'border-color:'+sk.color+'70' : 'border-color:'+sk.color+'40'
+      const cdOverlay = cd>0
+        ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">'+cdLabel+'</span></div>'
+        : ''
+      const iconFilter = cd>0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px '+sk.color+'88)'
+      const btnColor   = cd>0 ? 'rgba(200,160,60,.35)' : sk.color
+      const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto" onerror="this.remove()">'
+
+      return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
+        + ' onclick="useSkill_'+cid+'(\''+k+'\')"'
+        + (cd>0?' disabled':'')
+        + ' title="'+(sk.desc||sk.label)+' (Lv'+lv+' · '+pct+'% power)"'
+        + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;'+border+';color:'+btnColor+';position:relative;overflow:hidden">'
+        + cdOverlay
+        + '<span style="font-size:1rem;line-height:1;filter:'+iconFilter+'">'+imgTag
+        + '<span style="font-size:1rem;margin:0 auto;display:none">'+elIcon+'</span>'
+        + '</span>'
+        + '<span style="font-size:.58rem;font-weight:600;letter-spacing:.02em">'+(isUlt?'★ ':'')+sk.label+'</span>'
+        + '<span style="font-size:.42rem;color:'+lvColor+';letter-spacing:.04em">Lv'+lv+' · '+pct+'%</span>'
+        + '</button>'
+    }).join('')
+
+    html += '</div>'
+    row.innerHTML = html
+  }
+
+  function setButtons(enabled) {
+    ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id=>{
+      const b=$(id); if(b) b.disabled=!enabled
+    })
+    battleSkillKeys.forEach(k=>{
+      const b=$('btn-skill-'+k)
+      if(b&&enabled){b.disabled=(statusEffects.skillCooldowns[k]||0)>0}
+      else if(b){b.disabled=true}
+    })
+  }
+
+  window['useSkill_'+cid] = function(key) {
+    if(over) return
+    const sk=BATTLE_SKILLS[key]; if(!sk) return
+    const cd=statusEffects.skillCooldowns[key]||0
+    if(cd>0){log('Skill on cooldown ('+cd+' turns)'); return}
+    doTurn('skill',key)
+  }
+
+  // ── Items panel ───────────────────────────────────────────────────────────
+  $('btn-items').addEventListener('click', async () => {
+    if(over) return
+    const itemsPanel=$('items-panel')
+    const list=$('items-list')
+    if(itemsPanel.style.display!=='none'){itemsPanel.style.display='none'; return}
+    itemsPanel.style.display='block'
+    list.innerHTML='<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
+    const {data}=await supabase.from('inventory').select('*')
+      .eq('player_id',player.id).in('item_type',['consumable','key']).gt('quantity',0).order('item_type')
+    const usable=(data||[]).filter(i=>i.hp_restore>0||['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
+    if(!usable.length){list.innerHTML='<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'; return}
+    const RC={common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
+    list.innerHTML=usable.map(item=>`
+      <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
+        style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px"
+        onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">${item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special effect'}</p>
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
+      </div>`).join('')
+  })
+
+  window['combatUseItem_'+cid] = async function(itemId,itemName,hpRestore,qty,specialEffect) {
+    const maxHp=player.max_hp||100
+    if(hpRestore>0){
+      const healed=Math.min(maxHp,currentHp+hpRestore)-currentHp
+      currentHp=Math.min(maxHp,currentHp+hpRestore); syncBars()
+      await supabase.from('players').update({hp:currentHp}).eq('id',player.id)
+      player.hp=currentHp
+      log('Used '+itemName+' — restored '+healed+' HP. ('+currentHp+'/'+maxHp+')')
+    } else if(itemName==='Phoenix Feather'){
+      window._hasRevive=true; log('Phoenix Feather equipped — will auto-revive at 20 HP.')
+    } else if(itemName==='Explosion Scroll'){
+      window._forceMaxHit=true; log('Explosion Scroll loaded — next attack deals maximum damage.')
+    } else if(itemName==='Lava Bomb'){
+      enemyHp=0; syncBars(); log('Lava Bomb detonated — enemy destroyed instantly.')
+      $('items-panel').style.display='none'
+      if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+      else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+      await endCombat('win'); return
+    } else {log('Cannot use '+itemName+' here.'); return}
+    $('items-panel').style.display='none'
+    if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+    else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+  }
+
+  renderSkillSlots()
+  syncBars()
+
+  // ── Button event listeners ─────────────────────────────────────────────────
+  ;[['btn-strike','strike'],['btn-heavy','heavy'],['btn-defend','defend']].forEach(([id,action])=>{
+    const b=$(id); if(b) b.addEventListener('click',()=>{if(!over)doTurn(action,null)})
+  })
+  const escBtn=$('btn-escape')
+  if(escBtn) escBtn.addEventListener('click',()=>{
+    if(over)return
+    log('You disengage and retreat.')
+    endCombat('escape')
+  })
+
+  // ── End combat ────────────────────────────────────────────────────────────
   async function endCombat(result) {
     if (over) return; over=true
-    $('actions').style.display='none'
+    setButtons(false)
     if (result==='win') {
       const oldXp=player.xp||0, oldLvl=player.level||1
       const newXp=oldXp+(enemy.xp||50)
       const updates={xp:newXp,hp:currentHp}
+
+      // ── Mark boss defeated + loot (zone bosses AND Twin Judges) ──
+      const bossNode=NODES[nodeId]
+      if (bossNode?.bossKey) {
+        const d=markBossDefeated(bossNode.bossKey)
+        updates.defeated_bosses=d
+      }
+      if (enemy.loot) for(const l of enemy.loot) await addItem(l.itemKey,l.qty)
+
       if (isBoss) {
+        // Twin Judges only — chapter unlock + per-form SP
         const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
         updates.chapters_unlocked=uls
-        if (enemy.loot) for (const l of enemy.loot) await addItem(l.itemKey,l.qty)
-        const node=NODES[nodeId]
-        if (node?.bossKey) { const d=markBossDefeated(node.bossKey); updates.defeated_bosses=d }
-
-        // ── Per-form SP — 1 SP each, awarded once ever per form ──
-        const moral = extraCtx.playerMoral    || 0
-        const elems = extraCtx.elementsAttempted || 1
+        // ── Per-form SP ──
+        const moral = extraCtx.playerMoral||0, elems = extraCtx.elementsAttempted||1
         let formKey
-        if      (Math.abs(moral)>=70 && elems>=3) formKey='verdict'
-        else if (Math.abs(moral)<40  && elems>=2) formKey='dual_powered'
-        else if (moral>=40  && elems>=2)          formKey='mercy_powered'
-        else if (moral<=-40 && elems>=2)          formKey='wrath_powered'
-        else if (Math.abs(moral)<40)              formKey='dual'
-        else if (moral>=40)                        formKey='mercy'
-        else                                       formKey='wrath'
-
-        const spKey = 'judges_sp_'+formKey
-        const alreadyClaimed = (player.defeated_bosses||[]).includes(spKey)
+        if     (Math.abs(moral)>=70&&elems>=3) formKey='verdict'
+        else if(Math.abs(moral)<40&&elems>=2)  formKey='dual_powered'
+        else if(moral>=40&&elems>=2)            formKey='mercy_powered'
+        else if(moral<=-40&&elems>=2)           formKey='wrath_powered'
+        else if(Math.abs(moral)<40)             formKey='dual'
+        else if(moral>=40)                      formKey='mercy'
+        else                                    formKey='wrath'
+        const spKey='judges_sp_'+formKey
+        const alreadyClaimed=(updates.defeated_bosses||player.defeated_bosses||[]).includes(spKey)
         if (!alreadyClaimed) {
           const d2=markBossDefeated(spKey); updates.defeated_bosses=d2
           updates.skill_points=(player.skill_points||0)+1
           updates.sp_claimed=(player.sp_claimed||0)+1
-          player.skill_points=updates.skill_points
-          player.sp_claimed=updates.sp_claimed
+          player.skill_points=updates.skill_points; player.sp_claimed=updates.sp_claimed
           showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP · +1 SP')
+        } else { showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP') }
+      }
+      // ── ESP award on zone boss win ──
+      const WIN_ELEMENT_MAP2 = {
+        zone_fire_boss_win:'fire', zone_water_boss_win:'water', zone_lightning_boss_win:'lightning',
+        zone_arcane_boss_win:'arcane', zone_shadow_boss_win:'shadow', zone_earth_boss_win:'earth',
+        zone_wind_boss_win:'wind', zone_plant_boss_win:'plant', zone_metal_boss_win:'metal', zone_poison_boss_win:'poison',
+      }
+      if (WIN_ELEMENT_MAP2[onWin]) {
+        const elKey=WIN_ELEMENT_MAP2[onWin], espBossKey='esp_awarded_'+onWin
+        const currentDefeated=updates.defeated_bosses||player.defeated_bosses||[]
+        if (!currentDefeated.includes(espBossKey)) {
+          const merged=[...new Set([...currentDefeated,espBossKey])]
+          updates.defeated_bosses=merged; player.defeated_bosses=merged
+          const espTree=player.esp_tree||{base:[],slots:{},collected:[]}
+          if(!espTree.collected)espTree.collected=[]
+          const elNodes=['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k'].map(s=>elKey+'_'+s).filter(k=>!espTree.collected.includes(k))
+          if(elNodes.length){espTree.collected.push(...elNodes);player.esp_tree=espTree;updates.esp_tree=espTree}
+          const newEsp=(player.esp||0)+3; player.esp=newEsp; updates.esp=newEsp
+          showToast('⬡ +3 ESP · '+elKey+' nodes unlocked!')
         } else {
-          showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP')
+          const newEsp=(player.esp||0)+1; player.esp=newEsp; updates.esp=newEsp
+          showToast('⬡ +1 ESP')
         }
       }
       const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
       await save(updates)
       const nextNode=isBoss?'chapter_end_ch2':onWin
-      $('over').style.display='block'
-      $('over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
     } else if (result==='escape') {
       await save({hp:currentHp})
-      $('over').style.display='block'
-      $('over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape the fight</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
     } else {
       currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
-      $('over').style.display='block'
-      $('over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall. The Judges withdraw — for now.</p><button class="choice" onclick="goTo('${onLose||'pre_boss_ch2'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" onclick="goTo('${onLose||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
     }
   }
 
-  window['doAction_'+cid]=async function(action) {
-    if (over) return
-    $('actions').style.display='none'
-    const msgs=[]
-    if (action==='escape') { log('You disengage and retreat.'); endCombat('escape'); return }
-    if (action==='strike') {
-      const dmg=Math.max(1,Math.round(playerATK()-playerDEF()*.3))
-      enemyHp=Math.max(0,enemyHp-dmg); msgs.push('You strike for <strong>'+dmg+'</strong> damage.')
-    } else if (action==='heavy') {
-      const dmg=Math.max(1,Math.round(playerATK()*1.6-playerDEF()*.2))
-      enemyHp=Math.max(0,enemyHp-dmg); msgs.push('Heavy strike — <strong>'+dmg+'</strong> damage!')
-    } else if (action==='defend') {
-      const heal=Math.round(maxPlayerHp*.08); currentHp=Math.min(maxPlayerHp,currentHp+heal)
-      msgs.push('You defend. Recovered <strong>'+heal+'</strong> HP.')
-    }
-    // Enemy counterattack — use enemyAI if available, else flat calc
-    if (enemyHp>0) {
-      if (window._enemyAI && window._enemyAIState) {
-        const statusEffects = window._combatStatusEffects || {}
-        window._combatStatusEffects = statusEffects
-        const result = window._enemyAI.resolveEnemyTurn(enemy, {
-          enemyState:      window._enemyAIState,
-          enemyHp,
-          maxEnemyHp,
-          currentHp,
-          maxPlayerHp,
-          playerDEF:       ()=>playerDEF(),
-          defending:       action==='defend',
-          statusEffects,
-          yara:            null,
-          messages:        msgs,
-          triggerAnimation:()=>{},
-          onEnemyDmgPlayer:(dmg)=>{ currentHp=Math.max(0,currentHp-dmg) },
-          onEnemyHealSelf: ()=>{},
-          onEnemyDmgReduced:()=>{},
-          playerMoral:     extraCtx.playerMoral||0,
-          elementsAttempted: extraCtx.elementsAttempted||1,
-        })
-      } else {
-        const eAtk=Math.max(0,Math.round(enemy.atk-playerDEF()*(action==='defend'?.7:.3)+(Math.random()*6-3)))
-        currentHp=Math.max(0,currentHp-eAtk); msgs.push(enemy.name+' attacks for <strong>'+eAtk+'</strong>.')
+  // ── Main turn function ────────────────────────────────────────────────────
+  window['doAction_'+cid]=async function(action){
+    if(over)return
+    if(action==='escape'){log('You disengage and retreat.');await endCombat('escape');return}
+    await doTurn(action,null)
+  }
+
+  async function doTurn(playerAction, skillKey=null) {
+    if(over)return
+    setButtons(false)
+    defending=false
+    const luckBonus=Math.floor(eqLuck/2)
+
+    // Tick cooldowns and status
+    if(statusEffects.enemyStunTurns>0) statusEffects.enemyStunTurns--
+    if(statusEffects.rootTrapTurns>0)  statusEffects.rootTrapTurns--
+    Object.keys(statusEffects.skillCooldowns).forEach(k=>{if(statusEffects.skillCooldowns[k]>0)statusEffects.skillCooldowns[k]--})
+
+    const pSPD=playerSPD()+(statusEffects.playerSPDBonus||0), eSPD=enemySPD()
+    const razorTempo=statusEffects.razorTempo&&playerAction==='strike'
+    const dashStrike=skillKey==='wind_skill_dash_strike'
+    const pEffSPD=pSPD+(playerAction==='heavy'?-3:0)+Math.floor(Math.random()*3)
+    const eEffSPD=eSPD+Math.floor(Math.random()*3)
+    let playerFirst=dashStrike||razorTempo||(playerAction==='defend')?true:pEffSPD>eEffSPD||(pEffSPD===eEffSPD&&Math.random()<0.5)
+
+    let messages=[]
+
+    function resolvePlayerAction() {
+      if(playerAction==='strike') {
+        const roll=Math.floor(Math.random()*(6+luckBonus))+1
+        const baseATK=playerATK()+(statusEffects.playerATKBonus||0)
+        const ignoreDEF=statusEffects.ignoreEnemyDEF; statusEffects.ignoreEnemyDEF=false
+        const flickerMult=statusEffects.flickerReady?2:1; if(statusEffects.flickerReady)statusEffects.flickerReady=false
+        const dmg=Math.max(1,Math.round((baseATK+roll)*flickerMult))
+        enemyHp=Math.max(0,enemyHp-dmg)
+        messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
+        if(unlocked.includes('fire_passive_burn')){const lv=_skillLv('fire_passive_burn');statusEffects.burnTurns=Math.round(2+(lv-1)*(2/9));statusEffects.burnDmg=Math.round(3+(lv-1)*(3/9));messages.push('🔥 Burn applied!')}
+        if(unlocked.includes('lightning_passive_chain_damage')){const lv=_skillLv('lightning_passive_chain_damage');if(Math.random()<0.20+(lv-1)*(0.20/9)){const cd=Math.max(1,Math.floor(dmg*(0.50+(lv-1)*(0.40/9))));enemyHp=Math.max(0,enemyHp-cd);messages.push('⚡ Chain hit <strong>'+cd+'</strong>!')}}
+        if(statusEffects.venomFang&&Math.random()<0.15){statusEffects.burnTurns=Math.max(statusEffects.burnTurns,2);messages.push('☠ Venom Fang — poison!')}
+        if(statusEffects.ricochet&&Math.random()<0.20){const bd=Math.max(1,Math.floor(dmg*0.4));enemyHp=Math.max(0,enemyHp-bd);messages.push('🎯 Ricochet +<strong>'+bd+'</strong>!')}
+        if(statusEffects.nextCrit){statusEffects.nextCrit=false;const cb=Math.floor(dmg*0.75);enemyHp=Math.max(0,enemyHp-cb);messages.push('🎯 Crit +<strong>'+cb+'</strong>!')}
+      } else if(playerAction==='heavy') {
+        const roll=Math.floor(Math.random()*(10+luckBonus))+3
+        const dmg=Math.max(1,Math.round(playerATK()*1.6)+roll)
+        enemyHp=Math.max(0,enemyHp-dmg)
+        messages.push('Heavy strike <strong>'+dmg+'</strong>!')
+      } else if(playerAction==='defend') {
+        defending=true; messages.push('You brace — defense doubled.')
+        if(statusEffects.absorptionHeal){const h=statusEffects.absorptionHeal;currentHp=Math.min(maxPlayerHp,currentHp+h);statusEffects.absorptionHeal=0;messages.push('🛡 Absorption +<strong>'+h+'</strong> HP!')}
+      } else if(playerAction==='skill'&&skillKey) {
+        const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
+        statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
+        const sc=skillScale(skillKey),lv=_skillLv(skillKey)
+        // Skill effects
+        if(sk.fn==='shadowStep'){statusEffects.ignoreEnemyDEF=true;messages.push('🌑 Shadow Step — next attack ignores DEF!')}
+        else if(sk.fn==='rockArmor'){const b=Math.round(20*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;statusEffects.rockArmorTurns=2;messages.push('🪨 Rock Armor +'+b+' DEF!')}
+        else if(sk.fn==='earthquake'){const d=Math.max(5,Math.round(playerATK()*2*sc));enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌍 Earthquake <strong>'+d+'</strong> — stunned!')}
+        else if(sk.fn==='fireBlast'){const d=Math.max(1,Math.round((25*sc+playerATK())-Math.floor((enemy.def||0)*0.5)));enemyHp=Math.max(0,enemyHp-d);messages.push('🔥 Fire Blast <strong>'+d+'</strong>!')}
+        else if(sk.fn==='infernoZone'){statusEffects.infernoTurns=3;statusEffects.infernoDmg=Math.round(40*sc);messages.push('🔥 Inferno Zone — '+statusEffects.infernoDmg+' dmg/turn!')}
+        else if(sk.fn==='healPulse'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('✨ Heal Pulse +<strong>'+h+'</strong> HP!')}
+        else if(sk.fn==='divineBarrier'){statusEffects.invulnerable=true;statusEffects.divineBarrierReflect=true;messages.push('✨ Divine Barrier — invulnerable this turn!')}
+        else if(sk.fn==='lightningStrike'){const d=Math.round((30+playerATK()*0.5)*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('⚡ Lightning Strike <strong>'+d+'</strong>!')}
+        else if(sk.fn==='thunderstorm'){let tot=0;for(let i=0;i<5;i++){const b=Math.round(10*sc)+Math.floor(Math.random()*Math.round(10*sc));tot+=b;enemyHp=Math.max(0,enemyHp-b)};messages.push('⚡ Thunderstorm <strong>'+tot+'</strong>!')}
+        else if(sk.fn==='bladeForm'){const ab=Math.round(20*sc),sb=Math.round(5*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+sb;messages.push('⚙ Blade Form ATK+'+ab+' SPD+'+sb+'!')}
+        else if(sk.fn==='ironDomain'){const ab=Math.round(playerATK()*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('⚙ Iron Domain ATK+'+ab+'!')}
+        else if(sk.fn==='rootTrap'){statusEffects.rootTrapTurns=1;messages.push('🌿 Root Trap — enemy rooted!')}
+        else if(sk.fn==='overgrowth'){const h=Math.round(40*sc),d=Math.round(30*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);enemyHp=Math.max(0,enemyHp-d);messages.push('🌿 Overgrowth +'+h+' HP & <strong>'+d+'</strong> dmg!')}
+        else if(sk.fn==='waterShield'){const s=Math.round(30*sc);statusEffects.waterShield=(statusEffects.waterShield||0)+s;messages.push('💧 Water Shield absorbs '+s+' dmg!')}
+        else if(sk.fn==='tsunami'){const d=Math.round((50+playerATK()*0.4)*sc);enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌊 Tsunami <strong>'+d+'</strong> — stunned!')}
+        else if(sk.fn==='dashStrike'){const d=Math.max(1,Math.round((playerATK()*2+Math.floor(Math.random()*8))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('💨 Dash Strike <strong>'+d+'</strong>!')}
+        else if(sk.fn==='tornadoField'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+pSPD;messages.push('💨 Tornado Field — enemy ATK -'+Math.round(sc*30)+'%!')}
+        else if(sk.fn==='voidZone'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);messages.push('🌑 Void Zone — enemy ATK -'+Math.round(sc*30)+'%!')}
+        else if(sk.fn==='warbound'){statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(playerATK()*0.15);messages.push('✦ Warbound — ATK +15% this turn!')}
+        else if(sk.fn==='embersEnd'){const eb=enemyHp/maxEnemyHp<0.3?0.25:0;const d=Math.max(1,Math.round(playerATK()*(1+eb)*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('✦ Executioner <strong>'+d+'</strong>!'+(eb>0?' [execute bonus]':''))}
+        else if(sk.fn==='venomLance'){statusEffects.venomLanceTurns=3;messages.push('☠ Venom Lance — next Heavy poisons!')}
+        else if(sk.fn==='predator'){const ab=Math.round(20*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('✦ Predator ATK+'+ab+'!')}
+        else if(sk.fn==='foresight'){statusEffects.foresightThisTurn=true;messages.push('🔮 Hex Weave — incoming dmg -90% this turn!')}
+        else if(sk.fn==='preciseStrike'){statusEffects.nextCrit=true;messages.push('🎯 Mind Pierce — next attack crits ×1.75!')}
+        else if(sk.fn==='heavyGround'){statusEffects.enemySPDDebuff=(statusEffects.enemySPDDebuff||0)+6;messages.push('🌀 Lockdown — enemy SPD -6!')}
+        else if(sk.fn==='phantomStep'){statusEffects.phantomStep=true;statusEffects.nextCrit=true;messages.push('👻 Phantom Step — untargetable + guaranteed crit!')}
+        else if(sk.fn==='timeLock'){statusEffects.enemyStunTurns=1;statusEffects.nextCrit=true;messages.push('⏱ Time Lock — enemy frozen, next attack ×2!')}
+        else if(sk.fn==='earthSpike'){const d=Math.max(1,Math.round((20-Math.floor((enemy.def||0)*0.3))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('🪨 Ground Spike <strong>'+d+'</strong>!')}
+        else if(sk.fn==='nightshroud'){statusEffects.nightshroud=true;messages.push('🌑 Nightshroud — first dodge is free!')}
+        else if(sk.fn==='thornwall'){statusEffects.thornwall=true;messages.push('🌿 Thornwall — Defend reflects 15% dmg!')}
+        else if(sk.fn==='dreadPulse'){statusEffects.dreadPulseStacks=(statusEffects.dreadPulseStacks||0);messages.push('💀 Dread Pulse active — each hit -2 enemy ATK!')}
+        else if(sk.fn==='pressureWave'){const b=Math.round(20*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;messages.push('🛡 Fortress +'+b+' DEF!')}
+        else if(sk.fn==='chargedStance'){statusEffects.chargedStance=true;messages.push('🛡 Bulwark — DEF doubled next turn!')}
+        else if(sk.fn==='deepCurrent'){const b=Math.round(30*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;statusEffects.deepCurrentShield=true;messages.push('💧 Deep Current +'+b+' DEF + absorb!')}
+        else if(sk.fn==='ironMirror'){statusEffects.ironMirror=true;statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+15;messages.push('⚙ Iron Mirror — reflect 40% next hit!')}
+        else if(sk.fn==='reaperForm'){statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(playerATK()*0.5*sc);statusEffects.ignoreEnemyDEF=true;messages.push('☠ Reaper Form — ATK ×1.5, ignore DEF!')}
+        else if(sk.fn==='bloodthirst'){messages.push('🩸 Bloodthirst ready — triggers on kill!')}
+        else if(sk.fn==='spellSurge'){statusEffects.spellSurge=true;messages.push('✨ Spell Surge — next skill ×1.5!')}
+        else if(sk.fn==='sixthSense'){statusEffects.sixthSense=true;messages.push('👁 Sixth Sense — predicting enemy move!')}
+        else if(sk.fn==='chaosEngine'){const effects=['fire','stun','heal','buff'];const ef=effects[Math.floor(Math.random()*effects.length)];if(ef==='fire'){const d=Math.round(30*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('🌀 Chaos — blast for <strong>'+d+'</strong>!')}else if(ef==='stun'){statusEffects.enemyStunTurns=1;messages.push('🌀 Chaos — enemy stunned!')}else if(ef==='heal'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('🌀 Chaos — healed <strong>'+h+'</strong>!')}else{statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(15*sc);messages.push('🌀 Chaos — ATK buffed!')}}
+        else if(sk.fn==='ancientRoot'){statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2*sc);messages.push('🌿 Ancient Root — shield activated!')}
       }
     }
-    syncBars(); log(msgs.join('<br>'))
-    if (enemyHp<=0) { log(msgs.join('<br>')+'<br>'+enemy.name+' is defeated.'); endCombat('win'); return }
-    if (currentHp<=0) { log(msgs.join('<br>')+'<br>You are overwhelmed.'); endCombat('lose'); return }
-    setTimeout(()=>{ $('actions').style.display='flex' },400)
+
+    function resolveEnemyAction() {
+      if(statusEffects.enemyStunTurns>0||statusEffects.rootTrapTurns>0){messages.push(enemy.name+' is <em>immobilized</em> this turn!');return}
+      if(statusEffects.phantomStep){statusEffects.phantomStep=false;messages.push(enemy.name+' attacks — but you phase out!');return}
+      // Use AI if available
+      let eDmg=0
+      if(window._enemyAI&&window._enemyAIState){
+        const res=window._enemyAI.resolveEnemyTurn(enemy,{enemyState:window._enemyAIState,enemyHp,maxEnemyHp,playerHp:currentHp,maxPlayerHp})
+        if(res){window._enemyAIState=res.newState;eDmg=res.damage||0;if(res.message)messages.push(res.message)}
+      } else {
+        eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
+      }
+      eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
+      if(statusEffects.invulnerable){messages.push(enemy.name+' strikes — you are <em>invulnerable</em>!');if(statusEffects.divineBarrierReflect){const r=Math.round(eDmg*0.5);enemyHp=Math.max(0,enemyHp-r);messages.push('✨ Reflected <strong>'+r+'</strong> damage!')};statusEffects.invulnerable=false;statusEffects.divineBarrierReflect=false;return}
+      if(statusEffects.foresightThisTurn){eDmg=Math.round(eDmg*0.1);statusEffects.foresightThisTurn=false;messages.push('🔮 Hex Weave absorbed most damage!')}
+      if(statusEffects.waterShield>0){const abs=Math.min(statusEffects.waterShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.waterShield=Math.max(0,statusEffects.waterShield-abs);if(abs>0)messages.push('💧 Shield absorbed <strong>'+abs+'</strong>!')}
+      if(statusEffects.ancientRootShield>0){const abs=Math.min(statusEffects.ancientRootShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.ancientRootShield=Math.max(0,statusEffects.ancientRootShield-abs);if(abs>0)messages.push('🌿 Root Shield absorbed <strong>'+abs+'</strong>!')}
+      if(eDmg>0){currentHp=Math.max(0,currentHp-eDmg);messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')}
+      if(statusEffects.metalReflect&&eDmg>0){const ref=Math.round(eDmg*0.15);enemyHp=Math.max(0,enemyHp-ref);messages.push('⚙ Reflect <strong>'+ref+'</strong> back!')}
+      if(statusEffects.liveWire&&Math.random()<0.20){statusEffects.enemyStunTurns=1;messages.push('⚡ Thorns — enemy stunned!')}
+      if(statusEffects.ironMirror){const ref=Math.round(eDmg*0.4);enemyHp=Math.max(0,enemyHp-ref);statusEffects.ironMirror=false;messages.push('⚙ Iron Mirror reflected <strong>'+ref+'</strong>!')}
+      // Ghost step dodge on counterattack
+      if(statusEffects.ghostStep&&Math.random()<0.15){const cd=Math.round(playerATK()*0.5);enemyHp=Math.max(0,enemyHp-cd);messages.push('👻 Ghost Step counter <strong>'+cd+'</strong>!')}
+      // Umbral Veil
+      if(statusEffects.umbralVeil&&Math.random()<0.15){const cd=Math.round(playerATK()*0.5);enemyHp=Math.max(0,enemyHp-cd);messages.push('🌑 Umbral Veil counter <strong>'+cd+'</strong>!')}
+    }
+
+    // Turn order
+    if(skillKey) await recordSkillUse(skillKey)
+    if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
+    else{resolveEnemyAction();if(currentHp>0)resolvePlayerAction()}
+
+    // DoT effects
+    if(statusEffects.burnTurns>0){const bd=statusEffects.burnDmg;enemyHp=Math.max(0,enemyHp-bd);statusEffects.burnTurns--;messages.push('🔥 Burn — <strong>'+bd+'</strong> dmg ('+statusEffects.burnTurns+' left)')}
+    if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
+    if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
+
+    syncBars()
+    log(messages.join('<br>'))
+
+    if(enemyHp<=0){await endCombat('win');return}
+    if(currentHp<=0){await endCombat('lose');return}
+
+    setButtons(true)
+    renderSkillSlots()
   }
-  syncBars()
 }
 
 function renderEnd(panel,node) {
@@ -2302,11 +2577,8 @@ function renderHUD() {
       <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
     </div>
     <div style="display:flex;gap:4px;margin-top:6px">
-      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(244,196,90,.1);border:.5px solid rgba(244,196,90,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.1);border:.5px solid rgba(160,125,224,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
-    </div>
-    <div style="margin-top:4px">
-      <button onclick="window.location.href='elemental_skills.html'" style="width:100%;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--gold);background:rgba(244,196,90,.08);border:.5px solid rgba(244,196,90,.3);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚡ ESP ${(player.esp||0) > 0 ? '· '+player.esp+' points' : '· Elemental Skills'}</button>
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
     </div>`
 }
 
@@ -2319,14 +2591,6 @@ function updateHpBar(hp) {
   if(val)val.textContent=Math.round(hp)+'/'+mhp
 }
 
-// Also load equipped items for stat display
-;(async()=>{
-  if(!window._equippedItems){
-    const {data}=await supabase.from('inventory').select('*').eq('player_id',player.id).not('equipped_slot','is',null)
-    window._equippedItems=data||[]
-  }
-})()
-
 // ── Init ──────────────────────────────────────────
 let player   = await renderNav('nav')
 if (!player) throw new Error('no player')
@@ -2336,6 +2600,13 @@ let nodeId = (player.current_node||'').startsWith('ch2_')
   ? player.current_node.replace('ch2_','')
   : 'opening'
 let outcome = null
+
+;(async()=>{
+  if(!window._equippedItems){
+    const {data}=await supabase.from('inventory').select('*').eq('player_id',player.id).not('equipped_slot','is',null)
+    window._equippedItems=data||[]
+  }
+})()
 
 if (!NODES[nodeId]) nodeId='opening'
 
