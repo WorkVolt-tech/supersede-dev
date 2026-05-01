@@ -1791,18 +1791,20 @@ function renderBoss(panel,node) {
 function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   const cid='cb'+Math.random().toString(36).slice(2,7)
   const $=id=>panel.querySelector('#'+cid+'-'+id)
-  let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100, over=false, defending=false
+
+  let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100
+  let over=false, defending=false
+  let currentHp = player.hp || 100
+
   window._enemyAIState = initEnemyState(enemy)
-  window._combatStatusEffects = {}
 
   function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
   function playerDEF() { return (player.def||2)+(player.guard||0)*.5+(player.armor||0) }
   function playerSPD() { return (player.speed||5)+(player.agility||0)*.5 }
   function enemySPD()  { return enemy.spd||5 }
-  function pctBar(v,m) { return Math.max(0,Math.round(v/m*100)) }
   const eqLuck = player.luck||0
 
-  // ── SKILL DEFINITIONS (mirrored from chapter1) ───────────────────────────
+  // ── SKILL DEFINITIONS ────────────────────────────────────────────────────
   const BATTLE_SKILLS = {
     darkness_passive_backstab:      {label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff'},
     darkness_skill_shadow_step:     {label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores DEF',         fn:'shadowStep'},
@@ -1925,152 +1927,210 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   if(has('dcn5')) statusEffects.enduringRoot=true
   if(has('dc_ks2'))statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2)
 
-  // ── Build UI ──────────────────────────────────────────────────────────────
+  // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
   const enemyImg = enemy.img
-    ? `<img src="${enemy.img}" style="width:72px;height:72px;object-fit:contain;border-radius:4px;float:right;margin-left:8px;filter:drop-shadow(0 0 8px ${enemy.color||'#c8b96e'}66)">`
-    : ''
+    ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
+    : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
 
-  panel.innerHTML=`
-    <div style="font-family:'Cinzel',serif;font-size:.9rem;color:#c8b96e;margin-bottom:.5rem">${enemyImg}${enemy.icon||'⚔'} ${enemy.name}</div>
-    <div style="margin-bottom:.5rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>ENEMY HP</span><span id="${cid}-ehp-txt">${enemyHp}/${maxEnemyHp}</span></div>
-      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-ebar" style="height:100%;width:100%;background:#e05555;border-radius:3px;transition:width .3s"></div></div>
-    </div>
-    <div style="margin-bottom:.75rem">
-      <div style="display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);margin-bottom:2px"><span>YOUR HP</span><span id="${cid}-php-txt">${Math.round(currentHp)}/${maxPlayerHp}</span></div>
-      <div style="height:6px;background:rgba(255,255,255,.08);border-radius:3px"><div id="${cid}-pbar" style="height:100%;width:${pctBar(currentHp,maxPlayerHp)}%;background:#5ec45e;border-radius:3px;transition:width .3s"></div></div>
-    </div>
-    <div id="${cid}-log" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#c8b96e;min-height:3rem;margin-bottom:.75rem;line-height:1.55">The encounter begins.</div>
-    <div id="${cid}-skill-slots-row" style="margin-bottom:6px"></div>
-    <div id="${cid}-actions" style="display:flex;flex-direction:column;gap:5px">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">
-        <button class="combat-btn" id="${cid}-btn-strike" onclick="doAction_${cid}('strike')" title="Strike">⚔ Strike</button>
-        <button class="combat-btn" id="${cid}-btn-heavy"  onclick="doAction_${cid}('heavy')"  title="Heavy Strike">💥 Heavy</button>
-        <button class="combat-btn" id="${cid}-btn-defend" onclick="doAction_${cid}('defend')" title="Defend">🛡 Defend</button>
-      </div>
-      <div style="display:grid;grid-template-columns:${onEscape?'1fr 1fr':'1fr'};gap:4px">
-        <button class="combat-btn" id="${cid}-btn-items" onclick="toggleItems_${cid}()" style="font-size:.55rem">🎒 Items</button>
-        ${onEscape?`<button class="combat-btn" id="${cid}-btn-escape" onclick="doAction_${cid}('escape')" style="font-size:.55rem">💨 Flee</button>`:''}
-      </div>
-      <div id="${cid}-items-panel" style="display:none;margin-top:6px;border:.5px solid rgba(200,168,74,.2);border-radius:3px;padding:6px 8px;background:rgba(0,0,0,.2)">
-        <div id="${cid}-items-list"></div>
-      </div>
-    </div>
-    <div id="${cid}-over" style="display:none;margin-top:.75rem"></div>`
-
-  // ── Render skill slots ────────────────────────────────────────────────────
-  function renderSkillSlots() {
-    const row=$('skill-slots-row'); if(!row) return
-    const active=battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type!=='passive'})
-    const passive=battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type==='passive'})
-    // Debug: show what keys we have
-    const knownKeys=battleSkillKeys.filter(k=>BATTLE_SKILLS[k])
-    const unknownKeys=battleSkillKeys.filter(k=>!BATTLE_SKILLS[k])
-    const passiveStrip=passive.length
-      ?'<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'+
-        passive.map(k=>{const sk=BATTLE_SKILLS[k];return`<span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:${sk.color};border:.5px solid ${sk.color}50;border-radius:12px;padding:1px 6px;background:${sk.color}12;letter-spacing:.04em">⚡ ${sk.label}</span>`}).join('')
-        +'</div>':''
-    if(!active.length){
-      const debugInfo = battleSkillKeys.length === 0
-        ? 'player.battle_skills is empty — go to Skills page and assign skills to battle slots, then save'
-        : `battle_skills has ${battleSkillKeys.length} keys: [${battleSkillKeys.join(', ')}] — ${unknownKeys.length} not recognized in combat engine`
-      row.innerHTML=passiveStrip+`<div style="border:.5px solid rgba(160,125,224,.3);border-radius:3px;padding:6px 8px;margin-bottom:4px;background:rgba(160,125,224,.06)">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#b06eff;letter-spacing:.06em;margin:0">No active skills assigned</p>
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:2px 0 0">${debugInfo}</p>
-      </div>`
-      return
-    }
-    const EL_ICON={fire:'🔥',water:'💧',earth:'🪨',wind:'💨',dark:'🌑',light:'✨',lightning:'⚡',metal:'⚙',plant:'🌿'}
-    let html=passiveStrip+'<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
-    html+='<div style="display:grid;grid-template-columns:'+(active.length===1?'1fr':active.length===2?'1fr 1fr':'1fr 1fr 1fr')+';gap:4px">'
-    html+=active.map(k=>{
-      const sk=BATTLE_SKILLS[k],cd=statusEffects.skillCooldowns[k]||0
-      const lv=_skillLv(k),pct=Math.round((0.5+(lv-1)*(0.5/9))*100)
-      const lvCol=lv>=10?'#ffd700':lv>=7?'#c8b96e':lv>=4?'#a0c080':'#9a8858'
-      const elIcon=EL_ICON[sk.el]||'✦'
-      const cdOverlay=cd>0?`<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center"><span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">${cd}t</span></div>`:''
-      return`<button class="combat-btn" id="${cid}-btn-skill-${k}" onclick="useSkill_${cid}('${k}')" ${cd>0?'disabled':''} title="${sk.desc||sk.label} (Lv${lv}·${pct}%)" style="flex-direction:column;gap:2px;padding:.45rem .25rem;border-color:${sk.color}${cd>0?'30':'60'};color:${cd>0?'rgba(200,160,60,.4)':sk.color};position:relative;overflow:hidden">
-        ${cdOverlay}
-        <span style="font-size:.95rem;filter:drop-shadow(0 0 4px ${sk.color}88)">${elIcon}</span>
-        <span style="font-size:.56rem;font-weight:600">${sk.type==='ultimate'?'★ ':''}${sk.label}</span>
-        <span style="font-size:.42rem;color:${lvCol}">Lv${lv}·${pct}%</span>
-      </button>`
-    }).join('')
-    html+='</div>'
-    row.innerHTML=html
-  }
-  renderSkillSlots()
-
-  // ── Skill use ─────────────────────────────────────────────────────────────
-  window['useSkill_'+cid]=function(key){if(over)return;const cd=statusEffects.skillCooldowns[key]||0;if(cd>0){log('Skill on cooldown ('+cd+' turns)');return};doTurn('skill',key)}
-
-  // ── Items panel ───────────────────────────────────────────────────────────
-  window['toggleItems_'+cid] = async function() {
-    if (over) return
-    const itemsPanel = $('items-panel')
-    const list       = $('items-list')
-    if (itemsPanel.style.display !== 'none') { itemsPanel.style.display = 'none'; return }
-    itemsPanel.style.display = 'block'
-    list.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
-    const { data } = await supabase.from('inventory').select('*')
-      .eq('player_id', player.id).in('item_type', ['consumable','key']).gt('quantity', 0).order('item_type')
-    const usable = (data||[]).filter(i => i.hp_restore > 0 || ['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
-    if (!usable.length) { list.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items.</p>'; return }
-    const RC = {common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
-    list.innerHTML = usable.map(item => `
-      <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
-        style="display:flex;align-items:center;gap:.5rem;padding:.4rem .25rem;border-bottom:.5px solid rgba(200,168,74,.1);cursor:pointer;border-radius:2px"
-        onmouseover="this.style.background='rgba(200,168,74,.08)'" onmouseout="this.style.background=''">
-        <div style="flex:1;min-width:0">
-          <p style="font-family:'Cinzel',serif;font-size:.72rem;color:${RC[item.rarity]||'#c8c0a0'};margin:0 0 1px">${item.name}</p>
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin:0">${item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special'}</p>
-        </div>
-        <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim)">×${item.quantity||1}</span>
-      </div>`).join('')
-  }
-
-  window['combatUseItem_'+cid] = async function(itemId, itemName, hpRestore, qty, specialEffect) {
-    const maxHp = player.max_hp || 100
-    if (hpRestore > 0) {
-      const healed = Math.min(maxHp, currentHp + hpRestore) - currentHp
-      currentHp = Math.min(maxHp, currentHp + hpRestore)
-      syncBars()
-      await supabase.from('players').update({ hp: currentHp }).eq('id', player.id)
-      player.hp = currentHp
-      log('Used ' + itemName + ' — restored ' + healed + ' HP. (' + currentHp + '/' + maxHp + ')')
-    } else if (itemName === 'Phoenix Feather') {
-      window._hasRevive = true
-      log('Phoenix Feather equipped — will auto-revive at 20 HP if you fall.')
-    } else if (itemName === 'Explosion Scroll') {
-      window._forceMaxHit = true
-      log('Explosion Scroll loaded — next attack deals maximum damage.')
-    } else if (itemName === 'Lava Bomb') {
-      enemyHp = 0; syncBars()
-      log('Lava Bomb detonated — enemy destroyed instantly.')
-      $('items-panel').style.display = 'none'
-      if (qty <= 1) await supabase.from('inventory').delete().eq('id', itemId)
-      else await supabase.from('inventory').update({ quantity: qty - 1 }).eq('id', itemId)
-      await endCombat('win'); return
-    } else { log('Cannot use ' + itemName + ' here.'); return }
-    $('items-panel').style.display = 'none'
-    if (qty <= 1) await supabase.from('inventory').delete().eq('id', itemId)
-    else await supabase.from('inventory').update({ quantity: qty - 1 }).eq('id', itemId)
-  }
-
-  function setButtons(enabled){
-    ['btn-strike','btn-heavy','btn-defend','btn-escape','btn-items'].forEach(id=>{const b=$(id);if(b)b.disabled=!enabled})
-    battleSkillKeys.forEach(k=>{const b=$('btn-skill-'+k);if(b){b.disabled=!enabled||(enabled&&(statusEffects.skillCooldowns[k]||0)>0)}})
-  }
-
-  function syncBars(){
-    $('ebar').style.width=pctBar(enemyHp,maxEnemyHp)+'%'
-    $('pbar').style.width=pctBar(currentHp,maxPlayerHp)+'%'
-    $('ehp-txt').textContent=Math.max(0,Math.round(enemyHp))+'/'+maxEnemyHp
-    $('php-txt').textContent=Math.max(0,Math.round(currentHp))+'/'+maxPlayerHp
-    $('pbar').style.background=currentHp/maxPlayerHp>0.6?'#5ec45e':currentHp/maxPlayerHp>0.3?'#c8b96e':'#e05555'
+  panel.innerHTML =
+    '<div class="combat-panel" id="'+cid+'-combat-wrap">'
+    + '<div class="combat-enemy-row">'
+    + enemyImg
+    + '<div style="flex:1">'
+    + '<p class="combat-enemy-name">'+enemy.name+'</p>'
+    + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div></div>'
+    + '<p id="'+cid+'-e-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">'+enemyHp+' / '+maxEnemyHp+' HP</p>'
+    + '</div></div>'
+    + '<div class="combat-log" id="'+cid+'-combat-log">The encounter begins.</div>'
+    + '<div class="stat-row" style="margin-bottom:.4rem">'
+    + '<span class="stat-key" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>'
+    + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div></div>'
+    + '<span id="'+cid+'-c-player-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">'+currentHp+'/'+maxPlayerHp+'</span>'
+    + '</div>'
+    + '<div id="'+cid+'-combat-actions">'
+    + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">'
+    + '<button class="combat-btn" id="'+cid+'-btn-strike" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Fast attack. Always goes first."><span style="font-size:1.1rem;line-height:1">⚔</span><span>Strike</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">FAST · FIRST</span></button>'
+    + '<button class="combat-btn" id="'+cid+'-btn-heavy"  style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="High damage but slower."><span style="font-size:1.1rem;line-height:1">💥</span><span>Heavy</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">HIGH DMG · SLOW</span></button>'
+    + '<button class="combat-btn" id="'+cid+'-btn-defend" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Halve incoming damage."><span style="font-size:1.1rem;line-height:1">🛡</span><span>Defend</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">BLOCK · FIRST</span></button>'
+    + '</div>'
+    + '<div id="'+cid+'-skill-slots-row" style="margin-bottom:4px"></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+    + '<button class="combat-btn" id="'+cid+'-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>'
+    + (onEscape ? '<button class="combat-btn" id="'+cid+'-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>' : '<span></span>')
+    + '</div>'
+    + '</div>'
+    + '<div id="'+cid+'-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05)">'
+    + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>'
+    + '<div id="'+cid+'-items-list"></div>'
+    + '<button onclick="document.getElementById(\''+cid+'-items-panel\').style.display=\'none\'" style="font-family:\'IM Fell English\',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>'
+    + '</div>'
+    + '<div id="'+cid+'-combat-over" style="display:none;text-align:center;padding:.5rem"></div>'
+    + '</div>'
+  function syncBars() {
+    const ePct=Math.max(0,Math.round(enemyHp/maxEnemyHp*100))
+    const pPct=Math.max(0,Math.round(currentHp/maxPlayerHp*100))
+    const eBar=$('e-bar'), eHp=$('e-hp'), pBar=$('c-player-bar'), pHp=$('c-player-hp')
+    if(eBar){eBar.style.width=ePct+'%'; eBar.style.background=ePct>50?'#e05555':'#c8b96e'}
+    if(eHp) eHp.textContent=enemyHp+' / '+maxEnemyHp+' HP'
+    if(pBar){pBar.style.width=pPct+'%'; pBar.style.background=pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555'}
+    if(pHp) pHp.textContent=currentHp+'/'+maxPlayerHp
     updateHpBar(currentHp)
   }
-  function log(msg){const el=$('log');if(el)el.innerHTML=msg}
+
+  function log(msg) {
+    const el=$('combat-log')
+    if(el){el.innerHTML=msg; el.style.animation='none'; void el.offsetWidth; el.style.animation='fadeIn .3s ease'}
+  }
+
+  // ── Render battle skill slots — exact mirror of chapter1 ─────────────────
+  function renderSkillSlots() {
+    const row=$('skill-slots-row')
+    if(!row) return
+
+    const activeSkills  = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type!=='passive'})
+    const passiveSkills = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type==='passive'})
+
+    const passiveStrip = passiveSkills.length
+      ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'
+        + passiveSkills.map(k=>{
+            const sk=BATTLE_SKILLS[k]
+            return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:'+sk.color+';border:.5px solid '+sk.color+'50;border-radius:12px;padding:1px 6px;background:'+sk.color+'12;letter-spacing:.04em">⚡ '+sk.label+' (passive)</span>'
+          }).join('')
+        + '</div>'
+      : ''
+
+    if(!activeSkills.length) {
+      row.innerHTML = passiveStrip
+        + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">'
+        + (battleSkillKeys.length===0
+            ? 'No active skills assigned — visit Skills page'
+            : battleSkillKeys.length+' skill key(s) found but not recognized — visit Skills page to re-save')
+        + '</p>'
+      return
+    }
+
+    const EL_ICON={fire:'🔥',water:'💧',earth:'🪨',wind:'💨',dark:'🌑',light:'✨',lightning:'⚡',metal:'⚙',plant:'🌿'}
+    let html = passiveStrip
+    html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
+    html += '<div style="display:grid;grid-template-columns:'+(activeSkills.length===1?'1fr':activeSkills.length===2?'1fr 1fr':'1fr 1fr 1fr')+';gap:4px">'
+
+    html += activeSkills.map(k=>{
+      const sk     = BATTLE_SKILLS[k]
+      const cd     = statusEffects.skillCooldowns[k]||0
+      const isUlt  = sk.type==='ultimate'
+      const lv     = _skillLv(k)
+      const lvColor= lv>=10?'#ffd700':lv>=7?'#c8b96e':lv>=4?'#a0c080':'#9a8858'
+      const pct    = Math.round((0.5+(lv-1)*(0.5/9))*100)
+      const elIcon = EL_ICON[sk.el]||'✦'
+      const cdLabel= cd>0 ? cd+' turn'+(cd>1?'s':'') : null
+      const border = isUlt ? 'border-color:'+sk.color+'70' : 'border-color:'+sk.color+'40'
+      const cdOverlay = cd>0
+        ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">'+cdLabel+'</span></div>'
+        : ''
+      const iconFilter = cd>0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px '+sk.color+'88)'
+      const btnColor   = cd>0 ? 'rgba(200,160,60,.35)' : sk.color
+      const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto" onerror="this.remove()">'
+
+      return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
+        + ' onclick="useSkill_'+cid+'(\''+k+'\')"'
+        + (cd>0?' disabled':'')
+        + ' title="'+(sk.desc||sk.label)+' (Lv'+lv+' · '+pct+'% power)"'
+        + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;'+border+';color:'+btnColor+';position:relative;overflow:hidden">'
+        + cdOverlay
+        + '<span style="font-size:1rem;line-height:1;filter:'+iconFilter+'">'+imgTag
+        + '<span style="font-size:1rem;margin:0 auto;display:none">'+elIcon+'</span>'
+        + '</span>'
+        + '<span style="font-size:.58rem;font-weight:600;letter-spacing:.02em">'+(isUlt?'★ ':'')+sk.label+'</span>'
+        + '<span style="font-size:.42rem;color:'+lvColor+';letter-spacing:.04em">Lv'+lv+' · '+pct+'%</span>'
+        + '</button>'
+    }).join('')
+
+    html += '</div>'
+    row.innerHTML = html
+  }
+
+  function setButtons(enabled) {
+    ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id=>{
+      const b=$(id); if(b) b.disabled=!enabled
+    })
+    battleSkillKeys.forEach(k=>{
+      const b=$('btn-skill-'+k)
+      if(b&&enabled){b.disabled=(statusEffects.skillCooldowns[k]||0)>0}
+      else if(b){b.disabled=true}
+    })
+  }
+
+  window['useSkill_'+cid] = function(key) {
+    if(over) return
+    const sk=BATTLE_SKILLS[key]; if(!sk) return
+    const cd=statusEffects.skillCooldowns[key]||0
+    if(cd>0){log('Skill on cooldown ('+cd+' turns)'); return}
+    doTurn('skill',key)
+  }
+
+  // ── Items panel ───────────────────────────────────────────────────────────
+  $('btn-items').addEventListener('click', async () => {
+    if(over) return
+    const itemsPanel=$('items-panel')
+    const list=$('items-list')
+    if(itemsPanel.style.display!=='none'){itemsPanel.style.display='none'; return}
+    itemsPanel.style.display='block'
+    list.innerHTML='<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
+    const {data}=await supabase.from('inventory').select('*')
+      .eq('player_id',player.id).in('item_type',['consumable','key']).gt('quantity',0).order('item_type')
+    const usable=(data||[]).filter(i=>i.hp_restore>0||['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
+    if(!usable.length){list.innerHTML='<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'; return}
+    const RC={common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
+    list.innerHTML=usable.map(item=>`
+      <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
+        style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px"
+        onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background=''">
+        <div style="flex:1;min-width:0">
+          <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">${item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special effect'}</p>
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
+      </div>`).join('')
+  })
+
+  window['combatUseItem_'+cid] = async function(itemId,itemName,hpRestore,qty,specialEffect) {
+    const maxHp=player.max_hp||100
+    if(hpRestore>0){
+      const healed=Math.min(maxHp,currentHp+hpRestore)-currentHp
+      currentHp=Math.min(maxHp,currentHp+hpRestore); syncBars()
+      await supabase.from('players').update({hp:currentHp}).eq('id',player.id)
+      player.hp=currentHp
+      log('Used '+itemName+' — restored '+healed+' HP. ('+currentHp+'/'+maxHp+')')
+    } else if(itemName==='Phoenix Feather'){
+      window._hasRevive=true; log('Phoenix Feather equipped — will auto-revive at 20 HP.')
+    } else if(itemName==='Explosion Scroll'){
+      window._forceMaxHit=true; log('Explosion Scroll loaded — next attack deals maximum damage.')
+    } else if(itemName==='Lava Bomb'){
+      enemyHp=0; syncBars(); log('Lava Bomb detonated — enemy destroyed instantly.')
+      $('items-panel').style.display='none'
+      if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+      else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+      await endCombat('win'); return
+    } else {log('Cannot use '+itemName+' here.'); return}
+    $('items-panel').style.display='none'
+    if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+    else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+  }
+
+  renderSkillSlots()
+  syncBars()
+
+  // ── Button event listeners ─────────────────────────────────────────────────
+  ;[['btn-strike','strike'],['btn-heavy','heavy'],['btn-defend','defend']].forEach(([id,action])=>{
+    const b=$(id); if(b) b.addEventListener('click',()=>{if(!over)doTurn(action,null)})
+  })
+  const escBtn=$('btn-escape')
+  if(escBtn) escBtn.addEventListener('click',()=>{
+    if(over)return
+    log('You disengage and retreat.')
+    endCombat('escape')
+  })
 
   // ── End combat ────────────────────────────────────────────────────────────
   async function endCombat(result) {
@@ -2139,16 +2199,19 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
       const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
       await save(updates)
       const nextNode=isBoss?'chapter_end_ch2':onWin
-      $('over').style.display='block'
-      $('over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
     } else if (result==='escape') {
       await save({hp:currentHp})
-      $('over').style.display='block'
-      $('over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
     } else {
       currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
-      $('over').style.display='block'
-      $('over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" onclick="goTo('${onLose||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+      const acts=$('combat-actions'); if(acts) acts.style.display='none'
+      $('combat-over').style.display='block'
+      $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" onclick="goTo('${onLose||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
     }
   }
 
