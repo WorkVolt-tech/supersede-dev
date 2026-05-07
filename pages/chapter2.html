@@ -13,7 +13,7 @@
        PARCHMENT BOOK THEME — Warm Ink / Aged Paper
        Matches the interactive book page-flip UI.
     ══════════════════════════════════════════════ */
-    :root {
+       :root {
       --bg-0:      #14110f;
       --bg-1:      #2b1d16;
       --panel:     #f4ead7;
@@ -24,15 +24,15 @@
       --ink-faint: #a08060;
       --ice:       #7a5230;
       --ice-hot:   #4b2e14;
-      --gold:      #8a5c2a;
-      --gold-hot:  #c07a30;
-      --gold-dim:  #6b4820;
-      --amber:     #b06030;
-      --amber-hot: #d08040;
-      --warn:      #c0392b;
-      --line:      rgba(138,91,68,.30);
-      --green:     #4a7c3f;
-      --purple:    #6b3fa0;
+      --gold:      #c8a050;
+      --gold-hot:  #e0c070;
+      --gold-dim:  #a08040;
+      --amber:     #d09040;
+      --amber-hot: #e0a050;
+      --warn:      #e06050;
+      --line:      rgba(200,160,80,.30);
+      --green:     #5cae50;
+      --purple:    #8a50c0;
       --spine-col: #2b1d16;
     }
     *, *::before, *::after { box-sizing: border-box; }
@@ -186,10 +186,10 @@
       margin-bottom: 0 !important;
     }
 
-    /* ── Divider ── */
+        /* ── Divider ── */
     .ink-divider, hr.ink-divider {
       border: none !important;
-      border-top: 1px solid rgba(138,91,68,.30) !important;
+      border-top: 1px solid rgba(200,180,120,.40) !important;
       margin: 12px 0 !important;
       opacity: 1 !important;
     }
@@ -221,9 +221,9 @@
 
     /* ── Notice / outcome box ── */
     .notice-box {
-      border: 1px solid rgba(138,91,68,.40) !important;
-      background: rgba(138,91,68,.07) !important;
-      color: var(--gold) !important;
+      border: 1px solid rgba(200,180,120,.50) !important;
+      background: rgba(30,20,15,.85) !important;
+      color: #f0d060 !important;
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 11px !important;
       letter-spacing: .06em !important;
@@ -232,30 +232,30 @@
       margin-top: 14px !important;
     }
 
-    /* ── HUD ── */
-    #hud { color: var(--ink) !important; }
-    #hud p, #hud span, #hud div { color: var(--ink) !important; }
-    #hud .hud-badge-row .hud-seal-label { color: var(--gold) !important; }
-    #hud .hud-chapter { color: var(--ink-dim) !important; }
-    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
-    #hud .stat-val { color: var(--ink) !important; }
+        /* ── HUD ── */
+    #hud { color: #e8d8b0 !important; }
+    #hud p, #hud span, #hud div { color: #e8d8b0 !important; }
+    #hud .hud-badge-row .hud-seal-label { color: #f0d060 !important; }
+    #hud .hud-chapter { color: #c8b880 !important; }
+    #hud .stat-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
+    #hud .stat-val { color: #f0e0c0 !important; }
     #hud .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
-    #hud .stat-box { background: rgba(0,0,0,.05) !important; border: 1px solid rgba(138,91,68,.25) !important; border-radius: 0 !important; }
-    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; }
-    #hud .stat-box-val { color: var(--amber) !important; }
+    #hud .stat-box { background: rgba(0,0,0,.15) !important; border: 1px solid rgba(200,180,120,.35) !important; border-radius: 0 !important; }
+    #hud .stat-box-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; }
+    #hud .stat-box-val { color: #f0c080 !important; }
     #hud button {
-      background: rgba(138,91,68,.08) !important;
-      border-color: rgba(138,91,68,.30) !important;
-      color: var(--ink) !important;
+      background: rgba(200,180,120,.12) !important;
+      border-color: rgba(200,180,120,.40) !important;
+      color: #e8d8b0 !important;
       border-radius: 0 !important;
       font-family: 'JetBrains Mono',monospace !important;
       transition: border-color .2s, color .2s !important;
     }
-    #hud button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
+    #hud button:hover { border-color: #f0d060 !important; color: #f0d060 !important; }
     #hud div[onclick] {
-      background: rgba(107,63,160,.10) !important;
-      border-color: rgba(107,63,160,.30) !important;
-      color: var(--ink) !important;
+      background: rgba(160,125,224,.15) !important;
+      border-color: rgba(160,125,224,.40) !important;
+      color: #e8d8b0 !important;
       border-radius: 0 !important;
     }
 
@@ -509,24 +509,36 @@
     }
     .animate-shake { animation: animateShake .35s ease; }
 
-    /* ── System overlay messages ── */
+        /* ── System overlay messages ── */
     .sys-overlay, [id="sys-overlay"] {
-      background: rgba(43,29,22,.93) !important;
-      border: 1px solid rgba(138,91,68,.50) !important;
-      color: var(--gold-hot) !important;
+      background: rgba(20,15,10,.98) !important;
+      border: 1px solid rgba(240,200,80,.70) !important;
+      color: #f0e0a0 !important;
       font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10.5px !important;
+      font-size: 11px !important;
       letter-spacing: .08em !important;
-      border-radius: 0 !important;
+      border-radius: 4px !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
+    }
+    .sys-overlay span, [id="sys-overlay"] span,
+    .sys-overlay p, [id="sys-overlay"] p {
+      color: #f0e0a0 !important;
     }
 
     /* ── Toast ── */
     .toast, [class*="toast"] {
-      background: rgba(43,29,22,.95) !important;
-      border: 1px solid rgba(138,91,68,.50) !important;
-      color: var(--gold-hot) !important;
+      background: rgba(20,15,10,.98) !important;
+      border: 1px solid rgba(240,200,80,.70) !important;
+      color: #f0e0a0 !important;
       font-family: 'JetBrains Mono', monospace !important;
-      border-radius: 0 !important;
+      border-radius: 4px !important;
+      font-size: 11px !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
+    }
+    .toast span, [class*="toast"] span,
+    .toast p, [class*="toast"] p {
+      color: #f0e0a0 !important;
     }
 
     /* ── Loot window ── */
