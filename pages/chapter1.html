@@ -10,30 +10,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     /* ══════════════════════════════════════════════
-       WATCHER THEME — Ice / Blue accent
-       Inventory layout: spine, tilt, corner light.
+       PARCHMENT BOOK THEME — Warm Ink / Aged Paper
+       Matches the interactive book page-flip UI.
     ══════════════════════════════════════════════ */
     :root {
-      --bg-0:      #05080c;
-      --bg-1:      #0a1018;
-      --panel:     #0d131c;
-      --page-l:    #0b1018;
-      --page-r:    #0d1520;
-      --ink:       #dfe7f2;
-      --ink-dim:   #6f7b8d;
-      --ink-faint: #3a4354;
-      --ice:       #8fd8f0;
-      --ice-hot:   #c8eeff;
-      --gold:      #c8a84a;
-      --gold-hot:  #f0d080;
-      --gold-dim:  #7a6430;
-      --amber:     #ffb347;
-      --amber-hot: #ffd68a;
-      --warn:      #e05a44;
-      --line:      #1a2230;
-      --green:     #5ec45e;
-      --purple:    #b06eff;
-      --spine-col: #0d1018;
+      --bg-0:      #14110f;
+      --bg-1:      #2b1d16;
+      --panel:     #f4ead7;
+      --page-l:    #f4ead7;
+      --page-r:    #f1e4cf;
+      --ink:       #2b1d16;
+      --ink-dim:   #5c4638;
+      --ink-faint: #a08060;
+      --ice:       #7a5230;
+      --ice-hot:   #4b2e14;
+      --gold:      #8a5c2a;
+      --gold-hot:  #c07a30;
+      --gold-dim:  #6b4820;
+      --amber:     #b06030;
+      --amber-hot: #d08040;
+      --warn:      #c0392b;
+      --line:      rgba(138,91,68,.30);
+      --green:     #4a7c3f;
+      --purple:    #6b3fa0;
+      --spine-col: #2b1d16;
     }
     *, *::before, *::after { box-sizing: border-box; }
 
@@ -56,19 +56,17 @@
 
     /* ── Global reset ── */
     html, body {
-      background: radial-gradient(ellipse at 50% 0%, #0e1a28 0%, #05080c 55%, #020406 100%) !important;
+      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;
       color: var(--ink) !important;
       font-family: 'Cormorant Garamond', Georgia, serif !important;
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* scanlines — gold tint matching inventory */
+    /* Warm ambient glow behind the book */
     body::after {
       content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
-      background-image: repeating-linear-gradient(180deg,
-        rgba(143,216,240,.012) 0px, rgba(143,216,240,.012) 1px,
-        transparent 1px, transparent 4px);
+      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);
     }
 
     /* ── Book wrap ── */
@@ -79,7 +77,7 @@
       padding: 24px 24px 60px;
     }
 
-    /* ── Book — perspective tilt matching inventory ── */
+    /* ── Book — warm parchment open-book ── */
     .book {
       display: grid !important;
       grid-template-columns: 1fr 22px 1fr !important;
@@ -88,21 +86,23 @@
       background: transparent !important;
       border: none !important;
       box-shadow: none !important;
-      border-radius: 0 !important;
-      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
+      border-radius: 24px !important;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;
       transform: perspective(1600px) rotateX(2.5deg) !important;
       transform-origin: 50% 0 !important;
       margin-top: 10px !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
     }
     @media(max-width: 860px) {
-      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; }
+      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }
       .spine { display: none !important; }
     }
 
     /* ── Pages ── */
     .parchment, .page-left, .page-right {
       background: var(--panel) !important;
-      border: 1px solid var(--line) !important;
+      border: none !important;
       border-radius: 0 !important;
       box-shadow: none !important;
       color: var(--ink) !important;
@@ -110,58 +110,70 @@
       overflow-y: auto;
       overflow-x: hidden;
     }
-    /* No border on the spine-facing edges */
+    /* Dot-texture paper grain overlay */
+    .page-left::before, .page-right::before {
+      content: "" !important;
+      position: absolute !important; inset: 0 !important;
+      pointer-events: none !important; z-index: 0 !important;
+      opacity: .08 !important;
+      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;
+      background-size: 12px 12px !important;
+    }
     .page-left  { border-right: none !important; background: var(--page-l) !important; }
     .page-right { border-left:  none !important; background: var(--page-r) !important; }
 
-    /* Gradient spine-glow lighting — matches inventory */
-    .page-left::before  {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(90deg, rgba(143,216,240,.014) 0%, transparent 55%);
-    }
-    .page-right::before {
-      content: ""; position: absolute; inset: 0; pointer-events: none;
-      background: linear-gradient(270deg, rgba(143,216,240,.010) 0%, transparent 55%);
-    }
-    /* Gold corner brackets — left page: top-left / right page: bottom-right */
+    /* Decorative corner brackets — parchment style */
     .page-left::after {
-      content: ""; position: absolute; top: -1px; left: -1px;
-      width: 16px; height: 16px;
-      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(270deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.04) 50%, transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
     .page-right::after {
-      content: ""; position: absolute; bottom: -1px; right: -1px;
-      width: 16px; height: 16px;
-      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; left: 0 !important;
+      width: 32px !important; height: auto !important;
+      border: none !important;
+      background: linear-gradient(90deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.04) 50%, transparent 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
     }
-    /* Fallback for bare .parchment (not left/right) — keep the original two-corner look in gold */
-    .parchment:not(.page-left):not(.page-right)::before {
-      content: ""; position: absolute; top: -1px; left: -1px;
-      width: 16px; height: 16px;
-      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
-    .parchment:not(.page-left):not(.page-right)::after {
-      content: ""; position: absolute; bottom: -1px; right: -1px;
-      width: 16px; height: 16px;
-      border-bottom: 1px solid var(--ice); border-right: 1px solid var(--ice);
-      pointer-events: none; z-index: 1;
-    }
-    .page-inner { padding: 24px 26px !important; }
 
-    /* ── Spine — open book gutter / inner binding ── */
-    /* Simulates the crease and shadow of pages meeting at the centre of an open book */
+    /* Decorative gold corner rules inside pages */
+    .page-inner { padding: 28px 30px !important; position: relative; }
+    .page-inner::before {
+      content: "" !important;
+      position: absolute !important;
+      top: 14px !important; left: 14px !important;
+      width: 28px !important; height: 28px !important;
+      border-left: 1.5px solid rgba(138,91,68,.45) !important;
+      border-top: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
+    .page-inner::after {
+      content: "" !important;
+      position: absolute !important;
+      bottom: 14px !important; right: 14px !important;
+      width: 28px !important; height: 28px !important;
+      border-right: 1.5px solid rgba(138,91,68,.45) !important;
+      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
+
+    /* ── Spine — warm book gutter ── */
     .spine {
-      /* Deep crease shadow: dark at centre, fading out to page colour on each edge */
       background: linear-gradient(90deg,
         rgba(0,0,0,.0)  0%,
-        rgba(0,0,0,.32) 28%,
-        rgba(0,0,0,.55) 46%,
-        rgba(0,0,0,.62) 50%,
-        rgba(0,0,0,.55) 54%,
-        rgba(0,0,0,.32) 72%,
+        rgba(0,0,0,.20) 28%,
+        rgba(0,0,0,.40) 46%,
+        rgba(0,0,0,.50) 50%,
+        rgba(0,0,0,.40) 54%,
+        rgba(0,0,0,.20) 72%,
         rgba(0,0,0,.0)  100%
       ) !important;
       border-left:  none !important;
@@ -184,27 +196,24 @@
       transform: translateX(-50%);
       background: linear-gradient(180deg,
         transparent 0%,
-        rgba(0,8,18,.9) 8%,
-        rgba(0,8,18,.9) 92%,
+        rgba(43,29,22,.9) 8%,
+        rgba(43,29,22,.9) 92%,
         transparent 100%);
       z-index: 2;
     }
-
-    /* Stacked-page edge: left side (right-hand page stack visible on left edge) */
     .spine::after {
       content: "";
       position: absolute;
-      top: 2px; bottom: 2px;
-      left: -3px;
+      top: 2px; bottom: 2px; left: -3px;
       width: 3px;
       background: repeating-linear-gradient(
         180deg,
-        rgba(143,216,240,.06) 0px,
-        rgba(143,216,240,.02) 1px,
-        rgba(0,0,0,.15)       1px,
-        rgba(0,0,0,.05)       2px
+        rgba(138,91,68,.08) 0px,
+        rgba(138,91,68,.03) 1px,
+        rgba(0,0,0,.10)     1px,
+        rgba(0,0,0,.04)     2px
       );
-      border-left: 1px solid rgba(143,216,240,.10);
+      border-left: 1px solid rgba(138,91,68,.12);
       z-index: 1;
     }
 
@@ -247,7 +256,7 @@
       font-size: 9.5px !important;
       letter-spacing: .42em !important;
       text-transform: uppercase !important;
-      color: var(--ice) !important;
+      color: var(--gold) !important;
       margin-bottom: 5px !important;
     }
     .chapter-sub {
@@ -260,20 +269,18 @@
     /* ── Divider ── */
     .ink-divider, hr.ink-divider {
       border: none !important;
-      border-top: 1px solid var(--line) !important;
+      border-top: 1px solid rgba(138,91,68,.30) !important;
       margin: 12px 0 !important;
       opacity: 1 !important;
     }
 
-    /* ── Body text colour remaps (inline styles use parchment browns) ── */
+    /* ── Body text colour remaps ── */
     p, li, span { color: var(--ink) !important; }
     [style*="color:var(--ink)"] { color: var(--ink) !important; }
     [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
-    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
-    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
     [style*="color:#c8b96e"] { color: var(--gold) !important; }
-    [style*="background:rgba(200,184,128"] { background: rgba(143,216,240,.06) !important; }
-    [style*="border-color:rgba(139,106,32"] { border-color: rgba(143,216,240,.25) !important; }
+    [style*="background:rgba(200,184,128"] { background: rgba(138,91,68,.08) !important; }
+    [style*="border-color:rgba(139,106,32"] { border-color: rgba(138,91,68,.30) !important; }
 
     /* ── Story text ── */
     .story-text {
@@ -288,15 +295,15 @@
       float: left !important;
       line-height: .78 !important;
       margin: .05em .12em 0 0 !important;
-      color: var(--ice) !important;
+      color: var(--gold) !important;
       font-weight: 600 !important;
     }
 
     /* ── Notice / outcome box ── */
     .notice-box {
-      border: 1px solid var(--ice) !important;
-      background: rgba(143,216,240,.06) !important;
-      color: var(--ice-hot) !important;
+      border: 1px solid rgba(138,91,68,.40) !important;
+      background: rgba(138,91,68,.07) !important;
+      color: var(--gold) !important;
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 11px !important;
       letter-spacing: .06em !important;
@@ -312,30 +319,30 @@
     #hud .hud-chapter { color: var(--ink-dim) !important; }
     #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
     #hud .stat-val { color: var(--ink) !important; }
-    #hud .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
-    #hud .stat-box { background: rgba(255,255,255,.03) !important; border: 1px solid var(--line) !important; border-radius: 0 !important; }
+    #hud .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
+    #hud .stat-box { background: rgba(0,0,0,.05) !important; border: 1px solid rgba(138,91,68,.25) !important; border-radius: 0 !important; }
     #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; }
     #hud .stat-box-val { color: var(--amber) !important; }
     #hud button {
-      background: rgba(143,216,240,.06) !important;
-      border-color: var(--line) !important;
+      background: rgba(138,91,68,.08) !important;
+      border-color: rgba(138,91,68,.30) !important;
       color: var(--ink) !important;
       border-radius: 0 !important;
       font-family: 'JetBrains Mono',monospace !important;
       transition: border-color .2s, color .2s !important;
     }
-    #hud button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
+    #hud button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
     #hud div[onclick] {
-      background: rgba(176,110,255,.15) !important;
-      border-color: rgba(176,110,255,.35) !important;
+      background: rgba(107,63,160,.10) !important;
+      border-color: rgba(107,63,160,.30) !important;
       color: var(--ink) !important;
       border-radius: 0 !important;
     }
 
-    /* ── Buttons / choices — gold theme matching inventory ── */
+    /* ── Buttons / choices — warm parchment style ── */
     button, .choice, .combat-btn {
       background: transparent !important;
-      border: 1px solid var(--line) !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
       border-radius: 0 !important;
       color: var(--ink) !important;
       font-family: 'JetBrains Mono', monospace !important;
@@ -344,9 +351,9 @@
       transition: border-color .2s, color .2s, background .2s !important;
     }
     button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
-      border-color: var(--ice) !important;
-      color: var(--ice) !important;
-      background: rgba(143,216,240,.04) !important;
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.07) !important;
     }
 
     /* ── Choices panel ── */
@@ -361,14 +368,14 @@
     .choices { display: flex; flex-direction: column; gap: 8px; }
 
     button.choice, .choice {
-      background: transparent !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.60) !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
       border-radius: 0 !important;
       color: var(--ink) !important;
       padding: 12px 14px !important;
       text-align: left !important;
       cursor: pointer !important;
-      transition: border-color .2s, background .2s !important;
+      transition: border-color .2s, background .2s, transform .2s !important;
       display: flex !important;
       align-items: flex-start !important;
       gap: 10px !important;
@@ -376,23 +383,24 @@
       font-family: 'Cormorant Garamond', serif !important;
     }
     button.choice:hover, .choice:hover {
-      border-color: var(--ice) !important;
-      background: rgba(143,216,240,.04) !important;
+      border-color: var(--gold) !important;
+      background: rgba(138,91,68,.12) !important;
+      transform: translateX(4px) !important;
     }
     button.choice.danger, .choice.danger {
-      border-color: rgba(224,90,68,.35) !important;
+      border-color: rgba(192,57,43,.35) !important;
     }
     button.choice.danger:hover, .choice.danger:hover {
       border-color: var(--warn) !important;
-      background: rgba(224,90,68,.06) !important;
+      background: rgba(192,57,43,.08) !important;
     }
     button.choice.locked, .choice.locked {
       opacity: .45 !important;
       cursor: default !important;
-      border-color: var(--ink-faint) !important;
+      border-color: rgba(138,91,68,.15) !important;
     }
     .choice-arrow {
-      color: var(--ice) !important;
+      color: var(--gold) !important;
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 13px !important;
       flex-shrink: 0 !important;
@@ -414,14 +422,14 @@
     }
 
     /* ── Stat bars ── */
-    .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius: 0 !important; }
+    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
     .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }
     .stat-val { color: var(--ink) !important; }
 
     /* ── Combat panel ── */
     .combat-panel {
-      background: var(--bg-1) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.80) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
       padding: 16px !important;
       position: relative;
@@ -429,7 +437,7 @@
     .combat-panel::before {
       content: ""; position: absolute; top: -1px; left: -1px;
       width: 12px; height: 12px;
-      border-top: 1px solid var(--ice); border-left: 1px solid var(--ice);
+      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);
     }
     .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
     .combat-enemy-icon { font-size: 2.5rem; }
@@ -444,8 +452,8 @@
       font-size: 15px !important;
       line-height: 1.55 !important;
       color: var(--ink-dim) !important;
-      background: rgba(0,0,0,.25) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(0,0,0,.06) !important;
+      border: 1px solid rgba(138,91,68,.20) !important;
       border-radius: 0 !important;
       padding: 10px 12px !important;
       min-height: 3rem !important;
@@ -456,7 +464,7 @@
     .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
     .stat-bar-wrap {
       flex: 1; height: 5px !important;
-      background: rgba(255,255,255,.06) !important;
+      background: rgba(0,0,0,.08) !important;
       border-radius: 0 !important; overflow: hidden;
     }
     .stat-bar { height: 100%; transition: width .4s, background .4s; }
@@ -476,8 +484,8 @@
       font-family: 'JetBrains Mono', monospace !important;
       font-size: .6rem !important; letter-spacing: .06em !important;
       color: var(--ink) !important;
-      background: rgba(255,255,255,.03) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.50) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
       padding: .45rem .5rem !important;
       cursor: pointer !important;
@@ -485,9 +493,9 @@
       display: flex !important; align-items: center !important; justify-content: center !important;
     }
     .combat-btn:hover:not(:disabled) {
-      border-color: var(--ice) !important;
-      color: var(--ice) !important;
-      background: rgba(143,216,240,.06) !important;
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.10) !important;
     }
     .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }
 
@@ -500,8 +508,8 @@
 
     /* ── End screen ── */
     .end-box {
-      background: var(--bg-1) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.80) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
       padding: 20px !important;
       position: relative;
@@ -512,7 +520,7 @@
       font-family: 'Cormorant Garamond', serif !important;
       font-size: 22px !important; font-weight: 600 !important;
       letter-spacing: .06em !important;
-      color: var(--ice) !important;
+      color: var(--gold) !important;
       margin-bottom: 10px !important;
     }
     .end-sub {
@@ -529,7 +537,7 @@
       text-transform: uppercase !important;
       color: var(--ink) !important;
       background: transparent !important;
-      border: 1px solid var(--line) !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
       border-radius: 0 !important;
       padding: .55rem 1.2rem !important;
       cursor: pointer !important;
@@ -538,15 +546,15 @@
       display: inline-block !important;
     }
     .end-btn:hover {
-      border-color: var(--ice) !important;
-      color: var(--ice) !important;
-      background: rgba(143,216,240,.04) !important;
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.07) !important;
     }
 
     /* ── Items panel ── */
     #items-panel, [id$="-items-panel"] {
-      background: var(--bg-1) !important;
-      border: 1px solid rgba(143,216,240,.25) !important;
+      background: rgba(244,234,215,.70) !important;
+      border: 1px solid rgba(138,91,68,.25) !important;
       border-radius: 0 !important;
     }
     [id$="-items-panel"] p,
@@ -564,9 +572,9 @@
 
     /* ── System overlay messages ── */
     .sys-overlay, [id="sys-overlay"] {
-      background: rgba(5,8,12,.92) !important;
-      border: 1px solid var(--ice) !important;
-      color: var(--ice-hot) !important;
+      background: rgba(43,29,22,.93) !important;
+      border: 1px solid rgba(138,91,68,.50) !important;
+      color: var(--gold-hot) !important;
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 10.5px !important;
       letter-spacing: .08em !important;
@@ -575,17 +583,17 @@
 
     /* ── Toast ── */
     .toast, [class*="toast"] {
-      background: rgba(5,8,12,.94) !important;
-      border: 1px solid var(--ice) !important;
-      color: var(--ice-hot) !important;
+      background: rgba(43,29,22,.95) !important;
+      border: 1px solid rgba(138,91,68,.50) !important;
+      color: var(--gold-hot) !important;
       font-family: 'JetBrains Mono', monospace !important;
       border-radius: 0 !important;
     }
 
     /* ── Loot window ── */
     #loot-window {
-      background: var(--bg-1) !important;
-      border-color: rgba(143,216,240,.4) !important;
+      background: rgba(241,228,207,.96) !important;
+      border-color: rgba(138,91,68,.40) !important;
       border-radius: 0 !important;
       color: var(--ink) !important;
     }
@@ -593,13 +601,13 @@
 
     /* ── Stat window modal ── */
     #stat-window > div {
-      background: var(--bg-1) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.97) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
     }
     #stat-window * { color: var(--ink) !important; }
     #stat-window [style*="background:rgba(200"] {
-      background: rgba(143,216,240,.06) !important;
+      background: rgba(138,91,68,.07) !important;
     }
 
     /* ── Farm zones + location hub ── */
@@ -607,14 +615,14 @@
 
     /* ── Watcher image ── */
     #watcher-img {
-      border: 1px solid var(--line) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
-      filter: drop-shadow(0 0 20px rgba(143,216,240,.15)) !important;
+      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;
     }
 
     /* ── Eye encounter overlay ── */
     #eye-encounter-overlay {
-      background: rgba(3,5,8,.97) !important;
+      background: rgba(20,14,10,.97) !important;
     }
 
     /* ── combat-over ── */
@@ -622,32 +630,61 @@
     [id$="-combat-over"] button {
       font-family: 'JetBrains Mono', monospace !important;
       color: var(--ink) !important;
-      background: rgba(143,216,240,.06) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(138,91,68,.07) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
       cursor: pointer !important;
       transition: border-color .15s, color .15s !important;
     }
-    [id$="-combat-over"] button:hover { border-color: var(--ice) !important; color: var(--gold) !important; }
+    [id$="-combat-over"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
 
     /* ── Modals ── */
     [id$="-window"] > div, .end-box {
-      background: var(--panel) !important;
-      border: 1px solid var(--line) !important;
+      background: rgba(244,234,215,.97) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       border-radius: 0 !important;
     }
 
     /* ── Scrollbar ── */
     ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: var(--bg-0); }
-    ::-webkit-scrollbar-thumb { background: var(--line); }
+    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }
+    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }
     ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+    /* ── Page-flip animation — triggered on navigation only ── */
+    @keyframes bookPageFlip {
+      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }
+      6%   { opacity: .92; }
+      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }
+      80%  { opacity: 0; }
+      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }
+    }
+    .page-flip-decorator {
+      position: absolute;
+      top: 0; right: 0;
+      width: 50%; height: 100%;
+      transform-origin: left center;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      background: linear-gradient(to left, rgba(244,234,215,.96) 0%, rgba(235,220,195,.92) 60%, rgba(220,200,170,.72) 100%);
+      box-shadow: -4px 0 20px rgba(0,0,0,.15);
+    }
+    .page-flip-decorator.playing {
+      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .page-flip-decorator::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to right, rgba(0,0,0,.10) 0%, transparent 35%);
+    }
   </style>
 </head>
 <body>
 <div class="book-wrap">
   <div id="nav"></div>
-  <div class="book animate-in">
+  <div class="book animate-in" style="position:relative;">
     <div class="page-left parchment" id="left-page">
       <div class="page-inner">
         <p class="chapter-label">Chapter 1 — System Initialization</p>
@@ -677,6 +714,8 @@
         <div id="right-panel"></div>
       </div>
     </div>
+    <!-- Decorative page-flip animation — purely visual, no pointer events -->
+    <div class="page-flip-decorator" aria-hidden="true"></div>
   </div>
 </div>
 
@@ -3946,6 +3985,13 @@ function triggerForcedEyeEncounter(encounterType, resumeNextId) {
       setTimeout(() => {
         overlay.remove()
         // Resume the navigation that was interrupted
+        const flipEl2 = document.querySelector('.page-flip-decorator')
+        if (flipEl2) {
+          flipEl2.classList.remove('playing')
+          void flipEl2.offsetWidth
+          flipEl2.classList.add('playing')
+          flipEl2.addEventListener('animationend', () => flipEl2.classList.remove('playing'), { once: true })
+        }
         const lp = document.getElementById('left-page')
         lp.style.transition = 'opacity .3s,transform .3s'
         lp.style.opacity    = '0'
@@ -4206,6 +4252,15 @@ window.goTo = async function goTo(nextId, choice = {}) {
     // Intercept navigation — show forced combat overlay, do NOT change nodeId
     triggerForcedEyeEncounter(eyeEncounter, nextId)
     return  // abort normal navigation — overlay handles it
+  }
+
+  // ── Page-flip animation on navigation ──
+  const flipEl = document.querySelector('.page-flip-decorator')
+  if (flipEl) {
+    flipEl.classList.remove('playing')
+    void flipEl.offsetWidth // force reflow to restart animation
+    flipEl.classList.add('playing')
+    flipEl.addEventListener('animationend', () => flipEl.classList.remove('playing'), { once: true })
   }
 
   const lp = document.getElementById('left-page')
