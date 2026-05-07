@@ -53,126 +53,125 @@ export async function renderNav(containerId = 'nav') {
     ? `<img src="${base}assets/mysterious_cloaked_player.png" alt="Admin" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid #00ffe7;box-shadow:0 0 6px #00ffe750;vertical-align:middle;margin-right:4px;">`
     : ''
 
-  // Highlight active page
   const currentPage = location.pathname.split('/').pop()
-  const navLinks = [
-    { href: `${base}pages/book.html`,      label: 'Chapters'  },
-    { href: `${base}pages/inventory.html`, label: 'Inventory' },
-    { href: `${base}pages/skills.html`,    label: 'Skills'    },
-    { href: `${base}pages/trader.html`,    label: 'Trader'    },
-    { href: `${base}pages/lobby.html`,     label: 'Lobby'     },
-    { href: `${base}pages/badges.html`,    label: 'Badges'    },
-  ]
 
   root.innerHTML = `
     <style>
-      .bookmark-nav {
-        background: #1a1410;
-        border-bottom: 1px solid rgba(200,160,80,.20);
-        font-family: 'JetBrains Mono', monospace;
+      .bm-wrap {
+        position: relative;
+        width: 100%;
+        max-width: 1060px;
+        margin: 0 auto 0;
+        height: 72px;
         user-select: none;
       }
-      .bookmark-nav-top {
+      .bm-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        pointer-events: none;
+        display: block;
+      }
+      .bm-content {
+        position: absolute;
+        inset: 0;
         display: flex;
         align-items: center;
-        gap: 20px;
-        padding: 10px 32px;
-        border-bottom: 1px solid rgba(200,160,80,.12);
+        padding: 0 80px 0 72px;
+        gap: 0;
       }
-      .bookmark-logo {
+      .bm-logo {
         font-family: 'Cinzel', serif;
         font-size: 11px;
-        letter-spacing: .38em;
+        letter-spacing: .32em;
         text-transform: uppercase;
-        color: #c8a050;
+        color: #3a2a14;
         text-decoration: none;
         flex-shrink: 0;
+        margin-right: 20px;
       }
-      .bookmark-player {
-        font-size: 10px;
-        letter-spacing: .12em;
-        color: #d4c5a0;
+      .bm-player {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 9px;
+        letter-spacing: .10em;
+        color: #4a3820;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         flex: 1;
       }
-      .bookmark-player-dot {
+      .bm-dot {
         display: inline-block;
-        width: 6px; height: 6px;
+        width: 5px; height: 5px;
         border-radius: 50%;
         background: ${color};
         flex-shrink: 0;
       }
-      .bookmark-signout {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .2em;
-        text-transform: uppercase;
-        color: #7a6050;
-        background: none;
-        border: .5px solid #4a3828;
-        padding: 3px 8px;
-        cursor: pointer;
-        transition: color .2s, border-color .2s;
+      .bm-links {
+        display: flex;
+        align-items: center;
+        gap: 2px;
         flex-shrink: 0;
       }
-      .bookmark-signout:hover { color: #c8a050; border-color: #c8a050; }
-      .bookmark-tabs {
-        display: flex;
-        align-items: flex-end;
-        padding: 0 28px;
-        gap: 2px;
-      }
-      .bookmark-tab {
-        font-size: 9px;
-        letter-spacing: .28em;
+      .bm-link {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        letter-spacing: .22em;
         text-transform: uppercase;
-        color: #7a6e58;
+        color: #4a3820;
         text-decoration: none;
-        padding: 7px 16px 6px;
-        border: 1px solid transparent;
-        border-bottom: none;
-        position: relative;
-        transition: color .2s, background .2s, border-color .2s;
-        background: transparent;
-        top: 1px;
+        padding: 4px 10px;
+        transition: color .2s;
+        white-space: nowrap;
       }
-      .bookmark-tab:hover {
-        color: #d4c5a0;
-        background: rgba(200,160,80,.06);
-        border-color: rgba(200,160,80,.20);
+      .bm-link:hover { color: #1a0e04; }
+      .bm-link.active { color: #1a0e04; font-weight: 700; }
+      .bm-sep {
+        color: #8a7050;
+        font-size: 9px;
+        opacity: .5;
       }
-      .bookmark-tab.active {
-        color: #d4c5a0;
-        background: rgba(200,160,80,.08);
-        border-color: rgba(200,160,80,.25);
+      .bm-signout {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 8px;
+        letter-spacing: .18em;
+        text-transform: uppercase;
+        color: #7a5030;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px 6px;
+        transition: color .2s;
+        margin-left: 6px;
       }
-      .bookmark-tab.active::after {
-        content: '';
-        position: absolute;
-        bottom: -1px; left: 0; right: 0;
-        height: 1px;
-        background: #1a1410;
-      }
+      .bm-signout:hover { color: #1a0e04; }
     </style>
-    <nav class="bookmark-nav">
-      <div class="bookmark-nav-top">
-        <a href="${base}index.html" class="bookmark-logo">SuperSede</a>
-        <span class="bookmark-player">
-          ${adminImg}
-          <span class="bookmark-player-dot"></span>
+    <div class="bm-wrap">
+      <img class="bm-img" src="${base}nav_bookmark.webp" alt="">
+      <div class="bm-content">
+        <a href="${base}index.html" class="bm-logo">SuperSede</a>
+        <span class="bm-player">
+          ${adminImg}<span class="bm-dot"></span>
           ${player.username} · Lvl ${player.level} · ${player.xp} XP · ◈ ${player.gold}
         </span>
-        <button class="bookmark-signout" onclick="signOut()">Sign Out</button>
+        <nav class="bm-links">
+          ${[
+            { href: `${base}pages/book.html`,      label: 'Chapters'  },
+            { href: `${base}pages/inventory.html`, label: 'Inventory' },
+            { href: `${base}pages/skills.html`,    label: 'Skills'    },
+            { href: `${base}pages/trader.html`,    label: 'Trader'    },
+            { href: `${base}pages/lobby.html`,     label: 'Lobby'     },
+            { href: `${base}pages/badges.html`,    label: 'Badges'    },
+          ].map((l, i, arr) => {
+            const active = l.href.includes(currentPage) && currentPage !== 'index.html'
+            return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
+          }).join('')}
+          <button class="bm-signout" onclick="signOut()">Sign Out</button>
+        </nav>
       </div>
-      <div class="bookmark-tabs">
-        ${navLinks.map(l => {
-          const isActive = l.href.includes(currentPage) && currentPage !== 'index.html'
-          return `<a href="${l.href}" class="bookmark-tab${isActive ? ' active' : ''}">${l.label}</a>`
-        }).join('')}
-      </div>
-    </nav>
+    </div>
   `
 
   window.signOut = async () => {
