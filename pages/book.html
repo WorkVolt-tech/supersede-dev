@@ -425,7 +425,8 @@
 </div><!-- /scene -->
 
 <script type="module">
-import { renderNav } from './nav.js'
+import { renderNav } from '../components/nav.js'
+
   const CHAPTERS = [
     { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
     { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
@@ -661,7 +662,7 @@ import { renderNav } from './nav.js'
   const CH_COVERS = { 1: WATCHER_SVG, 2: TWIN_JUDGES_SVG }
 
   ;(async () => {
-  await renderNav('nav')
+    const player = await renderNav('nav')
     if (!player) return
 
     const unlocked = player.chapters_unlocked || [1]
