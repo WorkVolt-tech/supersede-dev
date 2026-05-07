@@ -9,11 +9,7 @@
   <link rel="stylesheet" href="../styles/main.css">
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    /* ══════════════════════════════════════════════
-       PARCHMENT BOOK THEME — Warm Ink / Aged Paper
-       Matches the interactive book page-flip UI.
-    ══════════════════════════════════════════════ */
-       :root {
+    :root {
       --bg-0:      #14110f;
       --bg-1:      #2b1d16;
       --panel:     #f4ead7;
@@ -35,646 +31,360 @@
       --purple:    #8a50c0;
       --spine-col: #2b1d16;
     }
-    *, *::before, *::after { box-sizing: border-box; }
-
-    /* ── Nav ── */
-    #nav { position: relative; z-index: 200; }
-    #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
-    #nav a, #nav button {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important; letter-spacing: .28em !important;
-      text-transform: uppercase !important; color: var(--ink-dim) !important;
-      text-decoration: none !important; border: none !important; padding: 0 !important;
-      transition: color .2s !important;
-    }
-    #nav a:hover, #nav button:hover { color: var(--gold) !important; }
-    #nav > *, #nav nav, #nav div {
-      border-bottom: 1px solid var(--line) !important;
-      padding: 14px 32px !important; display: flex !important;
-      align-items: center !important; gap: 28px !important; flex-wrap: wrap !important;
-    }
-
-    /* ── Global reset ── */
+    * { box-sizing:border-box; margin:0; padding:0; }
     html, body {
-      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;
-      color: var(--ink) !important;
-      font-family: 'Cormorant Garamond', Georgia, serif !important;
-      min-height: 100vh;
-      overflow-x: hidden;
+      min-height:100vh;
+      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%);
+      color:var(--ink);
+      font-family:'Cormorant Garamond',serif;
+      overflow-x:hidden;
     }
 
-    /* Warm ambient glow */
+    /* scanlines */
     body::after {
-      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
-      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);
+      content:""; position:fixed; inset:0; pointer-events:none; z-index:9998;
+      background-image: repeating-linear-gradient(180deg,
+        rgba(200,168,74,.010) 0px, rgba(200,168,74,.010) 1px,
+        transparent 1px, transparent 4px);
     }
 
-    /* ── Book wrap ── */
-    .book-wrap {
-      background: transparent !important;
-      max-width: 1060px;
-      margin: 0 auto;
-      padding: 24px 24px 60px;
+    /* ── NAV ── */
+    #nav { position:relative; z-index:200; }
+    #nav, #nav * {
+      background:transparent !important;
+      box-shadow:none !important;
+      border-radius:0 !important;
+    }
+    #nav a, #nav button {
+      font-family:'JetBrains Mono',monospace !important;
+      font-size:10px !important;
+      letter-spacing:.28em !important;
+      text-transform:uppercase !important;
+      color: #d4c5a0 !important;
+      text-decoration:none !important;
+      border:none !important;
+      padding:0 !important;
+      transition:color .2s !important;
+    }
+    #nav a:hover, #nav button:hover { color:var(--gold) !important; }
+    #nav > *, #nav nav, #nav div {
+      border-bottom:1px solid var(--line) !important;
+      padding:14px 32px !important; display:flex !important;
+      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
     }
 
-    /* ── Book — warm parchment open-book ── */
-    .book {
-      display: grid !important;
-      grid-template-columns: 1fr 22px 1fr !important;
-      align-items: stretch !important;
-      gap: 0 !important;
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
-      border-radius: 24px !important;
-      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;
-      transform: perspective(1600px) rotateX(2.5deg) !important;
-      transform-origin: 50% 0 !important;
-      margin-top: 10px !important;
-      overflow: hidden !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-    }
-    @media(max-width: 860px) {
-      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }
-      .spine { display: none !important; }
+    /* ── OUTER WRAPPER ── */
+    .scene {
+      max-width:1060px;
+      margin:0 auto;
+      padding:28px 24px 60px;
     }
 
-    /* ── Pages ── */
-    .parchment, .page-left, .page-right {
-      background: var(--panel) !important;
-      border: none !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      color: var(--ink) !important;
+    /* zone header */
+    .zone {
+      display:flex; align-items:baseline; justify-content:space-between;
+      padding:20px 0 22px; gap:24px;
+    }
+    .z-kicker { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.42em; color:var(--gold); text-transform:uppercase; }
+    .z-title  { font-size:22px; font-weight:500; letter-spacing:.04em; color:var(--ink); margin-top:4px; }
+    .z-sub    { font-size:14px; color:var(--ink-dim); font-style:italic; text-align:right; line-height:1.5; max-width:340px; }
+
+    /* ══════════════════════════════
+       BOOK SHELL — 3D perspective
+    ══════════════════════════════ */
+    .book-shell {
+      perspective: 1800px;
+      perspective-origin: 50% 42%;
+    }
+
+    .book-body {
+      display: flex;
+      align-items: stretch;
+      min-height: 560px;
       position: relative;
-      overflow-y: auto;
-      overflow-x: hidden;
+      transform: rotateX(3deg);
+      transform-style: preserve-3d;
+      filter: drop-shadow(0 28px 60px rgba(0,0,0,.85));
     }
-    /* Dot-texture paper grain */
-    .page-left::before, .page-right::before {
-      content: "" !important;
-      position: absolute !important; inset: 0 !important;
-      pointer-events: none !important; z-index: 0 !important;
-      opacity: .08 !important;
-      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;
-      background-size: 12px 12px !important;
-    }
-    .page-left  { border-right: none !important; background: var(--page-l) !important; }
-    .page-right { border-left:  none !important; background: var(--page-r) !important; }
 
-    /* Spine-edge shadow */
+    /* cover boards removed */
+    .book-body::before, .book-body::after { display:none; }
+
+    /* ── LEFT PAGE ── */
+    .page-left {
+      flex: 1;
+      background: var(--page-l);
+      border: 1px solid var(--line);
+      border-right: none;
+      padding: 32px 28px 32px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+    /* subtle inner gradient — lit from spine */
+    .page-left::before {
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, rgba(180,120,60,.04) 0%, transparent 60%);
+      pointer-events:none;
+    }
+    /* page-curl shadow cast inward from the binding — left page */
     .page-left::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; right: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(270deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.04) 50%, transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
+      content:"";
+      position:absolute; top:0; bottom:0; right:0;
+      width:36px; height:auto;
+      border:none;
+      background: linear-gradient(270deg,
+        rgba(0,0,0,.30) 0%,
+        rgba(0,0,0,.10) 55%,
+        transparent 100%);
+      pointer-events:none;
+      z-index:2;
     }
-    .page-right::after {
-      content: "" !important;
-      position: absolute !important;
-      top: 0 !important; bottom: 0 !important; left: 0 !important;
-      width: 32px !important; height: auto !important;
-      border: none !important;
-      background: linear-gradient(90deg, rgba(0,0,0,.12) 0%, rgba(0,0,0,.04) 50%, transparent 100%) !important;
-      pointer-events: none !important;
-      z-index: 2 !important;
+    .page-left .corner-br {
+      position:absolute; bottom:-1px; left:-1px;
+      width:18px; height:18px;
+      border-bottom:1px solid var(--gold); border-left:1px solid var(--gold);
     }
 
-    /* Decorative corner brackets */
-    .page-inner { padding: 28px 30px !important; position: relative; }
-    .page-inner::before {
-      content: "" !important;
-      position: absolute !important;
-      top: 14px !important; left: 14px !important;
-      width: 28px !important; height: 28px !important;
-      border-left: 1.5px solid rgba(138,91,68,.45) !important;
-      border-top: 1.5px solid rgba(138,91,68,.45) !important;
-      pointer-events: none !important;
-    }
-    .page-inner::after {
-      content: "" !important;
-      position: absolute !important;
-      bottom: 14px !important; right: 14px !important;
-      width: 28px !important; height: 28px !important;
-      border-right: 1.5px solid rgba(138,91,68,.45) !important;
-      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;
-      pointer-events: none !important;
-    }
-    .page-left  { border-right: none !important; background: var(--page-l) !important; }
-    .page-right { border-left:  none !important; background: var(--page-r) !important; }
-
-    .spine-inner, .spine-highlight, .spine-shadow,
-    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
-
-    /* ── Chapter label / subtitle ── */
-    .chapter-label {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 9.5px !important;
-      letter-spacing: .42em !important;
-      text-transform: uppercase !important;
-      color: var(--gold) !important;
-      margin-bottom: 5px !important;
-    }
-    .chapter-sub {
-      font-size: 17px !important;
-      font-style: italic !important;
-      color: var(--ink-dim) !important;
-      margin-bottom: 0 !important;
-    }
-
-        /* ── Divider ── */
-    .ink-divider, hr.ink-divider {
-      border: none !important;
-      border-top: 1px solid rgba(200,180,120,.40) !important;
-      margin: 12px 0 !important;
-      opacity: 1 !important;
-    }
-
-    /* ── Body text colour remaps ── */
-    p, li, span { color: var(--ink) !important; }
-    [style*="color:var(--ink)"] { color: var(--ink) !important; }
-    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
-    [style*="color:#c8b96e"] { color: var(--gold) !important; }
-    [style*="background:rgba(200,184,128"] { background: rgba(138,91,68,.08) !important; }
-    [style*="border-color:rgba(139,106,32"] { border-color: rgba(138,91,68,.30) !important; }
-
-    /* ── Story text ── */
-    .story-text {
-      font-family: 'Cormorant Garamond', serif !important;
-      font-size: 17px !important;
-      line-height: 1.65 !important;
-      color: var(--ink) !important;
-      white-space: pre-line !important;
-    }
-    .story-text.drop-cap::first-letter {
-      font-size: 3.8em !important;
-      float: left !important;
-      line-height: .78 !important;
-      margin: .05em .12em 0 0 !important;
-      color: var(--gold) !important;
-      font-weight: 600 !important;
-    }
-
-    /* ── Notice / outcome box ── */
-    .notice-box {
-      border: 1px solid rgba(200,180,120,.50) !important;
-      background: rgba(30,20,15,.85) !important;
-      color: #f0d060 !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 11px !important;
-      letter-spacing: .06em !important;
-      padding: 10px 14px !important;
-      border-radius: 0 !important;
-      margin-top: 14px !important;
-    }
-
-        /* ── HUD ── */
-    #hud { color: #e8d8b0 !important; }
-    #hud p, #hud span, #hud div { color: #e8d8b0 !important; }
-    #hud .hud-badge-row .hud-seal-label { color: #f0d060 !important; }
-    #hud .hud-chapter { color: #c8b880 !important; }
-    #hud .stat-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
-    #hud .stat-val { color: #f0e0c0 !important; }
-    #hud .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
-    #hud .stat-box { background: rgba(0,0,0,.15) !important; border: 1px solid rgba(200,180,120,.35) !important; border-radius: 0 !important; }
-    #hud .stat-box-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; }
-    #hud .stat-box-val { color: #f0c080 !important; }
-    #hud button {
-      background: rgba(200,180,120,.12) !important;
-      border-color: rgba(200,180,120,.40) !important;
-      color: #e8d8b0 !important;
-      border-radius: 0 !important;
-      font-family: 'JetBrains Mono',monospace !important;
-      transition: border-color .2s, color .2s !important;
-    }
-    #hud button:hover { border-color: #f0d060 !important; color: #f0d060 !important; }
-    #hud div[onclick] {
-      background: rgba(160,125,224,.15) !important;
-      border-color: rgba(160,125,224,.40) !important;
-      color: #e8d8b0 !important;
-      border-radius: 0 !important;
-    }
-
-    /* ── Buttons / choices — warm parchment ── */
-    button, .choice, .combat-btn {
-      background: transparent !important;
-      border: 1px solid rgba(138,91,68,.35) !important;
-      border-radius: 0 !important;
-      color: var(--ink) !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important; letter-spacing: .08em !important;
-      cursor: pointer !important;
-      transition: border-color .2s, color .2s, background .2s !important;
-    }
-    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
-      border-color: var(--gold) !important;
-      color: var(--gold) !important;
-      background: rgba(138,91,68,.07) !important;
-    }
-
-    /* ── Choices panel ── */
-    .choices-label {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important;
-      letter-spacing: .38em !important;
-      text-transform: uppercase !important;
-      color: var(--ink-dim) !important;
-      margin-bottom: 12px !important;
-    }
-    .choices { display: flex; flex-direction: column; gap: 8px; }
-
-    button.choice, .choice {
-      background: rgba(244,234,215,.60) !important;
-      border: 1px solid rgba(138,91,68,.35) !important;
-      border-radius: 0 !important;
-      color: var(--ink) !important;
-      padding: 12px 14px !important;
-      text-align: left !important;
-      cursor: pointer !important;
-      transition: border-color .2s, background .2s, transform .2s !important;
-      display: flex !important;
-      align-items: flex-start !important;
-      gap: 10px !important;
-      width: 100% !important;
-      font-family: 'Cormorant Garamond', serif !important;
-    }
-    button.choice:hover, .choice:hover {
-      border-color: var(--ice) !important;
-      background: rgba(138,91,68,.12) !important;
-      transform: translateX(4px) !important;
-    }
-    button.choice.danger, .choice.danger {
-      border-color: rgba(192,57,43,.35) !important;
-    }
-    button.choice.danger:hover, .choice.danger:hover {
-      border-color: var(--warn) !important;
-      background: rgba(192,57,43,.08) !important;
-    }
-    button.choice.locked, .choice.locked {
-      opacity: .45 !important;
-      cursor: default !important;
-      border-color: rgba(138,91,68,.15) !important;
-    }
-    .choice-arrow {
-      color: var(--gold) !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 13px !important;
-      flex-shrink: 0 !important;
-      margin-top: 1px !important;
-    }
-    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }
-    .choice-body {
-      font-size: 17px !important;
-      color: var(--ink) !important;
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    .choice-sub {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 9.5px !important;
-      letter-spacing: .06em !important;
-      color: var(--ink-dim) !important;
-      margin-top: 3px !important;
-    }
-
-    /* ── Stat bars ── */
-    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
-    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }
-    .stat-val { color: var(--ink) !important; }
-
-    /* ── Combat panel ── */
-    .combat-panel {
-      background: rgba(244,234,215,.80) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-      padding: 16px !important;
-      position: relative;
-    }
-    .combat-panel::before {
-      content: ""; position: absolute; top: -1px; left: -1px;
-      width: 12px; height: 12px;
-      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);
-    }
-    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-    .combat-enemy-icon { font-size: 2.5rem; }
-    .combat-enemy-name {
-      font-family: 'Cormorant Garamond', serif !important;
-      font-size: 20px !important; font-weight: 600 !important;
-      letter-spacing: .04em !important; color: var(--ink) !important;
-    }
-    .combat-log {
-      font-family: 'Cormorant Garamond', serif !important;
-      font-style: italic !important;
-      font-size: 15px !important;
-      line-height: 1.55 !important;
-      color: var(--ink-dim) !important;
-      background: rgba(0,0,0,.06) !important;
-      border: 1px solid rgba(138,91,68,.20) !important;
-      border-radius: 0 !important;
-      padding: 10px 12px !important;
-      min-height: 3rem !important;
-      margin-bottom: 10px !important;
-    }
-    .combat-log em     { color: var(--gold) !important; font-style: italic; }
-    .combat-log strong { color: var(--warn) !important; font-style: normal; }
-    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-    .stat-bar-wrap {
-      flex: 1; height: 5px !important;
-      background: rgba(0,0,0,.08) !important;
-      border-radius: 0 !important; overflow: hidden;
-    }
-    .stat-bar { height: 100%; transition: width .4s, background .4s; }
-    .stat-key {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: .58rem !important; letter-spacing: .08em !important;
-      color: var(--ink-dim) !important; min-width: 44px;
-    }
-    .stat-val {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: .6rem !important; color: var(--ink) !important;
-      min-width: 50px; text-align: right;
-    }
-
-    /* ── Combat action buttons ── */
-    .combat-btn {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: .6rem !important; letter-spacing: .06em !important;
-      color: var(--ink) !important;
-      background: rgba(244,234,215,.50) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-      padding: .45rem .5rem !important;
-      cursor: pointer !important;
-      transition: border-color .2s, background .2s, color .2s !important;
-      display: flex !important; align-items: center !important; justify-content: center !important;
-    }
-    .combat-btn:hover:not(:disabled) {
-      border-color: var(--gold) !important;
-      color: var(--gold) !important;
-      background: rgba(138,91,68,.10) !important;
-    }
-    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }
-
-    /* stat-grid inside HUD */
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(3,1fr);
-      gap: 4px; margin-top: 6px;
-    }
-
-    /* ── End screen ── */
-    .end-box {
-      background: rgba(244,234,215,.80) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-      padding: 20px !important;
-      position: relative;
-    }
-    .end-box::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
-    .end-box::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }
-    .end-title {
-      font-family: 'Cormorant Garamond', serif !important;
-      font-size: 22px !important; font-weight: 600 !important;
-      letter-spacing: .06em !important;
-      color: var(--gold) !important;
-      margin-bottom: 10px !important;
-    }
-    .end-sub {
-      font-style: italic !important;
-      font-size: 16px !important;
-      color: var(--ink-dim) !important;
-      line-height: 1.55 !important;
-      margin-bottom: 14px !important;
-    }
-    .end-btn {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: .75rem !important;
-      letter-spacing: .14em !important;
-      text-transform: uppercase !important;
-      color: var(--ink) !important;
-      background: transparent !important;
-      border: 1px solid rgba(138,91,68,.35) !important;
-      border-radius: 0 !important;
-      padding: .55rem 1.2rem !important;
-      cursor: pointer !important;
-      transition: border-color .2s, color .2s, background .2s !important;
-      text-decoration: none !important;
-      display: inline-block !important;
-    }
-    .end-btn:hover {
-      border-color: var(--gold) !important;
-      color: var(--gold) !important;
-      background: rgba(138,91,68,.07) !important;
-    }
-
-    /* ── Items panel ── */
-    #items-panel, [id$="-items-panel"] {
-      background: rgba(244,234,215,.70) !important;
-      border: 1px solid rgba(138,91,68,.25) !important;
-      border-radius: 0 !important;
-    }
-    [id$="-items-panel"] p,
-    [id$="-items-panel"] span { color: var(--ink) !important; }
-
-    /* ── animate-in ── */
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-    .animate-in { animation: fadeIn .4s ease forwards; }
-    @keyframes animateShake {
-      0%,100%{transform:translateX(0)}
-      20%,60%{transform:translateX(-4px)}
-      40%,80%{transform:translateX(4px)}
-    }
-    .animate-shake { animation: animateShake .35s ease; }
-
-    /* ── Items panel ── */
-    #items-panel, [id$="-items-panel"] {
-      background: rgba(244,234,215,.70) !important;
-      border: 1px solid rgba(138,91,68,.25) !important;
-      border-radius: 0 !important;
-    }
-    [id$="-items-panel"] p,
-    [id$="-items-panel"] span { color: var(--ink) !important; }
-
-    /* ── animate-in ── */
-    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
-    .animate-in { animation: fadeIn .4s ease forwards; }
-    @keyframes animateShake {
-      0%,100%{transform:translateX(0)}
-      20%,60%{transform:translateX(-4px)}
-      40%,80%{transform:translateX(4px)}
-    }
-    .animate-shake { animation: animateShake .35s ease; }
-
-        /* ── System overlay messages ── */
-    .sys-overlay, [id="sys-overlay"] {
-      background: rgba(20,15,10,.98) !important;
-      border: 1px solid rgba(240,200,80,.70) !important;
-      color: #f0e0a0 !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 11px !important;
-      letter-spacing: .08em !important;
-      border-radius: 4px !important;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
-      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
-    }
-    .sys-overlay span, [id="sys-overlay"] span,
-    .sys-overlay p, [id="sys-overlay"] p {
-      color: #f0e0a0 !important;
-    }
-
-    /* ── Toast ── */
-    .toast, [class*="toast"] {
-      background: rgba(20,15,10,.98) !important;
-      border: 1px solid rgba(240,200,80,.70) !important;
-      color: #f0e0a0 !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      border-radius: 4px !important;
-      font-size: 11px !important;
-      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
-    }
-    .toast span, [class*="toast"] span,
-    .toast p, [class*="toast"] p {
-      color: #f0e0a0 !important;
-    }
-
-    /* ── Loot window ── */
-    #loot-window {
-      background: rgba(241,228,207,.96) !important;
-      border-color: rgba(138,91,68,.40) !important;
-      border-radius: 0 !important;
-      color: var(--ink) !important;
-    }
-    #loot-window p, #loot-window span { color: var(--ink) !important; }
-
-    /* ── Stat window modal ── */
-    #stat-window > div {
-      background: rgba(244,234,215,.97) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-    }
-    #stat-window * { color: var(--ink) !important; }
-    #stat-window [style*="background:rgba(200"] {
-      background: rgba(138,91,68,.07) !important;
-    }
-
-    /* ── Judge image ── */
-    #judge-img {
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;
-    }
-
-    /* ── combat-over ── */
-    [id$="-combat-over"] { color: var(--ink) !important; }
-    [id$="-combat-over"] button {
-      font-family: 'JetBrains Mono', monospace !important;
-      color: var(--ink) !important;
-      background: rgba(138,91,68,.07) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-      cursor: pointer !important;
-      transition: border-color .15s, color .15s !important;
-    }
-    [id$="-combat-over"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
-
-    /* ── Modals ── */
-    [id$="-window"] > div, .end-box {
-      background: rgba(244,234,215,.97) !important;
-      border: 1px solid rgba(138,91,68,.30) !important;
-      border-radius: 0 !important;
-    }
-
-    /* ── Right panel zone cards ── */
-    #right-panel div[onclick] { border-radius: 0 !important; }
-
-    /* ── Spine — warm book gutter ── */
+    /* ── SPINE — open book gutter / inner binding ── */
     .spine {
+      width: 22px;
+      flex-shrink: 0;
       background: linear-gradient(90deg,
         rgba(0,0,0,.0)  0%,
-        rgba(0,0,0,.20) 28%,
-        rgba(0,0,0,.40) 46%,
-        rgba(0,0,0,.50) 50%,
-        rgba(0,0,0,.40) 54%,
-        rgba(0,0,0,.20) 72%,
+        rgba(0,0,0,.32) 28%,
+        rgba(0,0,0,.55) 46%,
+        rgba(0,0,0,.62) 50%,
+        rgba(0,0,0,.55) 54%,
+        rgba(0,0,0,.32) 72%,
         rgba(0,0,0,.0)  100%
-      ) !important;
-      border-left:  none !important;
-      border-right: none !important;
-      position: relative; z-index: 5;
-      width: 22px !important;
-      min-width: 22px !important;
-      margin: 0 !important;
-      overflow: visible;
-      box-shadow: none !important;
+      );
+      border-left:  none;
+      border-right: none;
+      position: relative;
+      z-index: 5;
+      box-shadow: none;
     }
+    /* hairline crease at centre */
     .spine::before {
-      content: "";
-      position: absolute;
-      top: 0; bottom: 0; left: 50%;
-      width: 1px;
-      transform: translateX(-50%);
+      content:"";
+      position:absolute;
+      top:0; bottom:0;
+      left:50%;
+      width:1px;
+      transform:translateX(-50%);
       background: linear-gradient(180deg,
         transparent 0%,
         rgba(43,29,22,.9) 8%,
         rgba(43,29,22,.9) 92%,
         transparent 100%);
-      z-index: 2;
     }
+    /* stacked page edge on left side */
     .spine::after {
-      content: "";
-      position: absolute;
-      top: 2px; bottom: 2px; left: -3px;
-      width: 3px;
+      content:"";
+      position:absolute;
+      top:2px; bottom:2px; left:-3px;
+      width:3px;
       background: repeating-linear-gradient(
         180deg,
         rgba(138,91,68,.08) 0px,
         rgba(138,91,68,.03) 1px,
-        rgba(0,0,0,.10)     1px,
-        rgba(0,0,0,.04)     2px
+        rgba(0,0,0,.15)      1px,
+        rgba(0,0,0,.05)      2px
       );
-      border-left: 1px solid rgba(138,91,68,.12);
-      z-index: 1;
+      border-left:1px solid rgba(138,91,68,.12);
     }
 
-    /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }
-    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }
-    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+    /* ── RIGHT PAGE ── */
+    .page-right {
+      flex: 1;
+      background: var(--page-r);
+      border: 1px solid var(--line);
+      border-left: none;
+      padding: 32px 32px 32px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-right::before {
+      content:"";
+      position:absolute; inset:0;
+      background: linear-gradient(270deg, rgba(180,120,60,.03) 0%, transparent 60%);
+      pointer-events:none;
+    }
+    /* page-curl shadow cast inward from the binding — right page */
+    .page-right::after {
+      content:"";
+      position:absolute; top:0; bottom:0; left:0;
+      width:36px; height:auto;
+      border:none;
+      background: linear-gradient(90deg,
+        rgba(0,0,0,.30) 0%,
+        rgba(0,0,0,.10) 55%,
+        transparent 100%);
+      pointer-events:none;
+      z-index:2;
+    }
+    .page-right .corner-tr {
+      position:absolute; top:-1px; right:-1px;
+      width:18px; height:18px;
+      border-top:1px solid var(--gold); border-right:1px solid var(--gold);
+    }
+    .page-right .corner-br {
+      position:absolute; bottom:-1px; right:-1px;
+      width:18px; height:18px;
+      border-bottom:1px solid var(--gold); border-right:1px solid var(--gold);
+    }
 
-    /* ── Page-flip decorative animation ── */
-    /* ── Page-flip animation — triggered on navigation only ── */
-    @keyframes bookPageFlip {
-      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }
-      6%   { opacity: .92; }
-      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }
-      80%  { opacity: 0; }
-      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }
+    /* ── LEFT PAGE CONTENT ── */
+    .page-label {
+      font-family:'JetBrains Mono',monospace;
+      font-size:9.5px; letter-spacing:.42em; text-transform:uppercase;
+      color:var(--gold); margin-bottom:6px;
     }
-    .page-flip-decorator {
-      position: absolute;
-      top: 0; right: 0;
-      width: 50%; height: 100%;
-      transform-origin: left center;
-      pointer-events: none;
-      z-index: 40;
-      opacity: 0;
-      background: linear-gradient(to left, rgba(241,228,207,.96) 0%, rgba(230,215,190,.92) 60%, rgba(215,196,165,.72) 100%);
-      box-shadow: -4px 0 20px rgba(0,0,0,.15);
+    .page-title {
+      font-size:22px; font-weight:500; letter-spacing:.04em;
+      color:var(--ink); margin-bottom:18px;
     }
-    .page-flip-decorator.playing {
-      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+    .ink-rule {
+      border:none;
+      border-top:1px solid var(--line);
+      margin:16px 0;
     }
-    .page-flip-decorator::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(to right, rgba(0,0,0,.10) 0%, transparent 35%);
+
+    /* chapter entries */
+    .chapter-entry {
+      display:flex; align-items:center; gap:16px;
+      padding:16px 0; border-bottom:1px solid var(--line);
+      cursor:default;
     }
+    .chapter-entry:last-child { border-bottom:none; }
+    .chapter-entry.locked { opacity:.38; }
+
+    /* Watcher thumbnail */
+    .ch-thumb {
+      width:68px; height:68px; flex-shrink:0;
+      border:1px solid var(--line);
+      background: radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%);
+      overflow:hidden; position:relative;
+      transition:border-color .25s;
+    }
+    .chapter-entry:not(.locked):hover .ch-thumb { border-color:var(--gold); }
+    .ch-thumb svg { width:100%; height:100%; display:block; }
+
+    .ch-info { flex:1; min-width:0; }
+    .ch-title { font-size:18px; font-weight:500; color:var(--ink); letter-spacing:.03em; line-height:1.2; }
+    .ch-sub   { font-style:italic; font-size:13.5px; color:var(--ink-dim); margin-top:3px; }
+    .ch-sealed{
+      font-family:'JetBrains Mono',monospace; font-size:9px;
+      letter-spacing:.28em; color:var(--ink-faint); text-transform:uppercase;
+    }
+    .ch-btn {
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.26em;
+      text-transform:uppercase; color:var(--ink); background:transparent;
+      border:1px solid var(--line); padding:6px 12px; text-decoration:none;
+      transition:border-color .2s, color .2s, background .2s;
+      white-space:nowrap; flex-shrink:0;
+    }
+    .ch-btn:hover, .ch-btn.active {
+      border-color:var(--gold); color:var(--gold);
+      background:rgba(200,168,74,.05);
+    }
+
+    /* boot terminal */
+    .boot {
+      border:1px solid rgba(200,168,74,.3);
+      background:rgba(8,16,26,.75);
+      padding:12px 14px;
+      font-family:'JetBrains Mono',monospace;
+      font-size:10px; letter-spacing:.06em;
+      color:var(--ice-hot); line-height:1.7;
+      margin-top:18px;
+    }
+    .bline { opacity:0; animation:bpop .3s ease forwards; }
+    @keyframes bpop { from{opacity:0;transform:translateX(-4px)} to{opacity:1;transform:none} }
+    .bline:nth-child(1){animation-delay:.3s}
+    .bline:nth-child(2){animation-delay:.9s}
+    .bline:nth-child(3){animation-delay:1.5s}
+    .bline:nth-child(4){animation-delay:2.1s}
+    .bline:nth-child(5){animation-delay:2.7s;color:var(--amber);font-weight:700;letter-spacing:.12em}
+    .bline:nth-child(6){animation-delay:3.3s;color:var(--ink-dim)}
+    .bcursor{display:inline-block;width:7px;height:11px;background:var(--ice-hot);vertical-align:middle;animation:blink 1s steps(2) infinite;margin-left:2px}
+    @keyframes blink{50%{opacity:0}}
+
+    /* ── RIGHT PAGE CONTENT ── */
+    .rec-label {
+      font-family:'JetBrains Mono',monospace;
+      font-size:9.5px; letter-spacing:.42em; text-transform:uppercase;
+      color:var(--gold); margin-bottom:6px;
+    }
+    .rec-name {
+      font-size:24px; font-weight:500; letter-spacing:.05em;
+      color:var(--ink); margin-bottom:18px;
+    }
+
+    .stat-grid {
+      display:grid; grid-template-columns:1fr 1fr;
+      gap:14px 8px; margin-bottom:20px;
+    }
+    .stat-cell { display:flex; flex-direction:column; }
+    .stat-k {
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.3em;
+      color:var(--ink-dim); text-transform:uppercase; margin-bottom:2px;
+    }
+    .stat-v { font-size:19px; font-weight:500; color:var(--ink); letter-spacing:.04em; }
+    .stat-v.ice   { color:var(--gold); }
+    .stat-v.amber { color:var(--amber); }
+    .stat-v.green { color:var(--green); }
+
+    .action-row { display:flex; flex-direction:column; gap:7px; }
+    .action-btn {
+      font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.26em;
+      text-transform:uppercase; color:var(--ink-dim); background:transparent;
+      border:1px solid var(--line); padding:8px 12px; text-decoration:none;
+      transition:all .18s; cursor:pointer; text-align:left;
+    }
+    .action-btn:hover {
+      border-color:var(--gold); color:var(--gold);
+      background:rgba(200,168,74,.04);
+    }
+
+    .ink-quote {
+      margin-top:20px;
+      padding:12px 14px;
+      border-left:2px solid var(--gold);
+      background:rgba(200,168,74,.04);
+      font-style:italic; font-size:15px; line-height:1.5; color:#b0bfcf;
+    }
+    .ink-quote .attr {
+      display:block; margin-top:8px; font-style:normal;
+      font-family:'JetBrains Mono',monospace;
+      font-size:8.5px; letter-spacing:.3em; color:var(--ink-dim); text-transform:uppercase;
+    }
+
+    /* ── WATCHER THUMB ANIMATIONS ── */
+    @keyframes wt-float  { 0%,100%{transform:translateY(0) scale(1)} 50%{transform:translateY(-5px) scale(1.01)} }
+    @keyframes wt-srot   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes wt-pMain  { 0%,100%{filter:drop-shadow(0 0 4px #ffd68a) drop-shadow(0 0 10px #ffb347)} 50%{filter:drop-shadow(0 0 9px #ffd68a) drop-shadow(0 0 22px #ffb347)} }
+    @keyframes wt-pSmall { 0%,100%{filter:drop-shadow(0 0 2px #c8eeff) drop-shadow(0 0 6px #8fd8f0)} 50%{filter:drop-shadow(0 0 5px #c8eeff) drop-shadow(0 0 13px #8fd8f0)} }
+    @keyframes wt-beam   { 0%,100%{transform:rotate(-8deg);opacity:.5} 50%{transform:rotate(8deg);opacity:.9} }
+    .ch-thumb .wt-float    { animation:wt-float 6s ease-in-out infinite; transform-origin:50% 50%; }
+    .ch-thumb .wt-srot     { animation:wt-srot 30s linear infinite; transform-origin:400px 370px; }
+    .ch-thumb .wt-eye-main { animation:wt-pMain  3.6s ease-in-out infinite; transform-origin:center; transform-box:fill-box; }
+    .ch-thumb .wt-eye-small{ animation:wt-pSmall 2.4s ease-in-out infinite; transform-origin:center; transform-box:fill-box; }
+    .ch-thumb .wt-beam     { transform-origin:400px 420px; animation:wt-beam 5s ease-in-out infinite; }
+
+    /* ── TWIN JUDGES THUMB ANIMATIONS ── */
+    @keyframes tj-float  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+    @keyframes tj-eyeL   { 0%,100%{filter:drop-shadow(0 0 5px #b6f0ce) drop-shadow(0 0 12px #7fd6a6)} 50%{filter:drop-shadow(0 0 10px #b6f0ce) drop-shadow(0 0 22px #7fd6a6)} }
+    @keyframes tj-eyeR   { 0%,100%{filter:drop-shadow(0 0 5px #ff8a7a) drop-shadow(0 0 12px #e8564a)} 50%{filter:drop-shadow(0 0 10px #ff8a7a) drop-shadow(0 0 22px #e8564a)} }
+    .ch-thumb .tj-float  { animation: tj-float 6s ease-in-out infinite; transform-origin: 50% 50%; }
+    .ch-thumb .tj-eyeL   { animation: tj-eyeL 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+    .ch-thumb .tj-eyeR   { animation: tj-eyeR 3.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+
+    /* scrollbar */
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:rgba(43,29,22,.20)}
+    ::-webkit-scrollbar-thumb{background:rgba(138,91,68,.35)}
   </style>
 </head>
 <body>
