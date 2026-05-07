@@ -149,7 +149,7 @@ export async function renderNav(containerId = 'nav') {
       .bm-signout:hover { color: #1a0e04; }
     </style>
     <div class="bm-wrap">
-      <img class="bm-img" src="${base}nav_bookmark.webp" alt="">
+      <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
       <div class="bm-content">
         <a href="${base}index.html" class="bm-logo">SuperSede</a>
         <span class="bm-player">
