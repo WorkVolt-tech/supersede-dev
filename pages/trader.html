@@ -44,22 +44,6 @@
       content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
       background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);
     }
-    /* ── NAV ── */
-    #nav { position:relative; z-index:200; }
-    #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
-    #nav a, #nav button {
-      font-family:'JetBrains Mono',monospace !important;
-      font-size:10px !important; letter-spacing:.28em !important;
-      text-transform:uppercase !important; color: #d4c5a0 !important;; border:none !important; padding:0 !important;
-      transition:color .2s !important;
-    }
-    
-    #nav a:hover, #nav button:hover { color:var(--gold) !important; }
-    #nav > *, #nav nav, #nav div {
-      border-bottom:1px solid var(--line) !important;
-      padding:14px 32px !important; display:flex !important;
-      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
-    }
         /* ── BOOK — parchment open-book ── */
     .book, .craft-grid {
       display: grid !important;
@@ -340,8 +324,9 @@
 
 </head>
 <body>
+<div id="nav"></div>
 <div class="book-wrap">
-  <div id="nav"></div>
+  
   <div class="book animate-in">
     <div class="page-left parchment">
       <div class="page-inner">
@@ -369,9 +354,10 @@
 </div>
 
 <script type="module">
+  renderNav('nav')
   import { supabase }             from '../supabase.js'
-  import { renderNav, showToast } from '../components/nav.js'
-
+import { renderNav } from './nav.js'
+  
   const RARITY = { common:'#888', uncommon:'#5ec45e', rare:'#5eaee0', epic:'#a07de0', legendary:'#c8b96e' }
 
   // ── Item images (same as inventory) ───────────────
@@ -436,7 +422,6 @@
     },
   ]
 
-  let player = await renderNav('nav')
   if (!player) throw new Error('no player')
 
   const chapter = player.current_chapter || 1
