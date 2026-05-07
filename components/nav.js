@@ -102,6 +102,7 @@ export async function renderNav(containerId = 'nav') {
         gap: 0;
         pointer-events: none;
         overflow: hidden;
+        z-index: 10;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
       .bm-logo {
