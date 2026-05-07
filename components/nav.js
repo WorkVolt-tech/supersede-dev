@@ -61,27 +61,39 @@ export async function renderNav(containerId = 'nav') {
         position: relative;
         width: 100%;
         max-width: 1060px;
-        margin: 0 auto 0;
-        height: 72px;
+        margin: 0 auto;
+        height: 80px;
+        display: flex;
+        align-items: stretch;
         user-select: none;
       }
-      .bm-img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: fill;
-        pointer-events: none;
-        display: block;
+      .bm-left {
+        width: 100px;
+        flex-shrink: 0;
+        background: url('${base}components/left_cap.webp') no-repeat center center;
+        background-size: contain;
+      }
+      .bm-middle {
+        flex: 1;
+        background: url('${base}components/middle_body.webp') no-repeat center center;
+        background-size: 100% 100%;
+      }
+      .bm-right {
+        width: 80px;
+        flex-shrink: 0;
+        background: url('${base}components/right_cap.webp') no-repeat center center;
+        background-size: contain;
       }
       .bm-content {
         position: absolute;
         inset: 0;
         display: flex;
         align-items: center;
-        padding: 0 80px 0 72px;
+        padding: 0 90px 0 110px;
         gap: 0;
+        pointer-events: none;
       }
+      .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
       .bm-logo {
         font-family: 'Cinzel', serif;
         font-size: 11px;
@@ -149,7 +161,9 @@ export async function renderNav(containerId = 'nav') {
       .bm-signout:hover { color: #1a0e04; }
     </style>
     <div class="bm-wrap">
-      <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
+      <div class="bm-left"></div>
+      <div class="bm-middle"></div>
+      <div class="bm-right"></div>
       <div class="bm-content">
         <a href="${base}index.html" class="bm-logo">SuperSede</a>
         <span class="bm-player">
