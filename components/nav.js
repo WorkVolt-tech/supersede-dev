@@ -60,34 +60,40 @@ export async function renderNav(containerId = 'nav') {
       .bm-wrap {
         position: relative;
         width: 100%;
-        height: 80px;
+        height: 70px;
         display: flex;
         align-items: stretch;
         user-select: none;
         gap: 0;
       }
       .bm-left {
-        width: 90px;
+        width: 43px;
         flex-shrink: 0;
         background: url('${base}components/left_cap.webp') no-repeat center center;
         background-size: 100% 100%;
+        position: relative;
+        z-index: 2;
       }
       .bm-middle {
         flex: 1;
         min-width: 0;
         background: url('${base}components/middle_body.webp') no-repeat center center;
         background-size: 100% 100%;
+        position: relative;
+        z-index: 1;
       }
       .bm-right {
-        width: 90px;
+        width: 80px;
         flex-shrink: 0;
         background: url('${base}components/right_cap.webp') no-repeat center center;
         background-size: 100% 100%;
+        position: relative;
+        z-index: 2;
       }
       .bm-content {
         position: absolute;
-        left: 90px;
-        right: 90px;
+        left: 43px;
+        right: 80px;
         top: 0;
         bottom: 0;
         display: flex;
