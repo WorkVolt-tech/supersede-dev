@@ -2403,14 +2403,7 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
     function resolveEnemyAction() {
       if(statusEffects.enemyStunTurns>0||statusEffects.rootTrapTurns>0){messages.push(enemy.name+' is <em>immobilized</em> this turn!');return}
       if(statusEffects.phantomStep){statusEffects.phantomStep=false;messages.push(enemy.name+' attacks — but you phase out!');return}
-      // Use AI if available
-      let eDmg=0
-      if(window._enemyAI&&window._enemyAIState){
-        const res=window._enemyAI.resolveEnemyTurn(enemy,{enemyState:window._enemyAIState,enemyHp,maxEnemyHp,playerHp:currentHp,maxPlayerHp})
-        if(res){window._enemyAIState=res.newState;eDmg=res.damage||0;if(res.message)messages.push(res.message)}
-      } else {
-        eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
-      }
+      let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
       eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
       if(statusEffects.invulnerable){messages.push(enemy.name+' strikes — you are <em>invulnerable</em>!');if(statusEffects.divineBarrierReflect){const r=Math.round(eDmg*0.5);enemyHp=Math.max(0,enemyHp-r);messages.push('✨ Reflected <strong>'+r+'</strong> damage!')};statusEffects.invulnerable=false;statusEffects.divineBarrierReflect=false;return}
       if(statusEffects.foresightThisTurn){eDmg=Math.round(eDmg*0.1);statusEffects.foresightThisTurn=false;messages.push('🔮 Hex Weave absorbed most damage!')}
@@ -2427,7 +2420,7 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
     }
 
     // Turn order
-    if(skillKey) await recordSkillUse(skillKey)
+    if(skillKey) recordSkillUse(skillKey)
     if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
     else{resolveEnemyAction();if(currentHp>0)resolvePlayerAction()}
 
