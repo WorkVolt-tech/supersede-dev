@@ -1972,11 +1972,19 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
     let lv=1; for(let i=1;i<T.length;i++){if(sl.uses>=T[i])lv=i+1;else break} return Math.min(10,lv)
   }
   function skillScale(key){return 0.5+(_skillLv(key)-1)*(0.5/9)}
-  async function recordSkillUse(key){
-    const sl=player.skill_levels||{}; if(!sl[key])sl[key]={uses:0}
-    const prev=_skillLv(key); sl[key].uses++; player.skill_levels=sl
-    const nw=_skillLv(key); if(nw>prev){const sk=BATTLE_SKILLS[key];showToast('✦ '+(sk?.label||key)+' Lv'+nw+'!')}
-    await supabase.from('players').update({skill_levels:sl}).eq('id',player.id)
+  async function recordSkillUse(key) {
+    const sl = player.skill_levels || {}
+    if (!sl[key]) sl[key] = { uses: 0 }
+    const prevLv = _skillLv(key)
+    sl[key].uses++
+    player.skill_levels = sl
+    const newLv = _skillLv(key)
+    if (newLv > prevLv) {
+      const sk = BATTLE_SKILLS[key]
+      showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
+    }
+    const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
+    if (error) console.error('[skill_levels save]', error.message)
   }
 
   // ── Apply passives ────────────────────────────────────────────────────────
@@ -2138,13 +2146,15 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
     })
   }
 
-  window['useSkill_'+cid] = function(key) {
-    if(over) return
-    const sk=BATTLE_SKILLS[key]; if(!sk) return
-    const cd=statusEffects.skillCooldowns[key]||0
-    if(cd>0){log('Skill on cooldown ('+cd+' turns)'); return}
-    doTurn('skill',key)
+  const useSkillLocal = function(key) {
+    if (over) return
+    const sk = BATTLE_SKILLS[key]
+    if (!sk) return
+    const cd = statusEffects.skillCooldowns[key] || 0
+    if (cd > 0) { log('Skill on cooldown (' + cd + ' turns)'); return }
+    doTurn('skill', key)
   }
+  window['useSkill_' + cid] = useSkillLocal
 
   // ── Items panel ───────────────────────────────────────────────────────────
   $('btn-items').addEventListener('click', async () => {
@@ -2302,7 +2312,6 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   async function doTurn(playerAction, skillKey=null) {
     if(over)return
     setButtons(false)
-    try {
     defending=false
     const luckBonus=Math.floor(eqLuck/2)
 
@@ -2435,10 +2444,6 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
 
     setButtons(true)
     renderSkillSlots()
-    } catch(err) {
-      console.error('[doTurn error]', err)
-      if(!over) setButtons(true)
-    }
   }
 }
 
