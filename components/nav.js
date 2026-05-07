@@ -66,32 +66,38 @@ export async function renderNav(containerId = 'nav') {
         display: flex;
         align-items: stretch;
         user-select: none;
+        gap: 0;
       }
       .bm-left {
-        width: 100px;
+        width: 90px;
         flex-shrink: 0;
         background: url('${base}components/left_cap.webp') no-repeat center center;
-        background-size: contain;
+        background-size: 100% 100%;
       }
       .bm-middle {
         flex: 1;
+        min-width: 0;
         background: url('${base}components/middle_body.webp') no-repeat center center;
         background-size: 100% 100%;
       }
       .bm-right {
-        width: 80px;
+        width: 90px;
         flex-shrink: 0;
         background: url('${base}components/right_cap.webp') no-repeat center center;
-        background-size: contain;
+        background-size: 100% 100%;
       }
       .bm-content {
         position: absolute;
-        inset: 0;
+        left: 90px;
+        right: 90px;
+        top: 0;
+        bottom: 0;
         display: flex;
         align-items: center;
-        padding: 0 90px 0 110px;
+        padding: 0 16px;
         gap: 0;
         pointer-events: none;
+        overflow: hidden;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
       .bm-logo {
