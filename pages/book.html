@@ -48,31 +48,6 @@
         transparent 1px, transparent 4px);
     }
 
-    /* ── NAV ── */
-    #nav { position:relative; z-index:200; }
-    #nav, #nav * {
-      background:transparent !important;
-      box-shadow:none !important;
-      border-radius:0 !important;
-    }
-    #nav a, #nav button {
-      font-family:'JetBrains Mono',monospace !important;
-      font-size:10px !important;
-      letter-spacing:.28em !important;
-      text-transform:uppercase !important;
-      color: #d4c5a0 !important;
-      text-decoration:none !important;
-      border:none !important;
-      padding:0 !important;
-      transition:color .2s !important;
-    }
-    #nav a:hover, #nav button:hover { color:var(--gold) !important; }
-    #nav > *, #nav nav, #nav div {
-      border-bottom:1px solid var(--line) !important;
-      padding:14px 32px !important; display:flex !important;
-      align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
-    }
-
     /* ── OUTER WRAPPER ── */
     .scene {
       max-width:1060px;
@@ -86,8 +61,8 @@
       padding:20px 0 22px; gap:24px;
     }
     .z-kicker { font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.42em; color:var(--gold); text-transform:uppercase; }
-    .z-title  { font-size:22px; font-weight:500; letter-spacing:.04em; color:var(--ink); margin-top:4px; }
-    .z-sub    { font-size:14px; color:var(--ink-dim); font-style:italic; text-align:right; line-height:1.5; max-width:340px; }
+    .z-title  { font-size:22px; font-weight:500; letter-spacing:.04em; color:#d4c5a0; margin-top:4px; }
+    .z-sub    { font-size:14px; color:#a09070; font-style:italic; text-align:right; line-height:1.5; max-width:340px; }
 
     /* ══════════════════════════════
        BOOK SHELL — 3D perspective
@@ -353,7 +328,7 @@
       padding:12px 14px;
       border-left:2px solid var(--gold);
       background:rgba(200,168,74,.04);
-      font-style:italic; font-size:15px; line-height:1.5; color:#b0bfcf;
+      font-style:italic; font-size:15px; line-height:1.5; color:var(--ink);
     }
     .ink-quote .attr {
       display:block; margin-top:8px; font-style:normal;
@@ -390,7 +365,7 @@
 <body>
 
 <div class="scene">
-<div id="nav"></div>
+
 
   <div class="zone">
     <div>
@@ -450,8 +425,7 @@
 </div><!-- /scene -->
 
 <script type="module">
-  import { renderNav } from '../components/nav.js'
-
+  
   const CHAPTERS = [
     { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
     { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
@@ -687,7 +661,6 @@
   const CH_COVERS = { 1: WATCHER_SVG, 2: TWIN_JUDGES_SVG }
 
   ;(async () => {
-    const player = await renderNav('nav')
     if (!player) return
 
     const unlocked = player.chapters_unlocked || [1]
