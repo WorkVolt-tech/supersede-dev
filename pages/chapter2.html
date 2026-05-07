@@ -2302,6 +2302,7 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
   async function doTurn(playerAction, skillKey=null) {
     if(over)return
     setButtons(false)
+    try {
     defending=false
     const luckBonus=Math.floor(eqLuck/2)
 
@@ -2434,6 +2435,10 @@ function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
 
     setButtons(true)
     renderSkillSlots()
+    } catch(err) {
+      console.error('[doTurn error]', err)
+      if(!over) setButtons(true)
+    }
   }
 }
 
