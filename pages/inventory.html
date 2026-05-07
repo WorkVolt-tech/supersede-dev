@@ -351,6 +351,7 @@
 
 </head>
 <body>
+<div id="nav"></div>
 <div class="book-wrap">
   
 
@@ -384,6 +385,8 @@
 </div>
 
 <script type="module">
+import { renderNav } from '../components/nav.js'
+  renderNav('nav')
   import { supabase }           from '../supabase.js'
   
 const ITEM_IMAGES = {
