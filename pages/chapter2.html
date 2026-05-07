@@ -1737,6 +1737,18 @@ function render() {
 function renderChoices(panel,node) {
   const choices=node.choices||[]
   if (!choices.length) { panel.innerHTML=''; return }
+
+  // Detect if we're inside an elemental zone so we can show a retreat button
+  const zoneIds = ['zone_fire','zone_water','zone_lightning','zone_arcane','zone_shadow','zone_earth','zone_wind','zone_plant','zone_metal','zone_poison']
+  const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
+
+  const retreatBtn = inZone
+    ? `<button class="choice" onclick="goTo('district_hub')" style="margin-top:8px;border-color:rgba(138,91,68,.25);opacity:.7">
+        <span class="choice-arrow" style="color:var(--ink-dim)">↩</span>
+        <span class="choice-body" style="color:var(--ink-dim)">Retreat to District Hub<span class="choice-sub">Leave this zone — come back stronger</span></span>
+       </button>`
+    : ''
+
   panel.innerHTML='<p class="choices-label">What do you do?</p><div class="choices">'+
     choices.map(c=>{
       const next=c.next||''
@@ -1748,7 +1760,7 @@ function renderChoices(panel,node) {
         '<span class="choice-arrow">→</span>'+
         '<span class="choice-body">'+c.label+sub+'</span>'+
         '</button>'
-    }).join('')+'</div>'
+    }).join('')+retreatBtn+'</div>'
 }
 
 // District hub — 9 elemental zones
@@ -1831,7 +1843,12 @@ JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
 }
 
 // Combat + boss engines (full implementation)
-function renderCombat(panel,node) { buildCombatUI(panel,node.enemy,node.onWin,node.onLose,node.onEscape,false) }
+function renderCombat(panel,node) {
+  const zoneIds = ['zone_fire','zone_water','zone_lightning','zone_arcane','zone_shadow','zone_earth','zone_wind','zone_plant','zone_metal','zone_poison']
+  const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
+  const onEscape = node.onEscape || (inZone ? 'district_hub' : null)
+  buildCombatUI(panel,node.enemy,node.onWin,node.onLose,onEscape,false)
+}
 function renderBoss(panel,node) {
   const lvl=player.level||1
   const enemy={...node.enemy}
