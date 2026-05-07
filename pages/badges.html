@@ -47,72 +47,90 @@
     /* ── NAV ── */
     #nav { position:relative; z-index:200; }
     #nav, #nav * { background:transparent !important; box-shadow:none !important; border-radius:0 !important; }
-    #nav a, #nav button, #nav .nav-player {
+    #nav a, #nav button {
       font-family:'JetBrains Mono',monospace !important;
       font-size:10px !important; letter-spacing:.28em !important;
       text-transform:uppercase !important; color:#d4c5a0 !important;
       text-decoration:none !important; border:none !important; padding:0 !important;
       transition:color .2s !important;
     }
+    
     #nav a:hover, #nav button:hover { color:var(--gold) !important; }
     #nav > *, #nav nav, #nav div {
       border-bottom:1px solid var(--line) !important;
       padding:14px 32px !important; display:flex !important;
       align-items:center !important; gap:28px !important; flex-wrap:wrap !important;
     }
-    /* ── BOOK WRAP ── */
-    .book-wrap {
-      background: transparent !important;
-      max-width: 1060px;
-      margin: 0 auto;
-      padding: 24px 24px 60px;
-    }
-    /* ── BOOK — open-book layout ── */
+        /* ── BOOK — parchment open-book ── */
     .book, .craft-grid {
       display: grid !important;
-      grid-template-columns: 1fr 20px 1fr !important;
+      grid-template-columns: 1fr 22px 1fr !important;
+      align-items: stretch !important;
       gap: 0 !important;
       background: transparent !important;
-      border: none !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
       box-shadow: none !important;
-      border-radius: 0 !important;
-      filter: drop-shadow(0 20px 50px rgba(0,0,0,.8)) !important;
+      border-radius: 24px !important;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;
       transform: perspective(1600px) rotateX(2.5deg) !important;
       transform-origin: 50% 0 !important;
       margin-top: 10px !important;
+      overflow: hidden !important;
     }
     @media(max-width:860px){
-      .book, .craft-grid { grid-template-columns:1fr !important; transform:none !important; }
+      .book, .craft-grid { grid-template-columns:1fr !important; transform:none !important; border-radius:12px !important; }
       .spine { display:none !important; }
     }
     /* ── PAGES ── */
     .parchment, .page-left, .page-right {
       background: var(--panel) !important;
-      border: 1px solid var(--line) !important;
+      border: none !important;
       border-radius: 0 !important;
       box-shadow: none !important;
       color: var(--ink) !important;
       position: relative;
+      overflow-y: auto; overflow-x: hidden;
     }
-    .page-left  { border-right: none !important; }
-    .page-right { border-left:  none !important; }
-    /* gradient lighting from spine */
-    .page-left::before { display: none !important; }
-    .page-right::before { display: none !important; }
-    /* gold corner brackets */
+    .page-left  { background: var(--page-l) !important; border-right: none !important; }
+    .page-right { background: var(--page-r) !important; border-left:  none !important; }
+    /* dot-texture grain */
+    .page-left::before, .page-right::before {
+      content: "" !important; position: absolute !important; inset: 0 !important;
+      pointer-events: none !important; z-index: 0 !important; opacity: .08 !important;
+      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;
+      background-size: 12px 12px !important;
+    }
+    /* spine-edge shadows */
     .page-left::after {
-      content:""; position:absolute; top:-1px; left:-1px;
-      width:16px; height:16px;
-      border-top:1px solid var(--gold); border-left:1px solid var(--gold);
-      pointer-events:none; z-index:1;
+      content: "" !important; position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important; width: 32px !important;
+      border: none !important;
+      background: linear-gradient(270deg, rgba(0,0,0,.18) 0%, transparent 100%) !important;
+      pointer-events: none !important; z-index: 2 !important;
     }
     .page-right::after {
-      content:""; position:absolute; bottom:-1px; right:-1px;
-      width:16px; height:16px;
-      border-bottom:1px solid var(--gold); border-right:1px solid var(--gold);
-      pointer-events:none; z-index:1;
+      content: "" !important; position: absolute !important;
+      top: 0 !important; bottom: 0 !important; left: 0 !important; width: 32px !important;
+      border: none !important;
+      background: linear-gradient(90deg, rgba(0,0,0,.18) 0%, transparent 100%) !important;
+      pointer-events: none !important; z-index: 2 !important;
     }
-    .page-inner { padding: 24px 26px !important; }
+    /* corner brackets */
+    .page-inner { padding: 28px 30px !important; position: relative; }
+    .page-inner::before {
+      content: "" !important; position: absolute !important;
+      top: 14px !important; left: 14px !important; width: 28px !important; height: 28px !important;
+      border-left: 1.5px solid rgba(138,91,68,.45) !important;
+      border-top: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
+    .page-inner::after {
+      content: "" !important; position: absolute !important;
+      bottom: 14px !important; right: 14px !important; width: 28px !important; height: 28px !important;
+      border-right: 1.5px solid rgba(138,91,68,.45) !important;
+      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
     /* ── SPINE ── */
     .spine {
       background: linear-gradient(180deg, #14120a 0%, #0e0c06 50%, #14120a 100%) !important;
