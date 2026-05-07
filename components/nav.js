@@ -53,21 +53,21 @@ export async function renderNav(containerId = 'nav') {
     ? `<img src="${base}assets/mysterious_cloaked_player.png" alt="Admin" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid #00ffe7;box-shadow:0 0 6px #00ffe750;vertical-align:middle;margin-right:4px;">`
     : ''
 
-  root.innerHTML = `
+    root.innerHTML = `
     <nav class="nav">
-      <a href="${base}index.html" class="nav-logo">SuperSede</a>
-      <span class="nav-player">${adminImg}
+      <a href="${base}index.html" class="nav-logo" style="color:#e8d8b0;">SuperSede</a>
+      <span class="nav-player" style="color:#e8d8b0;">${adminImg}
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${color};margin-right:4px;vertical-align:middle"></span>
-        ${player.username} · Lvl ${player.level} · ${player.xp} XP · ◈ ${player.gold}
+        <span style="color:#e8d8b0;">${player.username}</span> · <span style="color:#f0d060;">Lvl ${player.level}</span> · <span style="color:#f0d060;">${player.xp}</span> XP · <span style="color:#f0b060;">◈ ${player.gold}</span>
       </span>
       <div class="nav-links">
-        <a href="${base}pages/book.html"      class="nav-link">Chapters</a>
-        <a href="${base}pages/inventory.html" class="nav-link">Inventory</a>
-        <a href="${base}pages/skills.html"    class="nav-link">Skills</a>
-        <a href="${base}pages/trader.html"    class="nav-link">Trader</a>
-        <a href="${base}pages/lobby.html"     class="nav-link">Lobby</a>
-        <a href="${base}pages/badges.html"    class="nav-link">Badges</a>
-        <button onclick="signOut()" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#604040;background:none;border:.5px solid #604040;padding:.2rem .5rem;cursor:pointer;border-radius:2px">Sign Out</button>
+        <a href="${base}pages/book.html"      class="nav-link" style="color:#c8b880;">Chapters</a>
+        <a href="${base}pages/inventory.html" class="nav-link" style="color:#c8b880;">Inventory</a>
+        <a href="${base}pages/skills.html"    class="nav-link" style="color:#c8b880;">Skills</a>
+        <a href="${base}pages/trader.html"    class="nav-link" style="color:#c8b880;">Trader</a>
+        <a href="${base}pages/lobby.html"     class="nav-link" style="color:#c8b880;">Lobby</a>
+        <a href="${base}pages/badges.html"    class="nav-link" style="color:#c8b880;">Badges</a>
+        <button onclick="signOut()" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e8d8b0;background:rgba(200,180,120,0.15);border:1px solid #c8a060;padding:.2rem .5rem;cursor:pointer;border-radius:2px">Sign Out</button>
       </div>
     </nav>
   `
