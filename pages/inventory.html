@@ -385,10 +385,12 @@
 </div>
 
 <script type="module">
-  renderNav('nav')
   import { supabase }           from '../supabase.js'
-import { renderNav } from '../components/nav.js'
-  
+  import { renderNav } from '../components/nav.js'
+
+  const player = await renderNav('nav')
+  if (!player) throw new Error('no player')
+
 const ITEM_IMAGES = {
   'ember_blade':'../assets/weapon/fire/ember_blade.png',
   'flame_dagger':'../assets/weapon/fire/flame_dagger.png',
@@ -500,7 +502,6 @@ function getItemImg(k) { return ITEM_IMAGES[k] || null }
   const RARITY = { common:'#c8c0a0', uncommon:'#5ec45e', rare:'#5eaee0', epic:'#c090ff', legendary:'#f0d060', mythic:'#ff88ff' }
   const FILTERS = ['all','weapon','armor','accessory','consumable','material','key']
 
-  if (!player) throw new Error('no player')
 
   let items = [], selectedId = null, filter = 'all', sellMode = false, sellSelected = new Set()
 
