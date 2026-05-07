@@ -60,8 +60,6 @@ export async function renderNav(containerId = 'nav') {
       .bm-wrap {
         position: relative;
         width: 100%;
-        max-width: 1060px;
-        margin: 0 auto;
         height: 80px;
         display: flex;
         align-items: stretch;
