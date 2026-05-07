@@ -38,16 +38,16 @@
     *, *::before, *::after { box-sizing: border-box; }
 
     /* ── Nav ── */
-    #nav { position: relative; z-index: 200; }
+     #nav { position: relative; z-index: 200; }
     #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
     #nav a, #nav button {
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 10px !important; letter-spacing: .28em !important;
-      text-transform: uppercase !important; color: var(--ink-dim) !important;
+      text-transform: uppercase !important; color: #d4c5a0 !important;
       text-decoration: none !important; border: none !important; padding: 0 !important;
       transition: color .2s !important;
     }
-    #nav a:hover, #nav button:hover { color: var(--gold) !important; }
+    #nav a:hover, #nav button:hover { color: #f0d060 !important; }
     #nav > *, #nav nav, #nav div {
       border-bottom: 1px solid var(--line) !important;
       padding: 14px 32px !important; display: flex !important;
@@ -250,19 +250,20 @@
     .spine-inner, .spine-highlight, .spine-shadow,
     .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
 
-    /* ── Chapter label / subtitle ── */
+         /* ── Chapter label / subtitle ── */
     .chapter-label {
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 9.5px !important;
       letter-spacing: .42em !important;
       text-transform: uppercase !important;
-      color: var(--gold) !important;
+      color: #e0c070 !important;
       margin-bottom: 5px !important;
+      text-shadow: 0 0 1px rgba(0,0,0,0.3);
     }
     .chapter-sub {
       font-size: 17px !important;
       font-style: italic !important;
-      color: var(--ink-dim) !important;
+      color: #c8b070 !important;
       margin-bottom: 0 !important;
     }
 
@@ -570,24 +571,26 @@
     }
     .animate-shake { animation: animateShake .35s ease; }
 
-    /* ── System overlay messages ── */
+     /* ── System overlay messages ── */
     .sys-overlay, [id="sys-overlay"] {
-      background: rgba(43,29,22,.93) !important;
-      border: 1px solid rgba(138,91,68,.50) !important;
-      color: var(--gold-hot) !important;
+      background: rgba(30,20,15,.95) !important;
+      border: 1px solid rgba(200,180,120,.50) !important;
+      color: #f0e6c8 !important;
       font-family: 'JetBrains Mono', monospace !important;
       font-size: 10.5px !important;
       letter-spacing: .08em !important;
       border-radius: 0 !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5);
     }
 
     /* ── Toast ── */
     .toast, [class*="toast"] {
-      background: rgba(43,29,22,.95) !important;
-      border: 1px solid rgba(138,91,68,.50) !important;
-      color: var(--gold-hot) !important;
+      background: rgba(30,20,15,.95) !important;
+      border: 1px solid rgba(200,180,120,.50) !important;
+      color: #f0e6c8 !important;
       font-family: 'JetBrains Mono', monospace !important;
       border-radius: 0 !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5);
     }
 
     /* ── Loot window ── */
