@@ -67,7 +67,7 @@ export async function renderNav(containerId = 'nav') {
         gap: 0;
       }
       .bm-left {
-        width: 200px;
+        width: 100px;
         flex-shrink: 0;
         background: url('${base}components/left_cap.webp') no-repeat center center;
         background-size: 100% 100%;
