@@ -73,6 +73,7 @@ export async function renderNav(containerId = 'nav') {
         background-size: 100% 100%;
         position: relative;
         z-index: 2;
+        margin-right: -30px;
       }
       .bm-middle {
         flex: 1;
@@ -89,6 +90,7 @@ export async function renderNav(containerId = 'nav') {
         background-size: 100% 100%;
         position: relative;
         z-index: 2;
+        margin-left: -30px;
       }
       .bm-content {
         position: absolute;
