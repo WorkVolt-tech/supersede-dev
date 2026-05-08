@@ -67,7 +67,7 @@ export async function renderNav(containerId = 'nav') {
         gap: 0;
       }
       .bm-left {
-        width: 100px;
+        width: 43px;
         flex-shrink: 0;
         background: url('${base}components/left_cap.webp') no-repeat center center;
         background-size: 100% 100%;
@@ -83,7 +83,7 @@ export async function renderNav(containerId = 'nav') {
         z-index: 1;
       }
       .bm-right {
-        width: 100px;
+        width: 80px;
         flex-shrink: 0;
         background: url('${base}components/right_cap.webp') no-repeat center center;
         background-size: 100% 100%;
