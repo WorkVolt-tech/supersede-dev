@@ -61,71 +61,51 @@ export async function renderNav(containerId = 'nav') {
         position: relative;
         width: 100%;
         height: 70px;
-        display: flex;
-        align-items: stretch;
         user-select: none;
-        gap: 0;
       }
-      .bm-left {
-        width: 43px;
-        flex-shrink: 0;
-        background: url('${base}components/left_cap.webp') no-repeat center center;
-        background-size: 100% 100%;
-        position: relative;
-        z-index: 2;
-        margin-right: -100px;
-      }
-      .bm-middle {
-        flex: 1;
-        min-width: 0;
-        background: url('${base}components/middle_body.webp') no-repeat center center;
-        background-size: 100% 100%;
-        position: relative;
-        z-index: 1;
-      }
-      .bm-right {
-        width: 80px;
-        flex-shrink: 0;
-        background: url('${base}components/right_cap.webp') no-repeat center center;
-        background-size: 100% 100%;
-        position: relative;
-        z-index: 2;
-        margin-left: -30px;
+      .bm-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
+        pointer-events: none;
       }
       .bm-content {
         position: absolute;
-        left: 43px;
+        left: 120px;
         right: 80px;
         top: 0;
         bottom: 0;
         display: flex;
         align-items: center;
-        padding: 0 16px;
+        padding: 0 12px;
         gap: 0;
         pointer-events: none;
-        overflow: hidden;
         z-index: 10;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
       .bm-logo {
         font-family: 'Cinzel', serif;
-        font-size: 11px;
-        letter-spacing: .32em;
+        font-size: 10px;
+        letter-spacing: .28em;
         text-transform: uppercase;
         color: #3a2a14;
         text-decoration: none;
         flex-shrink: 0;
-        margin-right: 20px;
+        margin-right: 14px;
       }
       .bm-player {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .10em;
+        font-size: 8px;
+        letter-spacing: .08em;
         color: #4a3820;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 4px;
         flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
       }
       .bm-dot {
         display: inline-block;
@@ -137,17 +117,17 @@ export async function renderNav(containerId = 'nav') {
       .bm-links {
         display: flex;
         align-items: center;
-        gap: 2px;
+        gap: 0;
         flex-shrink: 0;
       }
       .bm-link {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 8px;
-        letter-spacing: .22em;
+        font-size: 7px;
+        letter-spacing: .18em;
         text-transform: uppercase;
         color: #4a3820;
         text-decoration: none;
-        padding: 4px 10px;
+        padding: 3px 7px;
         transition: color .2s;
         white-space: nowrap;
       }
@@ -155,28 +135,27 @@ export async function renderNav(containerId = 'nav') {
       .bm-link.active { color: #1a0e04; font-weight: 700; }
       .bm-sep {
         color: #8a7050;
-        font-size: 9px;
-        opacity: .5;
+        font-size: 8px;
+        opacity: .4;
       }
       .bm-signout {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 8px;
-        letter-spacing: .18em;
+        font-size: 7px;
+        letter-spacing: .15em;
         text-transform: uppercase;
         color: #7a5030;
         background: none;
         border: none;
         cursor: pointer;
-        padding: 4px 6px;
+        padding: 3px 5px;
         transition: color .2s;
-        margin-left: 6px;
+        margin-left: 4px;
+        white-space: nowrap;
       }
       .bm-signout:hover { color: #1a0e04; }
     </style>
     <div class="bm-wrap">
-      <div class="bm-left"></div>
-      <div class="bm-middle"></div>
-      <div class="bm-right"></div>
+      <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
       <div class="bm-content">
         <a href="${base}index.html" class="bm-logo">SuperSede</a>
         <span class="bm-player">
