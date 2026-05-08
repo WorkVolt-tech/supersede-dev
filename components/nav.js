@@ -62,27 +62,30 @@ export async function renderNav(containerId = 'nav') {
         width: 100%;
         height: 70px;
         user-select: none;
+        display: flex;
+        justify-content: center;
       }
       .bm-img {
         position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: fill;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        height: 70px;
+        width: auto;
+        max-width: 100%;
         pointer-events: none;
       }
       .bm-content {
-        position: absolute;
-        left: 120px;
-        right: 80px;
-        top: 0;
-        bottom: 0;
+        position: relative;
+        z-index: 10;
         display: flex;
         align-items: center;
-        padding: 0 12px;
+        justify-content: center;
+        padding: 0 100px 0 140px;
         gap: 0;
+        width: 100%;
+        max-width: 1060px;
         pointer-events: none;
-        z-index: 10;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
       .bm-logo {
