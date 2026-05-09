@@ -60,9 +60,8 @@ export async function renderNav(containerId = 'nav') {
       .bm-wrap {
         position: relative;
         width: 770px;
-        height: 250px;
+        height: 130px;
         margin: 0 auto;
-        margin-top: 0px;
         user-select: none;
       }
       .bm-img {
@@ -81,7 +80,7 @@ export async function renderNav(containerId = 'nav') {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding-top: 40px;
+        padding-top: 10px;
         gap: 6px;
         pointer-events: none;
       }
