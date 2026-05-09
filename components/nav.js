@@ -81,8 +81,8 @@ export async function renderNav(containerId = 'nav') {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 0 80px 0 130px;
-        gap: 4px;
+        padding-top: 40px;
+        gap: 6px;
         pointer-events: none;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
@@ -90,7 +90,12 @@ export async function renderNav(containerId = 'nav') {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+      }
+      .bm-mid-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
       }
       .bm-bottom-row {
         display: flex;
@@ -172,6 +177,8 @@ export async function renderNav(containerId = 'nav') {
       <div class="bm-content">
         <div class="bm-top-row">
           <a href="${base}index.html" class="bm-logo">SuperSede</a>
+        </div>
+        <div class="bm-mid-row">
           <span class="bm-player">
             ${adminImg}<span class="bm-dot"></span>
             ${player.username} · Lvl ${player.level} · ◈ ${player.gold}
