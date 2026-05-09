@@ -573,9 +573,8 @@
 </div>
 
 <script type="module">
-  renderNav('nav')
 import { supabase } from '../supabase.js'
-import { renderNav } from './nav.js'
+import { renderNav } from '../components/nav.js'
 
 // ════════════════════════════════════════════════════
 // NODE DEFINITIONS — 5 Systems, no elemental gateways
@@ -878,7 +877,7 @@ const STAT_COL = {
 function statToCol(statKey) { return STAT_COL[statKey] || statKey }
 
 // ── State ────────────────────────────────────────────
-let player, skillsUnlocked, battleSkills, skillPoints
+let skillsUnlocked, battleSkills, skillPoints
 let selectedNode = null
 let scale = 0.5, panX = 0, panY = 0
 let isDragging = false, dragStartX, dragStartY, panStartX, panStartY
@@ -887,6 +886,7 @@ let pendingBattleSkills = []
 let slotsDirty = false
 
 // ── Init ─────────────────────────────────────────────
+const player = await renderNav('nav')
 if (!player) throw new Error('no player')
 
 // Diagnostic: confirm player loaded correctly
