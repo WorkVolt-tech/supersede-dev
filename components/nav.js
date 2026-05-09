@@ -62,7 +62,7 @@ export async function renderNav(containerId = 'nav') {
         width: 770px;
         height: 250px;
         margin: 0 auto;
-        margin-top: 150px;
+        margin-top: 300px;
         user-select: none;
       }
       .bm-img {
