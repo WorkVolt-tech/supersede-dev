@@ -64,6 +64,13 @@ export async function renderNav(containerId = 'nav') {
         margin: 0 auto;
         user-select: none;
       }
+      @media (max-width: 800px) {
+        .bm-wrap {
+          width: 100%;
+          height: auto;
+          aspect-ratio: 1680 / 720;
+        }
+      }
       .bm-img {
         position: absolute;
         inset: 0;
@@ -170,6 +177,13 @@ export async function renderNav(containerId = 'nav') {
         white-space: nowrap;
       }
       .bm-signout:hover { color: #1a0e04; }
+      @media (max-width: 800px) {
+        .bm-logo { font-size: 8px; }
+        .bm-player { font-size: 6px; }
+        .bm-link { font-size: 5.5px; padding: 2px 4px; }
+        .bm-signout { font-size: 5.5px; }
+        .bm-content { gap: 3px; padding-top: 0; }
+      }
     </style>
     <div class="bm-wrap">
       <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
