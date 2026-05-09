@@ -59,7 +59,7 @@ export async function renderNav(containerId = 'nav') {
     <style>
       .bm-wrap {
         position: relative;
-        width: 700px;
+        width: 750px;
         height: 400px;
         user-select: none;
       }
