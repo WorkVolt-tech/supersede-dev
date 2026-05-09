@@ -52,7 +52,17 @@
     .scene {
       max-width:1060px;
       margin:0 auto;
-      padding:28px 24px 60px;
+      padding:10px 24px 60px;
+    }
+    @media (max-width: 800px) {
+      .scene { padding: 8px 12px 40px; }
+      .book-body { flex-direction: column; min-height: auto; }
+      .page-left, .page-right { width: 100%; padding: 20px 16px; }
+      .spine { display: none; }
+      .zone { flex-direction: column; gap: 8px; }
+      .z-sub { text-align: left; max-width: 100%; }
+      .stat-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+      .action-row { gap: 6px; }
     }
 
     /* zone header */
