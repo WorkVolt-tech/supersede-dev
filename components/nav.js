@@ -62,7 +62,7 @@ export async function renderNav(containerId = 'nav') {
         width: 770px;
         height: 250px;
         margin: 0 auto;
-        margin-top: 50px;
+        margin-top: 80px;
         user-select: none;
       }
       .bm-img {
@@ -78,12 +78,26 @@ export async function renderNav(containerId = 'nav') {
         inset: 0;
         z-index: 10;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 0 80px 0 130px;
+        gap: 4px;
         pointer-events: none;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
+      .bm-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .bm-bottom-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+      }
       .bm-logo {
         font-family: 'Cinzel', serif;
         font-size: 10px;
@@ -156,25 +170,29 @@ export async function renderNav(containerId = 'nav') {
     <div class="bm-wrap">
       <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
       <div class="bm-content">
-        <a href="${base}index.html" class="bm-logo">SuperSede</a>
-        <span class="bm-player">
-          ${adminImg}<span class="bm-dot"></span>
-          ${player.username} · Lvl ${player.level} · ${player.xp} XP · ◈ ${player.gold}
-        </span>
-        <nav class="bm-links">
-          ${[
-            { href: `${base}pages/book.html`,      label: 'Chapters'  },
-            { href: `${base}pages/inventory.html`, label: 'Inventory' },
-            { href: `${base}pages/skills.html`,    label: 'Skills'    },
-            { href: `${base}pages/trader.html`,    label: 'Trader'    },
-            { href: `${base}pages/lobby.html`,     label: 'Lobby'     },
-            { href: `${base}pages/badges.html`,    label: 'Badges'    },
-          ].map((l, i, arr) => {
-            const active = l.href.includes(currentPage) && currentPage !== 'index.html'
-            return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
-          }).join('')}
-          <button class="bm-signout" onclick="signOut()">Sign Out</button>
-        </nav>
+        <div class="bm-top-row">
+          <a href="${base}index.html" class="bm-logo">SuperSede</a>
+          <span class="bm-player">
+            ${adminImg}<span class="bm-dot"></span>
+            ${player.username} · Lvl ${player.level} · ◈ ${player.gold}
+          </span>
+        </div>
+        <div class="bm-bottom-row">
+          <nav class="bm-links">
+            ${[
+              { href: `${base}pages/book.html`,      label: 'Chapters'  },
+              { href: `${base}pages/inventory.html`, label: 'Inventory' },
+              { href: `${base}pages/skills.html`,    label: 'Skills'    },
+              { href: `${base}pages/trader.html`,    label: 'Trader'    },
+              { href: `${base}pages/lobby.html`,     label: 'Lobby'     },
+              { href: `${base}pages/badges.html`,    label: 'Badges'    },
+            ].map((l, i, arr) => {
+              const active = l.href.includes(currentPage) && currentPage !== 'index.html'
+              return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
+            }).join('')}
+            <button class="bm-signout" onclick="signOut()">Sign Out</button>
+          </nav>
+        </div>
       </div>
     </div>
   `
