@@ -37,23 +37,6 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
 
-    /* ── Nav ── */
-    #nav { position: relative; z-index: 200; }
-    #nav, #nav * { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
-    #nav a, #nav button {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important; letter-spacing: .28em !important;
-      text-transform: uppercase !important; color: var(--ink-dim) !important;
-      text-decoration: none !important; border: none !important; padding: 0 !important;
-      transition: color .2s !important;
-    }
-    #nav a:hover, #nav button:hover { color: var(--gold) !important; }
-    #nav > *, #nav nav, #nav div {
-      border-bottom: 1px solid var(--line) !important;
-      padding: 14px 32px !important; display: flex !important;
-      align-items: center !important; gap: 28px !important; flex-wrap: wrap !important;
-    }
-
     /* ── Global reset ── */
     html, body {
       background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;
@@ -176,13 +159,13 @@
       font-size: 9.5px !important;
       letter-spacing: .42em !important;
       text-transform: uppercase !important;
-      color: var(--gold) !important;
+      color: var(--ink) !important;
       margin-bottom: 5px !important;
     }
     .chapter-sub {
       font-size: 17px !important;
       font-style: italic !important;
-      color: var(--ink-dim) !important;
+      color: var(--ink) !important;
       margin-bottom: 0 !important;
     }
 
@@ -260,7 +243,7 @@
     }
 
     /* ── Buttons / choices — warm parchment ── */
-    button, .choice, .combat-btn {
+    button:not(.bm-signout), .choice, .combat-btn {
       background: transparent !important;
       border: 1px solid rgba(138,91,68,.35) !important;
       border-radius: 0 !important;
@@ -678,8 +661,9 @@
   </style>
 </head>
 <body>
+<div id="nav"></div>
 <div class="book-wrap">
-  <div id="nav"></div>
+  
   <div class="book animate-in" style="position:relative;">
     <div class="page-left parchment" id="left-page">
       <div class="page-inner">
@@ -716,8 +700,9 @@
 </div>
 
 <script type="module">
+  renderNav('nav')
 import { supabase } from '../supabase.js'
-import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+import { renderNav } from '../components/nav.js'
 
 // ── Chapter data ─────────────────────────────────
 const META = {
@@ -3374,7 +3359,6 @@ function xpForLevel(level) {
 }
 
 // ── App state ────────────────────────────────────
-let player   = await renderNav('nav')
 if (!player) throw new Error('no player')
 
 let currentHp = player.hp || 100
