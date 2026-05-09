@@ -80,7 +80,7 @@ export async function renderNav(containerId = 'nav') {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding-top: 10px;
+        padding-top: 0px;
         gap: 6px;
         pointer-events: none;
       }
