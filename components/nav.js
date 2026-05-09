@@ -62,29 +62,23 @@ export async function renderNav(containerId = 'nav') {
         width: 100%;
         height: 70px;
         user-select: none;
-        display: flex;
-        justify-content: center;
       }
       .bm-img {
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        height: 70px;
-        width: auto;
-        max-width: 100%;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: fill;
         pointer-events: none;
       }
       .bm-content {
-        position: relative;
+        position: absolute;
+        inset: 0;
         z-index: 10;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0 100px 0 140px;
-        gap: 0;
-        width: 100%;
-        max-width: 1060px;
+        padding: 0 80px 0 130px;
         pointer-events: none;
       }
       .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
