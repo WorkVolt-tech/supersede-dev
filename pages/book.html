@@ -133,53 +133,30 @@
 
     /* ── SPINE — open book gutter / inner binding ── */
 .spine {
-  width: 32px;
+  width: 28px;
   flex-shrink: 0;
   background: linear-gradient(90deg,
-    rgba(43,29,22,.0)   0%,
-    rgba(43,29,22,.08)  15%,
-    rgba(43,29,22,.18)  30%,
-    rgba(43,29,22,.28)  45%,
-    rgba(43,29,22,.32)  50%,
-    rgba(43,29,22,.28)  55%,
-    rgba(43,29,22,.18)  70%,
-    rgba(43,29,22,.08)  85%,
-    rgba(43,29,22,.0)   100%
+    rgba(43,29,22,.12)  0%,
+    rgba(43,29,22,.06)  20%,
+    rgba(43,29,22,.02)  40%,
+    rgba(43,29,22,.02)  60%,
+    rgba(43,29,22,.06)  80%,
+    rgba(43,29,22,.12)  100%
   );
-  border-left:  none;
-  border-right: none;
+  border-left: 1px solid rgba(200,160,80,.15);
+  border-right: 1px solid rgba(200,160,80,.15);
   position: relative;
   z-index: 5;
-  box-shadow: none;
 }
-/* hairline crease at centre */
+/* center crease */
 .spine::before {
-  content:"";
-  position:absolute;
-  top:0; bottom:0;
-  left:50%;
-  width:1px;
-  transform:translateX(-50%);
-  background: linear-gradient(180deg,
-    transparent 0%,
-    rgba(43,29,22,.6) 8%,
-    rgba(43,29,22,.6) 92%,
-    transparent 100%);
-}
-/* stacked page edge on left side */
-.spine::after {
-  content:"";
-  position:absolute;
-  top:2px; bottom:2px; left:-3px;
-  width:3px;
-  background: repeating-linear-gradient(
-    180deg,
-    rgba(244,234,215,.15) 0px,
-    rgba(244,234,215,.08) 1px,
-    rgba(43,29,22,.12)      1px,
-    rgba(43,29,22,.05)      2px
-  );
-  border-left:1px solid rgba(244,234,215,.12);
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  background: rgba(43,29,22,.25);
 }
 
     /* ── RIGHT PAGE ── */
