@@ -123,9 +123,6 @@
       pointer-events: none !important;
       z-index: 2 !important;
     }
-      pointer-events: none !important;
-      z-index: 2 !important;
-    }
 
     /* Decorative corner brackets */
     .page-inner { padding: 28px 30px !important; position: relative; }
@@ -684,7 +681,6 @@
 </div>
 
 <script type="module">
-  renderNav('nav')
 import { supabase } from '../supabase.js'
 import { renderNav } from '../components/nav.js'
 
@@ -3343,6 +3339,7 @@ function xpForLevel(level) {
 }
 
 // ── App state ────────────────────────────────────
+let player = await renderNav('nav')
 if (!player) throw new Error('no player')
 
 let currentHp = player.hp || 100
