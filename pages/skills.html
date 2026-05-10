@@ -177,7 +177,7 @@
     h1, h2, h3, h4, h5, h6 { color: var(--ink) !important; }
     .book p, .book li, .book span, .book label,
     .book-wrap p, .book-wrap li, .book-wrap span, .book-wrap label { color: var(--ink) !important; }
-    button:not(.bm-signout), .btn { background: rgba(43,29,22,.08) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; cursor: pointer; transition: border-color .2s, color .2s; }
+    button:not(.bm-signout):not(.tree-close-btn):not(.tree-reset-btn):not(.tree-slots-btn), .btn { background: rgba(43,29,22,.08) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; cursor: pointer; transition: border-color .2s, color .2s; }
     button:hover, .btn:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
     input, select, textarea { background: rgba(43,29,22,.06) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; }
     ::-webkit-scrollbar { width: 5px; }
@@ -985,9 +985,9 @@ function buildTree() {
       // Dashed: child available but this specific parent is locked (alternative path not yet met)
       const dashed = ndAvailable && !parUnlocked
       const col = lit ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
-                : dashed ? 'rgba(180,140,60,.2)'
-                : 'rgba(180,140,60,.35)'
-      const sw  = lit ? 2.5 : 1.2
+                : dashed ? 'rgba(180,140,60,.15)'
+                : 'rgba(0,0,0,0)'
+      const sw  = lit ? 2.5 : dashed ? 1.2 : 0
       const dash = dashed ? ' stroke-dasharray="4,4"' : ''
       lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"${dash}/>`
     })
