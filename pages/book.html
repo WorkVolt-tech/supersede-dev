@@ -131,33 +131,33 @@
       border-bottom:1px solid var(--gold); border-left:1px solid var(--gold);
     }
 
-    /* ── SPINE — open book gutter / inner binding ── */
-.spine {
-  width: 28px;
-  flex-shrink: 0;
-  background: linear-gradient(90deg,
-    rgba(43,29,22,.12)  0%,
-    rgba(43,29,22,.06)  20%,
-    rgba(43,29,22,.02)  40%,
-    rgba(43,29,22,.02)  60%,
-    rgba(43,29,22,.06)  80%,
-    rgba(43,29,22,.12)  100%
-  );
-  border-left: 1px solid rgba(200,160,80,.15);
-  border-right: 1px solid rgba(200,160,80,.15);
-  position: relative;
-  z-index: 5;
-}
-/* center crease */
-.spine::before {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0;
-  left: 50%;
-  width: 1px;
-  transform: translateX(-50%);
-  background: rgba(43,29,22,.25);
-}
+       /* ── SPINE ── */
+    .spine {
+      width: 32px;
+      flex-shrink: 0;
+      align-self: stretch;
+      background: 
+        linear-gradient(90deg,
+          rgba(200, 160, 80, 0.10) 0%,
+          rgba(43, 29, 22, 0.20) 20%,
+          rgba(43, 29, 22, 0.35) 45%,
+          rgba(43, 29, 22, 0.40) 50%,
+          rgba(43, 29, 22, 0.35) 55%,
+          rgba(43, 29, 22, 0.20) 80%,
+          rgba(200, 160, 80, 0.10) 100%
+        );
+      position: relative;
+      z-index: 5;
+    }
+    .spine::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
+      background: rgba(43, 29, 22, 0.50);
+    }
 
     /* ── RIGHT PAGE ── */
     .page-right {
