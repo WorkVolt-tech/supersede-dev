@@ -57,6 +57,13 @@ export async function renderNav(containerId = 'nav') {
 
   root.innerHTML = `
     <style>
+      /* ── Nav isolation — always wins over page CSS ── */
+      .bm-logo, .bm-player, .bm-link, .bm-signout, .bm-sep, .bm-dot,
+      .bm-top-row, .bm-mid-row, .bm-bottom-row, .bm-links, .bm-content,
+      .bm-wrap, .bm-img {
+        all: revert;
+        box-sizing: border-box;
+      }
       .bm-wrap {
         position: relative;
         width: 770px;
@@ -111,7 +118,7 @@ export async function renderNav(containerId = 'nav') {
       }
       .bm-logo {
         font-family: 'Cinzel', serif;
-        font-size: 10px;
+        font-size: 12px;
         letter-spacing: .28em;
         text-transform: uppercase;
         color: #3a2a14;
@@ -121,7 +128,7 @@ export async function renderNav(containerId = 'nav') {
       }
       .bm-player {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 8px;
+        font-size: 9px;
         letter-spacing: .08em;
         color: #4a3820;
         display: flex;
@@ -146,7 +153,7 @@ export async function renderNav(containerId = 'nav') {
       }
       .bm-link {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 7px;
+        font-size: 9px;
         letter-spacing: .18em;
         text-transform: uppercase;
         color: #4a3820;
