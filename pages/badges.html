@@ -157,21 +157,6 @@
     [style*="background:rgba(200,184,128"] { background: rgba(200,168,74,.08) !important; }
     [style*="border-color:rgba(139,106,32"] { border-color: rgba(200,168,74,.25) !important; }
     /* ── BUTTONS / CHOICES ── */
-    button:not(.bm-signout), .choice, .combat-btn {
-      background: transparent !important;
-      border: 1px solid var(--line) !important;
-      border-radius: 0 !important;
-      color: var(--ink) !important;
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 10px !important; letter-spacing: .08em !important;
-      cursor: pointer !important;
-      transition: border-color .2s, color .2s, background .2s !important;
-    }
-    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
-      border-color: var(--gold) !important;
-      color: var(--gold) !important;
-      background: rgba(200,168,74,.05) !important;
-    }
     /* ── STAT BARS ── */
     .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius:0 !important; }
     .stat-key { color: var(--ink-dim) !important; font-family:'JetBrains Mono',monospace !important; font-size:.58rem !important; letter-spacing:.08em !important; }
@@ -289,8 +274,6 @@
     h1, h2, h3, h4, h5, h6 { color: var(--ink) !important; }
     .book p, .book li, .book span, .book label,
     .book-wrap p, .book-wrap li, .book-wrap span, .book-wrap label { color: var(--ink) !important; }
-    button:not(.bm-signout), .btn { background: rgba(43,29,22,.08); border: 1px solid rgba(138,91,68,.35); color: var(--ink); border-radius: 0; cursor: pointer; transition: border-color .2s, color .2s; }
-    button:hover, .btn:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
     input, select, textarea { background: rgba(43,29,22,.06) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; }
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-track { background: rgba(43,29,22,.15); }
@@ -332,10 +315,12 @@
 </div>
 
 <script type="module">
-  renderNav('nav')
   import { supabase }  from '../supabase.js'
-import { renderNav } from '../components/nav.js'
-  
+  import { renderNav } from '../components/nav.js'
+
+  const player = await renderNav('nav')
+  if (!player) throw new Error('no player')
+
   const ALL_BADGES = [
     {key:'survivor',      name:'Survivor',      icon:'🟡', rarity:'common',    desc:'Complete Chapter 1.',           ctype:'chapter', cval:1 },
     {key:'helper',        name:'Helper',        icon:'🟢', rarity:'uncommon',  desc:'Help 3 players.',               ctype:'helps',   cval:3 },
@@ -346,7 +331,6 @@ import { renderNav } from '../components/nav.js'
   ]
   const RC = {common:'#c8c8c8',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#a07de0',legendary:'#c8b96e'}
 
-  if (!player) throw new Error('no player')
 
   const defeated = player.defeated_bosses || []
   const {data:earnedRows} = await supabase.from('player_badges').select('badge_key,earned_at').eq('player_id',player.id)
