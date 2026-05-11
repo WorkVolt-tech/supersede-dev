@@ -1,0 +1,3748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SuperSede — Chapter 1</title>
+  <link rel="stylesheet" href="../styles/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* ══════════════════════════════════════════════
+       PARCHMENT BOOK THEME — Warm Ink / Aged Paper
+       Matches the interactive book page-flip UI.
+    ══════════════════════════════════════════════ */
+       :root {
+      --bg-0:      #14110f;
+      --bg-1:      #2b1d16;
+      --panel:     #f4ead7;
+      --page-l:    #f4ead7;
+      --page-r:    #f1e4cf;
+      --ink:       #2b1d16;
+      --ink-dim:   #5c4638;
+      --ink-faint: #a08060;
+      --ice:       #7a5230;
+      --ice-hot:   #4b2e14;
+      --gold:      #c8a050;
+      --gold-hot:  #e0c070;
+      --gold-dim:  #a08040;
+      --amber:     #d09040;
+      --amber-hot: #e0a050;
+      --warn:      #e06050;
+      --line:      rgba(200,160,80,.30);
+      --green:     #5cae50;
+      --purple:    #8a50c0;
+      --spine-col: #2b1d16;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    /* ── Global reset ── */
+    html, body {
+      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;
+      color: var(--ink) !important;
+      font-family: 'Cormorant Garamond', Georgia, serif !important;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Warm ambient glow */
+    body::after {
+      content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);
+    }
+
+    /* ── Book wrap ── */
+    .book-wrap {
+      background: transparent !important;
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 24px 24px 60px;
+    }
+
+    /* ── Book — warm parchment open-book ── */
+    .book {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      align-items: stretch !important;
+      gap: 0 !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 24px !important;
+      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;
+      transform: perspective(1600px) rotateX(2.5deg) !important;
+      transform-origin: 50% 0 !important;
+      margin-top: 10px !important;
+      overflow: hidden !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+    }
+    @media(max-width: 860px) {
+      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }
+    }
+
+    /* ── Pages ── */
+    .parchment, .page-left, .page-right {
+      background: var(--panel) !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      color: var(--ink) !important;
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    /* Dot-texture paper grain */
+    .page-left::before, .page-right::before {
+      content: "" !important;
+      position: absolute !important; inset: 0 !important;
+      pointer-events: none !important; z-index: 0 !important;
+      opacity: .08 !important;
+      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;
+      background-size: 12px 12px !important;
+    }
+    .page-left  { border-right: none !important; background: var(--page-l) !important; }
+    .page-right { border-left:  none !important; background: var(--page-r) !important; }
+
+    /* Spine-edge shadow */
+    .page-left::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; right: 0 !important;
+      width: 60px !important;
+      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
+    }
+    .page-right::after {
+      content: "" !important;
+      position: absolute !important;
+      top: 0 !important; bottom: 0 !important; left: 0 !important;
+      width: 60px !important;
+      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;
+      pointer-events: none !important;
+      z-index: 2 !important;
+    }
+
+    /* Decorative corner brackets */
+    .page-inner { padding: 28px 30px !important; position: relative; }
+    .page-inner::before {
+      content: "" !important;
+      position: absolute !important;
+      top: 14px !important; left: 14px !important;
+      width: 28px !important; height: 28px !important;
+      border-left: 1.5px solid rgba(138,91,68,.45) !important;
+      border-top: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
+    .page-inner::after {
+      content: "" !important;
+      position: absolute !important;
+      bottom: 14px !important; right: 14px !important;
+      width: 28px !important; height: 28px !important;
+      border-right: 1.5px solid rgba(138,91,68,.45) !important;
+      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;
+      pointer-events: none !important;
+    }
+    .page-left  { border-right: none !important; background: var(--page-l) !important; }
+    .page-right { border-left:  none !important; background: var(--page-r) !important; }
+
+    .spine-inner, .spine-highlight, .spine-shadow,
+    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }
+
+    /* ── Chapter label / subtitle ── */
+    .chapter-label {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9.5px !important;
+      letter-spacing: .42em !important;
+      text-transform: uppercase !important;
+      color: var(--ink) !important;
+      margin-bottom: 5px !important;
+    }
+    .chapter-sub {
+      font-size: 17px !important;
+      font-style: italic !important;
+      color: var(--ink) !important;
+      margin-bottom: 0 !important;
+    }
+
+        /* ── Divider ── */
+    .ink-divider, hr.ink-divider {
+      border: none !important;
+      border-top: 1px solid rgba(200,180,120,.40) !important;
+      margin: 12px 0 !important;
+      opacity: 1 !important;
+    }
+
+    /* ── Body text colour remaps ── */
+    p, li, span { color: var(--ink) !important; }
+    [style*="color:var(--ink)"] { color: var(--ink) !important; }
+    [style*="color:var(--ink-dim)"] { color: var(--ink-dim) !important; }
+    [style*="color:#c8b96e"] { color: var(--gold) !important; }
+    [style*="background:rgba(200,184,128"] { background: rgba(138,91,68,.08) !important; }
+    [style*="border-color:rgba(139,106,32"] { border-color: rgba(138,91,68,.30) !important; }
+
+    /* ── Story text ── */
+    .story-text {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 17px !important;
+      line-height: 1.65 !important;
+      color: var(--ink) !important;
+      white-space: pre-line !important;
+    }
+    .story-text.drop-cap::first-letter {
+      font-size: 3.8em !important;
+      float: left !important;
+      line-height: .78 !important;
+      margin: .05em .12em 0 0 !important;
+      color: var(--gold) !important;
+      font-weight: 600 !important;
+    }
+
+    /* ── Notice / outcome box ── */
+    .notice-box {
+      border: 1px solid rgba(200,180,120,.50) !important;
+      background: rgba(30,20,15,.85) !important;
+      color: #f0d060 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      letter-spacing: .06em !important;
+      padding: 10px 14px !important;
+      border-radius: 0 !important;
+      margin-top: 14px !important;
+    }
+
+        /* ── HUD ── */
+    #hud { color: #e8d8b0 !important; }
+    #hud p, #hud span, #hud div { color: #e8d8b0 !important; }
+    #hud .hud-badge-row .hud-seal-label { color: #f0d060 !important; }
+    #hud .hud-chapter { color: #c8b880 !important; }
+    #hud .stat-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }
+    #hud .stat-val { color: #f0e0c0 !important; }
+    #hud .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
+    #hud .stat-box { background: rgba(0,0,0,.15) !important; border: 1px solid rgba(200,180,120,.35) !important; border-radius: 0 !important; }
+    #hud .stat-box-key { color: #c8b880 !important; font-family: 'JetBrains Mono',monospace !important; }
+    #hud .stat-box-val { color: #f0c080 !important; }
+    #hud button {
+      background: rgba(200,180,120,.12) !important;
+      border-color: rgba(200,180,120,.40) !important;
+      color: #e8d8b0 !important;
+      border-radius: 0 !important;
+      font-family: 'JetBrains Mono',monospace !important;
+      transition: border-color .2s, color .2s !important;
+    }
+    #hud button:hover { border-color: #f0d060 !important; color: #f0d060 !important; }
+    #hud div[onclick] {
+      background: rgba(160,125,224,.15) !important;
+      border-color: rgba(160,125,224,.40) !important;
+      color: #e8d8b0 !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Buttons / choices — warm parchment ── */
+    button:not(.bm-signout), .choice, .combat-btn {
+      background: transparent !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .08em !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+    }
+    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.07) !important;
+    }
+
+    /* ── Choices panel ── */
+    .choices-label {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important;
+      letter-spacing: .38em !important;
+      text-transform: uppercase !important;
+      color: var(--ink-dim) !important;
+      margin-bottom: 12px !important;
+    }
+    .choices { display: flex; flex-direction: column; gap: 8px; }
+
+    button.choice, .choice {
+      background: rgba(244,234,215,.60) !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      padding: 12px 14px !important;
+      text-align: left !important;
+      cursor: pointer !important;
+      transition: border-color .2s, background .2s, transform .2s !important;
+      display: flex !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+      width: 100% !important;
+      font-family: 'Cormorant Garamond', serif !important;
+    }
+    button.choice:hover, .choice:hover {
+      border-color: var(--ice) !important;
+      background: rgba(138,91,68,.12) !important;
+      transform: translateX(4px) !important;
+    }
+    button.choice.danger, .choice.danger {
+      border-color: rgba(192,57,43,.35) !important;
+    }
+    button.choice.danger:hover, .choice.danger:hover {
+      border-color: var(--warn) !important;
+      background: rgba(192,57,43,.08) !important;
+    }
+    button.choice.locked, .choice.locked {
+      opacity: .45 !important;
+      cursor: default !important;
+      border-color: rgba(138,91,68,.15) !important;
+    }
+    .choice-arrow {
+      color: var(--gold) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 13px !important;
+      flex-shrink: 0 !important;
+      margin-top: 1px !important;
+    }
+    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }
+    .choice-body {
+      font-size: 17px !important;
+      color: var(--ink) !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    .choice-sub {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 9.5px !important;
+      letter-spacing: .06em !important;
+      color: var(--ink-dim) !important;
+      margin-top: 3px !important;
+    }
+
+    /* ── Stat bars ── */
+    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }
+    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }
+    .stat-val { color: var(--ink) !important; }
+
+    /* ── Combat panel ── */
+    .combat-panel {
+      background: rgba(244,234,215,.80) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+      padding: 16px !important;
+      position: relative;
+    }
+    .combat-panel::before {
+      content: ""; position: absolute; top: -1px; left: -1px;
+      width: 12px; height: 12px;
+      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);
+    }
+    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .combat-enemy-icon { font-size: 2.5rem; }
+    .combat-enemy-name {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 20px !important; font-weight: 600 !important;
+      letter-spacing: .04em !important; color: var(--ink) !important;
+    }
+    .combat-log {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-style: italic !important;
+      font-size: 15px !important;
+      line-height: 1.55 !important;
+      color: var(--ink-dim) !important;
+      background: rgba(0,0,0,.06) !important;
+      border: 1px solid rgba(138,91,68,.20) !important;
+      border-radius: 0 !important;
+      padding: 10px 12px !important;
+      min-height: 3rem !important;
+      margin-bottom: 10px !important;
+    }
+    .combat-log em     { color: var(--gold) !important; font-style: italic; }
+    .combat-log strong { color: var(--warn) !important; font-style: normal; }
+    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+    .stat-bar-wrap {
+      flex: 1; height: 5px !important;
+      background: rgba(0,0,0,.08) !important;
+      border-radius: 0 !important; overflow: hidden;
+    }
+    .stat-bar { height: 100%; transition: width .4s, background .4s; }
+    .stat-key {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .58rem !important; letter-spacing: .08em !important;
+      color: var(--ink-dim) !important; min-width: 44px;
+    }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .6rem !important; color: var(--ink) !important;
+      min-width: 50px; text-align: right;
+    }
+
+    /* ── Combat action buttons ── */
+    .combat-btn {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .6rem !important; letter-spacing: .06em !important;
+      color: var(--ink) !important;
+      background: rgba(244,234,215,.50) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+      padding: .45rem .5rem !important;
+      cursor: pointer !important;
+      transition: border-color .2s, background .2s, color .2s !important;
+      display: flex !important; align-items: center !important; justify-content: center !important;
+    }
+    .combat-btn:hover:not(:disabled) {
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.10) !important;
+    }
+    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }
+
+    /* stat-grid inside HUD */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(3,1fr);
+      gap: 4px; margin-top: 6px;
+    }
+
+    /* ── End screen ── */
+    .end-box {
+      background: rgba(244,234,215,.80) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+      padding: 20px !important;
+      position: relative;
+    }
+    .end-box::before { content:""; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
+    .end-box::after  { content:""; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }
+    .end-title {
+      font-family: 'Cormorant Garamond', serif !important;
+      font-size: 22px !important; font-weight: 600 !important;
+      letter-spacing: .06em !important;
+      color: var(--gold) !important;
+      margin-bottom: 10px !important;
+    }
+    .end-sub {
+      font-style: italic !important;
+      font-size: 16px !important;
+      color: var(--ink-dim) !important;
+      line-height: 1.55 !important;
+      margin-bottom: 14px !important;
+    }
+    .end-btn {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: .75rem !important;
+      letter-spacing: .14em !important;
+      text-transform: uppercase !important;
+      color: var(--ink) !important;
+      background: transparent !important;
+      border: 1px solid rgba(138,91,68,.35) !important;
+      border-radius: 0 !important;
+      padding: .55rem 1.2rem !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+      text-decoration: none !important;
+      display: inline-block !important;
+    }
+    .end-btn:hover {
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(138,91,68,.07) !important;
+    }
+
+    /* ── Items panel ── */
+    #items-panel, [id$="-items-panel"] {
+      background: rgba(244,234,215,.70) !important;
+      border: 1px solid rgba(138,91,68,.25) !important;
+      border-radius: 0 !important;
+    }
+    [id$="-items-panel"] p,
+    [id$="-items-panel"] span { color: var(--ink) !important; }
+
+    /* ── animate-in ── */
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { animation: fadeIn .4s ease forwards; }
+    @keyframes animateShake {
+      0%,100%{transform:translateX(0)}
+      20%,60%{transform:translateX(-4px)}
+      40%,80%{transform:translateX(4px)}
+    }
+    .animate-shake { animation: animateShake .35s ease; }
+
+    /* ── Items panel ── */
+    #items-panel, [id$="-items-panel"] {
+      background: rgba(244,234,215,.70) !important;
+      border: 1px solid rgba(138,91,68,.25) !important;
+      border-radius: 0 !important;
+    }
+    [id$="-items-panel"] p,
+    [id$="-items-panel"] span { color: var(--ink) !important; }
+
+    /* ── animate-in ── */
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .animate-in { animation: fadeIn .4s ease forwards; }
+    @keyframes animateShake {
+      0%,100%{transform:translateX(0)}
+      20%,60%{transform:translateX(-4px)}
+      40%,80%{transform:translateX(4px)}
+    }
+    .animate-shake { animation: animateShake .35s ease; }
+
+        /* ── System overlay messages ── */
+    .sys-overlay, [id="sys-overlay"] {
+      background: rgba(20,15,10,.98) !important;
+      border: 1px solid rgba(240,200,80,.70) !important;
+      color: #f0e0a0 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 11px !important;
+      letter-spacing: .08em !important;
+      border-radius: 4px !important;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
+    }
+    .sys-overlay span, [id="sys-overlay"] span,
+    .sys-overlay p, [id="sys-overlay"] p {
+      color: #f0e0a0 !important;
+    }
+
+    /* ── Toast ── */
+    .toast, [class*="toast"] {
+      background: rgba(20,15,10,.98) !important;
+      border: 1px solid rgba(240,200,80,.70) !important;
+      color: #f0e0a0 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      border-radius: 4px !important;
+      font-size: 11px !important;
+      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;
+    }
+    .toast span, [class*="toast"] span,
+    .toast p, [class*="toast"] p {
+      color: #f0e0a0 !important;
+    }
+
+    /* ── Loot window ── */
+    #loot-window {
+      background: rgba(241,228,207,.96) !important;
+      border-color: rgba(138,91,68,.40) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+    }
+    #loot-window p, #loot-window span { color: var(--ink) !important; }
+
+    /* ── Stat window modal ── */
+    #stat-window > div {
+      background: rgba(244,234,215,.97) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+    }
+    #stat-window * { color: var(--ink) !important; }
+    #stat-window [style*="background:rgba(200"] {
+      background: rgba(138,91,68,.07) !important;
+    }
+
+    /* ── Judge image ── */
+    #judge-img {
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;
+    }
+
+    /* ── combat-over ── */
+    [id$="-combat-over"] { color: var(--ink) !important; }
+    [id$="-combat-over"] button {
+      font-family: 'JetBrains Mono', monospace !important;
+      color: var(--ink) !important;
+      background: rgba(138,91,68,.07) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+      cursor: pointer !important;
+      transition: border-color .15s, color .15s !important;
+    }
+    [id$="-combat-over"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }
+
+    /* ── Modals ── */
+    [id$="-window"] > div, .end-box {
+      background: rgba(244,234,215,.97) !important;
+      border: 1px solid rgba(138,91,68,.30) !important;
+      border-radius: 0 !important;
+    }
+
+    /* ── Right panel zone cards ── */
+    #right-panel div[onclick] { border-radius: 0 !important; }
+
+    /* ── Spine — warm book gutter ── */
+    .spine {
+      background: linear-gradient(90deg,
+        rgba(232,210,170,.0)   0%,
+        rgba(200,170,120,.25)  15%,
+        rgba(160,120,70,.55)   30%,
+        rgba(90,55,20,.88)     43%,
+        rgba(40,20,5,1.0)      50%,
+        rgba(90,55,20,.88)     57%,
+        rgba(160,120,70,.55)   70%,
+        rgba(200,170,120,.25)  85%,
+        rgba(232,210,170,.0)   100%
+      ) !important;
+      border-left:  none !important;
+      border-right: none !important;
+      position: relative; z-index: 5;
+      width: 32px !important;
+      min-width: 32px !important;
+      margin: 0 !important;
+      overflow: visible;
+      box-shadow: none !important;
+    }
+    .spine::before {
+      content: "";
+      position: absolute;
+      top: 0; bottom: 0; left: 50%;
+      width: 1px;
+      transform: translateX(-50%);
+      background: linear-gradient(180deg,
+        transparent 0%,
+        rgba(43,29,22,.9) 8%,
+        rgba(43,29,22,.9) 92%,
+        transparent 100%);
+      z-index: 2;
+    }
+    .spine::after {
+      content: "";
+      position: absolute;
+      top: 2px; bottom: 2px; left: -3px;
+      width: 3px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(138,91,68,.08) 0px,
+        rgba(138,91,68,.03) 1px,
+        rgba(0,0,0,.10)     1px,
+        rgba(0,0,0,.04)     2px
+      );
+      border-left: 1px solid rgba(138,91,68,.12);
+      z-index: 1;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }
+    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+    /* ── Page-flip decorative animation ── */
+    /* ── Page-flip animation — triggered on navigation only ── */
+    @keyframes bookPageFlip {
+      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }
+      6%   { opacity: .92; }
+      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }
+      80%  { opacity: 0; }
+      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }
+    }
+    .page-flip-decorator {
+      position: absolute;
+      top: 0; right: 0;
+      width: 50%; height: 100%;
+      transform-origin: left center;
+      pointer-events: none;
+      z-index: 40;
+      opacity: 0;
+      background: linear-gradient(to left, rgba(241,228,207,.96) 0%, rgba(230,215,190,.92) 60%, rgba(215,196,165,.72) 100%);
+      box-shadow: -4px 0 20px rgba(0,0,0,.15);
+    }
+    .page-flip-decorator.playing {
+      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .page-flip-decorator::after { content: ""; }
+  </style>
+</head>
+<body>
+<div id="nav"></div>
+<div class="book-wrap">
+  
+  <div class="book animate-in" style="position:relative;">
+    <div class="page-left parchment" id="left-page">
+      <div class="page-inner">
+        <p class="chapter-label">Chapter 1 — System Initialization</p>
+        <p class="chapter-sub">The world stops. The game begins.</p>
+        <hr class="ink-divider">
+        <p class="story-text" id="story-text"></p>
+        <div class="notice-box animate-in" id="outcome-box" style="display:none"></div>
+      </div>
+    </div>
+    <div class="page-right parchment">
+      <div class="page-inner">
+        <div class="hud" id="hud"></div>
+        <hr class="ink-divider">
+        <div id="right-panel"></div>
+      </div>
+    </div>
+    <!-- Decorative page-flip animation — purely visual, no pointer events -->
+    <div class="page-flip-decorator" aria-hidden="true"></div>
+  </div>
+</div>
+
+<script type="module">
+import { supabase } from '../supabase.js'
+import { renderNav, showSysOverlay, showToast } from '../components/nav.js'
+import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
+import { NODES } from './nodes.js'
+import { ITEM_IMAGES } from './items.js'
+
+// ── Chapter data ─────────────────────────────────
+
+
+// ── Constants ────────────────────────────────────
+// XP needed to reach next level — exponential curve
+// Level 1→2: 100, 2→3: 150, 3→4: 225, 4→5: 337, 5→6: 506, 6→7: 759...
+function xpForLevel(level) {
+  return Math.floor(100 * Math.pow(1.5, level - 1))
+}
+
+// ── App state ────────────────────────────────────
+let player = await renderNav('nav')
+if (!player) throw new Error('no player')
+
+let currentHp = player.hp || 100
+let nodeId    = (player.current_node || '').startsWith('ch1_')
+  ? player.current_node.replace('ch1_', '')
+  : 'opening'
+let bossMode  = 'solo'
+let outcome   = null
+
+if (!NODES[nodeId]) nodeId = 'opening'
+
+// ── Level up logic ───────────────────────────────
+async function checkLevelUp(oldXp, newXp, oldLevel) {
+  let level   = oldLevel
+  let xp      = newXp
+  let leveled = false
+  let levelsGained = 0
+
+  while (xp >= xpForLevel(level)) {
+    xp -= xpForLevel(level)
+    level += 1
+    leveled = true
+    levelsGained++
+  }
+
+  if (!leveled) return null
+
+  // +5 HP per level (not 20)
+  const newMaxHp  = (player.max_hp || 100) + levelsGained * 5
+  const newHp     = newMaxHp  // full restore on level up
+
+  // 1 SP per level gained
+  const spGained  = levelsGained * 1
+  const newSP     = (player.skill_points || 0) + spGained
+  player.skill_points = newSP
+  const newClaimed = (player.sp_claimed || 0) + spGained
+  player.sp_claimed = newClaimed
+
+  // +1 to all base stats per level
+  const statGain = levelsGained
+  const updStats = {
+    atk:     (player.atk     || 1) + statGain,
+    def:     (player.def     || 0) + statGain,
+    power:   (player.power   || 0) + statGain,
+    guard:   (player.guard   || 0) + statGain,
+    speed:   (player.speed   || 0) + statGain,
+    insight: (player.insight || 0) + statGain,
+    luck:    (player.luck    || 0) + statGain,
+    control: (player.control || 0) + statGain,
+    agility: (player.agility || 0) + statGain,
+  }
+  Object.assign(player, updStats)
+
+  currentHp = newHp
+  player.max_hp = newMaxHp
+  player.level  = level
+  player.xp     = newXp
+
+  showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
+  renderHUD()
+
+  return { level, max_hp: newMaxHp, hp: newHp, xp: newXp,
+           skill_points: newSP, sp_claimed: newClaimed, ...updStats }
+}
+
+// ── HUD ──────────────────────────────────────────
+function renderHUD() {
+  const hp  = currentHp
+  const mhp = player.max_hp || 100
+  const xp  = player.xp || 0
+  const lvl = player.level || 1
+  const BC  = { neutral:'#c8b96e', red:'#e05555', green:'#5ec45e', elite:'#a07de0', unknown:'#b0b0b0' }
+  const BS  = { neutral:'🟡', red:'🔴', green:'🟢', elite:'🟣', unknown:'⚫' }
+  const bc  = BC[player.badge] || '#c8b96e'
+  const bs  = BS[player.badge] || '🟡'
+  const hpPct  = Math.max(0, Math.round(hp / mhp * 100))
+  const hpCol  = hpPct > 60 ? '#5ec45e' : hpPct > 30 ? '#c8b96e' : '#e05555'
+  const xpNext = xpForLevel(lvl)
+  const xpIntoLevel = Math.max(0, Math.min(xp, xpNext - 1))
+  const xpPct = Math.min(100, Math.round(xpIntoLevel / xpNext * 100))
+
+  // ── Fable-style moral alignment ───────────────────
+  const moral = player.moral_score || 0
+  // −100 = pure evil (red), 0 = neutral (gold), +100 = pure good (blue-white)
+  const moralPct  = Math.round((moral + 100) / 2) // 0-100 left-to-right
+  const moralCol  = moral >= 60 ? '#a0d0ff'
+    : moral >= 20  ? '#c8e8a0'
+    : moral >= -20 ? '#c8b96e'
+    : moral >= -60 ? '#e07a40'
+    :                '#e05555'
+  const moralLabel = moral >= 70  ? 'HERO'
+    : moral >= 30   ? 'GOOD'
+    : moral >= -10  ? 'NEUTRAL'
+    : moral >= -40  ? 'RUTHLESS'
+    : moral >= -70  ? 'CORRUPT'
+    :                 'VILLAIN'
+  // Indicator dot position: 0% = far left (evil), 100% = far right (good)
+  const dotLeft = Math.max(2, Math.min(94, moralPct))
+
+  document.getElementById('hud').innerHTML = `
+    <div class="hud-badge-row">
+      <span class="hud-seal">${bs}</span>
+      <div>
+        <p class="hud-seal-label" style="color:${bc}">${(player.badge||'neutral')[0].toUpperCase()+(player.badge||'neutral').slice(1)}</p>
+        <p class="hud-chapter">Chapter ${player.current_chapter||1} · Lvl ${lvl}</p>
+      </div>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">HP</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" id="hp-bar" style="width:${hpPct}%;background:${hpCol};transition:width .4s,background .4s"></div></div>
+      <span class="stat-val" id="hp-val">${hp}/${mhp}</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-key">XP</span>
+      <div class="stat-bar-wrap"><div class="stat-bar" style="width:${xpPct}%;background:#a07de0;transition:width .4s"></div></div>
+      <span class="stat-val" style="font-size:.52rem;min-width:60px;text-align:right">${xpIntoLevel}/${xpNext}</span>
+    </div>
+    <div style="margin-bottom:5px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);letter-spacing:.07em">REPUTATION</span>
+        <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
+      </div>
+      <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
+        <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
+      </div>
+    </div>
+    ${(player.skill_points||0)>0?`<div onclick="window.location.href='skills.html'" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+    <div class="stat-grid">
+      <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
+      <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
+      <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
+    </div>
+    <div style="display:flex;gap:4px;margin-top:6px">
+      <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+      <button onclick="window.location.href='skills.html'" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+    </div>
+    ${getDefeatedBosses().length>0?`<button onclick="goTo('district_hub')" style="width:100%;margin-top:4px;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.35);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚔ FARM ZONES</button>`:''}
+  `
+}
+
+function updateHpBar(hp) {
+  currentHp = hp
+  const mhp = player.max_hp || 100
+  const pct = Math.max(0, Math.round(hp / mhp * 100))
+  const col = pct > 60 ? '#5ec45e' : pct > 30 ? '#c8b96e' : '#e05555'
+  const bar = document.getElementById('hp-bar')
+  const val = document.getElementById('hp-val')
+  if (bar) { bar.style.width = pct+'%'; bar.style.background = col }
+  if (val) val.textContent = hp+'/' + ''+(player.max_hp||100)
+}
+
+// ── Save ─────────────────────────────────────────
+async function save(updates) {
+  // Preserve defeated_bosses across the player object overwrite
+  const prevDefeated = updates.defeated_bosses || player.defeated_bosses || []
+  const { data } = await supabase
+    .from('players').update({ ...updates, last_seen_at: new Date().toISOString() })
+    .eq('id', player.id).select().single()
+  if (data) {
+    player = data
+    currentHp = data.hp
+    // Keep in-memory value if DB returned empty (guards against missing column)
+    if (!player.defeated_bosses || !player.defeated_bosses.length) {
+      player.defeated_bosses = prevDefeated
+    }
+  }
+  renderHUD()
+}
+
+// ── Defeated bosses helpers ───────────────────────
+function getDefeatedBosses() {
+  return player.defeated_bosses || []
+}
+
+function markBossDefeated(bossKey) {
+  const defeated = [...getDefeatedBosses()]
+  if (!defeated.includes(bossKey)) defeated.push(bossKey)
+  player.defeated_bosses = defeated
+  return defeated
+}
+
+// ── Add item ─────────────────────────────────────
+// ── Loot drop queue — collect drops then show summary window ──
+let _lootQueue = []
+let _lootTimerId = null
+let _lootSuppressed = false  // suppress mid-sequence flashes
+
+function queueLoot(name, qty, img) {
+  _lootQueue.push({ name, qty, img })
+  clearTimeout(_lootTimerId)
+  _lootTimerId = setTimeout(showLootWindow, 800)
+}
+
+function suppressLoot() { _lootSuppressed = true }
+function unsuppressLoot() { _lootSuppressed = false }
+
+function showLootWindow() {
+  if (_lootSuppressed || !_lootQueue.length) return
+  const drops = [..._lootQueue]
+  _lootQueue = []
+
+  // Remove existing loot window if any
+  document.getElementById('loot-window')?.remove()
+
+  const win = document.createElement('div')
+  win.id = 'loot-window'
+  win.style.cssText = `
+    position:fixed;bottom:80px;right:20px;z-index:500;
+    background:#0f0d08;border:1px solid rgba(200,184,128,.5);
+    border-radius:6px;padding:0;min-width:220px;max-width:280px;
+    box-shadow:0 8px 40px rgba(0,0,0,.8);animation:fadeIn .3s ease;
+    font-family:'Share Tech Mono',monospace;
+  `
+  win.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(200,184,128,.2)">
+      <span style="font-size:.62rem;letter-spacing:.1em;color:#c8b880">ITEMS OBTAINED</span>
+      <button onclick="document.getElementById('loot-window').remove()" style="background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px">✕</button>
+    </div>
+    <div style="padding:6px 0;max-height:280px;overflow-y:auto">
+      ${drops.map(d => `
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:.5px solid rgba(200,184,128,.1)">
+          ${d.img ? `<img src="${d.img}" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">` : `<span style="font-size:1.1rem;flex-shrink:0">📦</span>`}
+          <span style="font-size:.68rem;color:#e8d8a8;flex:1">${d.name}</span>
+          ${d.qty > 1 ? `<span style="font-size:.58rem;color:var(--ink-dim)">×${d.qty}</span>` : ''}
+          <button onclick="declineDrop('${d.name}',this)" style="background:none;border:.5px solid rgba(224,85,85,.3);color:#e05555;cursor:pointer;font-size:.55rem;padding:1px 5px;border-radius:2px;font-family:'Share Tech Mono',monospace">skip</button>
+        </div>
+      `).join('')}
+    </div>
+    <div style="padding:8px 12px;display:flex;justify-content:flex-end">
+      <button onclick="document.getElementById('loot-window').remove()" style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);padding:4px 14px;border-radius:2px;cursor:pointer">Keep All</button>
+    </div>
+  `
+  document.body.appendChild(win)
+
+  // Auto-dismiss after 8 seconds
+  setTimeout(() => win.remove?.(), 8000)
+}
+
+window.declineDrop = async function(itemName, btn) {
+  // Find item in inventory by name and delete it
+  const { data } = await supabase.from('inventory').select('id').eq('player_id', player.id).eq('name', itemName).order('obtained_at',{ascending:false}).limit(1)
+  if (data?.[0]) await supabase.from('inventory').delete().eq('id', data[0].id)
+  btn.closest('div[style]').remove()
+}
+
+
+
+function getItemImg(k) { return ITEM_IMAGES[k] || null }
+
+async function addItem(itemKey, qty = 1) {
+  const { data: m } = await supabase.from('items').select('*').eq('item_key', itemKey).single()
+  if (!m) return
+  const stackable = ['consumable','material','key']
+  if (stackable.includes(m.item_type)) {
+    // Always check for existing stack first — never rely on DB unique constraint
+    const { data: ex, error: exErr } = await supabase
+      .from('inventory').select('id,quantity')
+      .eq('player_id', player.id).eq('item_key', itemKey)
+      .maybeSingle()
+
+    if (exErr) console.warn('addItem stack check error:', exErr.message)
+
+    if (ex) {
+      // Stack exists — increment quantity
+      const { error: upErr } = await supabase.from('inventory')
+        .update({ quantity: (ex.quantity || 1) + qty })
+        .eq('id', ex.id)
+      if (upErr) console.warn('addItem stack update error:', upErr.message)
+    } else {
+      // No existing stack — plain INSERT (no upsert, no constraint needed)
+      const { error: insErr } = await supabase.from('inventory').insert({
+        player_id:player.id, item_key:m.item_key, name:m.name, item_type:m.item_type,
+        subtype:m.subtype, rarity:m.rarity, atk_bonus:m.atk_bonus||0, def_bonus:m.def_bonus||0,
+        hp_restore:m.hp_restore||0, two_handed:m.two_handed||false, icon:m.icon, quantity:qty,
+        element:m.element||'none', power_bonus:m.power_bonus||0, control_bonus:m.control_bonus||0,
+        guard_bonus:m.guard_bonus||0, speed_bonus:m.speed_bonus||0,
+        insight_bonus:m.insight_bonus||0, luck_bonus:m.luck_bonus||0,
+        agility_bonus:m.agility_bonus||0, max_hp_bonus:m.max_hp_bonus||0,
+        special_effect:m.special_effect||null, sockets_total:0, sockets_used:0, socketed_runes:[]
+      })
+      if (insErr) {
+        console.warn('addItem insert error:', insErr.message)
+        // If insert failed due to race condition, try updating the now-existing row
+        const { data: retry } = await supabase.from('inventory').select('id,quantity')
+          .eq('player_id', player.id).eq('item_key', itemKey).maybeSingle()
+        if (retry) {
+          await supabase.from('inventory')
+            .update({ quantity: (retry.quantity || 1) + qty }).eq('id', retry.id)
+        }
+      }
+    }
+    queueLoot(m.name, qty, getItemImg(m.item_key))
+    return
+  }
+  const socketsRolled = rollSockets(m.rarity, m.item_type)
+  await supabase.from('inventory').insert({
+    player_id:player.id, item_key:m.item_key, name:m.name, item_type:m.item_type,
+    subtype:m.subtype, rarity:m.rarity, atk_bonus:m.atk_bonus||0, def_bonus:m.def_bonus||0,
+    hp_restore:m.hp_restore||0, two_handed:m.two_handed||false, icon:m.icon, quantity:1,
+    element:m.element||'none', power_bonus:m.power_bonus||0, control_bonus:m.control_bonus||0,
+    guard_bonus:m.guard_bonus||0, speed_bonus:m.speed_bonus||0,
+    insight_bonus:m.insight_bonus||0, luck_bonus:m.luck_bonus||0,
+    agility_bonus:m.agility_bonus||0, max_hp_bonus:m.max_hp_bonus||0,
+    special_effect:m.special_effect||null,
+    sockets_total:socketsRolled, sockets_used:0, socketed_runes:[]
+  })
+  queueLoot(m.name + (socketsRolled > 0 ? ` [${socketsRolled} socket${socketsRolled>1?'s':''}!]` : ''), 1, getItemImg(m.item_key))
+}
+
+// ── Navigate ─────────────────────────────────────
+// ── Watcher Eye Random Encounter ─────────────────────
+// After level 3: 15% chance per story node transition to trigger Eye ambush
+// After level 7: 10% chance for Eye Swarm (harder) instead
+const EYE_EXEMPT_NODES = new Set([
+  'opening','watcher_eye_ambush','eye_escape_attempt','fight_watcher_eye',
+  'eye_defeated','eye_survived','watcher_eye_swarm','fight_eye_swarm',
+  'swarm_defeated','swarm_survived','watcher_sees','watcher_sees_final',
+  'pre_boss_team','pre_boss_solo','pre_boss_betray','pre_boss_check',
+  'boss','chapter_end','plaza_allies','district_hub',
+  'plaza_talk','street_midpoint','plaza_grind','plaza_grind_done',
+  'fight_rat_1','fight_rats_2','fight_hounds','fight_crawlers',
+  'fight_plaza_spawn','fight_drone_1','fight_sentry','fight_with_kai',
+  'fight_watcher_eye','fight_eye_swarm',
+])
+// ── Forced Eye Encounter Overlay ─────────────────────
+// Shows a full-screen interruption with forced combat — no player choice.
+// After win or loss, dismisses itself and resumes the original navigation.
+function triggerForcedEyeEncounter(encounterType, resumeNextId) {
+  const isSwarm   = encounterType === 'watcher_eye_swarm'
+  const enemyData = isSwarm
+    ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
+    : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
+
+  const alertLines = isSwarm ? [
+    "The sky fractures in seven places at once.",
+    "Seven eyes descend. Each the size of a fist. Each fixed on you.",
+    "They orbit each other slowly — a single mind, distributed.",
+    "⚠ WATCHER'S EYE SWARM — FORCED ENGAGEMENT.",
+    "There is nowhere to run. They are already everywhere."
+  ] : [
+    "The sky splits without warning.",
+    "A pale eye drops from the crack like a stone from a height.",
+    "It finds you in less than a second.",
+    "⚠ WATCHER'S EYE — SPOTTED. ENGAGING.",
+    "It does not wait. It does not circle. It comes."
+  ]
+
+  // White flash
+  const flash = document.createElement('div')
+  flash.style.cssText = 'position:fixed;inset:0;z-index:9998;background:white;opacity:0;pointer-events:none;transition:opacity 0.12s ease'
+  document.body.appendChild(flash)
+  requestAnimationFrame(() => {
+    flash.style.opacity = '0.92'
+    setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 250) }, 180)
+  })
+
+  // Build overlay
+  const overlay = document.createElement('div')
+  overlay.id = 'eye-encounter-overlay'
+  overlay.style.cssText = `
+    position:fixed;inset:0;z-index:9000;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(8,6,3,0.97);
+    animation:eyeOverlayIn 0.4s ease;
+    font-family:'Share Tech Mono',monospace;
+  `
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes eyeOverlayIn { from{opacity:0;transform:scale(1.04)} to{opacity:1;transform:scale(1)} }
+      @keyframes eyePulse { 0%,100%{box-shadow:0 0 30px 8px rgba(255,255,255,0.15)} 50%{box-shadow:0 0 60px 20px rgba(255,255,255,0.35)} }
+      @keyframes eyeTextIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      #eye-alert-lines p { opacity:0; animation:eyeTextIn 0.35s ease forwards; }
+      #eye-alert-lines p:nth-child(1){animation-delay:0.1s}
+      #eye-alert-lines p:nth-child(2){animation-delay:0.3s}
+      #eye-alert-lines p:nth-child(3){animation-delay:0.55s}
+      #eye-alert-lines p:nth-child(4){animation-delay:0.8s;color:#e05555;font-weight:bold;letter-spacing:.1em}
+      #eye-alert-lines p:nth-child(5){animation-delay:1.1s;color:#a08858}
+      .eye-combat-panel { width:100%;max-width:440px;padding:0 1rem; }
+
+      /* ── Override dark-on-parchment combat styles for the dark overlay ── */
+      #eye-encounter-overlay .combat-panel {
+        background: rgba(255,255,255,0.04);
+        border: .5px solid rgba(200,184,128,.2);
+        border-radius: 6px;
+        padding: .75rem;
+      }
+      #eye-encounter-overlay .combat-enemy-row {
+        display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
+      }
+      #eye-encounter-overlay .combat-enemy-name {
+        color: #e8d8a8 !important;
+      }
+      #eye-encounter-overlay .combat-log {
+        color: #c8b96e !important;
+        background: rgba(0,0,0,.3) !important;
+        border-color: rgba(200,184,128,.15) !important;
+        font-family: 'IM Fell English', serif;
+        font-style: italic;
+        min-height: 2.5rem;
+      }
+      #eye-encounter-overlay .combat-log em {
+        color: #8fd8f0 !important;
+      }
+      #eye-encounter-overlay .combat-log strong {
+        color: #e05555 !important;
+      }
+      #eye-encounter-overlay .stat-key {
+        color: #a08858 !important;
+      }
+      #eye-encounter-overlay .stat-val {
+        color: #e8d8a8 !important;
+      }
+      #eye-encounter-overlay .stat-bar-wrap {
+        background: rgba(255,255,255,.08) !important;
+      }
+      #eye-encounter-overlay p[style*="color:var(--ink)"],
+      #eye-encounter-overlay span[style*="color:var(--ink)"] {
+        color: #c8b96e !important;
+      }
+      #eye-encounter-overlay .combat-btn {
+        color: #c8b96e !important;
+        background: rgba(200,184,128,.08) !important;
+        border-color: rgba(200,184,128,.25) !important;
+      }
+      #eye-encounter-overlay .combat-btn:hover:not(:disabled) {
+        background: rgba(200,184,128,.18) !important;
+        border-color: rgba(200,184,128,.5) !important;
+      }
+      #eye-encounter-overlay .combat-btn:disabled {
+        color: rgba(200,184,128,.3) !important;
+        border-color: rgba(200,184,128,.1) !important;
+      }
+      #eye-encounter-overlay #skill-slots-row p,
+      #eye-encounter-overlay #skill-slots-row span {
+        color: #c8b96e !important;
+      }
+      #eye-encounter-overlay #items-panel {
+        background: rgba(15,12,8,.95) !important;
+        border-color: rgba(200,184,128,.3) !important;
+      }
+      #eye-encounter-overlay #items-panel p,
+      #eye-encounter-overlay #items-panel span {
+        color: #c8b96e !important;
+      }
+      #eye-encounter-overlay #combat-over {
+        color: #c8b96e !important;
+      }
+      #eye-encounter-overlay #combat-over button {
+        color: #1a1208 !important;
+        background: rgba(200,184,128,.45) !important;
+        border-color: rgba(139,106,32,.6) !important;
+      }
+      /* FORCED ENGAGEMENT label */
+      #eye-combat-phase > p {
+        color: #c8b96e !important;
+      }
+    </style>
+
+    <!-- Alert phase -->
+    <div id="eye-alert-phase" style="text-align:center;max-width:400px;padding:2rem 1.5rem">
+      <img src="${enemyData.img}" alt="${enemyData.name}"
+        style="width:${isSwarm?'120px':'88px'};height:${isSwarm?'120px':'88px'};object-fit:contain;margin:0 auto 1.5rem;display:block;animation:eyePulse 2s infinite;filter:drop-shadow(0 0 20px rgba(255,255,255,0.4))"
+        onerror="this.style.fontSize='4rem';this.textContent='👁';this.style.background='none'">
+      <div id="eye-alert-lines" style="margin-bottom:1.5rem">
+        ${alertLines.map(l => `<p style="font-size:.72rem;color:#c8b96e;margin:.4rem 0;line-height:1.6">${l}</p>`).join('')}
+      </div>
+      <div id="eye-engage-btn-wrap" style="opacity:0;transition:opacity 0.4s">
+        <button id="eye-engage-btn"
+          style="font-family:'Cinzel',serif;font-size:.9rem;color:#0d0b08;background:#c8b96e;border:none;border-radius:3px;padding:.6rem 2rem;cursor:pointer;letter-spacing:.08em;box-shadow:0 0 20px rgba(200,185,110,0.4)">
+          ⚔ ENGAGE
+        </button>
+        <p style="font-size:.5rem;color:#a08858;margin-top:.5rem;letter-spacing:.06em">You have no choice.</p>
+      </div>
+    </div>
+
+    <!-- Combat phase (hidden until engaged) -->
+    <div id="eye-combat-phase" style="display:none;width:100%;max-width:460px;padding:1rem;max-height:90vh;overflow-y:auto">
+      <p style="font-size:.58rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.75rem;text-align:center">
+        ${isSwarm ? '👁 WATCHER\'S EYE SWARM' : '👁 WATCHER\'S EYE'} — FORCED ENGAGEMENT
+      </p>
+      <div id="eye-combat-inner"></div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+
+  // Show engage button after lines have animated in
+  setTimeout(() => {
+    const btn = document.getElementById('eye-engage-btn-wrap')
+    if (btn) btn.style.opacity = '1'
+  }, 1600)
+
+  // Engage button — swap to combat panel
+  document.getElementById('eye-engage-btn').addEventListener('click', () => {
+    document.getElementById('eye-alert-phase').style.display  = 'none'
+    document.getElementById('eye-combat-phase').style.display = 'block'
+
+    const panel = document.getElementById('eye-combat-inner')
+
+    // Inline onWin/onLose handlers that dismiss overlay and resume navigation
+    const onEncounterEnd = async (result) => {
+      // Brief pause so player can read the result
+      await new Promise(r => setTimeout(r, 1400))
+
+      // Dismiss overlay
+      overlay.style.transition = 'opacity 0.5s'
+      overlay.style.opacity = '0'
+      setTimeout(() => {
+        overlay.remove()
+        // Resume the navigation that was interrupted
+        const flipEl2 = document.querySelector('.page-flip-decorator')
+        if (flipEl2) {
+          flipEl2.classList.remove('playing')
+          void flipEl2.offsetWidth
+          flipEl2.classList.add('playing')
+          flipEl2.addEventListener('animationend', () => flipEl2.classList.remove('playing'), { once: true })
+        }
+        const lp = document.getElementById('left-page')
+        lp.style.transition = 'opacity .3s,transform .3s'
+        lp.style.opacity    = '0'
+        lp.style.transform  = 'translateX(-8px)'
+        setTimeout(() => {
+          nodeId = resumeNextId
+          render()
+          lp.style.opacity   = '1'
+          lp.style.transform = 'translateX(0)'
+          window.scrollTo({ top:0, behavior:'smooth' })
+        }, 320)
+      }, 500)
+    }
+
+    // Patch buildCombatUI for this encounter — use special sentinels
+    // that call onEncounterEnd instead of goTo
+    window._eyeEncounterCallback = onEncounterEnd
+    buildEyeCombat(panel, enemyData)
+  })
+}
+
+// ── Eye combat builder (self-contained, calls _eyeEncounterCallback on end) ─
+function buildEyeCombat(panel, enemy) {
+  window._inEyeEncounter = true
+  buildCombatUI(panel, enemy, '__eye_win__', '__eye_lose__', '__eye_lose__', false, null)
+
+  // After build — patch all dark inline colors to light ones for the black overlay
+  requestAnimationFrame(() => {
+    const overlay = document.getElementById('eye-encounter-overlay')
+    if (!overlay) return
+    // Walk all elements inside overlay and flip #1a1208 / #3a2008 to light colors
+    overlay.querySelectorAll('[style]').forEach(el => {
+      el.style.cssText = el.style.cssText
+        .replace(/color\s*:\s*#1a1208/gi,  'color:#e8d8a8')
+        .replace(/color\s*:\s*#3a2008/gi,  'color:#a08858')
+        .replace(/color\s*:\s*#7a6435/gi,  'color:#a08858')
+        .replace(/background\s*:\s*rgba\(200,184,128,[^)]+\)/gi, 'background:rgba(200,184,128,.12)')
+    })
+  })
+}
+
+function rollWatcherEncounter(nextId) {
+  const lvl = player.level || 1
+  if (lvl < 3) return null
+  if (EYE_EXEMPT_NODES.has(nextId)) return null
+  const nd = NODES[nextId]
+  if (!nd || nd.type === 'combat' || nd.type === 'boss' || nd.type === 'end') return null
+  const roll = Math.random()
+  if (lvl >= 7 && roll < 0.10) return 'watcher_eye_swarm'
+  if (roll < 0.15) return 'watcher_eye_ambush'
+  return null
+}
+
+window.returnToBoss = function() {
+  document.getElementById('loot-window')?.remove()
+  const p = document.getElementById('right-panel')
+  if (p) goTo('pre_boss_check')
+}
+window.returnToZone = function() {
+  document.getElementById('loot-window')?.remove()
+  const p   = document.getElementById('right-panel')
+  const loc = window._currentFarmLoc
+  if (loc && p) renderFarmZone(p, loc)
+  else if (p) renderLocationHub(p, NODES['farming_hub'])
+}
+window.returnToZoneHub = function() {
+  document.getElementById('loot-window')?.remove()
+  const p = document.getElementById('right-panel')
+  if (p) renderLocationHub(p, NODES['farming_hub'])
+}
+window.returnToStory = function() {
+  document.getElementById('loot-window')?.remove()
+  goTo('district_hub')
+}
+
+// ── Derived stat calculations ────────────────────────────────
+function calcATK() {
+  const pwr = player.power   || 0
+  const spd = player.speed   || 0
+  const eqA = getEquippedBonus('atk_bonus')
+  return Math.max(1, Math.round((player.atk||1) + pwr*0.6 + spd*0.2 + eqA))
+}
+function calcDEF() {
+  const grd = player.guard   || 0
+  const ctr = player.control || 0
+  const eqD = getEquippedBonus('def_bonus')
+  return Math.round((player.def||0) + grd*0.6 + ctr*0.2 + eqD)
+}
+function calcSPD() {
+  const spd = player.speed   || 0
+  const ins = player.insight || 0
+  return Math.round(spd + ins*0.1 + getEquippedBonus('speed_bonus'))
+}
+function getEquippedBonus(stat) {
+  // Sum bonus from all equipped items — pulled from window._equipped cache
+  return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
+}
+
+// ── Full Stat Window ─────────────────────────────────────────
+// (Stat allocation modal removed — stats are now managed via the Skill Tree on the Skills page)
+window.openStatWindow = function() {
+  document.getElementById('stat-window')?.remove()
+
+  const eqItems  = window._equippedItems || []
+
+  const pwr = player.power   || 0
+  const ctr = player.control || 0
+  const grd = player.guard   || 0
+  const spd = player.speed   || 0
+  const ins = player.insight || 0
+  const lck = player.luck    || 0
+
+  const finalATK = calcATK()
+  const finalDEF = calcDEF()
+  const finalSPD = calcSPD()
+
+  const STATS = [
+    { key:'power',   label:'Power',   val:pwr, color:'#ff5500', desc:'Scales ATK damage',          derived:'ATK +' + Math.round(pwr*0.6) },
+    { key:'control', label:'Control', val:ctr, color:'#0088ff', desc:'Scales DEF & retry chance',   derived:'DEF +' + Math.round(ctr*0.2) },
+    { key:'guard',   label:'Guard',   val:grd, color:'#8b5e3c', desc:'Scales DEF & damage block',   derived:'DEF +' + Math.round(grd*0.6) },
+    { key:'speed',   label:'Speed',   val:spd, color:'#a8d8ea', desc:'Scales ATK & turn order',     derived:'ATK +' + Math.round(spd*0.2) + ', SPD +' + spd },
+    { key:'insight', label:'Insight', val:ins, color:'#ffd700', desc:'Scales SPD & luck effects',   derived:'SPD +' + Math.round(ins*0.1) },
+    { key:'luck',    label:'Luck',    val:lck, color:'#b06eff', desc:'Improves crit & loot chance', derived:'Loot +' + Math.round(lck*5) + '%' },
+  ]
+
+  const equippedNames = eqItems.map(i => i.name).join(', ') || 'None'
+
+  const modal = document.createElement('div')
+  modal.id = 'stat-window'
+  modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+  modal.innerHTML = `
+    <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
+        <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
+      </div>
+
+      <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+          ${[['ATK', finalATK, '#e05555'],['DEF', finalDEF, '#5ec45e'],['SPD', finalSPD, '#a8d8ea'],
+             ['HP', (player.max_hp||100), '#5eaee0'],['LVL', (player.level||1), '#c8b96e'],['GOLD', (player.gold||0), '#c8b96e']
+          ].map(([k,v,c]) => '<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
+        </div>
+      </div>
+
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
+      ${STATS.map(s => `
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:baseline;gap:4px">
+              <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);font-weight:600">${s.label}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink)">${s.val}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin-left:auto">${s.derived}</span>
+            </div>
+            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:var(--ink-dim);margin:0">${s.desc}</p>
+          </div>
+        </div>
+      `).join('')}
+
+      <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
+        <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${equippedNames}</p>
+      </div>
+
+      ${(player.skill_points||0)>0?`
+        <button onclick="document.getElementById('stat-window').remove();window.location.href='skills.html'" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">
+          ⬡ Spend ${player.skill_points} Skill Points → Skills Page
+        </button>
+      `:''}
+    </div>
+  `
+  modal.addEventListener('click', e => { if (e.target===modal) modal.remove() })
+  document.body.appendChild(modal)
+}
+
+// ── Badge/Reputation calculator ──────────────────────────
+// Badge is DERIVED from moral_score + pvp_kills + helps_given
+// Never permanent — recalculates every time moral changes
+function calcBadge(moral, pvpKills, helpsGiven, backstabs) {
+  const m  = moral      || 0
+  const pk = pvpKills   || 0
+  const hg = helpsGiven || 0
+
+  // Elite: high moral, boosted by helping others
+  if (m >= 60 && (hg >= 3 || pk === 0)) return 'elite'
+
+  // Green: positive moral score — helping actions reinforce it, but moral alone is enough
+  if (m >= 20) return 'green'
+
+  // Red: negative moral OR heavily pvp-focused
+  if (m <= -20 || (pk >= 5 && pk > hg * 3)) return 'red'
+
+  // Neutral: everything else (-19 to +19)
+  return 'neutral'
+}
+
+window.goTo = async function goTo(nextId, choice = {}) {
+  // Resolve eye encounter return node
+  if (nextId === '__eye_return__') {
+    nextId = window._eyeReturnNode || 'street_midpoint'
+    window._eyeReturnNode = null
+  }
+  if (!NODES[nextId]) return
+
+  // Track whether player defeated Dorian before the Sentinel fight
+  // (suppresses dorianLurking in garage_b4_sentinel_fight)
+  if (nodeId === 'garage_b4_dorian_won' && nextId === 'garage_b4_sentinel_fight') {
+    window._dorianDefeated = true
+  }
+  // Reset when leaving the garage arc entirely
+  if (nextId === 'garage_b4_clear' || nextId === 'garage_b5_summit') {
+    window._dorianDefeated = false
+  }
+
+  const cur = NODES[nodeId]
+  const oldXp  = player.xp || 0
+  const oldLvl = player.level || 1
+
+  const updates = { current_node: 'ch1_' + nextId }
+  if (cur?.xp)     { updates.xp = oldXp + cur.xp; player.xp = updates.xp }
+  if (cur?.hpLoss) { currentHp = Math.max(1, currentHp - cur.hpLoss); updates.hp = currentHp }
+
+  if (choice.outcome === 'attack') {
+    updates.moral_score = Math.max(-100, (player.moral_score || 0) - 20)
+    player.moral_score = updates.moral_score
+  }
+  // Moral score shifts from story choices
+  if (choice.moral) {
+    const newMoral = Math.max(-100, Math.min(100, (player.moral_score || 0) + choice.moral))
+    updates.moral_score = newMoral
+    player.moral_score  = newMoral
+  }
+  // Recalculate badge whenever moral changes
+  if (updates.moral_score !== undefined) {
+    const newBadge = calcBadge(updates.moral_score, player.pvp_kills, player.helps_given, player.backstabs)
+    updates.badge      = newBadge
+    updates.reputation = newBadge
+    player.badge       = newBadge
+  }
+
+  if (choice.bossMode) bossMode = choice.bossMode
+  if (choice.outcome)  outcome  = choice.outcome
+  if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey, r.qty)
+
+  // Check for level up before saving
+  if (updates.xp) {
+    const lvlUpdates = await checkLevelUp(oldXp, updates.xp, oldLvl)
+    if (lvlUpdates) Object.assign(updates, lvlUpdates)
+  }
+
+  await save(updates)
+
+  // ── Random Watcher Eye encounter check ───────────
+  const eyeEncounter = rollWatcherEncounter(nextId)
+  if (eyeEncounter) {
+    // Intercept navigation — show forced combat overlay, do NOT change nodeId
+    triggerForcedEyeEncounter(eyeEncounter, nextId)
+    return  // abort normal navigation — overlay handles it
+  }
+
+  // ── Page-flip animation on navigation ──
+  const flipEl = document.querySelector('.page-flip-decorator')
+  if (flipEl) {
+    flipEl.classList.remove('playing')
+    void flipEl.offsetWidth // force reflow to restart animation
+    flipEl.classList.add('playing')
+    flipEl.addEventListener('animationend', () => flipEl.classList.remove('playing'), { once: true })
+  }
+
+  const lp = document.getElementById('left-page')
+  lp.style.transition = 'opacity .3s,transform .3s'
+  lp.style.opacity    = '0'
+  lp.style.transform  = 'translateX(-8px)'
+  setTimeout(() => {
+    nodeId = nextId
+    render()
+    lp.style.opacity   = '1'
+    lp.style.transform = 'translateX(0)'
+    window.scrollTo({ top:0, behavior:'smooth' })
+  }, 320)
+}
+
+// ── Render ───────────────────────────────────────
+function render() {
+  const node = NODES[nodeId]
+  if (!node) {
+    document.getElementById('story-text').textContent = 'Error: node "' + nodeId + '" not found.'
+    return
+  }
+  if (node.sysMsg) showSysOverlay(node.sysMsg)
+
+  const stEl = document.getElementById('story-text')
+  stEl.textContent = node.text || ''
+  stEl.className   = nodeId === 'opening' ? 'story-text drop-cap' : 'story-text'
+
+  // Watcher image — teaser on pre_boss nodes, full on boss node
+  const watcherNodes = ['pre_boss_team','pre_boss_solo','pre_boss_betray','pre_boss_check','boss']
+  const watcherImg   = document.getElementById('watcher-img')
+  if (watcherNodes.includes(nodeId)) {
+    if (!watcherImg) {
+      const img = document.createElement('img')
+      img.id    = 'watcher-img'
+      img.src   = '../assets/boss/the_watcher.png'
+      img.alt   = 'The Watcher'
+      img.style.cssText = 'width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:' + (nodeId==='boss'?'none':'brightness(.7) saturate(0.6)')
+      document.getElementById('story-text').insertAdjacentElement('afterend', img)
+      setTimeout(() => img.style.opacity = '1', 100)
+    } else {
+      watcherImg.style.filter = nodeId==='boss' ? 'none' : 'brightness(.7) saturate(0.6)'
+      watcherImg.style.opacity = '1'
+    }
+  } else {
+    if (watcherImg) watcherImg.remove()
+  }
+
+  const ob = document.getElementById('outcome-box')
+  if (outcome && nodeId === 'search_deeper') {
+    ob.style.display = 'block'
+    ob.textContent   = outcome==='team'   ? 'You made a choice to be human first.'
+      : outcome==='attack' ? 'The System recorded it. Reputation: Red.'
+      : 'You watched. You learned. You moved on.'
+  } else { ob.style.display = 'none' }
+
+  const panel = document.getElementById('right-panel')
+  if      (node.type === 'boss')         renderBoss(panel, node)
+  else if (node.type === 'combat')       renderCombat(panel, node)
+  else if (node.type === 'end')          renderEnd(panel, node)
+  else if (node.type === 'location_hub') renderLocationHub(panel, node)
+  else if (nodeId === 'district_hub')    renderDistrictHub(panel)
+  else                                   renderChoices(panel, node)
+}
+
+// ── District hub — checks guardian progress, routes to plaza when all 3 done ──
+function renderDistrictHub(panel) {
+  const defeated  = getDefeatedBosses()
+  const sentinel  = defeated.includes('sentinel')
+  const surveyor  = defeated.includes('surveyor')
+  const unseen    = defeated.includes('unseen')
+  const allDone   = sentinel && surveyor && unseen
+  const ch1Done   = (player.chapters_unlocked||[]).includes(2)
+
+  const stEl = document.getElementById('story-text')
+
+  // Always show zone cards — farming is always available for cleared zones
+  if (stEl) stEl.textContent = allDone
+    ? `The district is clear. All three guardians defeated.
+
+The zones remain accessible for farming — enemies respawn, loot cycles continue. Your interface marks each cleared zone as open.
+
+${ch1Done ? 'Chapter 1 is complete. You can replay the Watcher from the plaza, or farm here.' : 'The Watcher awaits in the plaza. Clear the zones or go face it.'}`
+    : `You return to the plaza center.
+
+The barrier is still up. You can feel where it gives — and where it doesn't.
+
+Your interface shows the district status. Not all zones are clear.
+
+The Watcher won't show itself until every guardian is defeated.`
+
+  const zones = [
+    { id: 'loc_garage', bossKey: 'sentinel', introNode: 'garage_approach', name: 'Parking Garage',  guardian: 'Sentinel of the First Eye', icon: '🅿️', color: '#5ec45e', done: sentinel },
+    { id: 'loc_market', bossKey: 'surveyor', introNode: 'market_approach', name: 'Frozen Market',   guardian: 'The Surveyor',               icon: '🏪', color: '#c8b96e', done: surveyor },
+    { id: 'loc_tower',  bossKey: 'unseen',   introNode: 'tower_approach',  name: 'Glass Tower',     guardian: 'The Unseen',                 icon: '🏢', color: '#e05555', done: unseen  },
+  ]
+
+  panel.innerHTML = `
+    <p class="choices-label">District Zones</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+      ${zones.map(z => z.done ? `
+        <div onclick="enterZoneFromHub('${z.id}')" style="border:.5px solid ${z.color}50;border-radius:5px;padding:.65rem .75rem;background:${z.color}10;cursor:pointer;transition:all .2s"
+          onmouseover="this.style.background='${z.color}20'" onmouseout="this.style.background='${z.color}10'">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:1rem">${z.icon}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${z.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:${z.color};margin-left:auto">✓ FARM</span>
+          </div>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:var(--ink-dim);margin:3px 0 0">${z.guardian} — defeated. Tap to farm.</p>
+        </div>
+      ` : `
+        <div onclick="goTo('${z.introNode}')" style="border:.5px solid rgba(224,85,85,.4);border-radius:5px;padding:.65rem .75rem;background:rgba(80,20,20,.08);cursor:pointer;transition:all .2s"
+          onmouseover="this.style.background='rgba(80,20,20,.15)'" onmouseout="this.style.background='rgba(80,20,20,.08)'">
+          <div style="display:flex;align-items:center;gap:.5rem">
+            <span style="font-size:1rem">${z.icon}</span>
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:#7a4040">${z.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#e07070;border:.5px solid rgba(224,85,85,.3);padding:1px 6px;border-radius:12px;margin-left:auto">🔒 GUARDIAN ACTIVE</span>
+          </div>
+          <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:#8a5050;margin:3px 0 0">${z.guardian} — must be defeated to proceed.</p>
+        </div>
+      `).join('')}
+    </div>
+    ${allDone ? `
+      <div style="border-top:.5px solid rgba(139,106,32,.2);padding-top:.75rem">
+        <button class="choice" onclick="goTo('plaza_allies')" style="width:100%">
+          <span class="choice-arrow">→</span>
+          <span class="choice-body">Move to the plaza
+            <span class="choice-sub">${ch1Done ? 'Replay the Watcher encounter' : 'Face the Watcher — Chapter 1 finale'}</span>
+          </span>
+        </button>
+      </div>` : ''}
+  `
+}
+
+// ── Zone guardian mapping ─────────────────────────
+
+function isZoneUnlocked(locId) {
+  const g = ZONE_GUARDIANS[locId]
+  if (!g) return true
+  const defeated = getDefeatedBosses()
+  return defeated.includes(g.bossKey)
+}
+
+// ── Enter a cleared zone directly from the district hub ──
+window.enterZoneFromHub = function(locId) {
+  // Set up farming context using the farming_hub node locations
+  const farmNode = NODES['farming_hub']
+  if (!farmNode) return
+  window._farmingLocations  = farmNode.locations
+  window._farmingReturnNode = 'district_hub'
+  const loc = farmNode.locations.find(l => l.id === locId)
+  if (!loc) return
+  window._currentFarmLoc = loc
+  renderFarmZone(document.getElementById('right-panel'), loc)
+}
+
+// ── Location hub ─────────────────────────────────
+function renderLocationHub(panel, node) {
+  window._farmingLocations = node.locations
+  window._farmingReturnNode = node.returnNode
+
+  panel.innerHTML = `
+    <p class="choices-label">Choose a Zone</p>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
+      ${node.locations.map(loc => {
+        const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.png','loc_market':'../assets/zones/zone_frozen_market.png','loc_tower':'../assets/zones/zone_glass_tower.png'}
+        const zImg = zMap[loc.id]
+        const unlocked = isZoneUnlocked(loc.id)
+        const guardian = ZONE_GUARDIANS[loc.id]
+        if (unlocked) {
+          return `
+          <div onclick="enterLocation('${loc.id}')"
+            style="border:.5px solid ${loc.color}50;border-radius:5px;overflow:hidden;cursor:pointer;transition:all .2s;background:${loc.color}10">
+            ${zImg ? `<div style="width:100%;height:80px;background:url('${zImg}') center/cover;opacity:.8"></div>` : ''}
+            <div style="padding:.65rem .75rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:3px">
+                <span style="font-size:1rem">${loc.icon}</span>
+                <span style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--ink);font-weight:500">${loc.name}</span>
+                <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:${loc.color};border:.5px solid ${loc.color}50;padding:1px 6px;border-radius:12px;margin-left:auto">${loc.level}</span>
+              </div>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin:0">${loc.desc}</p>
+            </div>
+          </div>`
+        } else {
+          return `
+          <div onclick="goTo('${guardian.introNode}')"
+            style="border:.5px solid rgba(160,80,80,.4);border-radius:5px;overflow:hidden;cursor:pointer;transition:all .2s;background:rgba(80,20,20,.08);position:relative">
+            ${zImg ? `<div style="width:100%;height:80px;background:url('${zImg}') center/cover;opacity:.35;filter:grayscale(1)"></div>` : ''}
+            <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(10,5,5,.45)">
+              <div style="text-align:center">
+                <div style="font-size:1.4rem;margin-bottom:2px">${guardian.icon}</div>
+                <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#e07070;letter-spacing:.08em">ZONE LOCKED</p>
+                <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#c09090;margin-top:2px">${guardian.name}</p>
+              </div>
+            </div>
+            <div style="padding:.65rem .75rem">
+              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:3px">
+                <span style="font-size:1rem;opacity:.4">${loc.icon}</span>
+                <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#7a5555;font-weight:500">${loc.name}</span>
+                <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a06060;border:.5px solid rgba(160,80,80,.3);padding:1px 6px;border-radius:12px;margin-left:auto">🔒 ${loc.level}</span>
+              </div>
+              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#8a6060;margin:0">Defeat the guardian to unlock this zone.</p>
+            </div>
+          </div>`
+        }
+      }).join('')}
+    </div>
+    <button class="choice" onclick="goTo('district_hub')" style="width:100%;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
+      <span class="choice-arrow">→</span>
+      <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:1rem;color:#3a2e15">Return to main story</span>
+    </button>
+  `
+}
+
+window.enterLocation = function(locId) {
+  if (!isZoneUnlocked(locId)) {
+    const g = ZONE_GUARDIANS[locId]
+    if (g) goTo(g.introNode)
+    return
+  }
+  const loc = (window._farmingLocations||[]).find(l => l.id === locId)
+  if (!loc) return
+  window._currentFarmLoc = loc
+  renderFarmZone(document.getElementById('right-panel'), loc)
+}
+
+function renderFarmZone(panel, loc) {
+  const zoneImgs = {
+    'loc_garage': '../assets/zones/zone_parking_garage.png',
+    'loc_market': '../assets/zones/zone_frozen_market.png',
+    'loc_tower':  '../assets/zones/zone_glass_tower.png',
+  }
+  const zoneImg = zoneImgs[loc.id]
+
+  panel.innerHTML = `
+    ${zoneImg ? `<div style="width:100%;height:110px;background:url('${zoneImg}') center/cover;border-radius:6px;margin-bottom:.75rem;opacity:.85;border:.5px solid rgba(139,106,32,.3)"></div>` : ''}
+    <p class="choices-label">${loc.icon} ${loc.name} — <span style="color:${loc.color}">${loc.level}</span></p>
+    <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.75rem">
+      Enemies respawn indefinitely. Fight as many times as you need.
+    </p>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem">
+      ${loc.enemies.map((e,i) => {
+        const drops = e.loot.map(l => {
+          const pct = Math.round(l.chance * 100)
+          const label = l.itemKey.replace('rune_','').replace(/_/g,' ')
+          return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">${label} ${pct}%</span>`
+        }).join(' · ')
+        const eImgs = {
+          'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+          'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+          'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+          'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+          'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+          'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+          'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+          'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+          "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+          'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+          'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+          'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+          'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+          'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+          'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+          'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+          'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+          'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+          'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+          'Dorian':                 '../assets/npc/dorian_normal.png',
+          'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+          "Watcher's Eye":          '../assets/boss/watcher_eye.png',
+          "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.png',
+          'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.png',
+          'The Surveyor':           '../assets/boss/the_surveyor.png',
+          'The Unseen':             '../assets/boss/the_unseen.png',
+        }
+        const eImg = eImgs[e.name]
+        return `<div onclick="fightFarmEnemy(${i})"
+          style="border:.5px solid rgba(139,106,32,.25);border-radius:4px;padding:.6rem .75rem;cursor:pointer;transition:all .15s;background:rgba(0,0,0,.04)"
+          onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background='rgba(0,0,0,.04)'">
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:3px">
+            ${eImg ? `<img src="${eImg}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(0,0,0,.5))">` : `<span style="font-size:1.1rem">${e.icon}</span>`}
+            <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${e.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin-left:auto">HP ${e.hp} · ATK ${e.atk} · ${e.xp} XP</span>
+          </div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap">${drops}</div>
+        </div>`
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="choice" onclick="returnToZoneHub()" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
+        <span class="choice-arrow">←</span>
+        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Back to zones</span>
+      </button>
+      <button class="choice" onclick="goTo('district_hub')" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
+        <span class="choice-arrow">→</span>
+        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Return to story</span>
+      </button>
+    </div>
+  `
+}
+
+window.fightFarmEnemy = function(enemyIndex) {
+  const loc   = window._currentFarmLoc
+  if (!loc) return
+  const enemy = { ...loc.enemies[enemyIndex] }
+  const panel = document.getElementById('right-panel')
+  buildCombatUI(panel, enemy, '__farm_win__', '__farm_zone__', '__farm_zone__', false, null, loc, enemyIndex)
+}
+
+// ── Choices ──────────────────────────────────────
+function renderChoices(panel, node) {
+  const insight = player.insight || 0
+  // Filter choices: show hidden ones only if player has enough Insight
+  const visibleChoices = (node.choices||[]).filter(c => !c.insightRequired || insight >= c.insightRequired)
+  const hiddenChoices  = (node.choices||[]).filter(c => c.insightRequired && insight < c.insightRequired)
+
+  panel.innerHTML = `
+    <p class="choices-label">What do you do?</p>
+    <div class="choices">
+      ${visibleChoices.map(c => `
+        <button class="choice ${c.variant||''}"
+          data-next="${c.next}"
+          data-outcome="${c.outcome||''}"
+          data-bossmode="${c.bossMode||''}"
+          data-moral="${c.moral||0}">
+          <span class="choice-arrow">→</span>
+          <span class="choice-body">
+            ${c.label}
+            ${c.sub ? '<span class="choice-sub">'+c.sub+'</span>' : ''}
+          </span>
+        </button>
+      `).join('')}
+      ${hiddenChoices.map(c => `
+        <div class="choice locked" title="Requires Insight ${c.insightRequired}">
+          <span class="choice-arrow" style="color:#555">→</span>
+          <span class="choice-body" style="color:#888">
+            [INSIGHT ${c.insightRequired} REQUIRED]
+            <span class="choice-sub">Equip items with Insight to unlock hidden paths</span>
+          </span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#ffd700">⚡ INS</span>
+        </div>
+      `).join('')}
+    </div>
+  `
+  panel.querySelectorAll('.choice').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const moralVal = parseFloat(btn.dataset.moral) || 0
+      goTo(btn.dataset.next, { outcome: btn.dataset.outcome||null, bossMode: btn.dataset.bossmode||null, moral: moralVal || null })
+    })
+  })
+}
+
+// ── End screen ───────────────────────────────────
+function renderEnd(panel, node) {
+  const moral   = player.moral_score || 0
+  const badge   = player.badge || 'neutral'
+  const defeated = getDefeatedBosses()
+
+  // ── Dynamic ending text based on moral score ─────
+  const morality = moral >= 60 ? 'hero'
+    : moral >= 20 ? 'good'
+    : moral >= -20 ? 'neutral'
+    : moral >= -60 ? 'ruthless'
+    : 'villain'
+
+  const watcherVerdict = {
+    hero:     `THE WATCHER SEES ALL.\n\nAnd what it sees — it did not expect.\n\nA player who helped. Who stayed. Who chose the harder thing when the easier thing was right there.\n\nThe System was designed to test. It was not designed to be moved. But something in the Watcher's dissolution carries the weight of acknowledgment.`,
+    good:     `THE WATCHER SEES ALL.\n\nIt looked through every choice you made in this city. Found more light than shadow.\n\nNot perfect. But honest. And in a game built to reveal what people become under pressure — honest is rarer than it sounds.`,
+    neutral:  `THE WATCHER SEES ALL.\n\nIt saw both. The moments you chose to help and the moments you didn't. The lines you held and the ones you let slide.\n\nIt registers this as: inconclusive. The most human verdict it could give.`,
+    ruthless: `THE WATCHER SEES ALL.\n\nIt saw the pattern before you did. The way efficiency became the excuse. The way pragmatism slowly stopped needing justification.\n\nIt does not condemn. It records. That might be worse.`,
+    villain:  `THE WATCHER SEES ALL.\n\nAnd what it sees does not surprise it. The System was designed to find out what players do when no one is watching.\n\nSomething was watching. Something always was.`,
+  }[morality]
+
+  const allyScatter = `The plaza is still.
+
+Then, slowly, the frozen world begins to move again. One car. One pedestrian. A pigeon completes its flight. The wind returns.
+
+People stumble, confused. They don't know what happened. To them, no time passed.
+
+The people who stood with you in the plaza — they feel it first. The moment the game releases them.
+
+Marcus looks at his hands. Then at you. Then he turns and walks north, toward whatever the unfrozen city holds. His badge: steady. NEUTRAL. Chosen, not assigned.
+
+Lena is already organizing. The market will need restocking. People will be hungry and confused. She has a list started before the first person on the street has taken their second step.
+
+Kai closes their interface notes. Looks at the sky where the crack was. "I'll need to write all of this down," they say, to no one in particular. Then they're gone.
+
+Rhen disappears last. Or you think they do. There's a moment where they're there — NEUTRAL badge, clear eyes — and then the crowd fills in around them and they're just gone. Like they were always just passing through.
+
+Gio stands at the edge of the plaza the longest. He's looking at the market district. Something in his expression that might be a decision forming.
+
+Yara finds you in the crowd.
+
+"Well," she says.
+
+"Well," you say.
+
+She looks at the city opening back up around you — the noise returning, the motion, the smell of coffee from a shop that's already resuming where it left off.
+
+"Chapter 2," she says.
+
+Not a question.`
+
+  const systemText = `Your interface pulses once. A message appears in letters that feel less like text and more like something carved:
+
+CHAPTER 1 COMPLETE.
+REPUTATION RECORDED: ${morality.toUpperCase()}.
+
+Below that, quieter, almost intimate:
+
+Your evolution is being calculated.
+
+You look at your hands. Same hands. Different player.
+
+Chapter 2 is waiting.`
+
+  const fullText = `The Watcher shatters.
+
+Not with violence — with silence. Like a mirror falling in a dream, breaking without sound. The eye closes. The crack in the sky seals itself with threads of pale light.
+
+${watcherVerdict}
+
+${allyScatter}
+
+${systemText}`
+
+  document.getElementById('story-text').textContent = fullText
+
+  // ── Moral verdict color ────────────────────────
+  const mColor = moral >= 60 ? '#a0d0ff'
+    : moral >= 20 ? '#c8e8a0'
+    : moral >= -20 ? '#c8b96e'
+    : moral >= -60 ? '#e07a40'
+    : '#e05555'
+  const mLabel = morality.toUpperCase()
+
+  panel.innerHTML = `
+    <div class="end-box">
+      <p class="end-title">Chapter 1 Complete</p>
+      <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:2px">REPUTATION RECORDED</p>
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${mLabel}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);margin-top:2px">Moral score: ${moral > 0 ? '+' : ''}${moral}</p>
+      </div>
+      <p class="end-sub" style="margin-bottom:.75rem">The Watcher has been defeated.<br>The Eyes have scattered across every road out of the city.</p>
+      <button class="end-btn" id="continue-btn" style="display:block;margin-bottom:.75rem;width:100%">Continue ›</button>
+      <button class="end-btn" id="restart-btn" style="font-size:.8rem;opacity:.7">↺ Replay Chapter 1</button>
+    </div>
+  `
+
+  // ── Post-Watcher garage story beats ────────────────
+  const GARAGE_BEATS = [
+    {
+      title: 'The Eyes Scatter',
+      text: `The moment the Watcher's eye closes for the last time, something happens across the city that you feel before you see it.
+
+A sound — not quite a sound — like a signal cut. A frequency you didn't know you were hearing until it stops.
+
+Then the sky cracks open in twenty places at once.
+
+Not darkness. Light. Pale, pupil-shaped, wrong-colored light. And out of each crack — Eyes. Hundreds of them. Small ones, large ones, the slow-drifting kind and the kind that move like thrown knives.
+
+The Watcher is gone. Its fragments are still here.
+
+They disperse in every direction. Into the roads. Into the tunnels. Into the arteries of every route out of this city.
+
+Your interface updates with a warning you didn't ask for:
+
+WATCHER FRAGMENTS DETECTED ON ALL OUTBOUND ROUTES.
+TRAVEL ON FOOT: NOT RECOMMENDED.`
+    },
+    {
+      title: 'The Garage',
+      text: `Yara finds you before you've finished reading the warning.
+
+"I know what you're looking at," she says. She's already walking. "Come on."
+
+She leads you north — back through the plaza, past the fountain where the Watcher's light still lingers in the stone, down a maintenance corridor you didn't notice before. A door at the end. Heavy. Industrial. Painted over three times.
+
+She opens it.
+
+Inside: three vehicles. A motorcycle. A car. A van. Each one modified — armor plating, weapon mounts, components you don't recognize but can feel the purpose of.
+
+"The System flagged these as abandoned assets when the city froze," Yara says. "Technically they belong to the city now. Which means they belong to whoever the city decides needs them."
+
+She looks at you.
+
+"The city has decided."
+
+Your interface processes the transfer. The registration flickers. The vehicles' ownership data rewrites itself — three times, one after another.
+
+They're yours now. Permanently.`
+    },
+    {
+      title: 'The Road Ahead',
+      text: `"The Eyes are thickest on the roads between here and Chapter 2," Yara says, running her hand along the van's modified hood. "But they're not organized anymore. No Watcher to coordinate them. They're fragments — dangerous, but aimless."
+
+She hands you a set of three keys.
+
+"Pick your vehicle. Upgrade it with whatever you've got. The scrap metal, the flashlights, the parts you've been carrying — they're exactly what these machines need."
+
+She looks at the door behind you.
+
+"The other chapters are out there. Other parts of the System. Other players who never made it past their own Watchers — or who serve the ones still standing."
+
+A pause.
+
+"Get to Chapter 2. Whatever you find there — you'll be better prepared than you think."
+
+She leaves without ceremony. That's Yara's style.
+
+Your interface shows three vehicle profiles waiting for configuration.
+
+The garage is yours.`
+    },
+  ]
+
+  let beatIdx = 0
+
+  function showGarageBeat() {
+    const beat = GARAGE_BEATS[beatIdx]
+    const isLast = beatIdx === GARAGE_BEATS.length - 1
+    panel.innerHTML = `
+      <div class="end-box">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
+        <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
+        <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#c8b96e;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
+        <button class="end-btn" id="beat-btn" style="display:block;width:100%">
+          ${isLast ? '🔧 Enter Garage ›' : 'Continue ›'}
+        </button>
+      </div>`
+    document.getElementById('beat-btn').addEventListener('click', () => {
+      if (isLast) {
+        window.location.href = 'garage.html?dest=2'
+      } else {
+        beatIdx++
+        showGarageBeat()
+      }
+    })
+  }
+
+  document.getElementById('continue-btn').addEventListener('click', () => {
+    showGarageBeat()
+  })
+
+  document.getElementById('restart-btn').addEventListener('click', async () => {
+    await supabase.from('players').update({ current_node:'ch1_opening' }).eq('id', player.id)
+    player.current_node = 'ch1_opening'
+    currentHp = player.hp
+    outcome   = null
+    bossMode  = 'solo'
+    nodeId    = 'opening'
+    render()
+    window.scrollTo({ top:0, behavior:'smooth' })
+  })
+}
+
+// ── Generic combat (for story encounters) ────────
+function renderCombat(panel, node) {
+  // dorianLurking: true means Dorian backstabs player every 2 turns from the shadows.
+  // Suppressed if player already defeated Dorian (window._dorianDefeated set on that path).
+  const opts = {
+    dorianLurking: node.dorianLurking && !window._dorianDefeated,
+    sentinelAoe:   node.sentinelAoe   && !window._dorianDefeated,
+  }
+  if (node.video) {
+    playCombatCinematic(node.video, () => buildCombatUI(panel, node.enemy, node.onWin, node.onLose, node.onEscape, false, null, null, null, opts))
+  } else {
+    buildCombatUI(panel, node.enemy, node.onWin, node.onLose, node.onEscape, false, null, null, null, opts)
+  }
+}
+
+// ── Boss cinematic video overlay ──────────────────
+function playCombatCinematic(src, onDone) {
+  document.getElementById('cinematic-overlay')?.remove()
+
+  const overlay = document.createElement('div')
+  overlay.id = 'cinematic-overlay'
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s;'
+  overlay.innerHTML = `
+    <div style="position:relative;width:min(860px,92vw);max-height:80vh;aspect-ratio:16/9;background:#000">
+      <video id="cinematic-video"
+        src="${src}"
+        autoplay playsinline muted
+        style="width:100%;height:100%;object-fit:contain;display:block;">
+      </video>
+      <div id="cinematic-skip" style="
+        position:absolute;bottom:1rem;right:1rem;z-index:1;
+        font-family:'JetBrains Mono',monospace;font-size:.55rem;
+        color:rgba(200,184,128,.7);letter-spacing:.08em;cursor:pointer;
+        padding:4px 10px;border:.5px solid rgba(200,184,128,.3);
+        background:rgba(0,0,0,.5);
+      ">skip ›</div>
+    </div>
+  `
+  document.body.appendChild(overlay)
+
+  requestAnimationFrame(() => requestAnimationFrame(() => overlay.style.opacity = '1'))
+
+  function endCinematic() {
+    overlay.style.opacity = '0'
+    setTimeout(() => { overlay.remove(); onDone() }, 650)
+  }
+
+  const video = overlay.querySelector('#cinematic-video')
+  video.addEventListener('ended', endCinematic)
+  video.addEventListener('error', endCinematic)
+  overlay.querySelector('#cinematic-skip').addEventListener('click', endCinematic)
+}
+
+// ── Boss combat ───────────────────────────────────
+function renderBoss(panel, node) {
+  // Scale Watcher to player level — always a real challenge
+  const lvl    = player.level || 1
+  const enemy  = { ...node.enemy }
+  if (bossMode === 'solo')   enemy.hp = 200 + lvl * 25
+  if (bossMode === 'team')   enemy.hp = 260 + lvl * 25
+  if (bossMode === 'betray') enemy.hp = 280 + lvl * 30
+  enemy.atk = node.enemy.atk + Math.floor(lvl * 1.2)
+
+  // Yara joins as NPC ally in team mode
+  const yara = bossMode === 'team' ? {
+    name: 'Yara',
+    hp: 80 + lvl * 10,
+    maxHp: 80 + lvl * 10,
+    atk: 6 + Math.floor(lvl * 0.8),
+    def: 4 + Math.floor(lvl * 0.5),
+    alive: true
+  } : null
+
+  const doBuild = () => buildCombatUI(panel, enemy, 'chapter_end', 'pre_boss_check', 'pre_boss_check', true, yara)
+
+  if (node.video) {
+    playCombatCinematic(node.video, doBuild)
+  } else {
+    doBuild()
+  }
+}
+
+// ── Shared combat UI builder ──────────────────────
+function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = null, farmLoc = null, farmIdx = null, opts = {}) {
+  // Unique namespace so multiple combat instances never share DOM IDs
+  const cid = 'cb' + Math.random().toString(36).slice(2, 7)
+  const $ = id => panel.querySelector('#' + cid + '-' + id)
+
+  // ── Dorian lurk + Sentinel AoE options ───────────────────
+  const dorianLurking  = opts.dorianLurking || false   // Dorian backstabs every 2 turns
+  const sentinelAoe    = opts.sentinelAoe   || false   // Void Sentinel hits both every 4 turns
+  let   dorianLurkHp   = 40   // Dorian's shadow HP — Sentinel AoE chips him down too
+  let   dorianLurkTurn = 0    // tracks turns for backstab cadence
+
+  let enemyHp      = enemy.hp
+  const maxEnemyHp  = enemy.hp
+  const maxPlayerHp = player.max_hp || 100
+  let over = false
+
+  // Cache equipped items for derived stat calculations
+  ;(async () => {
+    const { data } = await supabase.from('inventory').select('*')
+      .eq('player_id', player.id).not('equipped_slot', 'is', null)
+    window._equippedItems = data || []
+  })()
+
+  panel.innerHTML = `
+    <div class="combat-panel" id="${cid}-combat-wrap">
+      <div class="combat-enemy-row">
+        ${(()=>{
+          const EIMGS = {
+            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+            'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+            'Dorian':                 '../assets/npc/dorian_normal.png',
+            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+            "Watcher's Eye":              '../assets/boss/watcher_eye.png',
+            "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.png',
+            'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.png',
+            'The Surveyor':               '../assets/boss/the_surveyor.png',
+            'The Unseen':                 '../assets/boss/the_unseen.png',
+          }
+          if (isBoss) return '<img src=\'../assets/boss/the_watcher.png\' alt=\'The Watcher\' style=\'width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
+          const src = EIMGS[enemy.name]
+          if (src) return `<img src="${src}" alt="${enemy.name}" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
+          return `<span class="combat-enemy-icon">${enemy.icon}</span>`
+        })()}
+        <div style="flex:1">
+          <p class="combat-enemy-name">${enemy.name}</p>
+          <div class="stat-bar-wrap">
+            <div class="stat-bar" id="${cid}-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div>
+          </div>
+          <p id="${cid}-e-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">${enemyHp} / ${maxEnemyHp} HP</p>
+        </div>
+      </div>
+      <div class="combat-log" id="${cid}-combat-log">${isBoss ? 'The eye opens. It sees everything.' : 'The encounter begins.'}</div>
+      <div class="stat-row" style="margin-bottom:.4rem">
+        <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar" id="${cid}-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div>
+        </div>
+        <span id="${cid}-c-player-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">${currentHp}/${maxPlayerHp}</span>
+      </div>
+      ${yara ? `
+      <div class="stat-row" style="margin-bottom:${dorianLurking ? '.3rem' : '1rem'}">
+        <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5ec45e">YARA</span>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar" id="${cid}-c-yara-bar" style="background:#5eaee0;width:100%;transition:width .4s,background .4s"></div>
+        </div>
+        <span id="${cid}-c-yara-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5eaee0;min-width:50px;text-align:right">${yara.hp}/${yara.maxHp}</span>
+      </div>` : (dorianLurking ? '' : '<div style="margin-bottom:1rem"></div>')}
+      ${dorianLurking ? `
+      <div class="stat-row" style="margin-bottom:1rem">
+        <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e05555">DORIAN</span>
+        <div class="stat-bar-wrap">
+          <div class="stat-bar" id="${cid}-c-dorian-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div>
+        </div>
+        <span id="${cid}-c-dorian-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e05555;min-width:50px;text-align:right">?? / 40</span>
+      </div>` : ''}
+      <div id="${cid}-combat-actions">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>
+
+        <!-- Basic actions always visible -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">
+          <button class="combat-btn" id="${cid}-btn-strike"
+            style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
+            title="Fast attack. Always goes first.">
+            <span style="font-size:1.1rem;line-height:1">⚔</span>
+            <span>Strike</span>
+            <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">FAST · FIRST</span>
+          </button>
+          <button class="combat-btn" id="${cid}-btn-heavy"
+            style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
+            title="Heavy blow. High damage but slower.">
+            <span style="font-size:1.1rem;line-height:1">💥</span>
+            <span>Heavy</span>
+            <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">HIGH DMG · SLOW</span>
+          </button>
+          <button class="combat-btn" id="${cid}-btn-defend"
+            style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
+            title="Halve incoming damage this turn. Always acts first.">
+            <span style="font-size:1.1rem;line-height:1">🛡</span>
+            <span>Defend</span>
+            <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">BLOCK · FIRST</span>
+          </button>
+        </div>
+
+        <!-- Skills — rendered dynamically, same visual weight as basic actions -->
+        <div id="${cid}-skill-slots-row" style="margin-bottom:4px"></div>
+
+        <!-- Utility row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+          <button class="combat-btn" id="${cid}-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>
+          <button class="combat-btn" id="${cid}-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>
+        </div>
+      </div>
+      <div id="${cid}-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05);animation:fadeIn .2s ease">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>
+        <div id="${cid}-items-list"></div>
+        <button onclick="document.getElementById('${cid}-items-panel').style.display='none'" style="font-family:'IM Fell English',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>
+      </div>
+      <div id="${cid}-combat-over" style="display:none;text-align:center;padding:.5rem"></div>
+    </div>
+  `
+
+  function syncBars() {
+    const ePct = Math.max(0, Math.round(enemyHp  / maxEnemyHp  * 100))
+    const pPct = Math.max(0, Math.round(currentHp / maxPlayerHp * 100))
+    const eBar = $('e-bar')
+    const eHp  = $('e-hp')
+    const pBar = $('c-player-bar')
+    const pHp  = $('c-player-hp')
+    if (eBar) { eBar.style.width = ePct+'%'; eBar.style.background = ePct>50?'#e05555':'#c8b96e' }
+    if (eHp)  eHp.textContent = enemyHp+' / '+maxEnemyHp+' HP'
+    if (pBar) { pBar.style.width = pPct+'%'; pBar.style.background = pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555' }
+    if (pHp)  pHp.textContent = currentHp+'/'+maxPlayerHp
+    updateHpBar(currentHp)
+    if (yara) {
+      const yPct  = Math.max(0, Math.round(yara.hp / yara.maxHp * 100))
+      const yBar  = $('c-yara-bar')
+      const yHpEl = $('c-yara-hp')
+      if (yBar)  { yBar.style.width = yPct+'%'; yBar.style.background = yPct>50?'#5eaee0':'#c8b96e' }
+      if (yHpEl) yHpEl.textContent = yara.hp+'/'+yara.maxHp
+    }
+    if (dorianLurking) {
+      const dPct  = Math.max(0, Math.round(dorianLurkHp / 40 * 100))
+      const dBar  = $('c-dorian-bar')
+      const dHpEl = $('c-dorian-hp')
+      if (dBar)  { dBar.style.width = dPct+'%'; dBar.style.background = dPct > 30 ? '#e05555' : '#7a3030' }
+      if (dHpEl) dHpEl.textContent = dorianLurkHp > 0 ? '?? / 40' : 'DOWN'
+    }
+  }
+
+  function log(msg, turnInfo) {
+    const el = $('combat-log')
+    if (el) el.innerHTML = (turnInfo
+      ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:#a08858;letter-spacing:.06em;display:block;margin-bottom:2px">' + turnInfo + '</span>'
+      : '') + msg
+  }
+
+  function shake() {
+    const w = $('combat-wrap')
+    if(!w) return
+    w.classList.add('animate-shake')
+    setTimeout(()=>w.classList.remove('animate-shake'),400)
+  }
+
+  async function endCombat(result) {
+    if (over) return
+    over = true
+    const actions = $('combat-actions')
+    const overEl  = $('combat-over')
+    if (actions) actions.style.display = 'none'
+
+    // ── Record passive battle counts on any win ───────────
+    if (result === 'win') {
+      const unlocked = player.skills_unlocked || []
+      const inBattle = player.battle_skills   || []
+
+      // Elemental passives
+      const EL_PASSIVES = [
+        'darkness_passive_backstab','fire_passive_burn','lightning_passive_chain_damage',
+        'wind_passive_dodge','earth_passive_damage_reduction','water_passive_regen','metal_passive_reflect',
+      ]
+      // Notable passives — both old and new key variants
+      const NOTABLE_PASSIVES = [
+        'ofn2','ofn3','dfn1','dfn2','dfn3','dfn5','fln1','fln2','fln4','fln5',
+        'arn1','arn3','arn4','arn5','dcn2','dcn4','dcn5','dc_ks2',
+        'an2','an3','dn1','dn2','dn3','dn5','gn1','gn2','gn4','gn5',
+        'mn1','mn3','mn4','mn5','dkn1','pln2','dkn2',
+      ]
+      const T = [0,10,25,50,90,150,240,380,590,900]
+      const sl = player.skill_levels || {}
+      let leveledUp = []
+
+      const tickSkill = k => {
+        if (!sl[k]) sl[k] = { uses: 0 }
+        const prevLv = getSkillLevel(k)
+        sl[k].uses++
+        let newLv = 1
+        for (let i = 1; i < T.length; i++) { if (sl[k].uses >= T[i]) newLv = i+1; else break }
+        newLv = Math.min(10, newLv)
+        if (newLv > prevLv) leveledUp.push({ k, lv: newLv })
+      }
+
+      // Tick elemental passives if unlocked
+      EL_PASSIVES.filter(k => unlocked.includes(k)).forEach(tickSkill)
+      // Tick notable passives if in battle slots
+      NOTABLE_PASSIVES.filter(k => inBattle.includes(k)).forEach(tickSkill)
+
+      player.skill_levels = sl
+      await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
+      for (const { k, lv } of leveledUp) {
+        const sk = BATTLE_SKILLS[k] || NOTABLE_SKILLS[k]
+        showToast('✦ ' + (sk?.label || k) + ' passive reached Lv ' + lv + '!')
+      }
+
+      // Increment helps_given if this was an ally-assist fight
+      if (window._fightIsHelp) {
+        window._fightIsHelp = false
+        const newHelps = (player.helps_given || 0) + 1
+        player.helps_given = newHelps
+        const newBadge = calcBadge(player.moral_score, player.pvp_kills, newHelps, player.backstabs)
+        player.badge = newBadge
+        await supabase.from('players').update({ helps_given: newHelps, badge: newBadge, reputation: newBadge }).eq('id', player.id)
+      }
+    }
+
+    const isFarm   = onWin === '__farm_win__'
+    const isEyeFight = onWin === '__eye_win__'
+
+    // ── Eye encounter: call callback and show minimal result, then let overlay handle dismiss
+    if (isEyeFight && window._eyeEncounterCallback) {
+      const cb = window._eyeEncounterCallback
+      window._eyeEncounterCallback = null
+      window._inEyeEncounter = false
+      const resultLabel = result==='win' ? '✦ Eye Defeated ✦' : '✦ The Eye Retreats ✦'
+      const resultColor = result==='win' ? '#c8b96e' : '#e05555'
+      const resultMsg   = result==='win'
+        ? 'It dissolves in pale light. Somewhere above the clouds, something blinks. It will send more.'
+        : 'The eye rises back toward the crack in the sky, iris closing slowly. It was a test. You are still standing.'
+      if (overEl) {
+        overEl.style.display = 'block'
+        overEl.innerHTML = '<p style="font-family:Cinzel,serif;font-size:1rem;font-weight:600;color:'+resultColor+';letter-spacing:.1em;margin-bottom:.5rem">'+resultLabel+'</p>'
+          + '<p style="font-family:&quot;IM Fell English&quot;,serif;font-style:italic;font-size:.82rem;color:#c8b96e;line-height:1.55;margin-bottom:.6rem">'+resultMsg+'</p>'
+          + '<p style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.08em">Returning to your story\u2026</p>'
+      }
+      // Award XP for eye fight
+      const eyeXp  = result==='win' ? (enemy.xp || 80) : Math.floor((enemy.xp || 80) * 0.2)
+      const eyeXpOld = player.xp || 0
+      const eyeXpNew = eyeXpOld + eyeXp
+      const eyeOldLvl = player.level || 1
+      player.xp = eyeXpNew
+      const eyeLvlUp = await checkLevelUp(eyeXpOld, eyeXpNew, eyeOldLvl)
+      const eyeUpdates = { xp: eyeXpNew, hp: currentHp, ...(eyeLvlUp||{}) }
+      if (result==='win' && enemy.loot) for (const l of enemy.loot) await addItem(l.itemKey, l.qty)
+      await save(eyeUpdates)
+      cb(result)
+      return
+    }
+
+    if (overEl) {
+      overEl.style.display = 'block'
+      const resultLabel = result==='win' ? '✦ Victory ✦' : result==='escape' ? '✦ Escaped ✦' : '✦ Defeated ✦'
+
+      if (isFarm) {
+        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
+        overEl.innerHTML =
+          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
+          '<div style="display:flex;flex-direction:column;gap:4px">' +
+          '<button onclick="returnToZone()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Fight Again (same zone)</button>' +
+          '<button onclick="returnToZoneHub()" style="' + btnStyle + ';background:rgba(200,184,128,.25)">← Pick a Different Zone</button>' +
+          '<button onclick="returnToStory()" style="' + btnStyle + ';background:rgba(200,184,128,.12)">↩ Return to Story</button>' +
+          '</div>'
+      } else {
+        // Boss or story fight — show navigation buttons
+        const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
+        overEl.innerHTML =
+          '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
+          '<div style="display:flex;flex-direction:column;gap:4px">' +
+          (result === 'win' ? '' :
+            '<button onclick="returnToBoss()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Try Again</button>' +
+            '<button onclick="returnToZoneHub()" style="' + btnStyle + ';background:rgba(200,184,128,.25)">⚔ Go Farm XP</button>'
+          ) +
+          '<button onclick="returnToStory()" style="' + btnStyle + ';background:rgba(200,184,128,.12)">↩ Return to Story</button>' +
+          '</div>'
+      }
+    }
+
+    const oldXp  = player.xp || 0
+    const oldLvl = player.level || 1
+
+    if (result === 'win') {
+      const RUNE_POOL_COMMON = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
+      const RUNE_POOL_RARE   = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
+      const isHardEnemy      = (enemy.hp||0) > 60
+      const runeChance       = isBoss ? 1.0 : isHardEnemy ? 0.35 : 0.20
+      const runePool         = (isBoss || isHardEnemy) ? RUNE_POOL_RARE : RUNE_POOL_COMMON
+      const runeKey          = Math.random() < runeChance ? runePool[Math.floor(Math.random()*runePool.length)] : null
+
+      if (isFarm) {
+        // Farm: fire all DB saves in background — buttons already visible
+        const newXp = oldXp + (enemy.xp || 50)
+        player.xp = newXp
+        // Gold drop: 0-100 gold scaled by enemy difficulty
+        const goldMin  = Math.floor((enemy.hp || 20) * 0.1)
+        const goldMax  = Math.floor((enemy.hp || 20) * 0.8)
+        const goldDrop = Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin
+        const newGold  = (player.gold || 0) + goldDrop
+        player.gold = newGold
+        checkLevelUp(oldXp, newXp, oldLvl).then(lvlUp => {
+          save({ xp: newXp, hp: currentHp, gold: newGold, ...(lvlUp||{}) })
+        })
+        if (goldDrop > 0) queueLoot('◈ ' + goldDrop + ' Gold', 1, null)
+        if (enemy.loot) for (const l of enemy.loot) addItem(l.itemKey, l.qty)
+        if (runeKey) addItem(runeKey, 1)
+        if (farmLoc && farmLoc.enemies[farmIdx]) {
+          for (const drop of farmLoc.enemies[farmIdx].loot) {
+            if (Math.random() < drop.chance) addItem(drop.itemKey, 1)
+          }
+        }
+      } else {
+        // Story/boss: await saves then navigate
+        const newXp   = oldXp + (enemy.xp || 50)
+        const updates = { xp: newXp, hp: currentHp }
+        const lvlUp   = await checkLevelUp(oldXp, newXp, oldLvl)
+        if (lvlUp) Object.assign(updates, lvlUp)
+
+        // Zone guardian boss key — mark as defeated
+        const curNode = NODES[nodeId]
+        if (curNode && curNode.bossKey) {
+          const defeated = markBossDefeated(curNode.bossKey)
+          updates.defeated_bosses = defeated
+        }
+
+        if (isBoss) {
+          const unlocked = player.chapters_unlocked || [1]
+          if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
+          // ── 1 SP for boss kill — only once ever ──
+          const spKey = 'watcher_sp_claimed'
+          const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
+          const alreadyClaimed = currentDefeated.includes(spKey)
+          if (!alreadyClaimed) {
+            const merged = [...new Set([...currentDefeated, spKey])]
+            updates.defeated_bosses = merged
+            player.defeated_bosses  = merged
+            const ch1Bonus = 1
+            updates.skill_points = (player.skill_points || 0) + ch1Bonus
+            updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
+            player.skill_points  = updates.skill_points
+            player.sp_claimed    = updates.sp_claimed
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+          } else {
+            showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
+          }
+          // ── Watcher Item Set — rare drop (35% per piece) ──
+          await dropWatcherSet()
+        } else {
+          showToast('Victory! +' + (enemy.xp||50) + ' XP gained!')
+          // ── Zone guardian Watcher piece drops ──
+          const curBossKey = NODES[nodeId]?.bossKey
+          if (curBossKey === 'sentinel') {
+            if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_crown')
+          } else if (curBossKey === 'surveyor') {
+            if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_eye_ring')
+          } else if (curBossKey === 'unseen') {
+            if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_cloak')
+          }
+        }
+        // Gold drop for story fights (boss drops more)
+        const sGoldDrop = isBoss ? (Math.floor(Math.random() * 80) + 60) : (Math.floor(Math.random() * 40) + 5)
+        updates.gold = (player.gold || 0) + sGoldDrop
+        player.gold = updates.gold
+        if (updates.xp) player.xp = updates.xp
+        await save(updates)
+        if (sGoldDrop > 0) queueLoot('◈ ' + sGoldDrop + ' Gold', 1, null)
+        // Award guaranteed loot from boss node definition
+        if (enemy.loot) {
+          for (const l of enemy.loot) {
+            const result = await addItem(l.itemKey, l.qty)
+            // If core_fragment fails (not in items table), award a rune instead
+          }
+        }
+        if (runeKey) await addItem(runeKey, 1)
+        // Watcher death cinematic before navigating to end
+        if (isBoss) {
+          playCombatCinematic('../assets/video/the_watcher_dead.mp4', () => goTo(onWin))
+        } else {
+          setTimeout(() => goTo(onWin), 1200)
+        }
+      }
+    } else {
+      if (isBoss) {
+        // On boss defeat: fully restore HP and reset node so player isn't stuck
+        const fullHp = player.max_hp || 100
+        currentHp = fullHp
+        await save({ hp: fullHp, current_node: 'ch1_pre_boss_check' })
+        player.current_node = 'ch1_pre_boss_check'
+        renderHUD()
+        return
+      }
+      await save({ hp: Math.max(1, currentHp) })
+      setTimeout(() => {
+        const dest = result==='escape' ? onEscape : onLose
+        if (dest === '__farm_zone__') {
+          const p = document.getElementById('right-panel')
+          if (farmLoc && p) renderFarmZone(p, farmLoc)
+          else renderLocationHub(p, NODES['farming_hub'])
+        } else {
+          goTo(dest)
+        }
+      }, 1200)
+    }
+  }
+
+  // Get equipped stat bonuses (loaded from player object which we keep in sync)
+  const eqPower  = player.power   || 0
+  const eqGuard  = player.guard   || 0
+  const eqSpeed  = player.speed   || 0
+  const eqInsight= player.insight || 0
+  const eqLuck   = player.luck    || 0
+
+  // Speed bonus: if speed >= 3, player always goes first (already do by acting on click)
+  // Luck: adds to random range
+  // ── Turn-based combat engine ─────────────────────────────
+  let defending = false
+
+  function playerATK()  { return calcATK() }
+  function playerDEF()  { return calcDEF() }
+  function playerSPD()  { return calcSPD() }
+  function enemySPD()   { return enemy.spd || Math.floor((enemy.atk||5) * 0.6) }
+
+  // ── Global skill level getter (also used by renderSkillSlots outside doTurn) ─
+  function _skillLvGlobal(key) {
+    const T = [0,10,25,50,90,150,240,380,590,900]
+    const sl = (player.skill_levels || {})[key]
+    if (!sl) return 1
+    let lv = 1
+    for (let i = 1; i < T.length; i++) { if (sl.uses >= T[i]) lv = i+1; else break }
+    return Math.min(10, lv)
+  }
+
+  // ── Battle skills from player ────────────────────────────
+  const battleSkillKeys = player.battle_skills || []
+
+  // Inline skill definitions (mirrored from skills.html)
+  const BATTLE_SKILLS = {
+    darkness_passive_backstab:      { label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff' },
+    darkness_skill_shadow_step:     { label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores enemy DEF', fn:'shadowStep' },
+    darkness_ultimate_void_zone:    { label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',    fn:'voidZone' },
+    earth_passive_damage_reduction: { label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c' },
+    earth_skill_rock_armor:         { label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',           fn:'rockArmor' },
+    earth_ultimate_earthquake:      { label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',   fn:'earthquake' },
+    fire_passive_burn:              { label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500' },
+    fire_skill_fire_blast:          { label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',  fn:'fireBlast' },
+    fire_ultimate_inferno_zone:     { label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',       fn:'infernoZone' },
+    light_passive_boost_allies:     { label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700' },
+    light_skill_heal_pulse:         { label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                 fn:'healPulse' },
+    light_ultimate_divine_barrier:  { label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',  fn:'divineBarrier' },
+    lightning_passive_chain_damage: { label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff' },
+    lightning_skill_lightning_strike:{ label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',       fn:'lightningStrike' },
+    lightning_ultimate_thunderstorm:{ label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',           fn:'thunderstorm' },
+    metal_passive_reflect:          { label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0' },
+    metal_skill_blade_form:         { label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK +20, SPD +5 for 2 turns',   fn:'bladeForm' },
+    metal_ultimate_iron_domain:     { label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',       fn:'ironDomain' },
+    plant_passive_heal_still:       { label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e' },
+    plant_skill_root_trap:          { label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',       fn:'rootTrap' },
+    plant_ultimate_nature_overgrowth:{ label:'Overgrowth',   type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',           fn:'overgrowth' },
+    water_passive_regen:            { label:'Flow',           type:'passive',  el:'water',     color:'#0088ff' },
+    water_skill_water_shield:       { label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',         fn:'waterShield' },
+    water_ultimate_tsunami:         { label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',    fn:'tsunami' },
+    wind_passive_dodge:             { label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea' },
+    wind_skill_dash_strike:         { label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',     fn:'dashStrike' },
+    wind_ultimate_tornado_field:    { label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, your SPD ×2',    fn:'tornadoField' },
+  }
+
+  // ── Skill-tree notable nodes usable as battle skills ────────────
+  // Keys match the node IDs stored in player.battle_skills
+  // type: 'active' = usable each turn (2-turn cooldown)
+  //       'passive' = always-on effect applied at battle start / on hit
+  // ── NOTABLE_SKILLS keyed by NEW skill-tree node IDs ──────
+  // These match what skills.html saves into player.battle_skills
+  const NOTABLE_SKILLS = {
+    // ── OFFENSE branch ──
+    ofn1: { label:'Warbound',      type:'active',  branch:'offense', color:'#e05555',
+            desc:'Your attacks deal +15% ATK as bonus damage this turn.', fn:'warbound' },
+    ofn2: { label:'Amplifier',     type:'passive', branch:'offense', color:'#992222',
+            desc:'Power contributes an extra ×0.4 to ATK.' },
+    ofn3: { label:'Spellblade',    type:'passive', branch:'offense', color:'#e05555',
+            desc:'Strike has 15% chance to poison (3 dmg/turn, 2 turns).' },
+    ofn4: { label:'Executioner',   type:'active',  branch:'offense', color:'#e05555',
+            desc:'Deal +25% damage to enemies below 30% HP.', fn:'embersEnd' },
+    ofn5: { label:'Hex Cannon',    type:'active',  branch:'offense', color:'#992222',
+            desc:'Heavy Strike poisons enemy: 5 dmg/turn for 3 turns.', fn:'venomLance' },
+    ofn6: { label:'Predator',      type:'active',  branch:'offense', color:'#e05555',
+            desc:'Gain +20 ATK for 2 turns.', fn:'predator' },
+    of_ks1:{ label:'Bloodthirst',  type:'active',  branch:'offense', color:'#c8512a',
+            desc:'On kill: restore 20% max HP and gain +10 ATK for 2 turns.', fn:'bloodthirst' },
+    of_ks2:{ label:'Spell Surge',  type:'active',  branch:'offense', color:'#b06eff',
+            desc:'Next skill used deals ×1.5 damage and ignores 50% DEF.', fn:'spellSurge' },
+    // ── DEFENSE branch ──
+    dfn1: { label:'Iron Tide',     type:'passive', branch:'defense', color:'#5ec45e',
+            desc:'First time below 50% HP: gain +20 DEF for 2 turns.' },
+    dfn2: { label:'Absorption',    type:'passive', branch:'defense', color:'#3db89a',
+            desc:'Every 3 hits taken: next Defend heals 15 HP.' },
+    dfn3: { label:'Thorns',        type:'passive', branch:'defense', color:'#5ec45e',
+            desc:'When hit: 20% chance to stun enemy 1 turn.' },
+    dfn4: { label:'Fortress',      type:'active',  branch:'defense', color:'#5ec45e',
+            desc:'Below 30% HP: gain +20 DEF and deal +15 damage this turn.', fn:'pressureWave' },
+    dfn5: { label:'Retaliation',   type:'passive', branch:'defense', color:'#3db89a',
+            desc:'After 3 hits in a row: auto strike back for 50% ATK.' },
+    dfn6: { label:'Bulwark',       type:'active',  branch:'defense', color:'#5ec45e',
+            desc:'After 2 consecutive hits: DEF doubled next turn.', fn:'chargedStance' },
+    df_ks1:{ label:'Deep Current', type:'active',  branch:'defense', color:'#3db89a',
+            desc:'Gain +30 DEF for 2 turns. Absorb next hit entirely.', fn:'deepCurrent' },
+    df_ks2:{ label:'Iron Mirror',  type:'active',  branch:'defense', color:'#5ec45e',
+            desc:'Reflect 40% of next hit back. +15 DEF for 1 turn.', fn:'ironMirror' },
+    // ── FLOW branch ──
+    fln1: { label:'Razor Tempo',   type:'passive', branch:'flow',    color:'#5eaee0',
+            desc:'Strike always goes first regardless of enemy speed.' },
+    fln2: { label:'Ghost Step',    type:'passive', branch:'flow',    color:'#5eaee0',
+            desc:'15% chance to dodge. On dodge, deal a free counter hit.' },
+    fln3: { label:'Lockdown',      type:'active',  branch:'flow',    color:'#5eaee0',
+            desc:'Reduce enemy SPD by 6 for this battle.', fn:'heavyGround' },
+    fln4: { label:'Flicker',       type:'passive', branch:'flow',    color:'#5eaee0',
+            desc:'After dodging: next Strike deals double damage.' },
+    fln5: { label:'Stagger',       type:'passive', branch:'flow',    color:'#5eaee0',
+            desc:'20% chance each turn to stagger enemy (they miss their attack).' },
+    fln6: { label:'Momentum',      type:'active',  branch:'flow',    color:'#5eaee0',
+            desc:'Launch ground spike: 20 damage, ignores 30% DEF.', fn:'earthSpike' },
+    fl_ks1:{ label:'Phantom Step', type:'active',  branch:'flow',    color:'#5eaee0',
+            desc:'Become untargetable for 1 turn. Follow up with a guaranteed crit.', fn:'phantomStep' },
+    fl_ks2:{ label:'Time Lock',    type:'active',  branch:'flow',    color:'#88ccff',
+            desc:'Freeze enemy for 1 turn. Your next attack deals ×2 damage.', fn:'timeLock' },
+    // ── ARCANE branch ──
+    arn1: { label:'Sharp Mind',    type:'passive', branch:'arcane',  color:'#b06eff',
+            desc:'Insight grants +1 ATK per 3 Insight points.' },
+    arn2: { label:'Hex Weave',     type:'active',  branch:'arcane',  color:'#b06eff',
+            desc:'Predict next attack — reduce incoming damage by 90% this turn.', fn:'foresight' },
+    arn3: { label:'Wild Proc',     type:'passive', branch:'arcane',  color:'#d4a843',
+            desc:'Each Luck point increases crit damage by 0.5%.' },
+    arn4: { label:'Prescience',    type:'passive', branch:'arcane',  color:'#b06eff',
+            desc:'Insight reduces enemy crit chance by 2% per point.' },
+    arn5: { label:'Ricochet',      type:'passive', branch:'arcane',  color:'#d4a843',
+            desc:'20% chance attacks bounce — hit twice, second at 40% ATK.' },
+    arn6: { label:'Mind Pierce',   type:'active',  branch:'arcane',  color:'#b06eff',
+            desc:'Next attack crits for ×1.75 damage.', fn:'preciseStrike' },
+    ar_ks1:{ label:'Sixth Sense',  type:'active',  branch:'arcane',  color:'#b06eff',
+            desc:'Read enemy — know their next move. Reduce damage by 80% if correct.', fn:'sixthSense' },
+    ar_ks2:{ label:'Chaos Engine', type:'active',  branch:'arcane',  color:'#d4a843',
+            desc:'Unleash chaos: random powerful effect each use.', fn:'chaosEngine' },
+    // ── DECAY branch ──
+    dcn1: { label:'Nightshroud',   type:'active',  branch:'decay',   color:'#9a6fd8',
+            desc:'First turn: free dodge. On dodge, counter for 50% ATK.', fn:'nightshroud' },
+    dcn2: { label:'Umbral Veil',   type:'passive', branch:'decay',   color:'#9a6fd8',
+            desc:'15% dodge chance. On dodge, counter for 50% ATK.' },
+    dcn3: { label:'Thornwall',     type:'active',  branch:'decay',   color:'#9a6fd8',
+            desc:'Defend reflects 15% of absorbed damage back as thorns.', fn:'thornwall' },
+    dcn4: { label:'Shade Walk',    type:'passive', branch:'decay',   color:'#9a6fd8',
+            desc:'+5 SPD, +4 Power. On kill: +15 SPD for 2 turns.' },
+    dcn5: { label:'Enduring Root', type:'passive', branch:'decay',   color:'#9a6fd8',
+            desc:'Cannot be stunned or rooted by enemy skills.' },
+    dcn6: { label:'Dread Pulse',   type:'active',  branch:'decay',   color:'#9a6fd8',
+            desc:'Each hit reduces enemy ATK by 2 (stacks up to 3×).', fn:'dreadPulse' },
+    dc_ks1:{ label:'Soul Sever',   type:'active',  branch:'decay',   color:'#9a6fd8',
+            desc:'Sever enemy soul: they lose 15% max HP permanently this battle.', fn:'soulSever' },
+    dc_ks2:{ label:'Ancient Root', type:'passive', branch:'decay',   color:'#5ec45e',
+            desc:'Cannot be stunned. At battle start: gain shield = 20% max HP.' },
+  }
+  // Backward compat — old keys still work if any saved data uses them
+  const OLD_KEY_MAP = { an1:'ofn1',an2:'ofn2',an3:'ofn3',an4:'ofn4',an5:'ofn5',an6:'ofn6',
+    dn1:'dfn1',dn2:'dfn2',dn3:'dfn3',dn4:'dfn4',dn5:'dfn5',dn6:'dfn6',
+    gn1:'fln1',gn2:'fln2',gn3:'fln3',gn4:'fln4',gn5:'fln5',gn6:'fln6',
+    mn1:'arn1',mn2:'arn2',mn3:'arn3',mn4:'arn4',mn5:'arn5',mn6:'arn6',
+    dpn1:'dcn1',dkn1:'dcn2',pln1:'dcn3',dkn2:'dcn4',pln2:'dcn5',dpn2:'dcn6' }
+  Object.entries(OLD_KEY_MAP).forEach(([old,nw]) => { if (NOTABLE_SKILLS[nw]) NOTABLE_SKILLS[old] = NOTABLE_SKILLS[nw] })
+
+  // Merge NOTABLE_SKILLS into BATTLE_SKILLS so the rest of the engine is unified
+  Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
+
+  // ── Combat status effects ────────────────────────────────
+  let statusEffects = {
+    playerATKBonus:  0,
+    playerDEFBonus:  0,
+    playerSPDBonus:  0,
+    ignoreEnemyDEF:  false,
+    invulnerable:    false,
+    waterShield:     0,   // HP absorbed
+    enemyATKMult:    1.0,
+    enemyStunTurns:  0,
+    burnTurns:       0,
+    burnDmg:         3,   // scaled by fire_passive_burn level
+    infernoTurns:    0,
+    regenTurns:      0,
+    rootTrapTurns:   0,
+    skillCooldowns:  {},  // key → turns remaining
+  }
+
+  // Apply passive skills at battle start
+  function applyPassives() {
+    const unlocked = player.skills_unlocked || []
+    const inBattle = player.battle_skills   || []
+    // Elemental passives — scaled by level
+    if (unlocked.includes('water_passive_regen'))            statusEffects.regenTurns    = 999
+    if (unlocked.includes('earth_passive_damage_reduction')) {
+      const lv = _skillLvGlobal('earth_passive_damage_reduction')
+      statusEffects.playerDEFBonus += Math.round(5 + (lv - 1))
+    }
+    if (unlocked.includes('metal_passive_reflect'))          statusEffects.metalReflect  = true
+    // Notable passives — new IDs (ofn2, dfn1 etc.) plus old IDs for backward compat
+    const has = k => inBattle.includes(k) || inBattle.includes(OLD_KEY_MAP[k] || k)
+    if (has('ofn2')||has('an2')) statusEffects.flameFist    = true
+    if (has('ofn3')||has('an3')) statusEffects.venomFang    = true
+    if (has('dfn1')||has('dn1')) statusEffects.tidalResolve = true
+    if (has('dfn2')||has('dn2')) statusEffects.absorption   = true
+    if (has('dfn3')||has('dn3')) statusEffects.liveWire     = true
+    if (has('dfn5')||has('dn5')) statusEffects.arcReflex    = true
+    if (has('fln1')||has('gn1')) statusEffects.razorTempo   = true
+    if (has('fln2')||has('gn2')) statusEffects.ghostStep    = true
+    if (has('fln4')||has('gn4')) statusEffects.flicker      = true
+    if (has('fln5')||has('gn5')) statusEffects.tremorStep   = true
+    if (has('arn1')||has('mn1')) statusEffects.sharpMind    = true
+    if (has('arn3')||has('mn3')) statusEffects.razorLuck    = true
+    if (has('arn4')||has('mn4')) statusEffects.prescience   = true
+    if (has('arn5')||has('mn5')) statusEffects.ricochet     = true
+    if (has('dcn2')||has('dkn1'))statusEffects.umbralVeil   = true
+    if (has('dcn4')||has('dkn2'))statusEffects.shadeWalk    = true
+    if (has('dcn5')||has('pln2'))statusEffects.enduringRoot = true
+    if (has('dcn6')||has('dpn2'))statusEffects.dreadPulse   = true
+    // Keystones
+    if (has('dc_ks2')) {
+      // Ancient Root: shield at battle start
+      statusEffects.ancientRootShield = Math.round(maxPlayerHp * 0.2)
+    }
+  }
+  applyPassives()
+
+  // ── Render battle skill slots ─────────────────────────────
+  function renderSkillSlots() {
+    const row = $('skill-slots-row')
+    if (!row) return
+
+    const activeSkills = battleSkillKeys.filter(k => {
+      const s = BATTLE_SKILLS[k]
+      return s && s.type !== 'passive'
+    })
+    const passiveSkills = battleSkillKeys.filter(k => {
+      const s = BATTLE_SKILLS[k]
+      return s && s.type === 'passive'
+    })
+
+    // Build passive indicator strip (always-on effects shown as small tags)
+    const passiveStrip = passiveSkills.length
+      ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'
+        + passiveSkills.map(k => {
+            const sk = BATTLE_SKILLS[k]
+            return `<span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:${sk.color};
+              border:.5px solid ${sk.color}50;border-radius:12px;padding:1px 6px;background:${sk.color}12;
+              letter-spacing:.04em">⚡ ${sk.label} (passive)</span>`
+          }).join('')
+        + '</div>'
+      : ''
+
+    if (!activeSkills.length) {
+      row.innerHTML = passiveStrip +
+        '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">' +
+        'No active skills assigned — visit Skills page</p>'
+      return
+    }
+
+    // Skills header
+    let html = passiveStrip
+    html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
+
+    // Skills grid — same 3-column layout as basic actions
+    html += '<div style="display:grid;grid-template-columns:' +
+      (activeSkills.length === 1 ? '1fr' : activeSkills.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr') +
+      ';gap:4px">'
+
+    html += activeSkills.map(k => {
+      const sk     = BATTLE_SKILLS[k]
+      const cd     = statusEffects.skillCooldowns[k] || 0
+      const isUlt  = sk.type === 'ultimate'
+      const lv     = _skillLvGlobal(k)
+      const lvColor = lv >= 10 ? '#ffd700' : lv >= 7 ? '#c8b96e' : lv >= 4 ? '#a0c080' : '#9a8858'
+      const pct    = Math.round((0.5 + (lv - 1) * (0.5 / 9)) * 100)
+
+      // Skill icon — try image, fall back to element emoji
+      const EL_ICON = { fire:'🔥', water:'💧', earth:'🪨', wind:'💨', dark:'🌑', light:'✨', lightning:'⚡', metal:'⚙', plant:'🌿' }
+      const elIcon = EL_ICON[sk.el] || '✦'
+
+      const cdLabel = cd > 0 ? cd + ' turn' + (cd > 1 ? 's' : '') : null
+      const border  = isUlt ? `border-color:${sk.color}70` : `border-color:${sk.color}40`
+
+      // Build skill button safely — avoid nested template literals and quote hell
+      const cdOverlay = cd > 0
+        ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px">'
+          + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">' + cdLabel + '</span>'
+          + '</div>'
+        : ''
+      const iconFilter = cd > 0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
+      const btnColor   = cd > 0 ? 'rgba(200,160,60,.35)' : sk.color
+      const imgTag = '<img src="../assets/skills/' + k + '.webp"'
+        + ' style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto"'
+        + ' onerror="this.remove()">'
+
+      return '<button class="combat-btn" id="' + cid + '-btn-skill-' + k + '"'
+        + ' onclick="useSkill_' + cid + '(\'' + k + '\')"'
+        + (cd > 0 ? ' disabled' : '')
+        + ' title="' + (sk.desc || sk.label) + ' (Lv' + lv + ' · ' + pct + '% power)"'
+        + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;' + border + ';'
+        + 'color:' + btnColor + ';position:relative;overflow:hidden">'
+        + cdOverlay
+        + '<span style="font-size:1rem;line-height:1;filter:' + iconFilter + '">' + imgTag
+        + '<span style="font-size:1rem;margin:0 auto;display:none" class="sk-fallback-' + k + '">' + elIcon + '</span>'
+        + '</span>'
+        + '<span style="font-size:.58rem;font-weight:600;letter-spacing:.02em">' + (isUlt ? '★ ' : '') + sk.label + '</span>'
+        + '<span style="font-size:.42rem;color:' + lvColor + ';letter-spacing:.04em">Lv' + lv + ' · ' + pct + '%</span>'
+        + '</button>'
+    }).join('')
+
+    html += '</div>'
+    row.innerHTML = html
+  }
+
+  function setButtons(enabled) {
+    ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id => {
+      const b = $(id)
+      if (b) b.disabled = !enabled
+    })
+    // Also update skill buttons
+    battleSkillKeys.forEach(k => {
+      const b = $('btn-skill-'+k)
+      if (b && enabled) {
+        const cd = statusEffects.skillCooldowns[k] || 0
+        b.disabled = cd > 0
+      } else if (b) {
+        b.disabled = true
+      }
+    })
+  }
+
+  // ── Skill use handler — scoped to this combat instance ───
+  const useSkillLocal = function(key) {
+    if (over) return
+    const sk = BATTLE_SKILLS[key]
+    if (!sk) return
+    const cd = statusEffects.skillCooldowns[key] || 0
+    if (cd > 0) { log('Skill on cooldown (' + cd + ' turns)'); return }
+    doTurn('skill', key)
+  }
+  // Expose globally so inline onclick attrs can reach it, keyed by cid
+  window['useSkill_' + cid] = useSkillLocal
+
+
+  // ── Skill leveling system ───────────────────────────────
+  // Tracks use-count for each skill: slow XP curve, max level 10.
+  // Stored in player.skill_levels as { skillKey: { uses, level } }
+  // Gains: every 10 uses grants +1 level, cost doubles each tier.
+  // Required uses: lv1→2: 10, lv2→3: 25, lv3→4: 50, lv4→5: 90, lv5→6: 150,
+  //               lv6→7: 240, lv7→8: 380, lv8→9: 590, lv9→10: 900 cumulative
+  const SKILL_LVL_THRESHOLDS = [0,10,25,50,90,150,240,380,590,900]
+  function getSkillLevel(key) {
+    const sl = (player.skill_levels || {})[key]
+    if (!sl) return 1
+    let lv = 1
+    for (let i = 1; i < SKILL_LVL_THRESHOLDS.length; i++) {
+      if (sl.uses >= SKILL_LVL_THRESHOLDS[i]) lv = i + 1
+      else break
+    }
+    return Math.min(10, lv)
+  }
+  function skillScale(key) {
+    // Returns a multiplier 0.5–1.0 based on skill level (lv1=50%, lv10=100%)
+    return 0.5 + (getSkillLevel(key) - 1) * (0.5 / 9)
+  }
+  async function recordSkillUse(key) {
+    const sl  = player.skill_levels || {}
+    if (!sl[key]) sl[key] = { uses: 0 }
+    const prevLv = getSkillLevel(key)
+    sl[key].uses++
+    player.skill_levels = sl
+    // Detect level-up
+    const newLv = getSkillLevel(key)
+    if (newLv > prevLv) {
+      const sk = BATTLE_SKILLS[key]
+      showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
+    }
+    // Awaited save so failures surface in console
+    const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
+    if (error) console.error('[skill_levels save]', error.message)
+  }
+
+  async function doTurn(playerAction, skillKey = null) {
+    if (over) return
+    setButtons(false)
+    defending = false
+    const luckBonus  = Math.floor(eqLuck / 2)
+    const unlocked   = player.skills_unlocked || []
+
+    // Tick down status effects
+    if (statusEffects.enemyStunTurns > 0)  statusEffects.enemyStunTurns--
+    if (statusEffects.rootTrapTurns  > 0)  statusEffects.rootTrapTurns--
+    Object.keys(statusEffects.skillCooldowns).forEach(k => {
+      if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
+    })
+
+    // ── FF-Style Turn Order ───────────────────────────────────
+    // Base speed comparison with jitter. Faster player goes first.
+    // Ties broken randomly (spice!) unless one side has a speed-override skill.
+    const pSPD = playerSPD() + (statusEffects.playerSPDBonus || 0)
+    const eSPD = enemySPD()
+
+    // Skill-specific overrides
+    const dashStrikeActive = (skillKey === 'wind_skill_dash_strike') // always first
+    const razorTempoActive = statusEffects.razorTempo && playerAction === 'strike' // always first
+    const heavySlowsPenalty = (playerAction === 'heavy') ? -3 : 0    // heavy is slower
+    const defenseGoesFirst  = (playerAction === 'defend')             // defend always first
+
+    // Effective speeds with jitter (±1–2) for variety
+    const pEffSPD = pSPD + heavySlowsPenalty + Math.floor(Math.random() * 3)
+    const eEffSPD = eSPD + Math.floor(Math.random() * 3)
+
+    let playerFirst
+    if (dashStrikeActive || defenseGoesFirst || razorTempoActive) {
+      playerFirst = true  // speed override skills
+    } else if (pEffSPD === eEffSPD) {
+      playerFirst = Math.random() < 0.5  // dead tie → coin flip
+    } else {
+      playerFirst = pEffSPD > eEffSPD
+    }
+
+    // ── Dodge calculation ─────────────────────────────────────
+    // Base dodge chance = 3% + (speed difference × 1.5%), capped 0–40%
+    // Wind passive "Gust" adds flat 20% dodge
+    function calcPlayerDodge() {
+      const speedAdv = Math.max(0, pSPD - eSPD)
+      const base = 0.03 + speedAdv * 0.015
+      // Wind dodge: Lv1 +20%, Lv10 +35%
+      const windLv = unlocked.includes('wind_passive_dodge') ? _skillLvGlobal('wind_passive_dodge') : 0
+      const windBonus = windLv > 0 ? 0.20 + (windLv - 1) * (0.15 / 9) : 0
+      return Math.min(0.55, base + windBonus)
+    }
+    function calcEnemyDodge() {
+      const speedAdv = Math.max(0, eSPD - pSPD)
+      return Math.min(0.25, 0.02 + speedAdv * 0.012)
+    }
+
+    let messages = []
+    const turnLabel = playerFirst
+      ? '⚡ You act first (SPD ' + pEffSPD + ' vs ' + eEffSPD + ')'
+      : '⏳ ' + enemy.name + ' acts first (SPD ' + eEffSPD + ' vs ' + pEffSPD + ')'
+
+    // ── Player action ─────────────────────────────────────
+    function resolvePlayerAction() {
+      // Enemy dodge check (applies to attack actions only)
+      const enemyDodged = (playerAction === 'strike' || playerAction === 'heavy') && Math.random() < calcEnemyDodge()
+      if (enemyDodged) {
+        messages.push(enemy.name + ' <em>dodges</em> your attack!')
+        return
+      }
+
+      if (playerAction === 'strike') {
+        // Backstab passive: Lv1 15% chance 2× dmg → Lv10 35% chance 3× dmg
+        const bsLv      = unlocked.includes('darkness_passive_backstab') ? _skillLvGlobal('darkness_passive_backstab') : 0
+        const bsChance  = bsLv > 0 ? 0.15 + (bsLv - 1) * (0.20 / 9) : 0
+        const bsMult    = bsLv > 0 ? 2 + (bsLv - 1) * (1 / 9) : 1
+        const backstab  = bsLv > 0 && Math.random() < bsChance
+        const roll       = window._forceMaxHit ? (6+luckBonus) : Math.floor(Math.random()*(6+luckBonus))+1
+        window._forceMaxHit = false
+        const baseATK    = playerATK() + (statusEffects.playerATKBonus||0)
+        const ignoreDEF  = statusEffects.ignoreEnemyDEF
+        statusEffects.ignoreEnemyDEF = false
+        const flickerMult = statusEffects.flickerReady ? 2 : 1
+        if (statusEffects.flickerReady) { statusEffects.flickerReady = false }
+        const dmg        = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult))
+        enemyHp          = Math.max(0, enemyHp - dmg)
+        messages.push(backstab
+          ? '⚡ Backstab Lv' + bsLv + '! You strike for <strong>' + dmg + '</strong> (' + Math.round(bsMult*10)/10 + '× dmg)!'
+          : 'You strike for <strong>' + dmg + '</strong>.' + (ignoreDEF ? ' (DEF ignored)' : ''))
+        // Burn passive: Lv1 3dmg × 2 turns → Lv10 6dmg × 4 turns
+        if (unlocked.includes('fire_passive_burn')) {
+          const burnLv  = _skillLvGlobal('fire_passive_burn')
+          const burnDmg = Math.round(3 + (burnLv - 1) * (3 / 9))
+          const burnDur = Math.round(2 + (burnLv - 1) * (2 / 9))
+          statusEffects.burnTurns = burnDur
+          statusEffects.burnDmg   = burnDmg
+          messages.push('🔥 Burn Lv' + burnLv + ' applied — ' + burnDmg + ' dmg/turn × ' + burnDur + ' turns.')
+        }
+        // Chain passive: Lv1 20% chance 50% dmg → Lv10 40% chance 90% dmg
+        if (unlocked.includes('lightning_passive_chain_damage')) {
+          const chainLv     = _skillLvGlobal('lightning_passive_chain_damage')
+          const chainChance = 0.20 + (chainLv - 1) * (0.20 / 9)
+          const chainPct    = 0.50 + (chainLv - 1) * (0.40 / 9)
+          if (Math.random() < chainChance) {
+            const chainDmg = Math.max(1, Math.floor(dmg * chainPct))
+            enemyHp = Math.max(0, enemyHp - chainDmg)
+            messages.push('⚡ Chain Lv' + chainLv + ' hit for <strong>' + chainDmg + '</strong>!')
+          }
+        }
+        // Venom Fang passive: 15% poison on strike
+        if (statusEffects.venomFang && Math.random() < 0.15) {
+          statusEffects.burnTurns = Math.max(statusEffects.burnTurns, 2)
+          messages.push('☠ Venom Fang — poison applied! (3 dmg/turn × 2 turns)')
+        }
+        // Ricochet passive: 20% double hit
+        if (statusEffects.ricochet && Math.random() < 0.20) {
+          const bounceDmg = Math.max(1, Math.floor(dmg * 0.4))
+          enemyHp = Math.max(0, enemyHp - bounceDmg)
+          messages.push('🎯 Ricochet! Bounce hit for <strong>' + bounceDmg + '</strong>!')
+        }
+        // Flicker: post-dodge double damage flag (applied in dodge handler below)
+        // Precise Strike: crit override
+        if (statusEffects.nextCrit) {
+          statusEffects.nextCrit = false
+          const critBonus = Math.floor(dmg * 0.75)
+          enemyHp = Math.max(0, enemyHp - critBonus)
+          messages.push('🎯 Critical hit! +<strong>' + critBonus + '</strong> bonus damage!')
+        }
+        // Dread Pulse on-hit stack (passive version)
+        if (statusEffects.dreadPulse && !statusEffects.dreadPulseStacks) {
+          statusEffects.dreadPulseStacks = 0
+        }
+      } else if (playerAction === 'heavy') {
+        const roll    = window._forceMaxHit ? (10+luckBonus) : Math.floor(Math.random()*(10+luckBonus))+3
+        window._forceMaxHit = false
+        const baseATK = playerATK() + (statusEffects.playerATKBonus||0)
+        const dmg     = Math.max(1, Math.round(baseATK * 1.6) + roll)
+        enemyHp       = Math.max(0, enemyHp - dmg)
+        messages.push('Heavy strike for <strong>' + dmg + '</strong>!')
+        // Venom Lance: apply poison after Heavy Strike
+        if (statusEffects.venomLanceTurns > 0) {
+          messages.push('☠ Venom Lance — venom coats the wound!')
+        }
+      } else if (playerAction === 'defend') {
+        defending = true
+        messages.push('You brace — defense doubled this turn.')
+        // Absorption: heal 15 HP if charged
+        if (statusEffects.absorptionHeal) {
+          const healAmt = statusEffects.absorptionHeal
+          currentHp = Math.min(maxPlayerHp, currentHp + healAmt)
+          statusEffects.absorptionHeal = 0
+          messages.push('🛡 Absorption — healed <strong>' + healAmt + '</strong> HP!')
+        }
+      } else if (playerAction === 'skill' && skillKey) {
+        const sk = BATTLE_SKILLS[skillKey]
+        if (!sk) return
+        statusEffects.skillCooldowns[skillKey] = sk.type === 'ultimate' ? 4 : 2
+        recordSkillUse(skillKey)
+        const sc = skillScale(skillKey)
+        const skLv = getSkillLevel(skillKey)
+        if (skLv < 10) messages.push('Skill Lv ' + skLv + ' — power ' + Math.round(sc*100) + '%')
+
+        if (sk.fn === 'shadowStep') {
+          statusEffects.ignoreEnemyDEF = true
+          messages.push('🌑 Shadow Step Lv' + skLv + ' — next attack ignores DEF!')
+        } else if (sk.fn === 'rockArmor') {
+          const defBonus = Math.round(20 * sc)
+          statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
+          statusEffects.rockArmorTurns = 2
+          messages.push('🪨 Rock Armor Lv' + skLv + ' — +' + defBonus + ' DEF for 2 turns!')
+        } else if (sk.fn === 'earthquake') {
+          const dmg = Math.max(5, Math.round(playerATK() * 2 * sc))
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          statusEffects.enemyStunTurns = 1
+          messages.push('🌍 Earthquake Lv' + skLv + '! <strong>' + dmg + '</strong> dmg — stunned!')
+        } else if (sk.fn === 'fireBlast') {
+          const def = Math.floor((enemy.def||0) * 0.5)
+          const dmg = Math.max(1, Math.round((25 * sc + playerATK()) - def))
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          messages.push('🔥 Fire Blast Lv' + skLv + ' — <strong>' + dmg + '</strong> (50% DEF ignored)!')
+        } else if (sk.fn === 'infernoZone') {
+          statusEffects.infernoTurns = 3
+          statusEffects.infernoDmg   = Math.round(40 * sc)
+          messages.push('🔥 Inferno Zone Lv' + skLv + ' — ' + statusEffects.infernoDmg + ' dmg/turn × 3 turns!')
+        } else if (sk.fn === 'healPulse') {
+          const base = Math.round(25 * sc)
+          const heal = Math.min(player.max_hp||100, currentHp + base) - currentHp
+          currentHp  = Math.min(player.max_hp||100, currentHp + base)
+          messages.push('✨ Heal Pulse Lv' + skLv + ' — restored <strong>' + heal + '</strong> HP!')
+        } else if (sk.fn === 'divineBarrier') {
+          statusEffects.invulnerable = true
+          statusEffects.divineBarrierReflect = true
+          messages.push('✨ Divine Barrier Lv' + skLv + ' — invulnerable this turn! Damage reflected.')
+        } else if (sk.fn === 'lightningStrike') {
+          const dmg = Math.round((30 + playerATK() * 0.5) * sc)
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          messages.push('⚡ Lightning Strike Lv' + skLv + ' — <strong>' + dmg + '</strong> (ignores shields)!')
+        } else if (sk.fn === 'thunderstorm') {
+          let total = 0
+          const boltBase = Math.round(10 * sc)
+          for (let b = 0; b < 5; b++) {
+            const bolt = boltBase + Math.floor(Math.random() * Math.round(10 * sc))
+            total += bolt; enemyHp = Math.max(0, enemyHp - bolt)
+          }
+          messages.push('⚡ Thunderstorm Lv' + skLv + ' — 5 bolts, <strong>' + total + '</strong> total!')
+        } else if (sk.fn === 'bladeForm') {
+          const atkBon = Math.round(20 * sc), spdBon = Math.round(5 * sc)
+          statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + atkBon
+          statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + spdBon
+          statusEffects.bladeFormTurns = 2
+          messages.push('⚙ Blade Form Lv' + skLv + ' — ATK +' + atkBon + ', SPD +' + spdBon + ' (2 turns)!')
+        } else if (sk.fn === 'ironDomain') {
+          const atkBon = Math.round(playerATK() * sc)
+          statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + atkBon
+          statusEffects.ironDomainTurns = 3
+          messages.push('⚙ Iron Domain Lv' + skLv + ' — ATK +' + atkBon + ' for 3 turns!')
+        } else if (sk.fn === 'rootTrap') {
+          statusEffects.rootTrapTurns = 1
+          messages.push('🌿 Root Trap Lv' + skLv + ' — enemy rooted, skips next attack!')
+        } else if (sk.fn === 'overgrowth') {
+          const healAmt = Math.round(40 * sc), dmg = Math.round(30 * sc)
+          const heal = Math.min(player.max_hp||100, currentHp + healAmt) - currentHp
+          currentHp  = Math.min(player.max_hp||100, currentHp + healAmt)
+          enemyHp    = Math.max(0, enemyHp - dmg)
+          messages.push('🌿 Overgrowth Lv' + skLv + ' — +' + heal + ' HP & <strong>' + dmg + '</strong> dmg!')
+        } else if (sk.fn === 'waterShield') {
+          const shAmt = Math.round(30 * sc)
+          statusEffects.waterShield = (statusEffects.waterShield||0) + shAmt
+          messages.push('💧 Water Shield Lv' + skLv + ' — absorbs up to ' + shAmt + ' damage!')
+        } else if (sk.fn === 'tsunami') {
+          const dmg = Math.round((50 + playerATK() * 0.4) * sc)
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          statusEffects.enemyStunTurns = 1
+          messages.push('🌊 Tsunami Lv' + skLv + ' — <strong>' + dmg + '</strong> dmg, enemy stunned!')
+        } else if (sk.fn === 'dashStrike') {
+          const dmg = Math.max(1, Math.round((playerATK() * 2 + Math.floor(Math.random()*8)) * sc))
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          const spdBon = Math.round(10 * sc)
+          statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + spdBon
+          messages.push('💨 Dash Strike Lv' + skLv + ' — <strong>' + dmg + '</strong>, SPD +' + spdBon + '!')
+        } else if (sk.fn === 'tornadoField') {
+          const reduct = 1 - Math.round(sc * 30) / 100
+          statusEffects.enemyATKMult  = Math.min(statusEffects.enemyATKMult||1.0, reduct)
+          statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + pSPD
+          statusEffects.tornadoTurns   = 3
+          messages.push('💨 Tornado Field Lv' + skLv + ' — enemy ATK -' + Math.round(sc*30) + '%, SPD doubled!')
+        } else if (sk.fn === 'voidZone') {
+          const reduct = 1 - Math.round(sc * 30) / 100
+          statusEffects.enemyATKMult  = Math.min(statusEffects.enemyATKMult||1.0, reduct)
+          statusEffects.voidZoneTurns = 3
+          messages.push('🌑 Void Zone Lv' + skLv + ' — enemy ATK -' + Math.round(sc*30) + '% for 3 turns!')
+
+        // ── NOTABLE SKILL EFFECTS ─────────────────────────────
+        } else if (sk.fn === 'warbound') {
+          const bonus = Math.round(playerATK() * 0.15 * sc)
+          statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + bonus
+          statusEffects.warboundTurns  = 1
+          messages.push('⚔ Warbound — +' + bonus + ' ATK this turn!')
+
+        } else if (sk.fn === 'embersEnd') {
+          const mult = enemyHp / maxEnemyHp < 0.30 ? 1.25 : 1.0
+          const dmg  = Math.max(1, Math.round(playerATK() * mult * sc))
+          enemyHp    = Math.max(0, enemyHp - dmg)
+          messages.push("🔥 Ember's End — " + dmg + ' damage' + (mult > 1 ? ' (+25% finishing blow)!' : '!'))
+
+        } else if (sk.fn === 'venomLance') {
+          statusEffects.venomLanceTurns = 3
+          statusEffects.venomLanceDmg   = Math.round(5 * sc)
+          messages.push('☠ Venom Lance — Heavy Strike venom: ' + statusEffects.venomLanceDmg + ' dmg/turn × 3 turns!')
+
+        } else if (sk.fn === 'predator') {
+          const bonus = Math.round(20 * sc)
+          statusEffects.playerATKBonus  = (statusEffects.playerATKBonus||0) + bonus
+          statusEffects.predatorTurns   = 2
+          messages.push('🐺 Predator — +' + bonus + ' ATK for 2 turns!')
+
+        } else if (sk.fn === 'pressureWave') {
+          const lowHp = currentHp / maxPlayerHp < 0.30
+          const defBonus = lowHp ? 20 : 0
+          const dmgBonus = lowHp ? 15 : 0
+          if (lowHp) {
+            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
+            enemyHp = Math.max(0, enemyHp - dmgBonus)
+            messages.push('🌊 Pressure Wave — below 30% HP: +' + defBonus + ' DEF & ' + dmgBonus + ' damage!')
+          } else {
+            messages.push('🌊 Pressure Wave — full power needs low HP (>30% remaining).')
+          }
+
+        } else if (sk.fn === 'chargedStance') {
+          statusEffects.chargedStance = true
+          messages.push('⚡ Charged Stance — DEF doubled next turn if you take 2 hits!')
+
+        } else if (sk.fn === 'heavyGround') {
+          statusEffects.enemySPDReduction = (statusEffects.enemySPDReduction||0) + 6
+          messages.push('🪨 Heavy Ground — enemy SPD -6 for this battle!')
+
+        } else if (sk.fn === 'earthSpike') {
+          const dmg = Math.round((20 + playerATK() * 0.3) * sc)
+          enemyHp   = Math.max(0, enemyHp - dmg)
+          messages.push('🪨 Earth Spike — ' + dmg + ' damage (ignores 30% DEF)!')
+
+        } else if (sk.fn === 'foresight') {
+          statusEffects.foresight = true
+          messages.push('🔮 Foresight — next incoming attack reduced by 90%!')
+
+        } else if (sk.fn === 'preciseStrike') {
+          statusEffects.nextCrit = true
+          messages.push('🎯 Precise Strike — next attack will critical hit (×1.75)!')
+
+        } else if (sk.fn === 'nightshroud') {
+          statusEffects.nightshroud = true
+          messages.push('🌑 Nightshroud — free dodge active! Counter on dodge.')
+
+        } else if (sk.fn === 'thornwall') {
+          statusEffects.thornwall = true
+          messages.push('🌿 Thornwall — next Defend reflects 15% damage as thorns!')
+
+        } else if (sk.fn === 'dreadPulse') {
+          const stacks = Math.min(3, (statusEffects.dreadPulseStacks||0) + 1)
+          statusEffects.dreadPulseStacks = stacks
+          statusEffects.enemyATKMult = Math.max(0.1, (statusEffects.enemyATKMult||1.0) - 0.08)
+          messages.push('💀 Dread Pulse — enemy ATK -' + (stacks * 8) + '% total (' + stacks + ' stacks)!')
+
+        } else if (sk.fn === 'bloodthirst') {
+          // On-use: restore 20% max HP, gain ATK bonus
+          const heal = Math.round(maxPlayerHp * 0.2 * sc)
+          currentHp = Math.min(maxPlayerHp, currentHp + heal)
+          statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(10 * sc)
+          statusEffects.bloodthirstTurns = 2
+          messages.push('🩸 Bloodthirst — +'+ heal +' HP restored, +' + Math.round(10*sc) + ' ATK for 2 turns!')
+
+        } else if (sk.fn === 'spellSurge') {
+          statusEffects.spellSurge = true
+          messages.push('✨ Spell Surge — next skill hits ×1.5 and ignores 50% DEF!')
+
+        } else if (sk.fn === 'deepCurrent') {
+          const defBonus = Math.round(30 * sc)
+          statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
+          statusEffects.deepCurrentTurns = 2
+          statusEffects.absorbNextHit = true
+          messages.push('🌊 Deep Current — +' + defBonus + ' DEF for 2 turns, next hit absorbed!')
+
+        } else if (sk.fn === 'ironMirror') {
+          statusEffects.ironMirror = true
+          statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 15
+          messages.push('🛡 Iron Mirror — reflect 40% next hit + +15 DEF!')
+
+        } else if (sk.fn === 'phantomStep') {
+          statusEffects.phantomStep = true
+          statusEffects.nextCrit = true
+          messages.push('👻 Phantom Step — untargetable 1 turn, next hit crits!')
+
+        } else if (sk.fn === 'timeLock') {
+          statusEffects.enemyStunTurns = (statusEffects.enemyStunTurns||0) + 1
+          statusEffects.timeLockCrit = true
+          messages.push('⏱ Time Lock — enemy frozen 1 turn, next attack ×2 damage!')
+
+        } else if (sk.fn === 'sixthSense') {
+          statusEffects.sixthSense = true
+          messages.push('🔮 Sixth Sense — reading enemy pattern. 80% damage reduction if correct!')
+
+        } else if (sk.fn === 'chaosEngine') {
+          const chaos = Math.floor(Math.random() * 5)
+          if (chaos === 0) {
+            const dmg = Math.round(playerATK() * 2 * sc)
+            enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('🌀 Chaos Engine — CHAOS STRIKE: ' + dmg + ' dmg!')
+          } else if (chaos === 1) {
+            const heal = Math.round(maxPlayerHp * 0.3 * sc)
+            currentHp = Math.min(maxPlayerHp, currentHp + heal)
+            messages.push('🌀 Chaos Engine — CHAOS HEAL: +' + heal + ' HP!')
+          } else if (chaos === 2) {
+            statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(25 * sc)
+            messages.push('🌀 Chaos Engine — CHAOS SURGE: +' + Math.round(25*sc) + ' ATK!')
+          } else if (chaos === 3) {
+            statusEffects.enemyStunTurns = (statusEffects.enemyStunTurns||0) + 2
+            messages.push('🌀 Chaos Engine — CHAOS FREEZE: enemy stunned 2 turns!')
+          } else {
+            statusEffects.invulnerable = true
+            messages.push('🌀 Chaos Engine — CHAOS SHIELD: invulnerable 1 turn!')
+          }
+
+        } else if (sk.fn === 'soulSever') {
+          const sevPct  = Math.round(15 * sc)
+          const sevDmg  = Math.round(maxEnemyHp * sevPct / 100)
+          maxEnemyHp    = Math.max(1, maxEnemyHp - sevDmg)
+          enemyHp       = Math.min(enemyHp, maxEnemyHp)
+          messages.push('💜 Soul Sever — enemy max HP -' + sevPct + '% (' + sevDmg + ' severed)!')
+        }
+      }
+    }
+
+    // ── Enemy action ──────────────────────────────────────
+    function resolveEnemyAction() {
+      if (enemyHp <= 0) return
+      // Stun / root check
+      if (statusEffects.enemyStunTurns > 0 || statusEffects.rootTrapTurns > 0) {
+        messages.push(enemy.name + ' is stunned — cannot attack!')
+        return
+      }
+      if (statusEffects.invulnerable) {
+        const reflectDmg = Math.floor(enemy.atk * 0.5)
+        enemyHp          = Math.max(0, enemyHp - reflectDmg)
+        statusEffects.invulnerable = false
+        messages.push('✨ Divine Barrier absorbs! Reflected ' + reflectDmg + ' back.')
+        return
+      }
+      // Player dodge check — includes Nightshroud first-turn, Ghost Step, Umbral Veil
+      let dodgeChance = calcPlayerDodge()
+      if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
+      if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
+
+      if (Math.random() < dodgeChance) {
+        messages.push('You <em>dodge</em> the attack!')
+        // Flicker: next strike doubles
+        if (statusEffects.flicker) { statusEffects.flickerReady = true }
+        // Ghost Step / Umbral Veil: counter on dodge
+        if (statusEffects.ghostStep || statusEffects.umbralVeil) {
+          const counterDmg = Math.max(1, Math.floor(playerATK() * 0.5))
+          enemyHp = Math.max(0, enemyHp - counterDmg)
+          messages.push('↩ Counter hit for <strong>' + counterDmg + '</strong>!')
+        }
+        // Increment consecutive-hit counter on dodge (reset it)
+        statusEffects.consecutiveHits = 0
+        return
+      }
+      // Foresight active: reduce damage 90%
+      let foresightMult = 1.0
+      if (statusEffects.foresight) { foresightMult = 0.10; statusEffects.foresight = false; messages.push('🔮 Foresight absorbs the blow!') }
+      // Endurig Root: immune to stun
+      if (statusEffects.enduringRoot) { statusEffects.enemyStunTurns = 0; statusEffects.rootTrapTurns = 0 }
+      const defMult  = defending ? 0.25 : 1
+      const eATKMult = (statusEffects.enemyATKMult || 1.0) * (foresightMult || 1.0)
+      // Apply enemy SPD reduction from heavyGround
+      const eSPDReduced = (statusEffects.enemySPDReduction || 0)
+      const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
+      let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
+
+      // Water shield absorbs
+      if (statusEffects.waterShield > 0 && eDmg > 0) {
+        const absorbed = Math.min(statusEffects.waterShield, eDmg)
+        eDmg -= absorbed
+        statusEffects.waterShield -= absorbed
+        if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + ' damage.')
+      }
+
+      currentHp = Math.max(0, currentHp - eDmg)
+
+      // Metal reflect passive: Lv1 10% → Lv10 28% reflected
+      if (statusEffects.metalReflect && eDmg > 0) {
+        const refLv  = _skillLvGlobal('metal_passive_reflect')
+        const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
+        const refDmg = Math.max(1, Math.floor(eDmg * refPct))
+        enemyHp      = Math.max(0, enemyHp - refDmg)
+        messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' damage reflected!')
+      }
+      // Thornwall: reflect 15% of Defend absorption
+      if (statusEffects.thornwall && defending && eDmg > 0) {
+        const thornDmg = Math.max(1, Math.floor(eDmg * 0.15))
+        enemyHp = Math.max(0, enemyHp - thornDmg)
+        statusEffects.thornwall = false
+        messages.push('🌿 Thornwall — ' + thornDmg + ' thorn damage reflected!')
+      }
+      // Live Wire: 20% stun on being hit
+      if (statusEffects.liveWire && eDmg > 0 && Math.random() < 0.20) {
+        statusEffects.enemyStunTurns = 1
+        messages.push('⚡ Live Wire — shock! Enemy stunned next turn.')
+      }
+      // Tidal Resolve: first time below 50% HP, gain +20 DEF for 2 turns
+      if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
+          currentHp / maxPlayerHp < 0.50 && eDmg > 0) {
+        statusEffects.tidalResolveFired = true
+        statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
+        statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
+        messages.push('🌊 Tidal Resolve — below 50% HP: +20 DEF for 2 turns!')
+      }
+      // Absorption: hit counter — every 3 hits, next Defend heals 15
+      if (statusEffects.absorption && eDmg > 0) {
+        statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
+        if (statusEffects.absorptionCount >= 3) {
+          statusEffects.absorptionCount = 0
+          statusEffects.absorptionHeal  = 15
+          messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
+        }
+      }
+      // Arc Reflex: 3 consecutive hits → auto counter
+      if (statusEffects.arcReflex && eDmg > 0) {
+        statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
+        if (statusEffects.consecutiveHits >= 3) {
+          statusEffects.consecutiveHits = 0
+          const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
+          enemyHp = Math.max(0, enemyHp - arcDmg)
+          messages.push('⚡ Arc Reflex — counter strike for <strong>' + arcDmg + '</strong>!')
+        }
+      }
+      // Tremor Step: 20% chance to stagger enemy (they skip attack next turn)
+      if (statusEffects.tremorStep && Math.random() < 0.20) {
+        statusEffects.enemyStunTurns = 1
+        messages.push('🌍 Tremor Step — ground shakes! Enemy staggered.')
+      }
+
+      if (defending && eDmg === 0) {
+        messages.push(enemy.name + ' attacks — completely blocked!')
+      } else if (defending) {
+        messages.push(enemy.name + ' attacks for <strong>' + eDmg + '</strong> (reduced by defense).')
+      } else {
+        messages.push(enemy.name + ' retaliates for <strong>' + eDmg + '</strong>.')
+      }
+    }
+
+    if (playerFirst) {
+      resolvePlayerAction()
+      resolveEnemyAction()
+    } else {
+      resolveEnemyAction()
+      resolvePlayerAction()
+    }
+
+    // ── DoT & ongoing effects ─────────────────────────────
+    if (statusEffects.burnTurns > 0 && enemyHp > 0) {
+      const bd = statusEffects.burnDmg || 3
+      enemyHp = Math.max(0, enemyHp - bd)
+      statusEffects.burnTurns--
+      messages.push('🔥 Burn: ' + bd + ' dmg. (' + statusEffects.burnTurns + ' left)')
+    }
+    if (statusEffects.infernoTurns > 0 && enemyHp > 0) {
+      const iDmg = statusEffects.infernoDmg || 40
+      enemyHp = Math.max(0, enemyHp - iDmg)
+      statusEffects.infernoTurns--
+      messages.push('🔥 Inferno: ' + iDmg + ' dmg! (' + statusEffects.infernoTurns + ' left)')
+    }
+    if (statusEffects.regenTurns > 0 && currentHp > 0) {
+      const regenLv  = _skillLvGlobal('water_passive_regen')
+      const regenAmt = Math.round(5 + (regenLv - 1))
+      const heal = Math.min(player.max_hp||100, currentHp + regenAmt) - currentHp
+      currentHp += heal
+      if (heal > 0) messages.push('💧 Flow Lv' + regenLv + ': +' + heal + ' HP regen.')
+    }
+    // Tick temp buffs
+    if (statusEffects.rockArmorTurns > 0) {
+      statusEffects.rockArmorTurns--
+      if (statusEffects.rockArmorTurns === 0) { statusEffects.playerDEFBonus = Math.max(0, (statusEffects.playerDEFBonus||0)-20); messages.push('🪨 Rock Armor faded.') }
+    }
+    if (statusEffects.bladeFormTurns > 0) {
+      statusEffects.bladeFormTurns--
+      if (statusEffects.bladeFormTurns === 0) { statusEffects.playerATKBonus=Math.max(0,(statusEffects.playerATKBonus||0)-20); statusEffects.playerSPDBonus=Math.max(0,(statusEffects.playerSPDBonus||0)-5); messages.push('⚙ Blade Form faded.') }
+    }
+    if (statusEffects.voidZoneTurns > 0) { statusEffects.voidZoneTurns--; if(statusEffects.voidZoneTurns===0){statusEffects.enemyATKMult=1.0; messages.push('🌑 Void Zone faded.')} }
+    if (statusEffects.tornadoTurns  > 0) { statusEffects.tornadoTurns--;  if(statusEffects.tornadoTurns===0){statusEffects.enemyATKMult=1.0; messages.push('💨 Tornado Field faded.')} }
+
+    // ── Yara attacks (team mode) ────────────────────────
+    if (yara && yara.alive && enemyHp > 0) {
+      const yaraDmg = Math.max(1, yara.atk + Math.floor(Math.random()*4))
+      enemyHp = Math.max(0, enemyHp - yaraDmg)
+      if (Math.random() < 0.4) {
+        const yaraHit = Math.max(0, Math.floor(enemy.atk * 0.5) - yara.def)
+        yara.hp = Math.max(0, yara.hp - yaraHit)
+        if (yara.hp <= 0) { yara.alive = false; messages.push('Yara strikes for ' + yaraDmg + ' — then takes ' + yaraHit + ' and falls!') }
+        else               { messages.push('Yara strikes for ' + yaraDmg + ' (takes ' + yaraHit + ' retaliation, ' + yara.hp + ' HP left).') }
+      } else {
+        messages.push('Yara strikes for ' + yaraDmg + '.')
+      }
+    }
+
+    // ── Dorian lurks — backstabs every 2 turns ──────────────────
+    if (dorianLurking && enemyHp > 0 && currentHp > 0) {
+      dorianLurkTurn++
+      if (dorianLurkTurn % 2 === 0) {
+        // Even turn: backstab — ignores all DEF
+        const dorianDmg = Math.max(2, 11 + Math.floor(Math.random() * 6))
+        currentHp = Math.max(0, currentHp - dorianDmg)
+        messages.push('🔴 <strong>DORIAN BACKSTABS from the shadows — ' + dorianDmg + ' damage!</strong> He was never going to hold the deal.')
+      } else {
+        // Odd turn: repositioning taunt
+        const taunts = [
+          '🔴 Dorian shifts in the dark. <em>"Force of habit,"</em> he mutters.',
+          '🔴 You hear movement behind you. Dorian is repositioning.',
+          '🔴 <em>"Every person I betrayed, I told myself it was the game."</em> Dorian watches from the shadows.',
+          '🔴 A shadow peels away from the wall. Dorian is circling.',
+        ]
+        messages.push(taunts[Math.floor(Math.random() * taunts.length)])
+      }
+    }
+
+    // ── Void Sentinel AoE — hits BOTH player AND Dorian every 4 turns ──
+    // Only triggers in the garage_b4_sentinel_fight when Dorian is lurking.
+    if (sentinelAoe && dorianLurking && enemyHp > 0 && dorianLurkHp > 0) {
+      const turnNum = dorianLurkTurn  // reuse the same counter
+      if (turnNum > 0 && turnNum % 4 === 0) {
+        // AoE pulse — hits player for moderate dmg (partially mitigated), Dorian for more
+        const aoePlyDmg = Math.max(1, Math.round(enemy.atk * 0.55) - Math.floor((calcDEF() + (statusEffects.playerDEFBonus||0)) * 0.4))
+        const aoeDorDmg = Math.max(3, Math.round(enemy.atk * 0.8))
+        currentHp    = Math.max(0, currentHp    - aoePlyDmg)
+        dorianLurkHp = Math.max(0, dorianLurkHp - aoeDorDmg)
+        const dorianStatus = dorianLurkHp <= 0
+          ? '🔴 Dorian is caught in the blast — he collapses in the shadows. <em>He won\'t backstab again.</em>'
+          : '🔴 Dorian takes ' + aoeDorDmg + ' from the pulse too. (' + dorianLurkHp + ' HP left in the dark.)'
+        messages.push('⚫ <strong>VOID SENTINEL GEOMETRY PULSE</strong> — reality warps in all directions. You take <strong>' + aoePlyDmg + '</strong>. ' + dorianStatus)
+      }
+    }
+
+    shake()
+    log(messages.join(' '), turnLabel)
+    syncBars()
+    renderSkillSlots()
+
+    if (enemyHp <= 0) { log(enemy.name + ' has fallen.'); endCombat('win'); return }
+    if (currentHp <= 0) {
+      if (window._hasRevive) {
+        window._hasRevive = false; currentHp = 20; syncBars()
+        await supabase.from('players').update({ hp: 20 }).eq('id', player.id)
+        player.hp = 20
+        log('Phoenix Feather activates — you rise at 20 HP!')
+        setButtons(true)
+      } else { log('You collapse…'); endCombat('defeat') }
+      return
+    }
+    setButtons(true)
+  }
+
+
+  $('btn-strike').addEventListener('click', () => doTurn('strike'))
+  $('btn-heavy').addEventListener('click',  () => doTurn('heavy'))
+  $('btn-defend').addEventListener('click', () => doTurn('defend'))
+
+  $('btn-escape').addEventListener('click', async () => {
+    if (over) return
+    const escChance = 0.3 + (playerSPD() - enemySPD()) * 0.05
+    if (Math.random() < Math.max(0.1, Math.min(0.8, escChance))) {
+      log('You slip away…')
+      endCombat('escape')
+    } else {
+      const dmg = Math.max(0, enemy.atk - playerDEF())
+      currentHp = Math.max(0, currentHp - dmg)
+      log('Failed to flee — took ' + dmg + ' damage.')
+      syncBars()
+      if (currentHp <= 0) endCombat('defeat')
+    }
+  })
+
+  // ── Items button ─────────────────────────────
+  $('btn-items').addEventListener('click', async () => {
+    if (over) return
+    const itemsPanel = $('items-panel')
+    const list       = $('items-list')
+
+    // Toggle panel
+    if (itemsPanel.style.display !== 'none') {
+      itemsPanel.style.display = 'none'
+      return
+    }
+    itemsPanel.style.display = 'block'
+    list.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
+
+    // Fetch consumables and usable keys from inventory
+    const { data } = await supabase
+      .from('inventory').select('*')
+      .eq('player_id', player.id)
+      .in('item_type', ['consumable','key'])
+      .gt('quantity', 0)
+      .order('item_type')
+
+    const usable = (data||[]).filter(i => i.hp_restore > 0 || ['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
+
+    if (!usable.length) {
+      list.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'
+      return
+    }
+
+    const RC = {common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
+
+    list.innerHTML = usable.map(item => `
+      <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
+        style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px"
+        onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background=''">
+        ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">'):(item.icon||'📦')})()}
+        <div style="flex:1;min-width:0">
+          <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">
+            ${item.hp_restore>0 ? `+${item.hp_restore} HP` : item.special_effect || 'Special effect'}
+          </p>
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
+      </div>
+    `).join('')
+  })
+
+  window['combatUseItem_' + cid] = async function(itemId, itemName, hpRestore, qty, specialEffect) {
+    const maxHp = player.max_hp || 100
+
+    // ── Healing items ─────────────────────────
+    if (hpRestore > 0) {
+      const healed  = Math.min(maxHp, currentHp + hpRestore) - currentHp
+      currentHp     = Math.min(maxHp, currentHp + hpRestore)
+      syncBars()
+      await supabase.from('players').update({ hp: currentHp }).eq('id', player.id)
+      player.hp = currentHp
+      log('Used ' + itemName + ' — restored ' + healed + ' HP. (' + currentHp + '/' + maxHp + ')')
+    }
+    // ── Phoenix Feather — auto-revive ─────────
+    else if (itemName === 'Phoenix Feather') {
+      window._hasRevive = true
+      log('Phoenix Feather equipped — will auto-revive at 20 HP if you fall.')
+    }
+    // ── Explosion Scroll — max next attack ────
+    else if (itemName === 'Explosion Scroll') {
+      window._forceMaxHit = true
+      log('Explosion Scroll loaded — next attack will deal maximum damage.')
+    }
+    // ── Lava Bomb — skip fight ─────────────────
+    else if (itemName === 'Lava Bomb') {
+      enemyHp = 0
+      syncBars()
+      log('Lava Bomb detonated — enemy destroyed instantly.')
+      $('items-panel').style.display = 'none'
+      await consumeItem(itemId, qty)
+      endCombat('win')
+      return
+    }
+    else {
+      log('Cannot use ' + itemName + ' here.')
+      return
+    }
+
+    $('items-panel').style.display = 'none'
+    await consumeItem(itemId, qty)
+  }
+
+  // Helper — remove 1 from stack or delete if last
+  async function consumeItem(itemId, qty) {
+    if (qty <= 1) {
+      await supabase.from('inventory').delete().eq('id', itemId)
+    } else {
+      await supabase.from('inventory').update({ quantity: qty - 1 }).eq('id', itemId)
+    }
+  }
+
+
+  // ── Watcher Item Set Drop ─────────────────────────────────
+  // Guaranteed 1 piece on first kill. Each additional piece: 40% chance.
+  // Stats roll 1-6 randomly per stat slot.
+  async function dropSingleWatcherPiece(itemKey) {
+    const piece = WATCHER_PIECES.find(p => p.item_key === itemKey)
+    if (!piece) return
+    const statRolls = {}
+    for (const stat of piece.stats) statRolls[stat] = Math.floor(Math.random() * 6) + 1
+    const row = {
+      player_id: player.id, item_key: piece.item_key, name: piece.name,
+      item_type: piece.item_type, rarity: piece.rarity, icon: piece.icon,
+      quantity: 1, equipped_slot: null,
+      ...statRolls,
+      special_effect: piece.special_effect,
+      sockets_total: 2, sockets_used: 0, socketed_runes: [],
+    }
+    const { error } = await supabase.from('inventory').insert(row)
+    if (!error) {
+      showToast(`★ ${piece.name} dropped!`)
+      queueLoot(piece.name, 1, piece.img)
+    }
+  }
+
+  async function dropWatcherSet() {
+    const WATCHER_KEYS = {
+      watcher_cloak:    { chance: 0.05 },
+      watcher_eye_ring: { chance: 0.05 },
+      watcher_crown:    { chance: 0.05 },
+      watcher_band:     { chance: 0.10 },
+    }
+    for (const piece of WATCHER_PIECES) {
+      const rule = WATCHER_KEYS[piece.item_key]
+      if (!rule) continue
+      if (Math.random() > rule.chance) continue
+      await dropSingleWatcherPiece(piece.item_key)
+    }
+  }
+
+  const WATCHER_PIECES = [
+    {
+      item_key: 'watcher_eye_ring', name: "Watcher's Multi-Eye Ring", rarity: 'rare',
+      item_type: 'accessory', icon: '💍',
+      img: '../assets/sets/watcher_eye_ring.png',
+      stats: ['insight_bonus','luck_bonus','atk_bonus'],
+      special_effect: "Observer's Sight: First attack on an unseen enemy deals +25% damage. Reveals hidden enemies nearby.",
+    },
+    {
+      item_key: 'watcher_band', name: "Watcher's Band", rarity: 'rare',
+      item_type: 'accessory', icon: '💍',
+      img: '../assets/sets/watcher_band.png',
+      stats: ['control_bonus','speed_bonus','atk_bonus'],
+      special_effect: "Pattern Recognition: Consecutive hits on the same enemy stack +2% damage (max 20%).",
+    },
+    {
+      item_key: 'watcher_cloak', name: "Watcher's Cloak", rarity: 'rare',
+      item_type: 'armor', icon: '🧥',
+      img: '../assets/sets/watcher_cloak.png',
+      stats: ['speed_bonus','insight_bonus','def_bonus','luck_bonus'],
+      special_effect: "Phantom Step: After dodging, your next attack cannot be dodged. 15% chance to phase (50% dmg reduction).",
+    },
+    {
+      item_key: 'watcher_crown', name: "Watcher's Crown", rarity: 'rare',
+      item_type: 'armor', icon: '👑',
+      img: '../assets/sets/watcher_crown.png',
+      stats: ['insight_bonus','guard_bonus','def_bonus'],
+      special_effect: "Observed: Enemies you hit take -10% ATK and +10% damage from you.",
+    },
+  ]
+
+  renderSkillSlots()
+  syncBars()
+}
+
+// ── Init ─────────────────────────────────────────
+renderHUD()
+render()
+</script>
+</body>
+</html>
