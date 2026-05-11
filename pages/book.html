@@ -371,7 +371,22 @@
     ::-webkit-scrollbar-track{background:rgba(43,29,22,.20)}
     ::-webkit-scrollbar-thumb{background:rgba(138,91,68,.35)}
 
-
+    /* ── Match inventory nav styling ── */
+    button, .choice, .combat-btn {
+      background: transparent !important;
+      border: 1px solid var(--line) !important;
+      border-radius: 0 !important;
+      color: var(--ink) !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 10px !important; letter-spacing: .08em !important;
+      cursor: pointer !important;
+      transition: border-color .2s, color .2s, background .2s !important;
+    }
+    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {
+      border-color: var(--gold) !important;
+      color: var(--gold) !important;
+      background: rgba(200,168,74,.05) !important;
+    }
   </style>
 </head>
 <body>
