@@ -693,7 +693,6 @@ import { supabase } from '../supabase.js'
 import { renderNav, showSysOverlay, showToast } from '../components/nav.js'
 import { resolveEnemyTurn, initEnemyState } from '../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
-import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
 import ZONE_FIRE      from './zones/zone-fire.js'
 import ZONE_WATER     from './zones/zone-water.js'
@@ -710,6 +709,8 @@ window._enemyAI = { resolveEnemyTurn }
 // ═══════════════════════════════════════════════════════════
 // CHAPTER 2 NODES & CONFIG
 // ═══════════════════════════════════════════════════════════
+const NODES = {
+  ...ZONE_FIRE,
   ...ZONE_WATER,
   ...ZONE_LIGHTNING,
   ...ZONE_ARCANE,
