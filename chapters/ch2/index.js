@@ -1108,8 +1108,7 @@ export async function mountChapter2(__mountOptions = {}) {
       const bossKey = 'zone_boss_'+z.id.replace('zone_','')
       const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
       const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
-      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
-        onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px">
         ${imgHtml}
         <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
           <span style="font-size:1rem">${z.icon}</span>
@@ -1124,15 +1123,15 @@ export async function mountChapter2(__mountOptions = {}) {
 
     let eventsHtml = `<div style="margin-top:.75rem">
       <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
-      <div data-go="cache_betrayal_offer" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <div data-go="cache_betrayal_offer" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">⚖️ The Cache Offer</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">A decision waits in the east corridor</p>
       </div>
-      <div data-go="trader_intro" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <div data-go="trader_intro" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
       </div>
-      <div data-go="pre_boss_ch2" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s" onmouseover="this.style.background='rgba(200,81,42,.12)'" onmouseout="this.style.background='rgba(200,81,42,.06)'">
+      <div data-go="pre_boss_ch2" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
       </div>
@@ -1367,7 +1366,7 @@ export async function mountChapter2(__mountOptions = {}) {
       + '<div id="'+cid+'-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05)">'
       + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>'
       + '<div id="'+cid+'-items-list"></div>'
-      + '<button onclick="document.getElementById(\''+cid+'-items-panel\').style.display=\'none\'" style="font-family:\'IM Fell English\',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>'
+      + '<button id="'+cid+'-items-close" style="font-family:\'IM Fell English\',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>'
       + '</div>'
       + '<div id="'+cid+'-combat-over" style="display:none;text-align:center;padding:.5rem"></div>'
       + '</div>'
@@ -1437,7 +1436,7 @@ export async function mountChapter2(__mountOptions = {}) {
         const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto" onerror="this.remove()">'
 
         return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
-          + ' onclick="useSkill_'+cid+'(\''+k+'\')"'
+          + ' data-skill-key="'+k+'"'
           + (cd>0?' disabled':'')
           + ' title="'+(sk.desc||sk.label)+' (Lv'+lv+' · '+pct+'% power)"'
           + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;'+border+';color:'+btnColor+';position:relative;overflow:hidden">'
@@ -1452,6 +1451,9 @@ export async function mountChapter2(__mountOptions = {}) {
 
       html += '</div>'
       row.innerHTML = html
+      row.querySelectorAll('[data-skill-key]').forEach(btn => {
+        btn.addEventListener('click', () => useSkillLocal(btn.dataset.skillKey))
+      })
     }
 
     function setButtons(enabled) {
@@ -1474,6 +1476,8 @@ export async function mountChapter2(__mountOptions = {}) {
       doTurn('skill', key)
     }
     window['useSkill_' + cid] = useSkillLocal
+    const itemCloseBtn = $('items-close')
+    if (itemCloseBtn) itemCloseBtn.addEventListener('click', () => { $('items-panel').style.display = 'none' })
 
     // ── Items panel ───────────────────────────────────────────────────────────
     $('btn-items').addEventListener('click', async () => {
@@ -1488,16 +1492,22 @@ export async function mountChapter2(__mountOptions = {}) {
       const usable=(data||[]).filter(i=>i.hp_restore>0||['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
       if(!usable.length){list.innerHTML='<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'; return}
       const RC={common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
-      list.innerHTML=usable.map(item=>`
-        <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
-          style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px"
-          onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background=''">
+      list.innerHTML=usable.map((item,index)=>`
+        <div data-combat-item-index="${index}"
+          style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px">
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">${item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special effect'}</p>
+            <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${escapeHtml(item.name)}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">${escapeHtml(item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special effect')}</p>
           </div>
           <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
         </div>`).join('')
+      list.querySelectorAll('[data-combat-item-index]').forEach(el => {
+        el.addEventListener('click', () => {
+          const item = usable[Number(el.dataset.combatItemIndex)]
+          if (!item) return
+          window['combatUseItem_'+cid](item.id, item.name, item.hp_restore || 0, item.quantity || 1, item.special_effect || '')
+        })
+      })
     })
 
     window['combatUseItem_'+cid] = async function(itemId,itemName,hpRestore,qty,specialEffect) {
@@ -1607,17 +1617,20 @@ export async function mountChapter2(__mountOptions = {}) {
         const nextNode=isBoss?'chapter_end_ch2':onWin
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
-        $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${nextNode}')"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+        $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
       } else if (result==='escape') {
         await save({hp:currentHp})
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
-        $('combat-over').innerHTML=`<button class="choice" onclick="goTo('${onEscape||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
+        $('combat-over').innerHTML=`<button class="choice" data-next-node="${onEscape||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
+        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
       } else {
         currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
-        $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" onclick="goTo('${onLose||'district_hub'}')"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+        $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" data-next-node="${onLose||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
       }
     }
 
@@ -1895,7 +1908,7 @@ export async function mountChapter2(__mountOptions = {}) {
       <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
           <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
-          <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
+          <button id="stat-window-close" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
         </div>
         <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
           <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
@@ -1920,10 +1933,15 @@ export async function mountChapter2(__mountOptions = {}) {
           <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
           <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${eqItems.map(i=>i.name).join(', ')||'None'}</p>
         </div>
-        ${(player.skill_points||0)>0?`<button onclick="document.getElementById('stat-window').remove();window.bookNavigate('skills.html')" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
+        ${(player.skill_points||0)>0?`<button id="stat-window-skills" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
       </div>`
     modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
     document.body.appendChild(modal)
+    document.getElementById('stat-window-close')?.addEventListener('click', () => modal.remove())
+    document.getElementById('stat-window-skills')?.addEventListener('click', () => {
+      modal.remove()
+      window.bookNavigate('skills.html')
+    })
   }
 
   function renderHUD() {
@@ -1969,16 +1987,19 @@ export async function mountChapter2(__mountOptions = {}) {
           <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
         </div>
       </div>
-      ${(player.skill_points||0)>0?`<div onclick="window.bookNavigate('skills.html')" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+      ${(player.skill_points||0)>0?`<div id="hud-skill-points-link" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
       <div class="stat-grid">
         <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
         <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
         <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val" style="color:#c8b96e">${player.gold||0}</span></div>
       </div>
       <div style="display:flex;gap:4px;margin-top:6px">
-        <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-        <button onclick="window.bookNavigate('skills.html')" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+        <button id="hud-open-stats" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+        <button id="hud-open-skills" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
       </div>`
+    document.getElementById('hud-skill-points-link')?.addEventListener('click', () => window.bookNavigate('skills.html'))
+    document.getElementById('hud-open-stats')?.addEventListener('click', () => openStatWindow())
+    document.getElementById('hud-open-skills')?.addEventListener('click', () => window.bookNavigate('skills.html'))
   }
 
   function updateHpBar(hp) {
