@@ -480,17 +480,18 @@ import { renderNav } from '../components/nav.js'
   ]
 
   // ── Book module router ──────────────────────────────
+  const MODULE_VERSION = '2026-05-12-ch2-handler-fix'
   const MODULE_ROUTES = {
-    ch1:       () => import('../chapters/ch1/index.js'),
-    ch2:       () => import('../chapters/ch2/index.js'),
-    inventory: () => import('./inventory.js'),
-    skills:    () => import('./skills.js'),
-    trader:    () => import('./trader.js'),
-    lobby:     () => import('./lobby.js'),
-    badges:    () => import('./badges.js'),
-    crafting:  () => import('./crafting.js'),
-    garage:    () => import('./garage.js'),
-    vehicle:   () => import('./vehicle.js'),
+    ch1:       () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
+    ch2:       () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
+    inventory: () => import(`./inventory.js?v=${MODULE_VERSION}`),
+    skills:    () => import(`./skills.js?v=${MODULE_VERSION}`),
+    trader:    () => import(`./trader.js?v=${MODULE_VERSION}`),
+    lobby:     () => import(`./lobby.js?v=${MODULE_VERSION}`),
+    badges:    () => import(`./badges.js?v=${MODULE_VERSION}`),
+    crafting:  () => import(`./crafting.js?v=${MODULE_VERSION}`),
+    garage:    () => import(`./garage.js?v=${MODULE_VERSION}`),
+    vehicle:   () => import(`./vehicle.js?v=${MODULE_VERSION}`),
   }
 
   let activeModule = null
