@@ -576,17 +576,31 @@ import { renderNav } from '../components/nav.js'
     activeModule?.cleanup?.()
     host.innerHTML = '<div class="module-loading">Opening module...</div>'
 
-    const mod = await loader()
-    const mount = mod.default || mod.mount
-    activeModule = await mount({
-      host,
-      player: currentPlayer,
-      navId: 'nav',
-      navigate: goTo,
-    })
+    try {
+      const mod = await loader()
+      const mount = mod.default || mod.mount
+      if (typeof mount !== 'function') throw new Error(`Module "${route.key}" does not export a mount function.`)
+
+      // Re-assign this before every mount because chapter scripts use window.goTo
+      // for story nodes. The book router needs its own stable global.
+      window.bookNavigate = bookNavigate
+      activeModule = await mount({
+        host,
+        player: currentPlayer,
+        navId: 'nav',
+        navigate: bookNavigate,
+      })
+    } catch (err) {
+      console.error('[SuperSede] Failed to open book module:', route.key, err)
+      host.innerHTML = `<div class="module-loading">
+        Failed to open ${route.key}.<br>
+        <span style="display:block;margin-top:10px;font-size:9px;letter-spacing:.08em;text-transform:none">${err?.message || err}</span>
+        <button class="ch-btn" style="margin-top:16px" onclick="window.bookNavigate('book.html')">Return to Chapters</button>
+      </div>`
+    }
   }
 
-  function goTo(href) {
+  function bookNavigate(href) {
     const url = new URL(href, location.href)
     const route = routeFromUrl(url)
     if (route.key) {
@@ -863,7 +877,7 @@ import { renderNav } from '../components/nav.js'
 
       // Preview is always clickable if it exists — regardless of chapter lock
       const thumbHtml = previewHref
-        ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none;background:${thumbBg}" onclick="event.preventDefault();goTo('${previewHref}')">${thumbInner}</a>`
+          ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none;background:${thumbBg}" onclick="event.preventDefault();bookNavigate('${previewHref}')">${thumbInner}</a>`
         : `<div class="ch-thumb" style="background:${thumbBg}">${thumbInner}</div>`
 
       if (!isUnlocked) {
@@ -895,7 +909,7 @@ import { renderNav } from '../components/nav.js'
             <div class="ch-sub">${ch.sub}</div>
           </div>
           <a href="${href}" class="ch-btn ${player.current_chapter===1?'active':''}"
-             onclick="event.preventDefault();goTo('${href}')">${label}</a>
+             onclick="event.preventDefault();bookNavigate('${href}')">${label}</a>
         </div>`
       }
 
@@ -915,19 +929,18 @@ import { renderNav } from '../components/nav.js'
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
           <a href="book.html?view=garage&dest=${ch.number}" class="ch-btn"
-             onclick="event.preventDefault();goTo('book.html?view=garage&dest=${ch.number}')">${driveLabel}</a>
+             onclick="event.preventDefault();bookNavigate('book.html?view=garage&dest=${ch.number}')">${driveLabel}</a>
           ${chDisabled
             ? `<span class="ch-btn" style="opacity:.35;cursor:not-allowed;pointer-events:none" title="Complete the drive to unlock">🔒 Chapter</span>`
             : `<a href="${chHref}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
-                 onclick="event.preventDefault();goTo('${chHref}')">${chLabel}</a>`
+                 onclick="event.preventDefault();bookNavigate('${chHref}')">${chLabel}</a>`
           }
         </div>
       </div>`
     }).join('')
 
     // expose for inline onclick
-    window.goTo = goTo
-    window.bookNavigate = goTo
+    window.bookNavigate = bookNavigate
     document.getElementById('book-module-host').addEventListener('click', (event) => {
       const link = event.target.closest('a[href]')
       if (!link) return
@@ -935,7 +948,7 @@ import { renderNav } from '../components/nav.js'
       const route = routeFromUrl(new URL(href, location.href))
       if (!route.key) return
       event.preventDefault()
-      goTo(href)
+      bookNavigate(href)
     })
     window.addEventListener('popstate', () => loadRoute(routeFromUrl(new URL(location.href)), { push: false }))
     await loadRoute(routeFromUrl(new URL(location.href)), { push: false })
