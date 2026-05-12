@@ -1433,7 +1433,7 @@ export async function mountChapter2(__mountOptions = {}) {
           : ''
         const iconFilter = cd>0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px '+sk.color+'88)'
         const btnColor   = cd>0 ? 'rgba(200,160,60,.35)' : sk.color
-        const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto" onerror="this.remove()">'
+        const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto">'
 
         return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
           + ' data-skill-key="'+k+'"'
