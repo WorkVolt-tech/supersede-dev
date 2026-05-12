@@ -187,15 +187,22 @@ export async function mountChapter1(__mountOptions = {}) {
 
   // ── Save ─────────────────────────────────────────
   async function save(updates) {
-    // Preserve defeated_bosses across the player object overwrite
+    // Preserve defeated_bosses across the merge in case DB returns it empty.
     const prevDefeated = updates.defeated_bosses || player.defeated_bosses || []
     const { data } = await supabase
       .from('players').update({ ...updates, last_seen_at: new Date().toISOString() })
       .eq('id', player.id).select().single()
     if (data) {
-      player = data
+      // Merge DB-returned fields into the existing player object instead of
+      // rebinding the variable to a new object. This preserves reference
+      // identity across every module that already holds the player (book.html's
+      // currentPlayer, every previously-mounted module, etc.) so post-save
+      // mutations don't get orphaned on the old reference. Without this, the
+      // HUD would read fresh state from the rebound local while sibling pages
+      // (skills, inventory, ...) would read stale state from the original
+      // object that book.html cached at first load.
+      Object.assign(player, data)
       currentHp = data.hp
-      // Keep in-memory value if DB returned empty (guards against missing column)
       if (!player.defeated_bosses || !player.defeated_bosses.length) {
         player.defeated_bosses = prevDefeated
       }
