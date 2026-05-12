@@ -763,7 +763,20 @@ export async function mountChapter2(__mountOptions = {}) {
 
   "The form this takes depends on what you built. Both of what you built."`,
       choices: [
-        { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'boss_judges' },
+        { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'judges_verdict' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // JUDGES VERDICT — dynamic record readout
+    // (text composed at render-time from real player state)
+    // ═══════════════════════════════
+    judges_verdict: {
+      id: 'judges_verdict', type: 'story',
+      sysMsg: 'TWIN JUDGES — Record review in progress.',
+      text: '',
+      choices: [
+        { label: 'Stand before them', sub: 'The reading is finished. The fight begins.', next: 'boss_judges' },
       ],
     },
 
@@ -772,21 +785,14 @@ export async function mountChapter2(__mountOptions = {}) {
     // ═══════════════════════════════
     boss_judges: {
       id: 'boss_judges', type: 'boss',
-      text: `Mercy arrives like weather — not a dramatic entrance but a presence that was suddenly relevant. Tall. Still. An interface halo twice the complexity of any System display you've seen. Eyes that are cataloguing, not judging — or judging in the sense that a scale judges: accurately, without preference.
+      text: `The reading is finished. The interfaces fold away — every choice, every alliance, every elemental zone, every life ended or spared, returned to wherever the System keeps things it has already accounted for.
 
-  Wrath is already beside you somehow. No approach. Just — adjacent. Smaller than Mercy. More compressed. The feeling off Wrath is like holding something very sharp — not threatening unless you make a mistake.
+  Both Judges look at you now. Not the record — you.
 
-  Neither of them speaks.
+  Mercy's halo settles into its working state, twice the complexity of any System display you've seen.
+  Wrath's compression sharpens.
 
-  Their interfaces open simultaneously. Your record scrolls between them — every choice, every alliance, every betrayal, every cooperation, every elemental zone entered. All of it, in precise System notation.
-
-  Mercy's display highlights the cooperative entries. They glow warm.
-  Wrath's display highlights the decisive entries. They glow cold.
-  A third column, narrower than the others: ELEMENTAL RESONANCE. Every zone you entered. One entry, or more.
-
-  Both Judges look at the third column. Then at each other. Then at you.
-
-  The form this fight takes — who leads, whether they stay separate, whether they become something neither of them was before — that was decided before they arrived. By you.
+  Neither of them speaks again.
 
   The fight begins.`,
       enemy: {
@@ -1014,16 +1020,133 @@ export async function mountChapter2(__mountOptions = {}) {
     setTimeout(()=>{ nodeId=nextId; render(); lp.style.opacity='1'; lp.style.transform='translateX(0)'; window.scrollTo({top:0,behavior:'smooth'}) },320)
   }
 
+  // ── Dynamic verdict text composed from real player flags. ──────────
+  // Lives next to render() so the special-case in render() can call it.
+  // All inputs are read-only; this function never mutates state.
+  const ZONE_BOSS_TO_ELEMENT = {
+    zone_boss_fire:'Ignis', zone_boss_water:'Aqua', zone_boss_lightning:'Volt',
+    zone_boss_arcane:'Arcane', zone_boss_shadow:'Umbra', zone_boss_earth:'Terra',
+    zone_boss_wind:'Aero', zone_boss_plant:'Flora', zone_boss_metal:'Ferro',
+    zone_boss_poison:'Venom',
+  }
+  function buildJudgesVerdict(p) {
+    const moral       = p.moral_score || 0
+    const helps       = p.helps_given || 0
+    const pvpKills    = p.pvp_kills   || 0
+    const lvl         = p.level       || 1
+    const hasAlliance = (p.alliance_log || []).includes('builders')
+    const defeated    = p.defeated_bosses || []
+
+    const zonesCleared = defeated.filter(b => b in ZONE_BOSS_TO_ELEMENT)
+    const zoneNames    = zonesCleared.map(b => ZONE_BOSS_TO_ELEMENT[b])
+    const zoneCount    = zonesCleared.length
+
+    // Mercy lines (cooperation side of the ledger)
+    const mercy = []
+    if (hasAlliance && moral >= 0) {
+      mercy.push('▸ You signed an alliance with the Builders in this district. The signature still holds.')
+    } else if (hasAlliance && moral < -10) {
+      mercy.push('▸ You signed an alliance with the Builders. The signature broke under pressure.')
+    }
+    if (helps >= 5) {
+      mercy.push('▸ Your record from before this carries ' + helps + ' acts of help to the System\'s stranded.')
+    } else if (helps >= 1) {
+      mercy.push('▸ You helped ' + helps + ' of the System\'s stranded in another life. I have not forgotten.')
+    }
+    if (moral >= 60) {
+      mercy.push('▸ Moral score: +' + moral + '. The pattern is consistent.')
+    } else if (moral >= 20) {
+      mercy.push('▸ Moral score: +' + moral + '. Cooperation outweighs the rest.')
+    }
+    if (!mercy.length) {
+      mercy.push('▸ Your record contains few entries on my side.')
+      mercy.push('▸ Acknowledged.')
+    }
+
+    // Wrath lines (dominance side of the ledger)
+    const wrath = []
+    if (moral <= -60) {
+      wrath.push('▸ Moral score: ' + moral + '. The pattern is committed.')
+    } else if (moral <= -20) {
+      wrath.push('▸ Moral score: ' + moral + '. The hand was offered. You weighed it.')
+    }
+    if (pvpKills >= 5) {
+      wrath.push('▸ Lives ended by your hand: ' + pvpKills + '. Recorded.')
+    } else if (pvpKills >= 1) {
+      wrath.push('▸ ' + pvpKills + ' live' + (pvpKills === 1 ? '' : 's') + ' ended by your hand. Acknowledged.')
+    }
+    if (zoneCount >= 5) {
+      wrath.push('▸ Elemental guardians felled: ' + zoneCount + '. You did not pass through this district. You took it.')
+    } else if (zoneCount >= 1) {
+      wrath.push('▸ You cleared ' + zoneCount + ' guardian' + (zoneCount === 1 ? '' : 's') + ' on the way here.')
+    }
+    if (lvl >= 14) {
+      wrath.push('▸ You arrived at level ' + lvl + '. You did not arrive empty-handed.')
+    }
+    if (!wrath.length) {
+      wrath.push('▸ Your record contains few entries on my side.')
+      wrath.push('▸ Acknowledged.')
+    }
+
+    // Resonance line (the column between them)
+    let resonance
+    if      (zoneCount === 0)  resonance = '▸ No elements claimed. You walked through the district untouched by what it offered.'
+    else if (zoneCount === 1)  resonance = '▸ One element claimed: ' + zoneNames[0] + '. Singular commitment.'
+    else if (zoneCount <= 3)   resonance = '▸ ' + zoneCount + ' elements claimed: ' + zoneNames.join(', ') + '. Focused reach.'
+    else if (zoneCount <= 6)   resonance = '▸ ' + zoneCount + ' elements claimed: ' + zoneNames.join(', ') + '. Broad reach.'
+    else                       resonance = '▸ ' + zoneCount + ' of 10 elements claimed: ' + zoneNames.join(', ') + '. You reached for everything within reach.'
+
+    // Closing line — who leads
+    let closing
+    if      (moral >=  60)        closing = 'Mercy speaks first. "You built more than you took. We see it." Wrath inclines its head — the smallest acknowledgement — and they step forward together, Mercy in the lead.'
+    else if (moral <= -60)        closing = 'Wrath speaks first. "You took more than you built. Clarity respected." Mercy inclines its head — the smallest acknowledgement — and they step forward together, Wrath in the lead.'
+    else if (Math.abs(moral)<20)  closing = 'Mercy looks at Wrath. "Mixed," she says. "Tested both ways," Wrath agrees. Neither leads. Both step forward at once.'
+    else if (moral > 0)           closing = 'Mercy nods to Wrath. They step forward in unison — both ledgers active, with Mercy closer to your shoulder.'
+    else                          closing = 'Wrath nods to Mercy. They step forward in unison — both ledgers active, with Wrath closer to your shoulder.'
+
+    return [
+      'Two interfaces unfold in front of you.',
+      '',
+      'Mercy stands to your left. Tall. Still. Cataloguing.',
+      'Wrath stands to your right. Smaller. Compressed. Already finished reading.',
+      '',
+      'Neither of them looks at you yet. They look at the record.',
+      '',
+      '═══════════════════════════════════════',
+      'MERCY READS, slowly:',
+      '',
+      mercy.join('\n'),
+      '',
+      '═══════════════════════════════════════',
+      'WRATH READS, faster:',
+      '',
+      wrath.join('\n'),
+      '',
+      '═══════════════════════════════════════',
+      'ELEMENTAL RESONANCE — the column between them:',
+      '',
+      resonance,
+      '',
+      '═══════════════════════════════════════',
+      '',
+      'They finish reading at the same moment. They look at each other for exactly long enough to make a decision.',
+      '',
+      closing,
+    ].join('\n')
+  }
+
   function render() {
     const node=NODES[nodeId]
     if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
     if (node.sysMsg) showSysOverlay(node.sysMsg)
     const stEl=document.getElementById('story-text')
-    stEl.textContent=node.text||''
+    // judges_verdict composes its text from live player state — every other
+    // node uses its authored node.text as-is.
+    stEl.textContent = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
-    // Judge image near boss
-    const judgeNodes=['pre_boss_ch2','boss_judges']
+    // Judge image near boss (and on the verdict scene)
+    const judgeNodes=['pre_boss_ch2','judges_verdict','boss_judges']
     const judgeImg=document.getElementById('judge-img')
     if (judgeNodes.includes(nodeId)) {
       if (!judgeImg) {
