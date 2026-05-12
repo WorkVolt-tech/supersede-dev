@@ -894,7 +894,12 @@ export async function mountChapter2(__mountOptions = {}) {
     Object.assign(player, updates)
     const { data, error } = await supabase.from('players').update(updates).eq('id', player.id).select().single()
     if (error) console.error('[ch2 save]', error.message)
-    if (data) { player = data; currentHp = data.hp }
+    // Merge DB-returned fields into the existing player object instead of
+    // rebinding the variable. Same rationale as ch1/index.js save(): keeps
+    // reference identity stable across modules (book.html currentPlayer,
+    // sibling pages like skills/inventory) so post-save mutations remain
+    // visible everywhere instead of getting orphaned on the old reference.
+    if (data) { Object.assign(player, data); currentHp = data.hp }
     renderHUD()
   }
 
