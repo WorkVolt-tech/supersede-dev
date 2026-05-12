@@ -34,5 +34,5 @@ export const ZONES = [
 
 export const STORY_EVENTS = [
   { id:'cache_betrayal_offer', label:'⚖️ The Cache Offer', sub:'A decision point waits in the east corridor', done: false },
-  { id:'trader_intro',         label:'🏪 Pell\\'s Shop',    sub:'Neutral trader — weapons, info, reagents',  done: false },
+  { id:'trader_intro',         label:"🏪 Pell's Shop",      sub:'Neutral trader — weapons, info, reagents',  done: false },
 ]
