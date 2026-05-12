@@ -387,12 +387,29 @@
       color: var(--gold) !important;
       background: rgba(200,168,74,.05) !important;
     }
+    .module-view {
+      width: 100%;
+      min-height: 100vh;
+    }
+    .module-loading {
+      max-width: 1060px;
+      margin: 24px auto 60px;
+      padding: 28px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
 <div id="nav"></div>
 
-<div class="scene">
+<div class="scene" id="toc-view">
 
   <div class="zone">
     <div>
@@ -433,10 +450,10 @@
         <hr class="ink-rule">
 
         <div class="action-row">
-          <a href="inventory.html" class="action-btn">🎒 Inventory</a>
-          <a href="trader.html"    class="action-btn">🛒 Trader</a>
-          <a href="lobby.html"     class="action-btn">⚔ Lobby</a>
-          <a href="badges.html"    class="action-btn">🏅 Badges</a>
+          <a href="book.html?view=inventory" class="action-btn">🎒 Inventory</a>
+          <a href="book.html?view=trader"    class="action-btn">🛒 Trader</a>
+          <a href="book.html?view=lobby"     class="action-btn">⚔ Lobby</a>
+          <a href="book.html?view=badges"    class="action-btn">🏅 Badges</a>
         </div>
 
         <div class="ink-quote">
@@ -450,6 +467,10 @@
 
 </div><!-- /scene -->
 
+<div class="module-view" id="module-view" hidden>
+  <div id="book-module-host"></div>
+</div>
+
 <script type="module">
 import { renderNav } from '../components/nav.js'
 
@@ -458,8 +479,122 @@ import { renderNav } from '../components/nav.js'
     { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
   ]
 
-  // ── Direct navigation ──────────────────────────────
-  function goTo(href) { window.location.href = href }
+  // ── Book module router ──────────────────────────────
+  const MODULE_ROUTES = {
+    ch1:       () => import('../chapters/ch1/index.js'),
+    ch2:       () => import('../chapters/ch2/index.js'),
+    inventory: () => import('./inventory.js'),
+    skills:    () => import('./skills.js'),
+    trader:    () => import('./trader.js'),
+    lobby:     () => import('./lobby.js'),
+    badges:    () => import('./badges.js'),
+    crafting:  () => import('./crafting.js'),
+    garage:    () => import('./garage.js'),
+    vehicle:   () => import('./vehicle.js'),
+  }
+
+  let activeModule = null
+  let currentPlayer = null
+
+  function routeFromUrl(url) {
+    const params = url.searchParams
+    const chapter = params.get('chapter')
+    if (chapter) return { key: `ch${chapter}`, params }
+
+    const view = params.get('view')
+    if (view) return { key: view, params }
+
+    const file = url.pathname.split('/').pop()
+    const chapterMatch = file.match(/^chapter(\d+)\.html$/)
+    if (chapterMatch) return { key: `ch${chapterMatch[1]}`, params }
+
+    const pageRoutes = {
+      'inventory.html': 'inventory',
+      'skills.html': 'skills',
+      'trader.html': 'trader',
+      'lobby.html': 'lobby',
+      'badges.html': 'badges',
+      'crafting.html': 'crafting',
+      'garage.html': 'garage',
+      'vehicle.html': 'vehicle',
+      'book.html': 'chapters',
+    }
+
+    return { key: pageRoutes[file] || null, params }
+  }
+
+  function routeUrl(route) {
+    const url = new URL('book.html', location.href)
+    route.params.forEach((value, key) => {
+      if (key !== 'chapter' && key !== 'view') url.searchParams.set(key, value)
+    })
+
+    if (route.key === 'chapters') return url.pathname
+    if (/^ch\d+$/.test(route.key)) url.searchParams.set('chapter', route.key.replace('ch', ''))
+    else url.searchParams.set('view', route.key)
+
+    return url.pathname + url.search
+  }
+
+  function updateNavActive(routeKey) {
+    const currentView = /^ch\d+$/.test(routeKey) || routeKey === 'chapters' ? 'chapters' : routeKey
+    document.querySelectorAll('.bm-link').forEach(link => {
+      const route = routeFromUrl(new URL(link.href, location.href))
+      const linkView = /^ch\d+$/.test(route.key) || route.key === 'chapters' ? 'chapters' : route.key
+      link.classList.toggle('active', linkView === currentView)
+    })
+  }
+
+  async function loadRoute(route, { push = false } = {}) {
+    const tocView = document.getElementById('toc-view')
+    const moduleView = document.getElementById('module-view')
+    const host = document.getElementById('book-module-host')
+
+    if (!route.key || route.key === 'chapters') {
+      activeModule?.cleanup?.()
+      activeModule = null
+      host.innerHTML = ''
+      document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
+      tocView.hidden = false
+      moduleView.hidden = true
+      if (push) history.pushState({}, '', routeUrl({ ...route, key: 'chapters' }))
+      updateNavActive('chapters')
+      return
+    }
+
+    const loader = MODULE_ROUTES[route.key]
+    if (!loader) {
+      window.location.href = routeUrl({ ...route, key: 'chapters' })
+      return
+    }
+
+    if (push) history.pushState({}, '', routeUrl(route))
+    updateNavActive(route.key)
+
+    tocView.hidden = true
+    moduleView.hidden = false
+    activeModule?.cleanup?.()
+    host.innerHTML = '<div class="module-loading">Opening module...</div>'
+
+    const mod = await loader()
+    const mount = mod.default || mod.mount
+    activeModule = await mount({
+      host,
+      player: currentPlayer,
+      navId: 'nav',
+      navigate: goTo,
+    })
+  }
+
+  function goTo(href) {
+    const url = new URL(href, location.href)
+    const route = routeFromUrl(url)
+    if (route.key) {
+      loadRoute(route, { push: true })
+      return
+    }
+    window.location.href = href
+  }
 
   // ── Watcher SVG thumbnail ────────────────────────────────
   const WATCHER_SVG = `<svg viewBox="100 200 600 560" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -690,6 +825,7 @@ import { renderNav } from '../components/nav.js'
   ;(async () => {
     const player = await renderNav('nav')
     if (!player) return
+    currentPlayer = player
 
     const unlocked = player.chapters_unlocked || [1]
 
@@ -749,7 +885,7 @@ import { renderNav } from '../components/nav.js'
 
       // Ch1 — single button only
       if (isCh1) {
-        const href  = alreadyIn || player.current_chapter === 1 ? 'chapter1.html' : 'chapter1.html'
+        const href  = 'book.html?chapter=1'
         const label = player.current_chapter === 1 || alreadyIn ? 'Continue ›' : isReplay ? 'Replay ›' : 'Enter ›'
         return `<div class="chapter-entry">
           ${thumbHtml}
@@ -767,7 +903,7 @@ import { renderNav } from '../components/nav.js'
       const driveLabel = 'Drive ›'
       const chLabel    = alreadyIn || player.current_chapter === ch.number ? 'Continue ›'
                        : isReplay ? 'Replay ›' : 'Enter ›'
-      const chHref     = `chapter${ch.number}.html`
+      const chHref     = `book.html?chapter=${ch.number}`
       const chDisabled = !chUnlocked
 
       return `<div class="chapter-entry">
@@ -778,8 +914,8 @@ import { renderNav } from '../components/nav.js'
           <div class="ch-sub">${ch.sub}</div>
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-          <a href="garage.html?dest=${ch.number}" class="ch-btn"
-             onclick="event.preventDefault();goTo('garage.html?dest=${ch.number}')">${driveLabel}</a>
+          <a href="book.html?view=garage&dest=${ch.number}" class="ch-btn"
+             onclick="event.preventDefault();goTo('book.html?view=garage&dest=${ch.number}')">${driveLabel}</a>
           ${chDisabled
             ? `<span class="ch-btn" style="opacity:.35;cursor:not-allowed;pointer-events:none" title="Complete the drive to unlock">🔒 Chapter</span>`
             : `<a href="${chHref}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
@@ -791,6 +927,18 @@ import { renderNav } from '../components/nav.js'
 
     // expose for inline onclick
     window.goTo = goTo
+    window.bookNavigate = goTo
+    document.getElementById('book-module-host').addEventListener('click', (event) => {
+      const link = event.target.closest('a[href]')
+      if (!link) return
+      const href = link.getAttribute('href')
+      const route = routeFromUrl(new URL(href, location.href))
+      if (!route.key) return
+      event.preventDefault()
+      goTo(href)
+    })
+    window.addEventListener('popstate', () => loadRoute(routeFromUrl(new URL(location.href)), { push: false }))
+    await loadRoute(routeFromUrl(new URL(location.href)), { push: false })
   })()
 </script>
 </body>

@@ -93,7 +93,7 @@
   <div id="end-sub"></div>
   <div id="end-stats-row" class="end-stats"></div>
   <button class="end-btn" id="end-primary" onclick="handleEndPrimary()">Continue</button>
-  <button class="end-btn secondary" onclick="window.location.href='garage.html'">← Garage</button>
+  <button class="end-btn secondary" onclick="window.location.href='book.html?view=garage'">← Garage</button>
 </div>
 <script type="module">
 import { supabase } from '../supabase.js'
@@ -125,7 +125,7 @@ const HAS_SHIELD=vUpgrades.includes('arm_shield')
 // URL dest
 const urlDest=new URLSearchParams(window.location.search).get('dest')
 let destination=urlDest?parseInt(urlDest):null
-document.getElementById('back-btn').onclick=()=>window.location.href='garage.html'+(urlDest?`?dest=${urlDest}`:'')
+document.getElementById('back-btn').onclick=()=>window.location.href='book.html?view=garage'+(urlDest?`&dest=${urlDest}`:'')
 if(destination){document.getElementById('chapter-select').style.display='none';document.getElementById('hud-dest').textContent='→ CH.'+destination;setTimeout(startGame,600)}
 
 // Canvas
@@ -713,7 +713,7 @@ function onDeath(){
 }
 
 window.handleEndPrimary=()=>{
-  if(document.getElementById('end-title').textContent.includes('ARRIVED'))window.location.href=`chapter${destination}.html`
+  if(document.getElementById('end-title').textContent.includes('ARRIVED'))window.location.href=`book.html?chapter=${destination}`
   else{document.getElementById('end-overlay').classList.remove('show');G.finished=false;startGame()}
 }
 
