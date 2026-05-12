@@ -420,49 +420,45 @@ export async function mountSkills(__mountOptions = {}) {
     if (!_panZoomInit) { setupPanZoom(); _panZoomInit = true }
   }
 
-  // Set of "parentId\x00childId" edge keys forming the prerequisite path from
-  // the selected node back to root. Walks `requires` upward, recursively, so a
-  // node with multiple parents lights up every ancestor edge — i.e. the full
-  // prereq DAG behind the selection, never anything forward of it.
-  // \x00 is used as a separator because node ids may contain other characters.
-  function getSelectedPathEdges(selectedId) {
-    const edges = new Set()
-    if (!selectedId) return edges
-    const visited = new Set()
-    const stack = [selectedId]
-    while (stack.length) {
-      const cur = stack.pop()
-      if (visited.has(cur)) continue
-      visited.add(cur)
-      const node = NODES.find(n => n.id === cur)
-      if (!node || !node.requires) continue
-      for (const req of node.requires) {
-        edges.add(req + '\x00' + cur)
-        if (!visited.has(req)) stack.push(req)
-      }
-    }
-    return edges
-  }
-
-  // Re-render only the SVG connectors — cheap, no full tree rebuild, no
-  // re-binding of click handlers on the HTML nodes.
-  // Lines appear ONLY for edges on the selected node's prereq path back to
-  // root, drawn in that node's branch color. With no selection, the tree has
-  // no connector lines — the user explicitly wanted lines to only light up on
-  // selection and to not extend forward toward unmade choices.
+  // Re-render the SVG connector lines.
+  //
+  // Every edge is always drawn so the tree's structure is visible, like a
+  // physical tree diagram. When a node is selected, only the edges that
+  // connect that node directly to its immediate parents light up — we
+  // deliberately do NOT walk the prereq chain back to root, and we do NOT
+  // extend forward to its children. The selection only highlights the node
+  // you're going to, and the lines that bring you to it.
+  //
+  // Cheap to call — replaces the SVG's inner HTML, doesn't rebuild the HTML
+  // node layer or re-bind any click handlers.
   function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
-    const pathEdges = getSelectedPathEdges(selectedNode)
-    if (!pathEdges.size) { svg.innerHTML = ''; return }
+
+    // Edge keys (parentId\x00childId) entering the currently selected node.
+    // \x00 keeps the separator safe regardless of what characters node ids
+    // contain.
+    const litEdges = new Set()
+    if (selectedNode) {
+      const sel = NODES.find(n => n.id === selectedNode)
+      if (sel && sel.requires) {
+        for (const req of sel.requires) litEdges.add(req + '\x00' + selectedNode)
+      }
+    }
+
     let lines = ''
     NODES.forEach(nd => {
       nd.requires.forEach(req => {
-        if (!pathEdges.has(req + '\x00' + nd.id)) return
         const par = NODES.find(n => n.id === req)
         if (!par) return
+        const lit = litEdges.has(req + '\x00' + nd.id)
         const col = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
-        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="3" stroke-linecap="round" opacity="0.9"/>`
+        // Default: faint structural line in the branch colour.
+        // Lit:     full-strength, thicker, with a glow filter applied via CSS.
+        const opacity = lit ? '0.95' : '0.28'
+        const sw      = lit ? 3.5   : 1.4
+        const cls     = lit ? ' class="sn-line lit"' : ' class="sn-line"'
+        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" opacity="${opacity}"${cls}/>`
       })
     })
     svg.innerHTML = lines
