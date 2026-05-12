@@ -820,6 +820,15 @@ export async function mountChapter2(__mountOptions = {}) {
   function xpForLevel(lv) { return Math.floor(100 * Math.pow(1.5, lv - 1)) }
   function getDefeatedBosses() { return player.defeated_bosses || [] }
   function markBossDefeated(key) { const d=[...getDefeatedBosses()]; if(!d.includes(key)) d.push(key); player.defeated_bosses=d; return d }
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]))
+  }
 
   async function addItem(itemKey, qty) {
     const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
@@ -942,11 +951,16 @@ export async function mountChapter2(__mountOptions = {}) {
         <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8e3d6;line-height:1.6;margin-bottom:.5rem">Your chapter resonance is <strong style="color:#f4c45a">${resName}</strong>.</p>
         <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:#857f92;line-height:1.6;margin-bottom:1.25rem">Entering the ${zoneName} zone will escalate enemy parameters. The Judges will note the deviation.<br><br>This path again?</p>
         <div style="display:flex;gap:.75rem;justify-content:center">
-          <button onclick="document.getElementById('deviation-warning').remove();window._goToConfirmed('${nextId}',${JSON.stringify(choice)})" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
-          <button onclick="document.getElementById('deviation-warning').remove()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92;background:transparent;border:1px solid #26232f;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
+          <button id="deviation-enter-anyway" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
+          <button id="deviation-turn-back" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92;background:transparent;border:1px solid #26232f;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
         </div>
       </div>`
       document.body.appendChild(el)
+      document.getElementById('deviation-enter-anyway').addEventListener('click', () => {
+        el.remove()
+        window._goToConfirmed(nextId, choice)
+      })
+      document.getElementById('deviation-turn-back').addEventListener('click', () => el.remove())
       return
     }
 
@@ -1038,24 +1052,31 @@ export async function mountChapter2(__mountOptions = {}) {
     const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
 
     const retreatBtn = inZone
-      ? `<button class="choice" onclick="goTo('district_hub')" style="margin-top:8px;border-color:rgba(255,255,255,.15);opacity:.7">
+      ? `<button class="choice" data-next="district_hub" style="margin-top:8px;border-color:rgba(255,255,255,.15);opacity:.7">
           <span class="choice-arrow" style="color:var(--ink-dim)">↩</span>
           <span class="choice-body" style="color:var(--ink-dim)">Retreat to District Hub<span class="choice-sub">Leave this zone — come back stronger</span></span>
          </button>`
       : ''
 
     panel.innerHTML='<p class="choices-label">What do you do?</p><div class="choices">'+
-      choices.map(c=>{
-        const next=c.next||''
-        const moral=c.moral||0
-        const outcome=c.outcome||''
+      choices.map((c,index)=>{
         const variant=c.variant?' choice-'+c.variant:''
-        const sub=c.sub?'<span class="choice-sub">'+c.sub+'</span>':''
-        return '<button class="choice'+variant+'" onclick="goTo(\''+next+'\',{moral:'+moral+',outcome:\''+outcome+'\'})">'+
+        const sub=c.sub?'<span class="choice-sub">'+escapeHtml(c.sub)+'</span>':''
+        return '<button class="choice'+variant+'" data-choice-index="'+index+'">'+
           '<span class="choice-arrow">→</span>'+
-          '<span class="choice-body">'+c.label+sub+'</span>'+
+          '<span class="choice-body">'+escapeHtml(c.label)+sub+'</span>'+
           '</button>'
       }).join('')+retreatBtn+'</div>'
+    panel.querySelectorAll('[data-choice-index]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = choices[Number(btn.dataset.choiceIndex)] || {}
+        goTo(choice.next || '', {
+          moral: choice.moral || 0,
+          outcome: choice.outcome || '',
+        })
+      })
+    })
+    panel.querySelector('[data-next="district_hub"]')?.addEventListener('click', () => goTo('district_hub'))
   }
 
   // District hub — 9 elemental zones
@@ -1087,7 +1108,7 @@ export async function mountChapter2(__mountOptions = {}) {
       const bossKey = 'zone_boss_'+z.id.replace('zone_','')
       const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
       const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
-      return `<div onclick="goTo('${z.id}')" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
+      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px"
         onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
         ${imgHtml}
         <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
@@ -1103,21 +1124,24 @@ export async function mountChapter2(__mountOptions = {}) {
 
     let eventsHtml = `<div style="margin-top:.75rem">
       <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
-      <div onclick="goTo('cache_betrayal_offer')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <div data-go="cache_betrayal_offer" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">⚖️ The Cache Offer</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">A decision waits in the east corridor</p>
       </div>
-      <div onclick="goTo('trader_intro')" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
+      <div data-go="trader_intro" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s" onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background='rgba(0,0,0,.05)'">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
       </div>
-      <div onclick="goTo('pre_boss_ch2')" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s" onmouseover="this.style.background='rgba(200,81,42,.12)'" onmouseout="this.style.background='rgba(200,81,42,.06)'">
+      <div data-go="pre_boss_ch2" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s" onmouseover="this.style.background='rgba(200,81,42,.12)'" onmouseout="this.style.background='rgba(200,81,42,.06)'">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
       </div>
     </div>`
 
     panel.innerHTML=`<p class="choices-label">District Map</p><div style="max-height:65vh;overflow-y:auto;padding-right:2px">${zonesHtml}${eventsHtml}</div>`
+    panel.querySelectorAll('[data-go]').forEach(el => {
+      el.addEventListener('click', () => goTo(el.dataset.go))
+    })
   }
 
   // Combat + boss engines (full implementation)
