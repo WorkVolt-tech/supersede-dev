@@ -721,7 +721,7 @@ function updateDriveButton() {
 window.drive = function() {
   if (!vehicleData.active) return
   const dest = destination ? `?dest=${destination}` : ''
-  window.location.href = 'vehicle.html' + dest
+  window.location.href = 'book.html?view=vehicle' + (dest ? '&' + dest.slice(1) : '')
 }
 
 // ── Toast ─────────────────────────────────────────────────

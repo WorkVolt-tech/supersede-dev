@@ -1,0 +1,1478 @@
+import { supabase } from '../supabase.js'
+import { renderNav } from '../components/nav.js'
+
+const MODULE_STYLE_ID = 'book-module-style-skills'
+const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Character</p>\n        <h1 class=\"page-title\">Skill Tree</h1>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">SKILL POINTS</p>\n            <p id=\"sp-display\" style=\"font-family:'Cinzel',serif;font-size:1.4rem;font-weight:600;color:#c8b96e;margin:0\">0</p>\n          </div>\n          <div style=\"display:flex;flex-direction:column;gap:5px;align-items:flex-end\">\n            <button onclick=\"openTree()\" style=\"font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);border-radius:3px;padding:.45rem 1rem;cursor:pointer\">\u2b21 Open Skill Tree</button>\n            <button onclick=\"openResetConfirm()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.3rem .75rem;cursor:pointer\">\u21ba Reset Skills</button>\n          </div>\n        </div>\n        <hr class=\"ink-divider\">\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem\">Unlocked nodes</p>\n        <div id=\"unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">ELEMENTAL SP</p>\n            <p id=\"esp-display\" style=\"font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#b06eff;margin:0\">0</p>\n          </div>\n          <button onclick=\"openESP()\" style=\"font-family:'Cinzel',serif;font-size:.75rem;color:#e8e3d6;background:rgba(176,110,255,.15);border:1px solid rgba(176,110,255,.4);border-radius:3px;padding:.4rem .9rem;cursor:pointer\">\u2b21 Elemental Tree</button>\n        </div>\n        <div id=\"esp-unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n\n      </div>\n    </div>\n\n    \n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Battle Setup</p>\n        <h2 class=\"page-title\">Combat Skills</h2>\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim);margin-bottom:.5rem\">\n          Assign unlocked skills to battle slots. Max 4 active skills in combat.\n        </p>\n        <hr class=\"ink-divider\">\n        <div id=\"battle-slots-page\" style=\"display:flex;flex-direction:column;gap:6px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"skill-detail-page\" style=\"min-height:60px\"></div>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- Fullscreen overlay -->\n<div id=\"tree-overlay\">\n  <div id=\"tree-topbar\">\n    <h2>\u2b21 Skill Tree</h2>\n    <span class=\"sp-badge\" id=\"sp-badge\">0 SP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <span style=\"font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#a08858\">Scroll to zoom \u00b7 Drag to pan</span>\n      <button class=\"tree-reset-btn\" onclick=\"openResetConfirm()\">\u21ba Reset</button>\n      <button class=\"tree-slots-btn\" onclick=\"toggleSlotsBar()\">\u2694 Battle Slots</button>\n      <button class=\"tree-close-btn\" onclick=\"closeTree()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"tree-canvas-wrap\">\n    <svg id=\"tree-svg\"></svg>\n    <div id=\"tree-canvas\"></div>\n  </div>\n  <canvas id=\"minimap\" width=\"130\" height=\"100\"></canvas>\n</div>\n\n<!-- Slots sidebar -->\n<div id=\"slots-bar\">\n  <p style=\"font-family:'Cinzel',serif;font-size:.85rem;color:#c8b96e;margin:0 0 .5rem\">\u2694 Battle Slots</p>\n  <p style=\"font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a08858;margin:0 0 .6rem\">Max 4 active skills in combat</p>\n  <div id=\"slots-list\"></div>\n</div>\n\n<!-- Node detail panel -->\n<div id=\"node-detail\">\n  <button id=\"detail-close\" onclick=\"closeDetail()\">\u2715</button>\n  <div id=\"detail-inner\"></div>\n</div>\n\n<!-- ESP Overlay -->\n<div id=\"esp-overlay\">\n  <div id=\"esp-topbar\">\n    <h2>\u2b21 Elemental Skill Tree</h2>\n    <span class=\"esp-badge\" id=\"esp-badge\">0 ESP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <button class=\"esp-close-btn\" onclick=\"openCollectedPanel()\" style=\"color:#b06eff;border-color:rgba(176,110,255,.4)\">\u2b21 Collected</button>\n      <button class=\"esp-close-btn\" onclick=\"closeESP()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"esp-body\">\n    <div id=\"esp-sidebar\">\n      <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#f4c45a;margin-bottom:4px\">Elements</p>\n      <div id=\"esp-el-tabs\"></div>\n    </div>\n    <div id=\"esp-main-panel\">\n      <div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.5rem;opacity:.35\">\n        <div style=\"font-size:2rem\">\u2b21</div>\n        <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#a89e80\">Select an element</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- ESP Slot Chooser -->\n<div id=\"esp-slot-chooser\">\n  <div class=\"esp-chooser-inner\">\n    <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#f4c45a;margin-bottom:.75rem\">Choose a node to place</p>\n    <div id=\"esp-chooser-list\"></div>\n    <button onclick=\"closeESPChooser()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a89e80;background:none;border:.5px solid #26232f;padding:5px 14px;margin-top:.75rem;width:100%;cursor:pointer\">Cancel</button>\n  </div>\n</div>"
+const MODULE_STYLES = "\n    #tree-overlay {\n      display:none; position:fixed; inset:0; z-index:900;\n      background:#0d0b08; flex-direction:column;\n    }\n    #tree-overlay.open { display:flex; }\n    #tree-topbar {\n      display:flex; align-items:center; justify-content:space-between;\n      padding:.5rem 1rem; background:#0d0d0d;\n      border-bottom:1px solid rgba(100,220,100,.2);\n      flex-shrink:0; gap:.75rem; flex-wrap:wrap;\n    }\n    #tree-topbar h2 { font-family:'Cinzel',serif; font-size:.95rem; color:#ffe94d; margin:0; }\n    .sp-badge { font-family:'Share Tech Mono',monospace; font-size:.72rem; color:#ffe94d;\n      background:rgba(255,233,77,.1); border:.5px solid rgba(255,233,77,.3);\n      padding:3px 10px; border-radius:20px; }\n    .tree-close-btn, .tree-reset-btn, .tree-slots-btn {\n      font-family:'Share Tech Mono',monospace; font-size:.6rem;\n      padding:4px 10px; cursor:pointer; border-radius:3px; }\n    .tree-close-btn { color:#ffe94d; background:none; border:.5px solid rgba(255,233,77,.4); }\n    .tree-reset-btn { color:#ff6060; background:rgba(192,64,64,.08); border:.5px solid rgba(192,64,64,.4); }\n    .tree-slots-btn { color:#ffe94d; background:rgba(255,233,77,.1); border:.5px solid rgba(255,233,77,.3); }\n    #tree-canvas-wrap {\n      flex:1; overflow:hidden; position:relative; cursor:grab;\n    }\n    #tree-canvas-wrap.dragging { cursor:grabbing; }\n    #tree-canvas { position:absolute; top:0; left:0; transform-origin:0 0; }\n    #tree-svg    { position:absolute; top:0; left:0; transform-origin:0 0; pointer-events:none; overflow:visible; }\n    .sn { position:absolute; display:flex; flex-direction:column; align-items:center;\n      cursor:pointer; user-select:none; }\n    .sn-ring { border-radius:50%; border:2px solid; display:flex; align-items:center;\n      justify-content:center; transition:box-shadow .2s, transform .15s;\n      background:rgba(13,11,8,.9); flex-shrink:0; }\n    .sn:hover .sn-ring { transform:scale(1.12); }\n    .sn.unlocked .sn-ring { background:rgba(30,22,8,.95); }\n    .sn.available .sn-ring { background:rgba(20,15,5,.9); }\n    .sn.available:hover .sn-ring { transform:scale(1.15); }\n    .sn.selected .sn-ring { outline:2px solid #c8b96e; outline-offset:3px; }\n    .sn-sm .sn-ring { width:28px; height:28px; }\n    .sn-md .sn-ring { width:40px; height:40px; }\n    .sn-ks .sn-ring { width:64px; height:64px; border-width:3px; }\n    .sn-el .sn-ring { width:46px; height:46px; border-style:dashed; }\n    .sn-st .sn-ring { width:52px; height:52px; border-width:2.5px; }\n    .sn-lbl { font-family:'Share Tech Mono',monospace; font-size:9px; text-align:center;\n      max-width:74px; line-height:1.2; margin-top:3px;\n      text-shadow:0 1px 3px rgba(0,0,0,.8); pointer-events:none; }\n    .sn-ks .sn-lbl { font-size:10px; font-family:'Cinzel',serif; }\n    #node-detail {\n      position:fixed; bottom:0; left:0; right:0; z-index:910;\n      background:#140f08; border-top:1px solid rgba(200,184,128,.25);\n      padding:.75rem 1rem; display:none; max-height:42vh; overflow-y:auto;\n    }\n    #node-detail.open { display:block; }\n    #detail-close { position:absolute; top:.6rem; right:.75rem;\n      background:none; border:none; color:var(--ink-dim); font-size:1rem; cursor:pointer; }\n    #slots-bar {\n      position:fixed; top:0; right:0; bottom:0; width:210px; z-index:905;\n      background:#140f08; border-left:1px solid rgba(200,184,128,.2);\n      display:none; flex-direction:column; padding:.75rem; gap:5px;\n    }\n    #slots-bar.open { display:flex; }\n    .slot-item { border:.5px solid rgba(139,106,32,.25); border-radius:4px;\n      padding:.4rem .5rem; display:flex; align-items:center; gap:.4rem;\n      background:rgba(0,0,0,.2); min-height:44px; }\n    .slot-item.filled { border-color:rgba(200,184,128,.45); background:rgba(200,184,128,.05); }\n    .slot-remove { background:none; border:none; color:#c04040; font-size:.75rem;\n      cursor:pointer; padding:0; margin-left:auto; flex-shrink:0; }\n    #minimap { position:fixed; bottom:12px; left:12px; z-index:912;\n      width:130px; height:100px; background:rgba(13,11,8,.9);\n      border:.5px solid rgba(139,106,32,.3); border-radius:4px; }\n      /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap, .craft-grid-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n    /* \u2500\u2500 Book \u2500\u2500 */\n    .book, .craft-grid {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n    }\n    @media(max-width:860px) {\n      .book, .craft-grid { grid-template-columns: 1fr !important; transform: none !important; border-radius: 12px !important; }\n    }\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto; overflow-x: hidden;\n    }\n    .page-left::before, .page-right::before {\n      content: \"\" !important; position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important; opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important; position: absolute !important;\n      top: 14px !important; left: 14px !important; width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important; position: absolute !important;\n      bottom: 14px !important; right: 14px !important; width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    /* \u2500\u2500 Spine \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(0,0,0,.0) 0%, rgba(0,0,0,.20) 28%, rgba(0,0,0,.40) 46%,\n        rgba(0,0,0,.50) 50%, rgba(0,0,0,.40) 54%, rgba(0,0,0,.20) 72%, rgba(0,0,0,.0) 100%\n      ) !important;\n      border: none !important; position: relative; z-index: 5;\n      width: 22px !important; min-width: 22px !important;\n      margin: 0 !important; overflow: visible; box-shadow: none !important;\n    }\n    .spine::before {\n      content: \"\"; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg, transparent 0%, rgba(43,29,22,.9) 8%, rgba(43,29,22,.9) 92%, transparent 100%);\n      z-index: 2;\n    }\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n    /* \u2500\u2500 Text & UI colours \u2500\u2500 */\n    h1, h2, h3, h4, h5, h6 { color: var(--ink) !important; }\n    .book p, .book li, .book span, .book label,\n    .book-wrap p, .book-wrap li, .book-wrap span, .book-wrap label { color: var(--ink) !important; }\n    button:not(.bm-signout):not(.tree-close-btn):not(.tree-reset-btn):not(.tree-slots-btn), .btn { background: rgba(43,29,22,.08); border: 1px solid rgba(138,91,68,.35); color: var(--ink); border-radius: 0; cursor: pointer; transition: border-color .2s, color .2s; }\n    button:hover, .btn:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n    input, select, textarea { background: rgba(43,29,22,.06) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; }\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.15); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n  \n    @media (max-width: 800px) {\n      .book, .book-body, .craft-grid { flex-direction: column !important; min-height: auto; }\n      .page-left, .page-right { width: 100% !important; padding: 20px 16px !important; }\n      .book-wrap, .craft-grid-wrap { padding: 8px 12px 40px !important; }\n    }\n  "
+
+function installModuleStyle() {
+  document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
+  const style = document.createElement('style')
+  style.id = MODULE_STYLE_ID
+  style.dataset.bookModuleStyle = 'true'
+  style.textContent = MODULE_STYLES
+  document.head.appendChild(style)
+}
+
+export async function mountSkills(__mountOptions = {}) {
+  const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
+  installModuleStyle()
+  host.innerHTML = MODULE_MARKUP
+
+  // ════════════════════════════════════════════════════
+  // NODE DEFINITIONS — 5 Systems, no elemental gateways
+  // OFFENSE · DEFENSE · FLOW · ARCANE · DECAY
+  // ════════════════════════════════════════════════════
+  const CX = 900, CY = 900   // canvas center
+
+  const NODES = [
+    // ── CENTER ──
+    { id:'center', label:'Origin', type:'start', branch:'center', x:CX, y:CY, cost:0, requires:[] },
+
+    // ═══════════════════════════════════════════════════════════════
+    // ⚔️ OFFENSE  (upward) — ATK × Power × Insight
+    // Theme: How you deal damage. Bruiser / Mage / Spellblade
+    // ═══════════════════════════════════════════════════════════════
+    // Spine
+    { id:'of1', label:'+2 ATK',      type:'small', branch:'offense', x:CX,      y:CY-90,  cost:1, stat:'atk_bonus',   val:2, requires:['center'] },
+    { id:'of2', label:'+3 ATK',      type:'small', branch:'offense', x:CX,      y:CY-170, cost:1, stat:'atk_bonus',   val:3, requires:['of1'] },
+    { id:'of3', label:'+2 ATK',      type:'small', branch:'offense', x:CX,      y:CY-250, cost:1, stat:'atk_bonus',   val:2, requires:['of2'] },
+    // Power fork (left)
+    { id:'ofp1', label:'+2 Power',   type:'small', branch:'offense', x:CX-100,  y:CY-185, cost:1, stat:'power_bonus',  val:2, requires:['of2'] },
+    { id:'ofp2', label:'+3 Power',   type:'small', branch:'offense', x:CX-100,  y:CY-265, cost:1, stat:'power_bonus',  val:3, requires:['ofp1'] },
+    { id:'ofp3', label:'+2 Power',   type:'small', branch:'offense', x:CX-175,  y:CY-285, cost:1, stat:'power_bonus',  val:2, requires:['ofp2'] },
+    { id:'ofp4', label:'+2 ATK',     type:'small', branch:'offense', x:CX-190,  y:CY-355, cost:1, stat:'atk_bonus',   val:2, requires:['ofp3'] },
+    // Insight fork (right)
+    { id:'ofi1', label:'+2 Insight', type:'small', branch:'offense', x:CX+100,  y:CY-185, cost:1, stat:'insight_bonus', val:2, requires:['of2'] },
+    { id:'ofi2', label:'+3 Insight', type:'small', branch:'offense', x:CX+100,  y:CY-265, cost:1, stat:'insight_bonus', val:3, requires:['ofi1'] },
+    { id:'ofi3', label:'+2 Power',   type:'small', branch:'offense', x:CX+175,  y:CY-285, cost:1, stat:'power_bonus',  val:2, requires:['ofi2'] },
+    { id:'ofi4', label:'+2 Insight', type:'small', branch:'offense', x:CX+190,  y:CY-355, cost:1, stat:'insight_bonus', val:2, requires:['ofi3'] },
+    // Notable tier 1
+    { id:'ofn1', label:'Warbound',   type:'notable', battleType:'active',  branch:'offense', x:CX,      y:CY-330, cost:2, stat:'atk_bonus', val:6, requires:['of3'],
+      desc:'◆ OFFENSE NOTABLE: +6 ATK. Your attacks deal bonus damage equal to 12% of your ATK. Stacks with Power multiplier — raw strength finds the crack.' },
+    { id:'ofn2', label:'Amplifier',  type:'notable', battleType:'passive', branch:'offense', x:CX-220,  y:CY-375, cost:2, stat:'power_bonus', val:5, requires:['ofp4'],
+      desc:'◆ OFFENSE NOTABLE: +5 Power. Power now contributes +0.5 ATK per Power point. Invest in amplification and physical hits follow. The Bruiser path.' },
+    { id:'ofn3', label:'Spellblade', type:'notable', battleType:'passive', branch:'offense', x:CX+220,  y:CY-375, cost:2, stat:'insight_bonus', val:5, requires:['ofi4'],
+      desc:'◆ SYNERGY — OFFENSE × ARCANE: +5 Insight. ATK and Insight both feed your damage formula: Damage = (ATK + Insight×0.6) × Power. The hybrid path.' },
+    // Deep spine
+    { id:'of4',  label:'+3 ATK',     type:'small', branch:'offense', x:CX,      y:CY-420, cost:1, stat:'atk_bonus',   val:3, requires:['ofn1'] },
+    { id:'of5',  label:'+2 Power',   type:'small', branch:'offense', x:CX,      y:CY-500, cost:1, stat:'power_bonus',  val:2, requires:['of4'] },
+    { id:'of6',  label:'+3 ATK',     type:'small', branch:'offense', x:CX,      y:CY-580, cost:1, stat:'atk_bonus',   val:3, requires:['of5'] },
+    // Power deep
+    { id:'ofp5', label:'+3 Power',   type:'small', branch:'offense', x:CX-90,   y:CY-470, cost:1, stat:'power_bonus',  val:3, requires:['ofn2','of4'] },
+    { id:'ofp6', label:'+2 Power',   type:'small', branch:'offense', x:CX-90,   y:CY-550, cost:1, stat:'power_bonus',  val:2, requires:['ofp5'] },
+    // Insight deep
+    { id:'ofi5', label:'+3 Insight', type:'small', branch:'offense', x:CX+90,   y:CY-470, cost:1, stat:'insight_bonus', val:3, requires:['ofn3','of4'] },
+    { id:'ofi6', label:'+2 Insight', type:'small', branch:'offense', x:CX+90,   y:CY-550, cost:1, stat:'insight_bonus', val:2, requires:['ofi5'] },
+    // Notable tier 2
+    { id:'ofn4', label:"Executioner", type:'notable', battleType:'active',  branch:'offense', x:CX-140,  y:CY-620, cost:2, stat:'atk_bonus',    val:8, requires:['ofp6'],
+      desc:'◆ OFFENSE NOTABLE: +8 ATK. Deal 25% more damage to enemies below 35% HP. Power multiplier doubles on killing blows. Finish what you started.' },
+    { id:'ofn5', label:'Hex Cannon', type:'notable', battleType:'active',  branch:'offense', x:CX+140,  y:CY-620, cost:2, stat:'insight_bonus', val:8, requires:['ofi6'],
+      desc:'◆ SYNERGY — OFFENSE × ARCANE: +8 Insight. Spells now scale off both Insight and ATK. Each Control debuff on the enemy boosts your damage by 8%. The Hexblade path.' },
+    { id:'ofn6', label:'Predator',   type:'notable', battleType:'active',  branch:'offense', x:CX,      y:CY-650, cost:2, stat:'atk_bonus',    val:6, requires:['of6'],
+      desc:'◆ SYNERGY — OFFENSE × FLOW: +6 ATK. Gain +15 ATK for 2 turns after an enemy falls. Speed determines who strikes first into the gap — invest in both.' },
+    // Pre-keystone
+    { id:'of7',  label:'+3 ATK',     type:'small', branch:'offense', x:CX-70,   y:CY-720, cost:1, stat:'atk_bonus',   val:3, requires:['ofn4','ofn6'] },
+    { id:'of8',  label:'+4 ATK',     type:'small', branch:'offense', x:CX+70,   y:CY-720, cost:1, stat:'atk_bonus',   val:4, requires:['ofn5','ofn6'] },
+    { id:'ofp7', label:'+3 Power',   type:'small', branch:'offense', x:CX-160,  y:CY-690, cost:1, stat:'power_bonus',  val:3, requires:['of7'] },
+    { id:'ofi7', label:'+3 Insight', type:'small', branch:'offense', x:CX+160,  y:CY-690, cost:1, stat:'insight_bonus', val:3, requires:['of8'] },
+    // Keystones
+    { id:'of_ks1', label:'Bloodthirst', type:'keystone', battleType:'active',  branch:'offense', x:CX-150, y:CY-820, cost:3, requires:['of7'],
+      desc:'★ KEYSTONE — OFFENSE: ATK scales with missing HP. For every 10% HP missing, gain +10% ATK. At low HP you hit nearly double. High risk, maximum output.' },
+    { id:'of_ks2', label:'Spell Surge', type:'keystone', battleType:'active',  branch:'offense', x:CX+150, y:CY-820, cost:3, requires:['of8'],
+      desc:'★ KEYSTONE — OFFENSE × ARCANE: Insight now directly scales ATK at +2 ATK per Insight point. A pure mage out-damages brute force. Magic is violence.' },
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🛡️ DEFENSE  (lower-right) — DEF × Guard × HP scaling
+    // Theme: How you survive. Tank / Shield / Thorns
+    // ═══════════════════════════════════════════════════════════════
+    // Spine
+    { id:'df1',  label:'+3 DEF',     type:'small', branch:'defense', x:CX+53, y:CY+73,  cost:1, stat:'def_bonus',   val:3, requires:['center'] },
+    { id:'df2',  label:'+4 DEF',     type:'small', branch:'defense', x:CX+100, y:CY+138, cost:1, stat:'def_bonus',   val:4, requires:['df1'] },
+    { id:'df3',  label:'+3 DEF',     type:'small', branch:'defense', x:CX+147, y:CY+202, cost:1, stat:'def_bonus',   val:3, requires:['df2'] },
+    // Guard fork (left)
+    { id:'dfg1', label:'+2 Guard',   type:'small', branch:'defense', x:CX+190, y:CY+91, cost:1, stat:'guard_bonus', val:2, requires:['df2'] },
+    { id:'dfg2', label:'+3 Guard',   type:'small', branch:'defense', x:CX+237, y:CY+156, cost:1, stat:'guard_bonus', val:3, requires:['dfg1'] },
+    { id:'dfg3', label:'+2 Guard',   type:'small', branch:'defense', x:CX+309, y:CY+128, cost:1, stat:'guard_bonus', val:2, requires:['dfg2'] },
+    { id:'dfg4', label:'+3 Guard',   type:'small', branch:'defense', x:CX+362, y:CY+176, cost:1, stat:'guard_bonus', val:3, requires:['dfg3'] },
+    // ATK fork (right — DEF×ATK synergy)
+    { id:'dfa1', label:'+2 DEF',     type:'small', branch:'defense', x:CX+28, y:CY+208,  cost:1, stat:'def_bonus',   val:2, requires:['df2'] },
+    { id:'dfa2', label:'+3 DEF',     type:'small', branch:'defense', x:CX+75, y:CY+273, cost:1, stat:'def_bonus',   val:3, requires:['dfa1'] },
+    { id:'dfa3', label:'+2 ATK',     type:'small', branch:'defense', x:CX+26, y:CY+333, cost:1, stat:'atk_bonus',   val:2, requires:['dfa2'] },
+    { id:'dfa4', label:'+3 ATK',     type:'small', branch:'defense', x:CX+55, y:CY+399, cost:1, stat:'atk_bonus',   val:3, requires:['dfa3'] },
+    // Notable tier 1
+    { id:'dfn1', label:'Iron Tide',  type:'notable', battleType:'passive', branch:'defense', x:CX+194, y:CY+267, cost:2, stat:'def_bonus',   val:8, requires:['df3'],
+      desc:'◆ DEFENSE NOTABLE: +8 DEF. First time you fall below 50% HP, gain +20 DEF for 2 turns. DEF softens the blow — Guard absorbs the rest — HP pays the remainder.' },
+    { id:'dfn2', label:'Absorption', type:'notable', battleType:'passive', branch:'defense', x:CX+398, y:CY+174, cost:2, stat:'guard_bonus', val:5, requires:['dfg4'],
+      desc:'◆ DEFENSE NOTABLE: +5 Guard. Each hit charges a stack. At 3 stacks, next Defend heals 15 HP. Guard becomes a resource — patience is your weapon.' },
+    { id:'dfn3', label:'Thorns',     type:'notable', battleType:'passive', branch:'defense', x:CX+42, y:CY+433, cost:2, stat:'def_bonus',   val:6, requires:['dfa4'],
+      desc:'◆ SYNERGY — DEFENSE × OFFENSE: +6 DEF, +4 ATK. When hit, reflect 20% of absorbed Guard damage back as physical damage. DEF feeds ATK. The Thorns build.' },
+    // Deep spine
+    { id:'df4',  label:'+4 DEF',     type:'small', branch:'defense', x:CX+247, y:CY+340, cost:1, stat:'def_bonus',   val:4, requires:['dfn1'] },
+    { id:'df5',  label:'+3 Guard',   type:'small', branch:'defense', x:CX+294, y:CY+405, cost:1, stat:'guard_bonus', val:3, requires:['df4'] },
+    { id:'df6',  label:'+4 DEF',     type:'small', branch:'defense', x:CX+341, y:CY+469, cost:1, stat:'def_bonus',   val:4, requires:['df5'] },
+    // Guard deep
+    { id:'dfg5', label:'+3 Guard',   type:'small', branch:'defense', x:CX+349, y:CY+327, cost:1, stat:'guard_bonus', val:3, requires:['dfn2','df4'] },
+    { id:'dfg6', label:'+4 Guard',   type:'small', branch:'defense', x:CX+396, y:CY+392, cost:1, stat:'guard_bonus', val:4, requires:['dfg5'] },
+    // ATK deep
+    { id:'dfa5', label:'+3 ATK',     type:'small', branch:'defense', x:CX+203, y:CY+433, cost:1, stat:'atk_bonus',   val:3, requires:['dfn3','df4'] },
+    { id:'dfa6', label:'+4 DEF',     type:'small', branch:'defense', x:CX+250, y:CY+498, cost:1, stat:'def_bonus',   val:4, requires:['dfa5'] },
+    // Notable tier 2
+    { id:'dfn4', label:'Fortress',   type:'notable', battleType:'active',  branch:'defense', x:CX+478, y:CY+419, cost:2, stat:'guard_bonus', val:8, requires:['dfg6'],
+      desc:'◆ DEFENSE NOTABLE: +8 Guard. Guard now scales with current HP — the fuller your HP pool, the more Guard you generate passively each turn. HP becomes your fuel.' },
+    { id:'dfn5', label:'Retaliation',type:'notable', battleType:'passive', branch:'defense', x:CX+251, y:CY+584, cost:2, stat:'def_bonus',   val:8, requires:['dfa6'],
+      desc:'◆ SYNERGY — DEFENSE × OFFENSE: +8 DEF. After taking 3 consecutive hits, automatically counter-strike for 60% ATK ignoring 40% DEF. Pressure builds, then breaks.' },
+    { id:'dfn6', label:'Bulwark',    type:'notable', battleType:'passive', branch:'defense', x:CX+382, y:CY+526, cost:2, stat:'def_bonus',   val:8, requires:['df6'],
+      desc:'◆ DEFENSE NOTABLE: +8 DEF. After 2 consecutive hits, DEF is doubled for the following turn. Stack this with Guard absorption for near-invulnerability windows.' },
+    // Pre-keystone
+    { id:'df7',  label:'+4 DEF',     type:'small', branch:'defense', x:CX+480, y:CY+541, cost:1, stat:'def_bonus',   val:4, requires:['dfn4','dfn6'] },
+    { id:'df8',  label:'+4 Guard',   type:'small', branch:'defense', x:CX+367, y:CY+624, cost:1, stat:'guard_bonus', val:4, requires:['dfn5','dfn6'] },
+    { id:'dfg7', label:'+3 Guard',   type:'small', branch:'defense', x:CX+535, y:CY+464, cost:1, stat:'guard_bonus', val:3, requires:['df7'] },
+    { id:'dfa7', label:'+3 ATK',     type:'small', branch:'defense', x:CX+276, y:CY+652, cost:1, stat:'atk_bonus',   val:3, requires:['df8'] },
+    // Keystones
+    { id:'df_ks1', label:'Deep Current', type:'keystone', battleType:'active',  branch:'defense', x:CX+603, y:CY+575, cost:3, requires:['df7'],
+      desc:'★ KEYSTONE — DEFENSE: DEF scales with current HP. The more HP you have, the harder you are to dent. Max HP items now also boost DEF. Flow adapts to pressure.' },
+    { id:'df_ks2', label:'Iron Mirror',  type:'keystone', battleType:'active',  branch:'defense', x:CX+361, y:CY+752, cost:3, requires:['df8'],
+      desc:'★ KEYSTONE — DEFENSE × OFFENSE: Reflect 40% of all damage taken back as pure unblockable damage. Metal returns everything. Every hit you take is a hit you land.' },
+
+    // ═══════════════════════════════════════════════════════════════
+    // ⚡ FLOW  (leftward) — Speed × Agility × Control
+    // Theme: Who controls the fight. Tempo / Dodge / Debuff
+    // ═══════════════════════════════════════════════════════════════
+    // Spine
+    { id:'fl1',  label:'+2 SPD',     type:'small', branch:'flow', x:CX-86, y:CY-28,  cost:1, stat:'speed_bonus',   val:2, requires:['center'] },
+    { id:'fl2',  label:'+3 SPD',     type:'small', branch:'flow', x:CX-162, y:CY-53,  cost:1, stat:'speed_bonus',   val:3, requires:['fl1'] },
+    { id:'fl3',  label:'+2 SPD',     type:'small', branch:'flow', x:CX-238, y:CY-77,  cost:1, stat:'speed_bonus',   val:2, requires:['fl2'] },
+    // Agility fork (upper)
+    { id:'fla1', label:'+2 AGI',     type:'small', branch:'flow', x:CX-207, y:CY+38, cost:1, stat:'speed_bonus',   val:2, requires:['fl2'] },
+    { id:'fla2', label:'+3 AGI',     type:'small', branch:'flow', x:CX-283, y:CY+13, cost:1, stat:'speed_bonus',   val:3, requires:['fla1'] },
+    { id:'fla3', label:'+2 AGI',     type:'small', branch:'flow', x:CX-325, y:CY+78, cost:1, stat:'speed_bonus',   val:2, requires:['fla2'] },
+    { id:'fla4', label:'+3 SPD',     type:'small', branch:'flow', x:CX-396, y:CY+71, cost:1, stat:'speed_bonus',   val:3, requires:['fla3'] },
+    // Control fork (lower)
+    { id:'flc1', label:'+2 CTR',     type:'small', branch:'flow', x:CX-145, y:CY-152,  cost:1, stat:'control_bonus', val:2, requires:['fl2'] },
+    { id:'flc2', label:'+3 CTR',     type:'small', branch:'flow', x:CX-221, y:CY-177,   cost:1, stat:'control_bonus', val:3, requires:['flc1'] },
+    { id:'flc3', label:'+2 CTR',     type:'small', branch:'flow', x:CX-217, y:CY-255,  cost:1, stat:'control_bonus', val:2, requires:['flc2'] },
+    { id:'flc4', label:'+3 SPD',     type:'small', branch:'flow', x:CX-279, y:CY-290,  cost:1, stat:'speed_bonus',   val:3, requires:['flc3'] },
+    // Notable tier 1
+    { id:'fln1', label:'Razor Tempo',type:'notable', battleType:'passive', branch:'flow', x:CX-314, y:CY-102, cost:2, stat:'speed_bonus',   val:6, requires:['fl3'],
+      desc:'◆ FLOW NOTABLE: +6 SPD. Your Strike always resolves first regardless of enemy Speed. You set the tempo — the enemy reacts to you.' },
+    { id:'fln2', label:'Ghost Step',  type:'notable', battleType:'passive', branch:'flow', x:CX-425, y:CY+93, cost:2, stat:'speed_bonus',   val:5, requires:['fla4'],
+      desc:'◆ SYNERGY — FLOW × OFFENSE: +5 SPD. 20% dodge chance. On dodge, counter-strike for 60% ATK immediately. Agility becomes offense — the dodge counter build.' },
+    { id:'fln3', label:'Lockdown',   type:'notable', battleType:'active',  branch:'flow', x:CX-289, y:CY-325,  cost:2, stat:'control_bonus', val:5, requires:['flc4'],
+      desc:'◆ SYNERGY — FLOW × ARCANE: +5 CTR. Reduce enemy SPD by 8 permanently per battle and apply Slow on first hit (enemy skips a turn). Control denies their game.' },
+    // Deep spine
+    { id:'fl4',  label:'+3 SPD',     type:'small', branch:'flow', x:CX-399, y:CY-130, cost:1, stat:'speed_bonus',   val:3, requires:['fln1'] },
+    { id:'fl5',  label:'+2 CTR',     type:'small', branch:'flow', x:CX-476, y:CY-155, cost:1, stat:'control_bonus', val:2, requires:['fl4'] },
+    { id:'fl6',  label:'+3 SPD',     type:'small', branch:'flow', x:CX-552, y:CY-179, cost:1, stat:'speed_bonus',   val:3, requires:['fl5'] },
+    // Agility deep
+    { id:'fla5', label:'+3 SPD',     type:'small', branch:'flow', x:CX-475, y:CY-60, cost:1, stat:'speed_bonus',   val:3, requires:['fln2','fl4'] },
+    { id:'fla6', label:'+2 CTR',     type:'small', branch:'flow', x:CX-551, y:CY-84, cost:1, stat:'control_bonus', val:2, requires:['fla5'] },
+    // Control deep
+    { id:'flc5', label:'+3 CTR',     type:'small', branch:'flow', x:CX-419, y:CY-231,  cost:1, stat:'control_bonus', val:3, requires:['fln3','fl4'] },
+    { id:'flc6', label:'+2 SPD',     type:'small', branch:'flow', x:CX-495, y:CY-256,  cost:1, stat:'speed_bonus',   val:2, requires:['flc5'] },
+    // Notable tier 2
+    { id:'fln4', label:'Flicker',    type:'notable', battleType:'passive', branch:'flow', x:CX-633, y:CY-58, cost:2, stat:'speed_bonus',  val:8,  requires:['fla6'],
+      desc:'◆ FLOW NOTABLE: +8 SPD. On dodge, your next Strike deals double damage. If you have Arcane nodes, the proc also triggers a free spell hit. Agility becomes your opener.' },
+    { id:'fln5', label:'Stagger',    type:'notable', battleType:'passive', branch:'flow', x:CX-546, y:CY-325,  cost:2, stat:'control_bonus', val:6, requires:['flc6'],
+      desc:'◆ SYNERGY — FLOW × ARCANE: +6 CTR. 25% chance each turn to stagger the enemy — they miss their attack. Control debuffs further reduce their hit chance by 5% per stack.' },
+    { id:'fln6', label:'Momentum',   type:'notable', battleType:'passive', branch:'flow', x:CX-618, y:CY-201, cost:2, stat:'speed_bonus',  val:8,  requires:['fl6'],
+      desc:'◆ SYNERGY — FLOW × OFFENSE: +8 SPD. Gain +1 ATK per SPD point above the enemy — moving faster translates directly into hitting harder. Speed is damage.' },
+    // Pre-keystone
+    { id:'fl7',  label:'+3 SPD',     type:'small', branch:'flow', x:CX-706, y:CY-156, cost:1, stat:'speed_bonus',   val:3, requires:['fln4','fln6'] },
+    { id:'fl8',  label:'+3 CTR',     type:'small', branch:'flow', x:CX-663, y:CY-289, cost:1, stat:'control_bonus', val:3, requires:['fln5','fln6'] },
+    { id:'fla7', label:'+2 SPD',     type:'small', branch:'flow', x:CX-706, y:CY-61, cost:1, stat:'speed_bonus',   val:2, requires:['fl7'] },
+    { id:'flc7', label:'+2 CTR',     type:'small', branch:'flow', x:CX-607, y:CY-365, cost:1, stat:'control_bonus', val:2, requires:['fl8'] },
+    // Keystones
+    { id:'fl_ks1', label:'Phantom Step', type:'keystone', battleType:'active',  branch:'flow', x:CX-826, y:CY-111, cost:3, requires:['fl7'],
+      desc:'★ KEYSTONE — FLOW: Dodge becomes a flat 40% chance. On every dodge, deal a free counter hit AND reset your turn cooldown. Nearly untouchable — the ultimate Agility build.' },
+    { id:'fl_ks2', label:'Time Lock',    type:'keystone', battleType:'active',  branch:'flow', x:CX-734, y:CY-396, cost:3, requires:['fl8'],
+      desc:'★ KEYSTONE — FLOW × ARCANE: Control debuffs compound — each debuff on the enemy reduces their SPD by 5 and ATK by 3 additionally. Stack Control to freeze the enemy in time.' },
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔮 ARCANE  (rightward) — Insight × Control × Luck
+    // Theme: Magic & manipulation. Mage / Hex / Chaos
+    // ═══════════════════════════════════════════════════════════════
+    // Spine
+    { id:'ar1',  label:'+2 Insight', type:'small', branch:'arcane', x:CX+86, y:CY-28,  cost:1, stat:'insight_bonus', val:2, requires:['center'] },
+    { id:'ar2',  label:'+3 Insight', type:'small', branch:'arcane', x:CX+162, y:CY-53,  cost:1, stat:'insight_bonus', val:3, requires:['ar1'] },
+    { id:'ar3',  label:'+2 Insight', type:'small', branch:'arcane', x:CX+238, y:CY-77,  cost:1, stat:'insight_bonus', val:2, requires:['ar2'] },
+    // Control fork (upper)
+    { id:'arc1', label:'+2 CTR',     type:'small', branch:'arcane', x:CX+145, y:CY-152, cost:1, stat:'control_bonus', val:2, requires:['ar2'] },
+    { id:'arc2', label:'+3 CTR',     type:'small', branch:'arcane', x:CX+221, y:CY-177, cost:1, stat:'control_bonus', val:3, requires:['arc1'] },
+    { id:'arc3', label:'+2 Insight', type:'small', branch:'arcane', x:CX+217, y:CY-255, cost:1, stat:'insight_bonus', val:2, requires:['arc2'] },
+    { id:'arc4', label:'+3 CTR',     type:'small', branch:'arcane', x:CX+279, y:CY-290, cost:1, stat:'control_bonus', val:3, requires:['arc3'] },
+    // Luck fork (lower)
+    { id:'arl1', label:'+2 Luck',    type:'small', branch:'arcane', x:CX+207, y:CY+38,  cost:1, stat:'luck_bonus',    val:2, requires:['ar2'] },
+    { id:'arl2', label:'+3 Luck',    type:'small', branch:'arcane', x:CX+283, y:CY+13,   cost:1, stat:'luck_bonus',    val:3, requires:['arl1'] },
+    { id:'arl3', label:'+2 Luck',    type:'small', branch:'arcane', x:CX+325, y:CY+78,  cost:1, stat:'luck_bonus',    val:2, requires:['arl2'] },
+    { id:'arl4', label:'+3 Insight', type:'small', branch:'arcane', x:CX+396, y:CY+71,  cost:1, stat:'insight_bonus', val:3, requires:['arl3'] },
+    // Notable tier 1
+    { id:'arn1', label:'Sharp Mind',  type:'notable', battleType:'passive', branch:'arcane', x:CX+314, y:CY-102, cost:2, stat:'insight_bonus', val:6, requires:['ar3'],
+      desc:'◆ ARCANE NOTABLE: +6 Insight. Insight now grants +1 ATK per 3 Insight points. A mage who studies combat hits harder than a fighter who never thinks.' },
+    { id:'arn2', label:'Hex Weave',  type:'notable', battleType:'active',  branch:'arcane', x:CX+289, y:CY-325, cost:2, stat:'control_bonus', val:5, requires:['arc4'],
+      desc:'◆ SYNERGY — ARCANE × FLOW: +5 CTR. Each Control debuff on the enemy increases your spell damage by 10%. Debuff to amplify — the Hex build.' },
+    { id:'arn3', label:'Wild Proc',  type:'notable', battleType:'passive', branch:'arcane', x:CX+425, y:CY+93,  cost:2, stat:'luck_bonus',    val:5, requires:['arl4'],
+      desc:'◆ ARCANE NOTABLE: +5 Luck. Each Luck point increases crit chance by 0.5% and crit damage by 1%. Chaos magic rewards the unpredictable.' },
+    // Deep spine
+    { id:'ar4',  label:'+3 Insight', type:'small', branch:'arcane', x:CX+399, y:CY-130, cost:1, stat:'insight_bonus', val:3, requires:['arn1'] },
+    { id:'ar5',  label:'+2 Luck',    type:'small', branch:'arcane', x:CX+476, y:CY-155, cost:1, stat:'luck_bonus',    val:2, requires:['ar4'] },
+    { id:'ar6',  label:'+3 Insight', type:'small', branch:'arcane', x:CX+552, y:CY-179, cost:1, stat:'insight_bonus', val:3, requires:['ar5'] },
+    // Control deep
+    { id:'arc5', label:'+3 CTR',     type:'small', branch:'arcane', x:CX+419, y:CY-231, cost:1, stat:'control_bonus', val:3, requires:['arn2','ar4'] },
+    { id:'arc6', label:'+2 Insight', type:'small', branch:'arcane', x:CX+495, y:CY-256, cost:1, stat:'insight_bonus', val:2, requires:['arc5'] },
+    // Luck deep
+    { id:'arl5', label:'+3 Luck',    type:'small', branch:'arcane', x:CX+475, y:CY-60,  cost:1, stat:'luck_bonus',    val:3, requires:['arn3','ar4'] },
+    { id:'arl6', label:'+2 CTR',     type:'small', branch:'arcane', x:CX+551, y:CY-84,  cost:1, stat:'control_bonus', val:2, requires:['arl5'] },
+    // Notable tier 2
+    { id:'arn4', label:'Prescience', type:'notable', battleType:'passive', branch:'arcane', x:CX+546, y:CY-325, cost:2, stat:'insight_bonus', val:8, requires:['arc6'],
+      desc:'◆ ARCANE NOTABLE: +8 Insight. Insight reduces enemy crit chance by 2% per point. Once per combat, predict an attack — reduce that hit by 90%. Mind sees before the body acts.' },
+    { id:'arn5', label:'Ricochet',   type:'notable', battleType:'passive', branch:'arcane', x:CX+633, y:CY-58,  cost:2, stat:'luck_bonus',    val:6, requires:['arl6'],
+      desc:'◆ SYNERGY — ARCANE × OFFENSE: +6 Luck. Spells have 25% chance to bounce — hit twice, second hit at 50% power. Luck chains crits. The Chaos Caster path.' },
+    { id:'arn6', label:'Mind Pierce', type:'notable', battleType:'active', branch:'arcane', x:CX+618, y:CY-201, cost:2, stat:'insight_bonus', val:8, requires:['ar6'],
+      desc:'◆ SYNERGY — ARCANE × OFFENSE: +8 Insight. Crit chance equals Insight÷4%. Crits deal ×2.0 and cannot be shielded — pure magic bypasses Guard entirely.' },
+    // Pre-keystone
+    { id:'ar7',  label:'+3 Insight', type:'small', branch:'arcane', x:CX+663, y:CY-289, cost:1, stat:'insight_bonus', val:3, requires:['arn4','arn6'] },
+    { id:'ar8',  label:'+3 Luck',    type:'small', branch:'arcane', x:CX+706, y:CY-156, cost:1, stat:'luck_bonus',    val:3, requires:['arn5','arn6'] },
+    { id:'arc7', label:'+2 CTR',     type:'small', branch:'arcane', x:CX+607, y:CY-365, cost:1, stat:'control_bonus', val:2, requires:['ar7'] },
+    { id:'arl7', label:'+2 Luck',    type:'small', branch:'arcane', x:CX+706, y:CY-61, cost:1, stat:'luck_bonus',    val:2, requires:['ar8'] },
+    // Keystones
+    { id:'ar_ks1', label:'Sixth Sense',  type:'keystone', battleType:'active',  branch:'arcane', x:CX+734, y:CY-396, cost:3, requires:['ar7'],
+      desc:'★ KEYSTONE — ARCANE × OFFENSE: Insight adds +2 ATK per point. Magic and martial become one — this is the Spellblade pinnacle. Out-damage brute force with pure mind.' },
+    { id:'ar_ks2', label:'Chaos Engine', type:'keystone', battleType:'active',  branch:'arcane', x:CX+826, y:CY-111, cost:3, requires:['ar8'],
+      desc:'★ KEYSTONE — ARCANE: Every attack and spell has a random bonus effect (burn, slow, drain, chain, or double damage). Luck determines frequency. Chaos cannot be predicted — even by you.' },
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🌑 DECAY  (lower-left, 225°) — Speed × Power × Guard (hybrid)
+    // Theme: Sustain & scaling over time. Assassin / Immortal / Sustain
+    // ═══════════════════════════════════════════════════════════════
+    // Spine
+    { id:'dc1',  label:'+2 SPD',     type:'small', branch:'decay', x:CX-53, y:CY+73,  cost:1, stat:'speed_bonus',  val:2, requires:['center'] },
+    { id:'dc2',  label:'+3 SPD',     type:'small', branch:'decay', x:CX-100, y:CY+138, cost:1, stat:'speed_bonus',  val:3, requires:['dc1'] },
+    { id:'dc3',  label:'+2 Power',   type:'small', branch:'decay', x:CX-147, y:CY+202, cost:1, stat:'power_bonus',  val:2, requires:['dc2'] },
+    // Kill-chain fork (left — Speed/Power)
+    { id:'dck1', label:'+3 SPD',     type:'small', branch:'decay', x:CX-28, y:CY+208, cost:1, stat:'speed_bonus',  val:3, requires:['dc2'] },
+    { id:'dck2', label:'+2 Power',   type:'small', branch:'decay', x:CX-75, y:CY+273, cost:1, stat:'power_bonus',  val:2, requires:['dck1'] },
+    { id:'dck3', label:'+3 SPD',     type:'small', branch:'decay', x:CX-26, y:CY+333, cost:1, stat:'speed_bonus',  val:3, requires:['dck2'] },
+    { id:'dck4', label:'+2 Power',   type:'small', branch:'decay', x:CX-55, y:CY+399, cost:1, stat:'power_bonus',  val:2, requires:['dck3'] },
+    // Sustain fork (right — Guard/Control)
+    { id:'dcs1', label:'+2 Guard',   type:'small', branch:'decay', x:CX-190, y:CY+91,  cost:1, stat:'guard_bonus',  val:2, requires:['dc2'] },
+    { id:'dcs2', label:'+3 Guard',   type:'small', branch:'decay', x:CX-237, y:CY+156, cost:1, stat:'guard_bonus',  val:3, requires:['dcs1'] },
+    { id:'dcs3', label:'+2 CTR',     type:'small', branch:'decay', x:CX-309, y:CY+128, cost:1, stat:'control_bonus', val:2, requires:['dcs2'] },
+    { id:'dcs4', label:'+3 Guard',   type:'small', branch:'decay', x:CX-362, y:CY+176, cost:1, stat:'guard_bonus',  val:3, requires:['dcs3'] },
+    // Notable tier 1
+    { id:'dcn1', label:'Nightshroud',type:'notable', battleType:'active',  branch:'decay', x:CX-194, y:CY+267, cost:2, stat:'speed_bonus',  val:6, requires:['dc3'],
+      desc:'◆ DECAY NOTABLE: +6 SPD. On the first turn of combat, gain a free dodge and deal a free Strike at 80% ATK. Decay rewards the opening — the kill-chain begins here.' },
+    { id:'dcn2', label:'Umbral Veil',type:'notable', battleType:'passive', branch:'decay', x:CX-42, y:CY+433, cost:2, stat:'speed_bonus',  val:5, requires:['dck4'],
+      desc:'◆ SYNERGY — DECAY × FLOW: +5 SPD. On kill, gain +15 SPD and +8 Power for 2 turns. Chain kills become a blur — the Assassin build scales with momentum.' },
+    { id:'dcn3', label:'Thornwall',  type:'notable', battleType:'passive', branch:'decay', x:CX-398, y:CY+174, cost:2, stat:'guard_bonus',  val:6, requires:['dcs4'],
+      desc:'◆ SYNERGY — DECAY × DEFENSE: +6 Guard. When you Defend, reflect 20% of absorbed damage back as thorns. The longer you survive, the more damage you return.' },
+    // Deep spine
+    { id:'dc4',  label:'+3 SPD',     type:'small', branch:'decay', x:CX-247, y:CY+340, cost:1, stat:'speed_bonus',  val:3, requires:['dcn1'] },
+    { id:'dc5',  label:'+2 Guard',   type:'small', branch:'decay', x:CX-294, y:CY+405, cost:1, stat:'guard_bonus',  val:2, requires:['dc4'] },
+    { id:'dc6',  label:'+3 Power',   type:'small', branch:'decay', x:CX-341, y:CY+469, cost:1, stat:'power_bonus',  val:3, requires:['dc5'] },
+    // Kill-chain deep
+    { id:'dck5', label:'+3 Power',   type:'small', branch:'decay', x:CX-203, y:CY+433, cost:1, stat:'power_bonus',  val:3, requires:['dcn2','dc4'] },
+    { id:'dck6', label:'+4 SPD',     type:'small', branch:'decay', x:CX-250, y:CY+498, cost:1, stat:'speed_bonus',  val:4, requires:['dck5'] },
+    // Sustain deep
+    { id:'dcs5', label:'+3 Guard',   type:'small', branch:'decay', x:CX-349, y:CY+327, cost:1, stat:'guard_bonus',  val:3, requires:['dcn3','dc4'] },
+    { id:'dcs6', label:'+2 CTR',     type:'small', branch:'decay', x:CX-396, y:CY+392, cost:1, stat:'control_bonus', val:2, requires:['dcs5'] },
+    // Notable tier 2
+    { id:'dcn4', label:'Shade Walk', type:'notable', battleType:'passive', branch:'decay', x:CX-251, y:CY+584, cost:2, stat:'speed_bonus',  val:6,  requires:['dck6'],
+      desc:'◆ DECAY NOTABLE: +6 SPD. Each kill permanently raises your Power by 1 this combat (max +8). The assassin who keeps moving becomes exponentially stronger.' },
+    { id:'dcn5', label:'Enduring Root',type:'notable', battleType:'passive', branch:'decay', x:CX-478, y:CY+419, cost:2, stat:'guard_bonus', val:8, requires:['dcs6'],
+      desc:'◆ SYNERGY — DECAY × DEFENSE: +8 Guard. You cannot be stunned. Guard regenerates 2 per turn passively. Time is on your side — the Immortal Tank path.' },
+    { id:'dcn6', label:'Dread Pulse', type:'notable', battleType:'active',  branch:'decay', x:CX-382, y:CY+526, cost:2, stat:'power_bonus',  val:6,  requires:['dc6'],
+      desc:'◆ SYNERGY — DECAY × ARCANE: +6 Power. Each hit reduces enemy ATK by 2, stacking up to 4 times. Combine with Control debuffs to fully neutralize a threat over time.' },
+    // Pre-keystone
+    { id:'dc7',  label:'+4 SPD',     type:'small', branch:'decay', x:CX-367, y:CY+624, cost:1, stat:'speed_bonus',  val:4, requires:['dcn4','dcn6'] },
+    { id:'dc8',  label:'+4 Guard',   type:'small', branch:'decay', x:CX-480, y:CY+541, cost:1, stat:'guard_bonus',  val:4, requires:['dcn5','dcn6'] },
+    { id:'dck7', label:'+3 Power',   type:'small', branch:'decay', x:CX-276, y:CY+652, cost:1, stat:'power_bonus',  val:3, requires:['dc7'] },
+    { id:'dcs7', label:'+3 Guard',   type:'small', branch:'decay', x:CX-535, y:CY+464, cost:1, stat:'guard_bonus',  val:3, requires:['dc8'] },
+    // Keystones
+    { id:'dc_ks1', label:'Soul Sever',   type:'keystone', battleType:'active',  branch:'decay', x:CX-361, y:CY+752, cost:3, requires:['dc7'],
+      desc:'★ KEYSTONE — DECAY: Every kill restores 25% max HP and grants +10 Power for the rest of combat. The more enemies fall, the stronger and healthier you become. Momentum is survival.' },
+    { id:'dc_ks2', label:'Ancient Root', type:'keystone', battleType:'passive', branch:'decay', x:CX-603, y:CY+575, cost:3, requires:['dc8'],
+      desc:'★ KEYSTONE — DECAY × DEFENSE: Max HP is doubled. Guard regenerates 3 per turn. You always act last — but you are effectively unkillable given time. Patience wins.' },
+  ]
+
+  // ── Colors ──────────────────────────────────────────
+  const BRANCH_COLOR = {
+    center:'#c8b96e',
+    offense:'#e05555',
+    defense:'#5ec45e',
+    flow:'#5eaee0',
+    arcane:'#b06eff',
+    decay:'#9a6fd8',
+  }
+  const NODE_SIZE = { start:'st', small:'sm', notable:'md', keystone:'ks', elemental:'el' }
+  // ── Stat key → DB column mapping ─────────────────────
+  // Node stats use descriptive keys; DB players table uses short column names
+  const STAT_COL = {
+    atk_bonus:     'atk',
+    def_bonus:     'def',
+    power_bonus:   'power',
+    guard_bonus:   'guard',
+    control_bonus: 'control',
+    speed_bonus:   'speed',
+    insight_bonus: 'insight',
+    luck_bonus:    'luck',
+  }
+  function statToCol(statKey) { return STAT_COL[statKey] || statKey }
+
+  // ── State ────────────────────────────────────────────
+  let skillsUnlocked, battleSkills, skillPoints
+  let selectedNode = null
+  let scale = 0.5, panX = 0, panY = 0
+  let isDragging = false, dragStartX, dragStartY, panStartX, panStartY
+  const CANVAS_W = 2000, CANVAS_H = 2000
+  let pendingBattleSkills = []
+  let slotsDirty = false
+
+  // ── Init ─────────────────────────────────────────────
+  const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  if (!player) throw new Error('no player')
+
+  // Diagnostic: confirm player loaded correctly
+  console.log('[SuperSede] Player loaded:', player.id, '| SP:', player.skill_points, '| skills_unlocked:', player.skills_unlocked)
+
+  skillsUnlocked = player.skills_unlocked || []
+  battleSkills   = player.battle_skills   || []
+  skillPoints    = player.skill_points    || 0
+  pendingBattleSkills = [...battleSkills]  // init draft from saved state
+
+  updateSPDisplay()
+  renderPageSummary()
+  renderBattleSlotsPage()
+
+  function renderElementalTags() {
+    const chapter = player.current_chapter || 1
+    const els = ['Dark','Earth','Fire','Light','Lightning','Metal','Plant','Poison','Water','Wind']
+    const container = document.getElementById('elemental-tags')
+    if (!container) return
+    container.innerHTML = els.map(e => {
+      const locked = chapter < 2
+      return `<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;padding:2px 7px;border-radius:12px;border:.5px solid rgba(139,106,32,.15);color:${locked?'#a08858':'#c8b96e'};background:rgba(0,0,0,.1)">${locked?'🔒':''} ${e}</span>`
+    }).join('')
+  }
+
+  // ── Open/Close ───────────────────────────────────────
+  window.openTree = () => {
+    document.getElementById('tree-overlay').classList.add('open')
+    document.body.style.overflow = 'hidden'
+    buildTree()
+    centerView()
+  }
+  window.closeTree = () => {
+    document.getElementById('tree-overlay').classList.remove('open')
+    document.getElementById('slots-bar').classList.remove('open')
+    document.getElementById('node-detail').classList.remove('open')
+    document.body.style.overflow = ''
+  }
+  window.closeDetail = () => {
+    document.getElementById('node-detail').classList.remove('open')
+    selectedNode = null
+    refreshSelected()
+  }
+  window.toggleSlotsBar = () => {
+    document.getElementById('slots-bar').classList.toggle('open')
+    renderSlotsBar()
+  }
+
+  function centerView() {
+    const wrap = document.getElementById('tree-canvas-wrap')
+    panX = wrap.clientWidth  / 2 - CX * scale
+    panY = wrap.clientHeight / 2 - CY * scale
+    applyTransform()
+  }
+
+  function updateSPDisplay() {
+    document.getElementById('sp-display').textContent = skillPoints
+    document.getElementById('sp-badge').textContent   = skillPoints + ' SP'
+  }
+
+  // ── Build tree ───────────────────────────────────────
+  let _panZoomInit = false
+  function buildTree() {
+    const canvas = document.getElementById('tree-canvas')
+    const svg    = document.getElementById('tree-svg')
+    canvas.innerHTML = ''
+    svg.innerHTML    = ''
+    svg.setAttribute('width',  CANVAS_W)
+    svg.setAttribute('height', CANVAS_H)
+
+    // Connectors
+    let lines = ''
+    NODES.forEach(nd => {
+      const ndUnlocked  = skillsUnlocked.includes(nd.id) || nd.id === 'center'
+      const ndAvailable = !ndUnlocked && prereqsSatisfied(nd)
+      nd.requires.forEach(req => {
+        const par = NODES.find(n => n.id === req)
+        if (!par) return
+        const parUnlocked = skillsUnlocked.includes(req) || req === 'center'
+        // Lit: both unlocked, OR parent unlocked and child available (shows the usable path)
+        const lit = (ndUnlocked && parUnlocked) || (ndAvailable && parUnlocked)
+        // Dashed: child available but this specific parent is locked (alternative path not yet met)
+        const dashed = ndAvailable && !parUnlocked
+        const col = lit ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
+                  : dashed ? 'rgba(180,140,60,.15)'
+                  : 'rgba(0,0,0,0)'
+        const sw  = lit ? 2.5 : dashed ? 1.2 : 0
+        const dash = dashed ? ' stroke-dasharray="4,4"' : ''
+        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"${dash}/>`
+      })
+    })
+    svg.innerHTML = lines
+
+    // Nodes
+    NODES.forEach(nd => {
+      const el = document.createElement('div')
+      el.className = buildNodeClass(nd)
+      el.id = 'sn-' + nd.id
+      el.style.cssText = `left:${nd.x}px;top:${nd.y}px;transform:translate(-50%,-50%)`
+      el.innerHTML = buildNodeHTML(nd)
+      el.addEventListener('click', () => onNodeClick(nd))
+      canvas.appendChild(el)
+    })
+
+    if (!_panZoomInit) { setupPanZoom(); _panZoomInit = true }
+  }
+
+  function buildNodeClass(nd) {
+    const sz  = NODE_SIZE[nd.type] || 'sm'
+    const unl = isUnlocked(nd)
+    const avl = !unl && isAvailable(nd)   // dashed ring = prereqs met (SP irrelevant)
+    const sel = selectedNode === nd.id
+    return `sn sn-${sz}${unl?' unlocked':''}${avl?' available':''}${sel?' selected':''}`
+  }
+
+  function labelToFilename(label) {
+    return label.toLowerCase().replace(/['']/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '')
+  }
+
+  function buildNodeHTML(nd) {
+    const col    = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
+    const unlocked_nd = isUnlocked(nd)
+    const available  = !unlocked_nd && isAvailable(nd)   // prereqs met = show as available
+    const locked = !unlocked_nd && !available && nd.type !== 'start'
+    const chapter= player.current_chapter || 1
+
+    let inner = ''
+    if (nd.type === 'start') {
+      inner = `<span style="font-size:1.3rem;color:#c8b96e;line-height:1">⬡</span>`
+    } else if (nd.type === 'elemental') {
+      const avail = chapter >= 2
+      inner = `<span style="font-family:'Cinzel',serif;font-size:.65rem;color:${avail?col:'#a08858'};font-weight:600">${nd.label[0]}</span>`
+    } else if (nd.type === 'keystone' || nd.type === 'notable') {
+      const imgSize = nd.type === 'keystone' ? '56px' : '34px'
+      const filename = labelToFilename(nd.label)
+      const opacity = locked ? '0.25' : available ? '0.65' : '1'
+      const filt    = locked ? 'grayscale(80%)' : available ? 'grayscale(30%)' : 'none'
+      inner = `<img src="../assets/skills/${filename}.webp"
+        style="width:${imgSize};height:${imgSize};object-fit:cover;border-radius:50%;display:block;
+               opacity:${opacity};filter:${filt};pointer-events:none;"
+        onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<span style=\\'font-family:Cinzel,serif;font-size:.55rem;color:${locked?'rgba(200,160,60,.3)':available?col+'aa':col};font-weight:700\\'>${nd.type==='keystone'?'★':'◆'}</span>')"
+      />`
+    } else {
+      const STAT_ICON = {
+        atk_bonus:     { icon:'attack',  color:'#e05555' },
+        power_bonus:   { icon:'power',   color:'#992222' },
+        def_bonus:     { icon:'defense', color:'#5ec45e' },
+        guard_bonus:   { icon:'guard',   color:'#3db89a' },
+        speed_bonus:   { icon:'speed',   color:'#5eaee0' },
+        insight_bonus: { icon:'insight', color:'#b06eff' },
+        luck_bonus:    { icon:'luck',    color:'#d4a843' },
+        control_bonus: { icon:'control', color:'#d4783a' },
+        agility_bonus: { icon:'agility', color:'#5ec45e' },
+      }
+      const si = nd.stat ? STAT_ICON[nd.stat] : null
+      if (si) {
+        const sz  = nd.type === 'notable' ? '20px' : '16px'
+        const op  = locked ? 'opacity:.25;filter:grayscale(1)' : available ? `opacity:.65;filter:drop-shadow(0 0 3px ${si.color}66)` : `filter:drop-shadow(0 0 3px ${si.color}99)`
+        inner = `<img src="../assets/skills/${si.icon}.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;pointer-events:none;${op}" onerror="this.outerHTML='<span style=\\'font-size:10px;line-height:1\\'></span>'">`
+      } else {
+        inner = `<span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:${locked?'rgba(200,160,60,.3)':available?col+'aa':col};font-weight:600">+</span>`
+      }
+    }
+
+    const STAT_COLORS = {
+      atk_bonus:'#e05555', power_bonus:'#992222', def_bonus:'#5ec45e',
+      guard_bonus:'#3db89a', speed_bonus:'#5eaee0', insight_bonus:'#b06eff',
+      luck_bonus:'#d4a843', control_bonus:'#d4783a'
+    }
+    const statCol  = (nd.type === 'small' || nd.type === 'notable') && nd.stat && STAT_COLORS[nd.stat]
+      ? STAT_COLORS[nd.stat] : col
+    const ringCol  = locked ? 'rgba(180,140,60,.2)' : available ? statCol + '88' : statCol
+    const glowStyle = unlocked_nd && nd.type !== 'start'
+      ? `box-shadow:0 0 ${nd.type==='keystone'?14:8}px ${statCol}88;`
+      : available ? `box-shadow:0 0 6px ${statCol}44;` : ''
+    const ring = `<div class="sn-ring" style="border-color:${ringCol};${glowStyle};${available?'border-style:dashed;':''}overflow:hidden;display:flex;align-items:center;justify-content:center;">${inner}</div>`
+    const lblCol = locked ? '#6a5428' : available ? statCol + 'bb' : statCol
+    const btTag  = (nd.type === 'notable' || nd.type === 'keystone') && nd.battleType
+      ? `<div style="font-family:'Share Tech Mono',monospace;font-size:.32rem;color:${nd.battleType==='active'?'#5eaee0':'#b06eff'};letter-spacing:.04em;line-height:1.2">${nd.battleType==='active'?'ACTIVE':'PASSIVE'}</div>`
+      : ''
+    const lbl  = nd.type !== 'start'
+      ? `<div class="sn-lbl" style="color:${lblCol}">${nd.label}${btTag}</div>`
+      : ''
+    return ring + lbl
+  }
+
+  function isUnlocked(nd) {
+    return nd.id === 'center' || skillsUnlocked.includes(nd.id)
+  }
+  function prereqsSatisfied(nd) {
+    if (nd.type === 'elemental') return false
+    if (nd.requires.length === 0) return true
+    // Forward: any required parent is unlocked
+    const fwd = nd.requires.some(r => r === 'center' || skillsUnlocked.includes(r))
+    if (fwd) return true
+    // Backward: any already-unlocked node lists this node as a requirement
+    // Allows moving "backwards" to nodes you passed over
+    if (typeof NODES === 'undefined') return false
+    const bwd = NODES.some(n => skillsUnlocked.includes(n.id) && n.requires.includes(nd.id))
+    return bwd
+  }
+  function canUnlock(nd) {
+    if (nd.type === 'elemental') return false
+    if (isUnlocked(nd)) return false
+    if (skillPoints < (nd.cost || 1)) return false
+    return prereqsSatisfied(nd)
+  }
+  function isAvailable(nd) {
+    // Available = prereqs met, not yet unlocked (regardless of SP — visual state only)
+    if (nd.type === 'elemental') return false
+    if (isUnlocked(nd)) return false
+    return prereqsSatisfied(nd)
+  }
+
+  function refreshSelected() {
+    document.querySelectorAll('.sn').forEach(el => {
+      el.classList.toggle('selected', el.id === 'sn-' + selectedNode)
+    })
+  }
+
+  // ── Node click ───────────────────────────────────────
+  function onNodeClick(nd) {
+    selectedNode = nd.id
+    refreshSelected()
+    showNodeDetail(nd)
+  }
+
+  function showNodeDetail(nd) {
+    const col     = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
+    const chapter = player.current_chapter || 1
+    const isEl    = nd.type === 'elemental'
+
+    let body = ''
+    if (nd.type === 'start') {
+      body = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.9rem;color:#c8b96e;margin:0">Your journey begins here. Choose a path and grow.</p>`
+    } else if (isEl) {
+      body = `
+        <p style="font-family:'Cinzel',serif;font-size:1rem;color:${col};margin:0 0 4px;font-weight:600">${nd.label} — Elemental Gateway</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a08858;margin:0 0 .5rem;letter-spacing:.06em">CHAPTER 2 REQUIRED</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:${chapter>=2?'#c8b96e':'#b09060'}">
+          ${chapter>=2 ? 'This elemental path is now open. Visit the elemental skill tabs to unlock abilities.' : 'These paths are sealed. Master the physical arts first. Return in Chapter 2.'}
+        </p>`
+    } else {
+      const typeLabel  = nd.type==='keystone' ? '★ KEYSTONE' : nd.type==='notable' ? '◆ NOTABLE' : '· NODE'
+      const btLabel    = nd.battleType === 'active' ? 'ACTIVE' : nd.battleType === 'passive' ? 'PASSIVE' : null
+      const btCol      = nd.battleType === 'active' ? '#5eaee0' : '#b06eff'
+      const btSlotHint = nd.battleType === 'active' ? 'Slot into A1–A4' : 'Slot into P1–P2'
+      const pMet       = prereqsSatisfied(nd)
+      const metVia     = nd.requires.filter(r => r==='center' || skillsUnlocked.includes(r))
+      const unmetReqs  = nd.requires.filter(r => r!=='center' && !skillsUnlocked.includes(r))
+      const statLine   = nd.stat && nd.val ? `+${nd.val} ${statToCol(nd.stat).replace('_',' ')}` : ''
+      const inBattle   = pendingBattleSkills.includes(nd.id)
+      const battleFull = pendingBattleSkills.length >= 6
+      const canEquip   = nd.type === 'notable' || nd.type === 'keystone'
+
+      body = `
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;flex-wrap:wrap;margin-bottom:.4rem">
+          <div>
+            <p style="font-family:'Cinzel',serif;font-size:1rem;color:${col};margin:0 0 2px;font-weight:600">${nd.label}</p>
+            <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a08858;letter-spacing:.05em">${typeLabel} · ${nd.cost} SP${statLine?' · '+statLine:''}</span>
+              ${btLabel ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${btCol};background:${btCol}22;border:.5px solid ${btCol}66;border-radius:10px;padding:1px 7px;letter-spacing:.06em">${btLabel} · ${btSlotHint}</span>` : ''}
+            </div>
+            ${nd.stat && nd.val && isUnlocked(nd) ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#7a9058;margin:3px 0 0;letter-spacing:.05em">✓ Stat bonus (+${nd.val} ${statToCol(nd.stat)}) is always active — unlocking applies it permanently</p>` : ''}
+            ${nd.battleType === 'passive' && isUnlocked(nd) ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#b06eff88;margin:2px 0 0;letter-spacing:.05em">Slot into P1–P2 to enable the combat ability</p>` : ''}
+          </div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">
+            ${canUnlock(nd) ? `<button onclick="doUnlock('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.55);border:1px solid rgba(139,106,32,.7);border-radius:3px;padding:.3rem .8rem;cursor:pointer">✦ Unlock (${nd.cost} SP)</button>` : ''}
+            ${!isUnlocked(nd) && !pMet ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#a08858">🔒 Unlock a connected node first</span>` : ''}
+            ${!isUnlocked(nd) && pMet && skillPoints < nd.cost ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#c04040">Need ${nd.cost} SP (have ${skillPoints})</span>` : ''}
+            ${!isUnlocked(nd) && pMet && unmetReqs.length > 0 && metVia.length > 0 ? `<div style="font-family:'Share Tech Mono',monospace;font-size:.46rem;color:var(--ink-dim);margin-top:3px">✓ Reachable via ${metVia.map(r=>{ const n=NODES.find(x=>x.id===r); return n?.label||r }).join(', ')}</div>` : ''}
+            ${isUnlocked(nd) && canEquip && !inBattle && !battleFull
+              ? `<button onclick="stageAddToBattle('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(94,174,224,.3);border:1px solid rgba(94,174,224,.5);border-radius:3px;padding:.3rem .8rem;cursor:pointer">+ Add to Battle</button>` : ''}
+            ${isUnlocked(nd) && inBattle
+              ? `<button onclick="stageRemoveFromBattle('${nd.id}')" style="font-family:'Cinzel',serif;font-size:.7rem;color:#e05555;background:rgba(192,64,64,.12);border:.5px solid rgba(192,64,64,.4);border-radius:3px;padding:.3rem .8rem;cursor:pointer">− Remove from Battle</button>` : ''}
+            ${isUnlocked(nd) && canEquip && !inBattle && battleFull
+              ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040">Battle slots full</span>` : ''}
+          </div>
+        </div>
+        ${nd.desc ? `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.84rem;color:#c8b96e;margin:0;line-height:1.55">${nd.desc}</p>` : ''}`
+    }
+
+    document.getElementById('detail-inner').innerHTML = body
+    document.getElementById('node-detail').classList.add('open')
+  }
+
+  // ── Unlock ───────────────────────────────────────────
+  window.doUnlock = async (id) => {
+    const nd = NODES.find(n => n.id === id)
+    if (!nd || !canUnlock(nd)) return
+    skillsUnlocked = [...skillsUnlocked, id]
+    skillPoints -= nd.cost
+
+    const update = { skills_unlocked: skillsUnlocked, skill_points: skillPoints }
+
+    // Map the node's stat key to the actual DB column name and apply the bonus
+    if (nd.stat && nd.val) {
+      const col = statToCol(nd.stat)
+      player[col] = (player[col] || 0) + nd.val
+      update[col] = player[col]
+    }
+
+    const { data, error } = await supabase.from('players').update(update).eq('id', player.id).select().single()
+    if (error) { console.error('doUnlock save error:', error.message); showToast('Error saving — check console'); return }
+    if (data) Object.assign(player, data)
+    player.skills_unlocked = skillsUnlocked
+    player.skill_points    = skillPoints
+    updateSPDisplay()
+    showToast('✦ ' + nd.label + ' unlocked!')
+    buildTree()
+    showNodeDetail(nd)
+    renderPageSummary()
+    renderBattleSlotsPage()
+  }
+
+  // ── Battle slots — staged editing ────────────────────
+  // pendingBattleSkills is a local draft. Only saved on confirmSaveSlots().
+
+  function markSlotsDirty() {
+    slotsDirty = true
+    renderSlotsBar()
+    renderBattleSlotsPage()
+  }
+
+  window.stageAddToBattle = (id) => {
+    if (pendingBattleSkills.includes(id)) return
+    const nd = NODES.find(n => n.id === id)
+    if (!nd) return
+
+    const ACTIVE_SLOTS  = 4
+    const PASSIVE_SLOTS = 2
+    const isPassive = nd.battleType === 'passive'
+
+    // Pad array to at least 4 slots so passive indices are always 4+
+    const newSkills = [...pendingBattleSkills]
+    while (newSkills.length < ACTIVE_SLOTS) newSkills.push(null)
+
+    if (isPassive) {
+      // Passive goes into P1 (index 4) or P2 (index 5)
+      const passiveFilled = newSkills.slice(ACTIVE_SLOTS).filter(Boolean).length
+      if (passiveFilled >= PASSIVE_SLOTS) { showToast('Passive slots full — P1 and P2 are taken'); return }
+      newSkills.push(id)
+    } else {
+      // Active goes into first open A1–A4 slot (indices 0–3)
+      const firstEmpty = newSkills.findIndex((s, i) => i < ACTIVE_SLOTS && !s)
+      if (firstEmpty === -1) { showToast('Active slots full — A1 to A4 are taken'); return }
+      newSkills[firstEmpty] = id
+    }
+
+    pendingBattleSkills = newSkills
+    closeSkillPicker()
+    markSlotsDirty()
+    renderSlotsBar()
+    renderBattleSlotsPage()
+    showNodeDetail(nd)
+  }
+
+  window.stageRemoveFromBattle = (id) => {
+    // Null out the slot so positions of other skills stay fixed
+    pendingBattleSkills = pendingBattleSkills.map(s => s === id ? null : s)
+    // Trim trailing nulls beyond the minimum needed
+    while (pendingBattleSkills.length > 0 && pendingBattleSkills[pendingBattleSkills.length - 1] === null) {
+      pendingBattleSkills.pop()
+    }
+    markSlotsDirty()
+    renderSlotsBar()
+    renderBattleSlotsPage()
+    const nd = NODES.find(n => n.id === id)
+    if (nd) showNodeDetail(nd)
+  }
+
+  window.confirmSaveSlots = async () => {
+    battleSkills = [...pendingBattleSkills]
+    const { error } = await supabase.from('players')
+      .update({ battle_skills: battleSkills })
+      .eq('id', player.id)
+      .select().single()
+    if (error) { console.error('confirmSaveSlots error:', error.message); showToast('Error saving slots — check console'); return }
+    player.battle_skills = battleSkills
+    slotsDirty = false
+    renderSlotsBar()
+    renderBattleSlotsPage()
+    showToast('✦ Battle slots saved!')
+  }
+
+  window.cancelSlotEdits = () => {
+    pendingBattleSkills = [...battleSkills]
+    slotsDirty = false
+    closeSkillPicker()
+    renderSlotsBar()
+    renderBattleSlotsPage()
+  }
+
+  // Keep old addToBattle/removeFromBattle as aliases for node detail panel compatibility
+  window.addToBattle    = (id) => window.stageAddToBattle(id)
+  window.removeFromBattle = (id) => window.stageRemoveFromBattle(id)
+
+  // ── Skill picker modal (for + button) ─────────────────
+  window.openSkillPicker = (slotIndex, isPassiveSlot) => {
+    closeSkillPicker()
+    const eligible = NODES.filter(nd => {
+      if (!isUnlocked(nd)) return false
+      if (nd.type === 'small' || nd.type === 'start' || nd.type === 'elemental') return false
+      if (pendingBattleSkills.includes(nd.id)) return false
+      // Filter by slot type when battleType is set
+      if (isPassiveSlot && nd.battleType === 'active') return false
+      if (!isPassiveSlot && nd.battleType === 'passive') return false
+      return true
+    })
+
+    const picker = document.createElement('div')
+    picker.id = 'skill-picker-modal'
+    picker.style.cssText = 'position:fixed;inset:0;z-index:1050;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    picker.innerHTML = `
+      <div style="background:#1a1208;border:1px solid rgba(200,184,128,.3);border-radius:6px;padding:1rem;min-width:260px;max-width:320px;max-height:70vh;display:flex;flex-direction:column">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem">
+          <div>
+            <p style="font-family:'Cinzel',serif;font-size:.88rem;color:#c8b96e;margin:0">${isPassiveSlot ? 'Passive Slot' : 'Active Slot'} ${slotIndex + 1}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:${isPassiveSlot?'#b06eff':'#5eaee0'};margin:0;letter-spacing:.06em">${isPassiveSlot ? 'Auto-triggers each fight — slot PASSIVE skills' : 'Use on your turn — slot ACTIVE skills'}</p>
+          </div>
+          <button onclick="closeSkillPicker()" style="background:none;border:none;color:#a08858;font-size:1rem;cursor:pointer">✕</button>
+        </div>
+        <div style="overflow-y:auto;flex:1">
+          ${eligible.length ? eligible.map(nd => {
+            const col = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
+            const btLabel = nd.battleType === 'active' ? 'ACTIVE' : nd.battleType === 'passive' ? 'PASSIVE' : ''
+            const btCol   = nd.battleType === 'active' ? '#5eaee0' : '#b06eff'
+            const typeTag = nd.type === 'keystone' ? '★' : '◆'
+            return `<div onclick="stageAddToBattle('${nd.id}')"
+              style="display:flex;align-items:center;gap:.6rem;padding:.5rem .4rem;border-bottom:.5px solid rgba(200,184,128,.1);cursor:pointer;border-radius:3px;transition:background .15s"
+              onmouseover="this.style.background='rgba(200,184,128,.08)'" onmouseout="this.style.background=''">
+              <div style="width:10px;height:10px;border-radius:50%;background:${col};flex-shrink:0"></div>
+              <div style="flex:1;min-width:0">
+                <p style="font-family:'Cinzel',serif;font-size:.8rem;color:${col};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${typeTag} ${nd.label}</p>
+                <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:#a08858;margin:0">${nd.branch.toUpperCase()}
+                  <span style="color:${btCol};margin-left:4px">${btLabel}</span>
+                </p>
+              </div>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#c8b96e">+</span>
+            </div>`
+          }).join('') : `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#a08858;padding:.5rem 0">No eligible ${isPassiveSlot ? 'passive' : 'active'} skills available.</p>`}
+        </div>
+      </div>
+    `
+    picker.addEventListener('click', e => { if (e.target === picker) closeSkillPicker() })
+    document.body.appendChild(picker)
+  }
+
+  window.closeSkillPicker = () => {
+    document.getElementById('skill-picker-modal')?.remove()
+  }
+
+  function renderSlotsBar() {
+    const list = document.getElementById('slots-list')
+    if (!list) return
+    const ACTIVE_SLOTS = 4, PASSIVE_SLOTS = 2
+
+    function slotLabel(nd, id, slotType, slotIdx, isPassive) {
+      const col = nd ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e') : 'rgba(139,106,32,.25)'
+      const btCol = isPassive ? '#b06eff' : '#5eaee0'
+      if (nd) {
+        const btLabel = nd.battleType ? nd.battleType.toUpperCase() : ''
+        return `<div style="flex:1;min-width:0;overflow:hidden">
+          <span style="font-family:'Cinzel',serif;font-size:.72rem;color:${col};display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${nd.label}</span>
+          ${btLabel ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.42rem;color:${btCol}">${btLabel}</span>` : ''}
+        </div>
+        <button onclick="stageRemoveFromBattle('${id}')" title="Remove" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:22px;height:22px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">−</button>`
+      }
+      return `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.7rem;color:var(--ink-dim);flex:1">Empty</span>
+        <button onclick="openSkillPicker(${slotIdx},${isPassive})" title="Add skill" style="background:${btCol}26;border:.5px solid ${btCol}66;color:${btCol};border-radius:3px;width:22px;height:22px;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">+</button>`
+    }
+
+    let html = `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin-bottom:4px">⚔ ACTIVE — use on your turn</p>`
+    for (let i = 0; i < ACTIVE_SLOTS; i++) {
+      const id = pendingBattleSkills[i] || null
+      const nd = id ? NODES.find(n => n.id === id) : null
+      html += `<div class="slot-item${nd?' filled':''}">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#5eaee0;min-width:16px">A${i+1}</span>
+        ${slotLabel(nd, id, 'active', i, false)}
+      </div>`
+    }
+    html += `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#b06eff;letter-spacing:.08em;margin:.5rem 0 4px">⚡ PASSIVE — auto-triggers each fight</p>`
+    for (let i = 0; i < PASSIVE_SLOTS; i++) {
+      const idx = ACTIVE_SLOTS + i
+      const id  = pendingBattleSkills[idx] || null
+      const nd  = id ? NODES.find(n => n.id === id) : null
+      html += `<div class="slot-item${nd?' filled':''}">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#b06eff;min-width:16px">P${i+1}</span>
+        ${slotLabel(nd, id, 'passive', i, true)}
+      </div>`
+    }
+    html += `<div style="margin-top:.6rem;display:flex;gap:5px">
+      <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.72rem;color:var(--ink);background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.4rem;cursor:pointer;transition:all .2s">
+        ${slotsDirty ? '💾 Save Changes' : '✓ Saved'}
+      </button>
+      ${slotsDirty ? `<button onclick="cancelSlotEdits()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.4rem .6rem;cursor:pointer">↩ Undo</button>` : ''}
+    </div>`
+    list.innerHTML = html
+  }
+
+  function renderBattleSlotsPage() {
+    const c = document.getElementById('battle-slots-page')
+    if (!c) return
+    const ACTIVE_SLOTS = 4, PASSIVE_SLOTS = 2
+    let html = `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:5px">⚔ ACTIVE SLOTS — used each turn in combat</p>`
+    for (let i = 0; i < ACTIVE_SLOTS; i++) {
+      const id  = pendingBattleSkills[i] || null
+      const nd  = id ? NODES.find(n => n.id === id) : null
+      const col = nd ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e') : 'rgba(139,106,32,.25)'
+      html += `<div style="border:.5px solid ${nd?col+'55':'rgba(139,106,32,.22)'};border-radius:4px;padding:.45rem .6rem;display:flex;align-items:center;gap:.5rem;min-height:44px;background:${nd?'rgba(0,0,0,.05)':''};margin-bottom:4px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a08858;min-width:16px">A${i+1}</span>
+        ${nd
+          ? `<div style="flex:1;min-width:0">
+               <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${col};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nd.label}</p>
+               <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#a08858;margin:0">${nd.branch.toUpperCase()} · ${nd.type.toUpperCase()}</p>
+             </div>
+             <button onclick="stageRemoveFromBattle('${id}')" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>`
+          : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);flex:1">Empty</span>
+             <button onclick="openSkillPicker(${i},false)" style="background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.4);color:#5eaee0;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>`}
+      </div>`
+    }
+    html += `<p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin:.6rem 0 5px">⚡ PASSIVE SLOTS — auto-active every fight</p>`
+    for (let i = 0; i < PASSIVE_SLOTS; i++) {
+      const idx = ACTIVE_SLOTS + i
+      const id  = pendingBattleSkills[idx] || null
+      const nd  = id ? NODES.find(n => n.id === id) : null
+      const col = nd ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e') : 'rgba(176,110,255,.25)'
+      html += `<div style="border:.5px solid ${nd?col+'55':'rgba(176,110,255,.18)'};border-radius:4px;padding:.45rem .6rem;display:flex;align-items:center;gap:.5rem;min-height:44px;background:${nd?'rgba(176,110,255,.04)':''};margin-bottom:4px">
+        <span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#b06eff;min-width:16px">P${i+1}</span>
+        ${nd
+          ? `<div style="flex:1;min-width:0">
+               <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${col};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nd.label}</p>
+               <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#a08858;margin:0">${nd.branch.toUpperCase()} · ${nd.type.toUpperCase()} · auto-passive</p>
+             </div>
+             <button onclick="stageRemoveFromBattle('${id}')" style="background:rgba(192,64,64,.15);border:.5px solid rgba(192,64,64,.4);color:#e05555;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">−</button>`
+          : `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);flex:1">Empty</span>
+             <button onclick="openSkillPicker(${i},true)" style="background:rgba(176,110,255,.15);border:.5px solid rgba(176,110,255,.4);color:#b06eff;border-radius:3px;width:26px;height:26px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">+</button>`}
+      </div>`
+    }
+    html += `<div style="display:flex;gap:6px;margin-top:.5rem">
+      <button onclick="confirmSaveSlots()" style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:${slotsDirty?'rgba(200,184,128,.6)':'rgba(200,184,128,.25)'};border:1px solid ${slotsDirty?'rgba(139,106,32,.8)':'rgba(139,106,32,.3)'};border-radius:3px;padding:.45rem;cursor:pointer;transition:all .2s">
+        ${slotsDirty ? '💾 Save Changes' : '✓ Saved'}
+      </button>
+      ${slotsDirty ? `<button onclick="cancelSlotEdits()" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.45rem .75rem;cursor:pointer">↩ Undo</button>` : ''}
+    </div>`
+    c.innerHTML = html
+  }
+
+  function renderPageSummary() {
+    const c = document.getElementById('unlocked-summary')
+    const unlocked = NODES.filter(n => skillsUnlocked.includes(n.id))
+    if (!unlocked.length) {
+      c.innerHTML = `<span style="font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:#a08858">No nodes unlocked yet.</span>`
+      return
+    }
+    c.innerHTML = unlocked.map(nd => {
+      const col = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
+      return `<span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;padding:2px 6px;border-radius:10px;border:.5px solid ${col}35;color:${col};background:${col}10">${nd.label}</span>`
+    }).join('')
+  }
+
+  // ── Reset ────────────────────────────────────────────
+  window.openResetConfirm = () => {
+    if (!skillsUnlocked.length) { showToast('No skills to reset'); return }
+    document.getElementById('rst-modal')?.remove()
+    const spent = skillsUnlocked.reduce((s, id) => s + (NODES.find(n=>n.id===id)?.cost||0), 0)
+    const m = document.createElement('div')
+    m.id = 'rst-modal'
+    m.style.cssText = 'position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.85)'
+    m.innerHTML = `
+      <div style="background:#1a1208;border:1px solid rgba(200,184,128,.25);border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px">
+        <p style="font-family:'Cinzel',serif;font-size:.95rem;color:#c8b96e;margin:0 0 .5rem;font-weight:600">Reset Skill Tree</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink-dim);margin:0 0 1rem">
+          All ${skillsUnlocked.length} nodes will be unlearned and ${spent} SP refunded. Battle skills cleared.
+        </p>
+        <div style="display:flex;gap:8px">
+          <button onclick="confirmReset()" style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#e05555;background:rgba(192,64,64,.12);border:1px solid rgba(192,64,64,.4);border-radius:3px;padding:.45rem;cursor:pointer">Confirm Reset</button>
+          <button onclick="document.getElementById('rst-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:#c8b96e;background:rgba(200,184,128,.08);border:1px solid rgba(200,184,128,.2);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        </div>
+      </div>`
+    m.addEventListener('click', e => { if(e.target===m) m.remove() })
+    document.body.appendChild(m)
+  }
+
+  window.confirmReset = async () => {
+    const spent = skillsUnlocked.reduce((s,id) => s+(NODES.find(n=>n.id===id)?.cost||0), 0)
+    const refunds = {}
+    skillsUnlocked.forEach(id => {
+      const nd = NODES.find(n=>n.id===id)
+      if (nd?.stat && nd?.val) {
+        const col = statToCol(nd.stat)
+        refunds[col] = (refunds[col]||0) + nd.val
+      }
+    })
+    const statUpdates = {}
+    Object.entries(refunds).forEach(([k,v]) => { statUpdates[k] = Math.max(0,(player[k]||0)-v) })
+    const newSP = skillPoints + spent
+    const payload = { skills_unlocked:[], battle_skills:[], skill_points:newSP, ...statUpdates }
+    const { error } = await supabase.from('players').update(payload).eq('id', player.id).select().single()
+    if (error) { console.error('confirmReset error:', error.message); showToast('Error resetting — check console'); return }
+    skillsUnlocked=[]; battleSkills=[]; pendingBattleSkills=[]; skillPoints=newSP; slotsDirty=false
+    Object.assign(player, { skills_unlocked:[], battle_skills:[], skill_points:newSP, ...statUpdates })
+    document.getElementById('rst-modal')?.remove()
+    updateSPDisplay()
+    renderPageSummary(); renderBattleSlotsPage(); renderSlotsBar()
+    if (document.getElementById('tree-overlay').classList.contains('open')) buildTree()
+    showToast('Skills reset — ' + newSP + ' SP refunded')
+  }
+
+  // ── Pan & Zoom ───────────────────────────────────────
+  function applyTransform() {
+    const t = `translate(${panX}px,${panY}px) scale(${scale})`
+    document.getElementById('tree-canvas').style.transform = t
+    document.getElementById('tree-svg').style.transform    = t
+    updateMinimap()
+  }
+
+  function setupPanZoom() {
+    const wrap = document.getElementById('tree-canvas-wrap')
+    wrap.addEventListener('mousedown', e => {
+      if (e.target.closest('.sn')) return
+      isDragging=true; dragStartX=e.clientX; dragStartY=e.clientY; panStartX=panX; panStartY=panY
+      wrap.classList.add('dragging')
+    })
+    window.addEventListener('mousemove', e => {
+      if (!isDragging) return
+      panX = panStartX+(e.clientX-dragStartX); panY = panStartY+(e.clientY-dragStartY)
+      applyTransform()
+    })
+    window.addEventListener('mouseup', () => { isDragging=false; wrap.classList.remove('dragging') })
+    let lastDist = null
+    wrap.addEventListener('touchstart', e => {
+      if (e.touches.length===1) { isDragging=true; dragStartX=e.touches[0].clientX; dragStartY=e.touches[0].clientY; panStartX=panX; panStartY=panY }
+    },{passive:true})
+    wrap.addEventListener('touchmove', e => {
+      if (e.touches.length===2) {
+        const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY)
+        if (lastDist) { scale=Math.max(.18,Math.min(2,scale+(d-lastDist)*.005)); applyTransform() }
+        lastDist=d
+      } else if (isDragging&&e.touches.length===1) {
+        panX=panStartX+(e.touches[0].clientX-dragStartX); panY=panStartY+(e.touches[0].clientY-dragStartY); applyTransform()
+      }
+    },{passive:true})
+    wrap.addEventListener('touchend',()=>{isDragging=false;lastDist=null})
+    wrap.addEventListener('wheel', e => {
+      e.preventDefault()
+      const rect=wrap.getBoundingClientRect(), mx=e.clientX-rect.left, my=e.clientY-rect.top
+      const delta=e.deltaY>0?-.08:.08, ns=Math.max(.18,Math.min(2,scale+delta))
+      panX=mx-(mx-panX)*(ns/scale); panY=my-(my-panY)*(ns/scale); scale=ns; applyTransform()
+    },{passive:false})
+  }
+
+  // ── Minimap ──────────────────────────────────────────
+  function updateMinimap() {
+    const cv = document.getElementById('minimap')
+    if (!cv) return
+    const ctx=cv.getContext('2d'), W=cv.width, H=cv.height
+    const sx=W/CANVAS_W, sy=H/CANVAS_H
+    ctx.clearRect(0,0,W,H)
+    NODES.forEach(nd => {
+      const col = nd.color||BRANCH_COLOR[nd.branch]||'#c8b96e'
+      ctx.fillStyle = skillsUnlocked.includes(nd.id) ? col : 'rgba(139,106,32,.2)'
+      const r = nd.type==='keystone'?3.5:nd.type==='notable'?2.5:1.5
+      ctx.beginPath(); ctx.arc(nd.x*sx, nd.y*sy, r, 0, Math.PI*2); ctx.fill()
+    })
+    const wrap=document.getElementById('tree-canvas-wrap')
+    if (!wrap) return
+    ctx.strokeStyle='rgba(200,184,128,.55)'; ctx.lineWidth=1
+    ctx.strokeRect((-panX/scale)*sx, (-panY/scale)*sy, (wrap.clientWidth/scale)*sx, (wrap.clientHeight/scale)*sy)
+  }
+
+  // ── Preserve elemental skill system ─────────────────
+  const ELEMENTS = {
+    dark:{label:'Dark',color:'#b06eff',glow:'#b06eff88',bg:'rgba(176,110,255,.08)'},
+    earth:{label:'Earth',color:'#8b5e3c',glow:'#8b5e3c88',bg:'rgba(139,94,60,.08)'},
+    fire:{label:'Fire',color:'#ff5500',glow:'#ff550088',bg:'rgba(255,85,0,.08)'},
+    light:{label:'Light',color:'#ffd700',glow:'#ffd70088',bg:'rgba(255,215,0,.08)'},
+    lightning:{label:'Lightning',color:'#88ccff',glow:'#88ccff88',bg:'rgba(136,204,255,.08)'},
+    metal:{label:'Metal',color:'#c0c0c0',glow:'#c0c0c088',bg:'rgba(192,192,192,.08)'},
+    plant:{label:'Plant',color:'#5ec45e',glow:'#5ec45e88',bg:'rgba(94,196,94,.08)'},
+    water:{label:'Water',color:'#0088ff',glow:'#0088ff88',bg:'rgba(0,136,255,.08)'},
+    wind:{label:'Wind',color:'#a8d8ea',glow:'#a8d8ea88',bg:'rgba(168,216,234,.08)'},
+  }
+  const ELEMENTAL_SKILLS = {
+    dark:[{key:'darkness_passive_backstab',type:'passive',label:'Backstab',desc:'Passive: 15% chance to deal double damage on strike.',cost:1,requires:null},{key:'darkness_skill_shadow_step',type:'active',label:'Shadow Step',desc:'Active: Teleport behind enemy, next attack ignores DEF.',cost:2,requires:'darkness_passive_backstab'},{key:'darkness_ultimate_void_zone',type:'ultimate',label:'Void Zone',desc:'Ultimate: Enemy ATK -30% for 3 turns.',cost:3,requires:'darkness_skill_shadow_step'}],
+    earth:[{key:'earth_passive_damage_reduction',type:'passive',label:'Stone Skin',desc:'Passive: Reduce all incoming damage by 5.',cost:1,requires:null},{key:'earth_skill_rock_armor',type:'active',label:'Rock Armor',desc:'Active: +20 DEF for 2 turns.',cost:2,requires:'earth_passive_damage_reduction'},{key:'earth_ultimate_earthquake',type:'ultimate',label:'Earthquake',desc:'Ultimate: Massive damage, stuns 1 turn.',cost:3,requires:'earth_skill_rock_armor'}],
+    fire:[{key:'fire_passive_burn',type:'passive',label:'Burn',desc:'Passive: Attacks apply Burn — 3 dmg/turn for 2 turns.',cost:1,requires:null},{key:'fire_skill_fire_blast',type:'active',label:'Fire Blast',desc:'Active: 25 fire damage, ignores 50% DEF.',cost:2,requires:'fire_passive_burn'},{key:'fire_ultimate_inferno_zone',type:'ultimate',label:'Inferno Zone',desc:'Ultimate: 40 dmg/turn for 3 turns.',cost:3,requires:'fire_skill_fire_blast'}],
+    light:[{key:'light_passive_boost_allies',type:'passive',label:'Radiance',desc:'Passive: Allies gain +5 ATK while you live.',cost:1,requires:null},{key:'light_skill_heal_pulse',type:'active',label:'Heal Pulse',desc:'Active: Restore 25 HP.',cost:2,requires:'light_passive_boost_allies'},{key:'light_ultimate_divine_barrier',type:'ultimate',label:'Divine Barrier',desc:'Ultimate: Invulnerable 1 turn, reflect damage.',cost:3,requires:'light_skill_heal_pulse'}],
+    lightning:[{key:'lightning_passive_chain_damage',type:'passive',label:'Chain',desc:'Passive: 20% chance to chain attack for 50% extra damage.',cost:1,requires:null},{key:'lightning_skill_lightning_strike',type:'active',label:'Lightning Strike',desc:'Active: 30 lightning damage, ignores shields.',cost:2,requires:'lightning_passive_chain_damage'},{key:'lightning_ultimate_thunderstorm',type:'ultimate',label:'Thunderstorm',desc:'Ultimate: 5 bolts × 15 damage.',cost:3,requires:'lightning_skill_lightning_strike'}],
+    metal:[{key:'metal_passive_reflect',type:'passive',label:'Reflect',desc:'Passive: Reflect 10% of damage taken.',cost:1,requires:null},{key:'metal_skill_blade_form',type:'active',label:'Blade Form',desc:'Active: ATK +20, SPD +5 for 2 turns.',cost:2,requires:'metal_passive_reflect'},{key:'metal_ultimate_iron_domain',type:'ultimate',label:'Iron Domain',desc:'Ultimate: ATK doubles for 3 turns.',cost:3,requires:'metal_skill_blade_form'}],
+    plant:[{key:'plant_passive_heal_still',type:'passive',label:'Regrowth',desc:'Passive: Restore 3 HP/turn when not hit.',cost:1,requires:null},{key:'plant_skill_root_trap',type:'active',label:'Root Trap',desc:'Active: Enemy skips next attack.',cost:2,requires:'plant_passive_heal_still'},{key:'plant_ultimate_nature_overgrowth',type:'ultimate',label:'Overgrowth',desc:'Ultimate: Heal 40 HP and deal 30 damage.',cost:3,requires:'plant_skill_root_trap'}],
+    water:[{key:'water_passive_regen',type:'passive',label:'Flow',desc:'Passive: Recover 5 HP per turn.',cost:1,requires:null},{key:'water_skill_water_shield',type:'active',label:'Water Shield',desc:'Active: Absorb next 30 damage.',cost:2,requires:'water_passive_regen'},{key:'water_ultimate_tsunami',type:'ultimate',label:'Tsunami',desc:'Ultimate: 50 damage, skip enemy turn.',cost:3,requires:'water_skill_water_shield'}],
+    wind:[{key:'wind_passive_dodge',type:'passive',label:'Gust',desc:'Passive: 20% dodge chance.',cost:1,requires:null},{key:'wind_skill_dash_strike',type:'active',label:'Dash Strike',desc:'Active: ATK×2, go first next turn.',cost:2,requires:'wind_passive_dodge'},{key:'wind_ultimate_tornado_field',type:'ultimate',label:'Tornado Field',desc:'Ultimate: Enemy ATK -10, SPD ×2 for 3 turns.',cost:3,requires:'wind_skill_dash_strike'}],
+  }
+  window._ELEMENTS=ELEMENTS
+  window._ELEMENTAL_SKILLS=ELEMENTAL_SKILLS
+  window._SKILL_TREE_NODES=NODES
+  window._skillsUnlocked=()=>skillsUnlocked
+
+  // ════════════════════════════════════════════════════
+  // ESP — ELEMENTAL SKILL TREE
+  // ════════════════════════════════════════════════════
+  const ESP_ELEMENTS = [
+    { key:'fire',      icon:'🔥', name:'Ignis',  bossKey:'zone_boss_fire',      color:'#ff5500' },
+    { key:'water',     icon:'💧', name:'Aqua',   bossKey:'zone_boss_water',     color:'#0088ff' },
+    { key:'lightning', icon:'⚡', name:'Volt',   bossKey:'zone_boss_lightning', color:'#ffee58' },
+    { key:'arcane',    icon:'✨', name:'Arcane', bossKey:'zone_boss_arcane',    color:'#b06eff' },
+    { key:'shadow',    icon:'🌑', name:'Umbra',  bossKey:'zone_boss_shadow',    color:'#9a6fd8' },
+    { key:'earth',     icon:'🪨', name:'Terra',  bossKey:'zone_boss_earth',     color:'#8b5e3c' },
+    { key:'wind',      icon:'💨', name:'Aero',   bossKey:'zone_boss_wind',      color:'#a8d8ea' },
+    { key:'plant',     icon:'🌿', name:'Flora',  bossKey:'zone_boss_plant',     color:'#66bb6a' },
+    { key:'metal',     icon:'⚙️', name:'Ferro',  bossKey:'zone_boss_metal',     color:'#90a4ae' },
+    { key:'poison',    icon:'☠️', name:'Venin',  bossKey:'zone_boss_poison',    color:'#7aad30' },
+  ]
+
+  const ESP_BRANCHES = [
+    { key:'off', label:'Offense',  color:'#e05a2b', stats:'ATK · Power' },
+    { key:'def', label:'Defense',  color:'#3ab8d8', stats:'DEF · Guard' },
+    { key:'flo', label:'Flow',     color:'#66bb6a', stats:'Speed · Agility' },
+    { key:'arc', label:'Arcane',   color:'#b06eff', stats:'Insight · Control' },
+    { key:'dec', label:'Decay',    color:'#90a4ae', stats:'Luck' },
+  ]
+
+  const ESP_BASE = {
+    off:['off_1','off_2','off_3','off_4','off_5','off_6'],
+    def:['def_1','def_2','def_3','def_4','def_5','def_6'],
+    flo:['flo_1','flo_2','flo_3','flo_4','flo_5','flo_6'],
+    arc:['arc_1','arc_2','arc_3','arc_4','arc_5','arc_6'],
+    dec:['dec_1','dec_2','dec_3','dec_4','dec_5','dec_6'],
+  }
+
+  const ESP_BASE_DEF = {
+    off_1:{label:'Strike I',    stat:'+1 ATK',     cost:1,branch:'off',col:'atk'},
+    off_2:{label:'Strike II',   stat:'+1 ATK',     cost:1,branch:'off',col:'atk'},
+    off_3:{label:'Surge I',     stat:'+1 Power',   cost:1,branch:'off',col:'power'},
+    off_4:{label:'Surge II',    stat:'+1 Power',   cost:1,branch:'off',col:'power'},
+    off_5:{label:'Strike III',  stat:'+2 ATK',     cost:2,branch:'off',col:'atk',   val:2},
+    off_6:{label:'Surge III',   stat:'+2 Power',   cost:2,branch:'off',col:'power', val:2},
+    def_1:{label:'Shield I',    stat:'+1 DEF',     cost:1,branch:'def',col:'def'},
+    def_2:{label:'Shield II',   stat:'+1 DEF',     cost:1,branch:'def',col:'def'},
+    def_3:{label:'Ward I',      stat:'+1 Guard',   cost:1,branch:'def',col:'guard'},
+    def_4:{label:'Ward II',     stat:'+1 Guard',   cost:1,branch:'def',col:'guard'},
+    def_5:{label:'Shield III',  stat:'+2 DEF',     cost:2,branch:'def',col:'def',   val:2},
+    def_6:{label:'Ward III',    stat:'+2 Guard',   cost:2,branch:'def',col:'guard', val:2},
+    flo_1:{label:'Stride I',    stat:'+1 Speed',   cost:1,branch:'flo',col:'speed'},
+    flo_2:{label:'Stride II',   stat:'+1 Speed',   cost:1,branch:'flo',col:'speed'},
+    flo_3:{label:'Reflex I',    stat:'+1 Agility', cost:1,branch:'flo',col:'agility'},
+    flo_4:{label:'Reflex II',   stat:'+1 Agility', cost:1,branch:'flo',col:'agility'},
+    flo_5:{label:'Stride III',  stat:'+2 Speed',   cost:2,branch:'flo',col:'speed',   val:2},
+    flo_6:{label:'Reflex III',  stat:'+2 Agility', cost:2,branch:'flo',col:'agility', val:2},
+    arc_1:{label:'Focus I',     stat:'+1 Insight', cost:1,branch:'arc',col:'insight'},
+    arc_2:{label:'Focus II',    stat:'+1 Insight', cost:1,branch:'arc',col:'insight'},
+    arc_3:{label:'Bind I',      stat:'+1 Control', cost:1,branch:'arc',col:'control'},
+    arc_4:{label:'Bind II',     stat:'+1 Control', cost:1,branch:'arc',col:'control'},
+    arc_5:{label:'Focus III',   stat:'+2 Insight', cost:2,branch:'arc',col:'insight', val:2},
+    arc_6:{label:'Bind III',    stat:'+2 Control', cost:2,branch:'arc',col:'control', val:2},
+    dec_1:{label:'Drift I',     stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+    dec_2:{label:'Drift II',    stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+    dec_3:{label:'Fracture I',  stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+    dec_4:{label:'Fracture II', stat:'+1 Luck',    cost:1,branch:'dec',col:'luck'},
+    dec_5:{label:'Drift III',   stat:'+2 Luck',    cost:2,branch:'dec',col:'luck', val:2},
+    dec_6:{label:'Fracture III',stat:'+2 Luck',    cost:2,branch:'dec',col:'luck', val:2},
+  }
+
+  const ESP_EL_NODES = {
+    fire_off_n:{el:'fire',branch:'off',type:'notable', label:'Ember Will',    stat:'+2 ATK · burn on hit',            cost:3,col:'atk',val:2},
+    fire_def_n:{el:'fire',branch:'def',type:'notable', label:'Ashen Guard',   stat:'+2 DEF · reduce fire dmg taken',  cost:3,col:'def',val:2},
+    fire_flo_n:{el:'fire',branch:'flo',type:'notable', label:'Flash Step',    stat:'+2 Speed · act first after burn', cost:3,col:'speed',val:2},
+    fire_arc_n:{el:'fire',branch:'arc',type:'notable', label:'Heat Read',     stat:'+2 Insight · see enemy HP',       cost:3,col:'insight',val:2},
+    fire_dec_n:{el:'fire',branch:'dec',type:'notable', label:'Cinder Curse',  stat:'+2 Luck · burn spreads on crit',  cost:3,col:'luck',val:2},
+    fire_off_k:{el:'fire',branch:'off',type:'keystone',label:'Inferno Core',  stat:'+3 ATK+Power · all hits burn',    cost:5,col:'atk',val:3},
+    fire_def_k:{el:'fire',branch:'def',type:'keystone',label:'Pyre Wall',     stat:'+3 DEF+Guard · reflect fire',     cost:5,col:'def',val:3},
+    fire_flo_k:{el:'fire',branch:'flo',type:'keystone',label:'Blazing Rush',  stat:'+3 Speed+AGI · always first',     cost:5,col:'speed',val:3},
+    fire_arc_k:{el:'fire',branch:'arc',type:'keystone',label:'Forge Mind',    stat:'+3 INS+CTR · burn = skill -1',    cost:5,col:'insight',val:3},
+    fire_dec_k:{el:'fire',branch:'dec',type:'keystone',label:'Ashfall',       stat:'+3 Luck · crits ignite all',      cost:5,col:'luck',val:3},
+    water_off_n:{el:'water',branch:'off',type:'notable', label:'Tide Strike',  stat:'+2 ATK · hit twice below 50%',   cost:3,col:'atk',val:2},
+    water_def_n:{el:'water',branch:'def',type:'notable', label:'Current Ward', stat:'+2 DEF · redirect 15% dmg',      cost:3,col:'def',val:2},
+    water_flo_n:{el:'water',branch:'flo',type:'notable', label:'Flow State',   stat:'+2 Speed · retry failed action', cost:3,col:'speed',val:2},
+    water_arc_n:{el:'water',branch:'arc',type:'notable', label:'Deep Read',    stat:'+2 Insight · see next action',   cost:3,col:'insight',val:2},
+    water_dec_n:{el:'water',branch:'dec',type:'notable', label:'Undertow',     stat:'+2 Luck · slow enemy on hit',    cost:3,col:'luck',val:2},
+    water_off_k:{el:'water',branch:'off',type:'keystone',label:'Rip Current',  stat:'+3 ATK+Power · ignore DEF <40%', cost:5,col:'atk',val:3},
+    water_def_k:{el:'water',branch:'def',type:'keystone',label:'Ocean Skin',   stat:'+3 DEF+Guard · absorb first hit',cost:5,col:'def',val:3},
+    water_flo_k:{el:'water',branch:'flo',type:'keystone',label:'Tidal Rush',   stat:'+3 Speed+AGI · act twice turn 1',cost:5,col:'speed',val:3},
+    water_arc_k:{el:'water',branch:'arc',type:'keystone',label:'Still Waters', stat:'+3 INS+CTR · immune to stun',    cost:5,col:'insight',val:3},
+    water_dec_k:{el:'water',branch:'dec',type:'keystone',label:'Drowning Pull',stat:'+3 Luck · enemy cannot flee',    cost:5,col:'luck',val:3},
+    lightning_off_n:{el:'lightning',branch:'off',type:'notable', label:'Arc Strike',   stat:'+2 ATK · chain to 2nd',      cost:3,col:'atk',val:2},
+    lightning_def_n:{el:'lightning',branch:'def',type:'notable', label:'Static Shell', stat:'+2 DEF · stun on block',     cost:3,col:'def',val:2},
+    lightning_flo_n:{el:'lightning',branch:'flo',type:'notable', label:'Surge Step',   stat:'+2 Speed · first odd turns',  cost:3,col:'speed',val:2},
+    lightning_arc_n:{el:'lightning',branch:'arc',type:'notable', label:'Overcharge',   stat:'+2 Insight · +10% after skip',cost:3,col:'insight',val:2},
+    lightning_dec_n:{el:'lightning',branch:'dec',type:'notable', label:'Shock Luck',   stat:'+2 Luck · crit stuns 1 turn', cost:3,col:'luck',val:2},
+    lightning_off_k:{el:'lightning',branch:'off',type:'keystone',label:'Storm Caller',  stat:'+3 ATK+Power · every hit chains',cost:5,col:'atk',val:3},
+    lightning_def_k:{el:'lightning',branch:'def',type:'keystone',label:'Faraday',       stat:'+3 DEF+Guard · absorb lightning',cost:5,col:'def',val:3},
+    lightning_flo_k:{el:'lightning',branch:'flo',type:'keystone',label:'Thunderstep',   stat:'+3 Speed+AGI · untargetable T1',cost:5,col:'speed',val:3},
+    lightning_arc_k:{el:'lightning',branch:'arc',type:'keystone',label:'Circuit Mind',  stat:'+3 INS+CTR · see resistances',  cost:5,col:'insight',val:3},
+    lightning_dec_k:{el:'lightning',branch:'dec',type:'keystone',label:'Voltage Surge', stat:'+3 Luck · chain crits refresh',  cost:5,col:'luck',val:3},
+    arcane_off_n:{el:'arcane',branch:'off',type:'notable', label:'Runic Blade',  stat:'+2 ATK · +10% if INS > enemy',  cost:3,col:'atk',val:2},
+    arcane_def_n:{el:'arcane',branch:'def',type:'notable', label:'Arcane Veil',  stat:'+2 DEF · negate status effects', cost:3,col:'def',val:2},
+    arcane_flo_n:{el:'arcane',branch:'flo',type:'notable', label:'Phase Shift',  stat:'+2 Speed · dodge scales w INS',  cost:3,col:'speed',val:2},
+    arcane_arc_n:{el:'arcane',branch:'arc',type:'notable', label:'Third Eye',    stat:'+2 Insight · see hidden paths',  cost:3,col:'insight',val:2},
+    arcane_dec_n:{el:'arcane',branch:'dec',type:'notable', label:'Spell Siphon', stat:'+2 Luck · crit restores AP',     cost:3,col:'luck',val:2},
+    arcane_off_k:{el:'arcane',branch:'off',type:'keystone',label:'Void Strike',  stat:'+3 ATK+Power · bypass resist',   cost:5,col:'atk',val:3},
+    arcane_def_k:{el:'arcane',branch:'def',type:'keystone',label:'Null Field',   stat:'+3 DEF+Guard · immune debuffs',  cost:5,col:'def',val:3},
+    arcane_flo_k:{el:'arcane',branch:'flo',type:'keystone',label:'Blink',        stat:'+3 Speed+AGI · teleport dodge',  cost:5,col:'speed',val:3},
+    arcane_arc_k:{el:'arcane',branch:'arc',type:'keystone',label:'Omniscience',  stat:'+3 INS+CTR · predict actions',   cost:5,col:'insight',val:3},
+    arcane_dec_k:{el:'arcane',branch:'dec',type:'keystone',label:'Ley Fracture', stat:'+3 Luck · crits ignore DEF',     cost:5,col:'luck',val:3},
+    shadow_off_n:{el:'shadow',branch:'off',type:'notable', label:'Shade Slash',  stat:'+2 ATK · uncounterable strike',  cost:3,col:'atk',val:2},
+    shadow_def_n:{el:'shadow',branch:'def',type:'notable', label:'Dark Shroud',  stat:'+2 DEF · +20% dodge physical',   cost:3,col:'def',val:2},
+    shadow_flo_n:{el:'shadow',branch:'flo',type:'notable', label:'Ghost Walk',   stat:'+2 Speed · pass first hit',      cost:3,col:'speed',val:2},
+    shadow_arc_n:{el:'shadow',branch:'arc',type:'notable', label:'Void Sight',   stat:'+2 Insight · see weaknesses',    cost:3,col:'insight',val:2},
+    shadow_dec_n:{el:'shadow',branch:'dec',type:'notable', label:'Death Mark',   stat:'+2 Luck · marked = +15% dmg',    cost:3,col:'luck',val:2},
+    shadow_off_k:{el:'shadow',branch:'off',type:'keystone',label:'Abyss Edge',   stat:'+3 ATK+Power · 2x from stealth', cost:5,col:'atk',val:3},
+    shadow_def_k:{el:'shadow',branch:'def',type:'keystone',label:'Shadow Form',  stat:'+3 DEF+Guard · 30% vanish on hit',cost:5,col:'def',val:3},
+    shadow_flo_k:{el:'shadow',branch:'flo',type:'keystone',label:'Phantom',      stat:'+3 Speed+AGI · untarget every 3',cost:5,col:'speed',val:3},
+    shadow_arc_k:{el:'shadow',branch:'arc',type:'keystone',label:'Void Eye',     stat:'+3 INS+CTR · immune blind',      cost:5,col:'insight',val:3},
+    shadow_dec_k:{el:'shadow',branch:'dec',type:'keystone',label:'Reaper',       stat:'+3 Luck · instakill below 10%',  cost:5,col:'luck',val:3},
+    earth_off_n:{el:'earth',branch:'off',type:'notable', label:'Bedrock Fist',   stat:'+2 ATK · stagger on hit',        cost:3,col:'atk',val:2},
+    earth_def_n:{el:'earth',branch:'def',type:'notable', label:'Stone Skin',     stat:'+2 DEF · reduce phys 10%',       cost:3,col:'def',val:2},
+    earth_flo_n:{el:'earth',branch:'flo',type:'notable', label:'Landslide',      stat:'+2 Speed · slow after block',    cost:3,col:'speed',val:2},
+    earth_arc_n:{el:'earth',branch:'arc',type:'notable', label:'Geomancy',       stat:'+2 Insight · terrain favors you',cost:3,col:'insight',val:2},
+    earth_dec_n:{el:'earth',branch:'dec',type:'notable', label:'Fault Line',     stat:'+2 Luck · crits knock down',     cost:3,col:'luck',val:2},
+    earth_off_k:{el:'earth',branch:'off',type:'keystone',label:'Tectonic',       stat:'+3 ATK+Power · dmg scales DEF',  cost:5,col:'atk',val:3},
+    earth_def_k:{el:'earth',branch:'def',type:'keystone',label:'Fortress',       stat:'+3 DEF+Guard · no one-shot',     cost:5,col:'def',val:3},
+    earth_flo_k:{el:'earth',branch:'flo',type:'keystone',label:'Earthbound',     stat:'+3 Speed+AGI · immune knockback',cost:5,col:'speed',val:3},
+    earth_arc_k:{el:'earth',branch:'arc',type:'keystone',label:'Deep Root',      stat:'+3 INS+CTR · regen 5HP/turn',    cost:5,col:'insight',val:3},
+    earth_dec_k:{el:'earth',branch:'dec',type:'keystone',label:'Avalanche',      stat:'+3 Luck · crits deal AoE',       cost:5,col:'luck',val:3},
+    wind_off_n:{el:'wind',branch:'off',type:'notable', label:'Gale Slash',       stat:'+2 ATK · hits twice 50% dmg',    cost:3,col:'atk',val:2},
+    wind_def_n:{el:'wind',branch:'def',type:'notable', label:'Wind Veil',        stat:'+2 DEF · 25% dodge all',         cost:3,col:'def',val:2},
+    wind_flo_n:{el:'wind',branch:'flo',type:'notable', label:'Tailwind',         stat:'+2 Speed · +1 action turn 1',    cost:3,col:'speed',val:2},
+    wind_arc_n:{el:'wind',branch:'arc',type:'notable', label:'Eye of Storm',     stat:'+2 Insight · calm = +20% hit',   cost:3,col:'insight',val:2},
+    wind_dec_n:{el:'wind',branch:'dec',type:'notable', label:'Scatter',          stat:'+2 Luck · dodge = crit chance',  cost:3,col:'luck',val:2},
+    wind_off_k:{el:'wind',branch:'off',type:'keystone',label:'Cyclone',          stat:'+3 ATK+Power · hit all enemies', cost:5,col:'atk',val:3},
+    wind_def_k:{el:'wind',branch:'def',type:'keystone',label:'Zephyr Shield',    stat:'+3 DEF+Guard · reflect projectiles',cost:5,col:'def',val:3},
+    wind_flo_k:{el:'wind',branch:'flo',type:'keystone',label:'Gale Force',       stat:'+3 Speed+AGI · act 3x turn 1',   cost:5,col:'speed',val:3},
+    wind_arc_k:{el:'wind',branch:'arc',type:'keystone',label:'Wind Reader',      stat:'+3 INS+CTR · predict crits',     cost:5,col:'insight',val:3},
+    wind_dec_k:{el:'wind',branch:'dec',type:'keystone',label:'Tempest',          stat:'+3 Luck · dodge compounds',      cost:5,col:'luck',val:3},
+    plant_off_n:{el:'plant',branch:'off',type:'notable', label:'Thorn Lash',     stat:'+2 ATK · attacker takes 3 dmg',  cost:3,col:'atk',val:2},
+    plant_def_n:{el:'plant',branch:'def',type:'notable', label:'Bark Skin',      stat:'+2 DEF · regen 3HP/turn',        cost:3,col:'def',val:2},
+    plant_flo_n:{el:'plant',branch:'flo',type:'notable', label:'Root Grasp',     stat:'+2 Speed · slow enemy on hit',   cost:3,col:'speed',val:2},
+    plant_arc_n:{el:'plant',branch:'arc',type:'notable', label:'Spore Sense',    stat:'+2 Insight · detect immunity',   cost:3,col:'insight',val:2},
+    plant_dec_n:{el:'plant',branch:'dec',type:'notable', label:'Overgrowth',     stat:'+2 Luck · heals compound',       cost:3,col:'luck',val:2},
+    plant_off_k:{el:'plant',branch:'off',type:'keystone',label:'Thornwall',      stat:'+3 ATK+Power · reflect 20% phys',cost:5,col:'atk',val:3},
+    plant_def_k:{el:'plant',branch:'def',type:'keystone',label:'Ancient Grove',  stat:'+3 DEF+Guard · regen 8HP/turn',  cost:5,col:'def',val:3},
+    plant_flo_k:{el:'plant',branch:'flo',type:'keystone',label:'Vine Rush',      stat:'+3 Speed+AGI · entangle every hit',cost:5,col:'speed',val:3},
+    plant_arc_k:{el:'plant',branch:'arc',type:'keystone',label:'Root Mind',      stat:'+3 INS+CTR · control enemy 1T',  cost:5,col:'insight',val:3},
+    plant_dec_k:{el:'plant',branch:'dec',type:'keystone',label:'Bloom',          stat:'+3 Luck · heal every crit',      cost:5,col:'luck',val:3},
+    metal_off_n:{el:'metal',branch:'off',type:'notable', label:'Iron Edge',      stat:'+2 ATK · stack +5% per hit',     cost:3,col:'atk',val:2},
+    metal_def_n:{el:'metal',branch:'def',type:'notable', label:'Plate Ward',     stat:'+2 DEF · reflect 10% phys',      cost:3,col:'def',val:2},
+    metal_flo_n:{el:'metal',branch:'flo',type:'notable', label:'Gear Drive',     stat:'+2 Speed · 3rd hit free',        cost:3,col:'speed',val:2},
+    metal_arc_n:{el:'metal',branch:'arc',type:'notable', label:'Alloy Mind',     stat:'+2 Insight · read armor value',  cost:3,col:'insight',val:2},
+    metal_dec_n:{el:'metal',branch:'dec',type:'notable', label:'Serration',      stat:'+2 Luck · crit causes bleed',    cost:3,col:'luck',val:2},
+    metal_off_k:{el:'metal',branch:'off',type:'keystone',label:'Magnetar',       stat:'+3 ATK+Power · pull = guaranteed',cost:5,col:'atk',val:3},
+    metal_def_k:{el:'metal',branch:'def',type:'keystone',label:'Iron Bastion',   stat:'+3 DEF+Guard · no stun',         cost:5,col:'def',val:3},
+    metal_flo_k:{el:'metal',branch:'flo',type:'keystone',label:'Arc Forge',      stat:'+3 Speed+AGI · every hit chains', cost:5,col:'speed',val:3},
+    metal_arc_k:{el:'metal',branch:'arc',type:'keystone',label:'Precision Core', stat:'+3 INS+CTR · never miss',        cost:5,col:'insight',val:3},
+    metal_dec_k:{el:'metal',branch:'dec',type:'keystone',label:'Shrapnel',       stat:'+3 Luck · crits fragment',       cost:5,col:'luck',val:3},
+    poison_off_n:{el:'poison',branch:'off',type:'notable', label:'Toxic Strike',  stat:'+2 ATK · poison 2 turns',        cost:3,col:'atk',val:2},
+    poison_def_n:{el:'poison',branch:'def',type:'notable', label:'Antitoxin',    stat:'+2 DEF · immune own poison',     cost:3,col:'def',val:2},
+    poison_flo_n:{el:'poison',branch:'flo',type:'notable', label:'Miasma Step',  stat:'+2 Speed · dodge poisons attacker',cost:3,col:'speed',val:2},
+    poison_arc_n:{el:'poison',branch:'arc',type:'notable', label:'Dose Read',    stat:'+2 Insight · see poison stacks', cost:3,col:'insight',val:2},
+    poison_dec_n:{el:'poison',branch:'dec',type:'notable', label:'Virulence',    stat:'+2 Luck · poison 2x below 50%',  cost:3,col:'luck',val:2},
+    poison_off_k:{el:'poison',branch:'off',type:'keystone',label:'Plague Fang',  stat:'+3 ATK+Power · poison per hit',  cost:5,col:'atk',val:3},
+    poison_def_k:{el:'poison',branch:'def',type:'keystone',label:'Toxin Shell',  stat:'+3 DEF+Guard · attackers poisoned',cost:5,col:'def',val:3},
+    poison_flo_k:{el:'poison',branch:'flo',type:'keystone',label:'Venom Rush',   stat:'+3 Speed+AGI · before poison tick',cost:5,col:'speed',val:3},
+    poison_arc_k:{el:'poison',branch:'arc',type:'keystone',label:'Alchemist',    stat:'+3 INS+CTR · poison → HP',       cost:5,col:'insight',val:3},
+    poison_dec_k:{el:'poison',branch:'dec',type:'keystone',label:'Death Bloom',  stat:'+3 Luck · kill = explosion',     cost:5,col:'luck',val:3},
+  }
+
+  // ── ESP State ─────────────────────────────────────────────────────────────────
+  let espBalance, espTree, espActiveEl = null, espPendingSlot = null
+
+  function initESP() {
+    espBalance = player.esp || 0
+    espTree    = player.esp_tree || {}
+    if (!espTree.base)      espTree.base      = []
+    if (!espTree.slots)     espTree.slots     = {}
+    if (!espTree.collected) espTree.collected = []
+    document.getElementById('esp-display').textContent = espBalance
+    updateESPBadge()
+    renderESPSummary()
+    renderESPElTabs()
+  }
+
+  function updateESPBadge() {
+    document.getElementById('esp-badge').textContent = espBalance + ' ESP'
+    document.getElementById('esp-display').textContent = espBalance
+  }
+
+  function renderESPSummary() {
+    const el = document.getElementById('esp-unlocked-summary')
+    if (!el) return
+    const placed = Object.entries(espTree.slots).filter(([,v])=>v).map(([k,v])=>{
+      const nd = ESP_EL_NODES[v]
+      const elDef = nd ? ESP_ELEMENTS.find(e=>e.key===nd.el) : null
+      return nd ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;padding:2px 7px;border-radius:12px;border:.5px solid rgba(176,110,255,.3);color:#b06eff;background:rgba(176,110,255,.08)">${elDef?.icon||'⬡'} ${nd.label}</span>` : ''
+    }).join('')
+    el.innerHTML = placed || `<span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#7a6e50;font-style:italic">No elemental nodes placed yet</span>`
+  }
+
+  // ── Open/Close ────────────────────────────────────────────────────────────────
+  window.openESP = function() {
+    document.getElementById('esp-overlay').classList.add('open')
+    document.body.style.overflow = 'hidden'
+    renderESPElTabs()
+  }
+  window.closeESP = function() {
+    document.getElementById('esp-overlay').classList.remove('open')
+    document.body.style.overflow = ''
+    renderESPSummary()
+  }
+
+  // ── Element tabs ──────────────────────────────────────────────────────────────
+  function renderESPElTabs() {
+    const defeated = player.defeated_bosses || []
+    const container = document.getElementById('esp-el-tabs')
+    container.innerHTML = ESP_ELEMENTS.map(el => {
+      const unlocked = defeated.includes(el.bossKey)
+      const collected = espTree.collected.filter(k=>k.startsWith(el.key+'_')).length
+      return `<button class="esp-el-btn ${espActiveEl===el.key?'esp-el-active':''} ${unlocked?'':'esp-el-locked'}"
+        onclick="${unlocked?`espSelectEl('${el.key}')`:'void(0)'}"
+        style="${espActiveEl===el.key?`border-color:${el.color};background:${el.color}18`:''}"
+      >
+        <span style="font-size:16px">${el.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-family:'Cinzel',serif;font-size:13px;color:${unlocked?'#e8e3d6':'#4a4556'}">${el.name}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">${unlocked?collected+' nodes':'defeat zone boss'}</div>
+        </div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:8px;padding:1px 5px;border-radius:10px;background:${unlocked?'rgba(127,214,166,.1)':'rgba(255,255,255,.03)'};color:${unlocked?'#7fd6a6':'#4a4556'};border:.5px solid ${unlocked?'rgba(127,214,166,.3)':'#26232f'}">${unlocked?'✓':'🔒'}</span>
+      </button>`
+    }).join('')
+  }
+
+  window.espSelectEl = function(elKey) {
+    espActiveEl = elKey
+    renderESPElTabs()
+    renderESPMain()
+  }
+
+  // ── Render main ───────────────────────────────────────────────────────────────
+  function renderESPMain() {
+    const main = document.getElementById('esp-main-panel')
+    const el   = ESP_ELEMENTS.find(e=>e.key===espActiveEl)
+    if (!el) return
+
+    main.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <span style="font-size:1.4rem">${el.icon}</span>
+        <div>
+          <p style="font-family:'Cinzel',serif;font-size:1rem;color:${el.color};margin:0">${el.name} — Base Nodes</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">Spend ESP to unlock stat bonuses</p>
+        </div>
+        <div style="margin-left:auto;text-align:right">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">Balance</p>
+          <p style="font-family:'Cinzel',serif;font-size:1rem;color:#f4c45a">${espBalance} ESP</p>
+        </div>
+      </div>
+      <div class="esp-branch-grid">
+        ${ESP_BRANCHES.map(b=>renderESPBranch(b)).join('')}
+      </div>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#a89e80;margin:14px 0 8px">Elemental Slots — place collected ${el.name} nodes anywhere</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        ${ESP_BRANCHES.map(b => {
+          const nKey = espTree.slots[b.key+'_notable']
+          const kKey = espTree.slots[b.key+'_keystone']
+          const nNode = nKey ? ESP_EL_NODES[nKey] : null
+          const kNode = kKey ? ESP_EL_NODES[kKey] : null
+          const nEl = nNode ? ESP_ELEMENTS.find(e=>e.key===nNode.el) : null
+          const kEl = kNode ? ESP_ELEMENTS.find(e=>e.key===kNode.el) : null
+          return `
+            <div class="esp-slot-row ${nKey?'filled':''}" onclick="espOpenSlotChooser('${b.key}_notable')">
+              <div class="esp-slot-label" style="color:${b.color}">${b.label} Notable</div>
+              <div style="flex:1">${nNode?`<div class="esp-slot-name">${nEl?.icon||''} ${nNode.label}</div><div class="esp-slot-stat">${nNode.stat}</div>`:`<div class="esp-slot-empty">— empty —</div>`}</div>
+              ${nKey?`<button class="esp-slot-remove" onclick="event.stopPropagation();espRemoveSlot('${b.key}_notable')">✕</button>`:''}
+            </div>
+            <div class="esp-slot-row ${kKey?'filled':''}" onclick="espOpenSlotChooser('${b.key}_keystone')">
+              <div class="esp-slot-label" style="color:${b.color}">${b.label} Keystone</div>
+              <div style="flex:1">${kNode?`<div class="esp-slot-name">${kEl?.icon||''} ${kNode.label}</div><div class="esp-slot-stat">${kNode.stat}</div>`:`<div class="esp-slot-empty">— empty —</div>`}</div>
+              ${kKey?`<button class="esp-slot-remove" onclick="event.stopPropagation();espRemoveSlot('${b.key}_keystone')">✕</button>`:''}
+            </div>`
+        }).join('')}
+      </div>`
+  }
+
+  function renderESPBranch(branch) {
+    const nodes = ESP_BASE[branch.key]
+    const html = nodes.map((id,i) => {
+      const nd = ESP_BASE_DEF[id]
+      const unlocked  = espTree.base.includes(id)
+      const prevOk    = i===0 || espTree.base.includes(nodes[i-1])
+      const canAfford = espBalance >= nd.cost
+      const available = !unlocked && prevOk
+      const cls = unlocked ? 'esp-node-unlocked' : (available&&canAfford) ? 'esp-node-available' : 'esp-node-locked'
+      return `<button class="esp-node ${cls}" onclick="espUnlockBase('${id}')">
+        <div class="esp-node-dot ${unlocked?'unlocked':''}"></div>
+        <div style="flex:1">
+          <span class="esp-node-name">${nd.label}</span>
+          <span class="esp-node-stat">${nd.stat}</span>
+        </div>
+        <span class="esp-node-cost">${unlocked?'✓':`${nd.cost}e`}</span>
+      </button>`
+    }).join('')
+    return `<div class="esp-branch-card">
+      <div class="esp-branch-title" style="color:${branch.color}">${branch.label} <span style="color:#7a6e50;font-size:7px">${branch.stats}</span></div>
+      ${html}
+    </div>`
+  }
+
+  // ── Unlock base node ──────────────────────────────────────────────────────────
+  window.espUnlockBase = async function(nodeId) {
+    if (espTree.base.includes(nodeId)) return
+    const nd = ESP_BASE_DEF[nodeId]
+    if (!nd) return
+    const branchNodes = ESP_BASE[nd.branch]
+    const idx = branchNodes.indexOf(nodeId)
+    if (idx > 0 && !espTree.base.includes(branchNodes[idx-1])) { showToast('Unlock previous node first'); return }
+    if (espBalance < nd.cost) { showToast('Not enough ESP'); return }
+    espBalance -= nd.cost
+    espTree.base.push(nodeId)
+    const val = nd.val || 1
+    const statUpdates = {}
+    player[nd.col] = (player[nd.col]||0) + val
+    statUpdates[nd.col] = player[nd.col]
+    await espSave(statUpdates)
+    showToast(`✦ ${nd.label} — +${val} ${nd.col}`)
+    renderESPMain()
+  }
+
+  // ── Slot chooser ──────────────────────────────────────────────────────────────
+  window.espOpenSlotChooser = function(slotKey) {
+    espPendingSlot = slotKey
+    const isKeystone = slotKey.endsWith('_keystone')
+    const branchKey  = slotKey.replace('_notable','').replace('_keystone','')
+    const available  = espTree.collected
+      .filter(k => {
+        const nd = ESP_EL_NODES[k]
+        if (!nd) return false
+        if (nd.type !== (isKeystone?'keystone':'notable')) return false
+        if (nd.branch !== branchKey) return false
+        return true
+      })
+    const list = document.getElementById('esp-chooser-list')
+    if (!available.length) {
+      list.innerHTML = `<p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#a89e80;font-style:italic">No ${isKeystone?'keystone':'notable'} nodes collected for ${ESP_BRANCHES.find(b=>b.key===branchKey)?.label||branchKey} branch yet.</p>`
+    } else {
+      list.innerHTML = available.map(k => {
+        const nd = ESP_EL_NODES[k]
+        const elDef = ESP_ELEMENTS.find(e=>e.key===nd.el)
+        const inUse = Object.values(espTree.slots).includes(k)
+        return `<button onclick="espPlaceNode('${k}')" style="width:100%;text-align:left;background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.3);padding:9px 12px;margin-bottom:5px;cursor:pointer;transition:all .15s" onmouseover="this.style.background='rgba(176,110,255,.14)'" onmouseout="this.style.background='rgba(176,110,255,.06)'">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:15px">${elDef?.icon||'⬡'}</span>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:12px;color:#b06eff">${nd.label} ${inUse?'<span style="color:#7fd6a6;font-size:9px">✓ placed</span>':''}</div>
+              <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">${nd.stat}</div>
+            </div>
+          </div>
+        </button>`
+      }).join('')
+    }
+    document.getElementById('esp-slot-chooser').classList.add('open')
+  }
+
+  window.closeESPChooser = function() {
+    document.getElementById('esp-slot-chooser').classList.remove('open')
+    espPendingSlot = null
+  }
+
+  window.espPlaceNode = async function(nodeKey) {
+    if (!espPendingSlot) return
+    const nd = ESP_EL_NODES[nodeKey]
+    if (!nd) return
+    // Remove from any existing slot
+    Object.entries(espTree.slots).forEach(([k,v])=>{ if(v===nodeKey) espTree.slots[k]=null })
+    espTree.slots[espPendingSlot] = nodeKey
+    closeESPChooser()
+    await espSave()
+    showToast(`✦ ${nd.label} placed!`)
+    renderESPMain()
+  }
+
+  window.espRemoveSlot = async function(slotKey) {
+    espTree.slots[slotKey] = null
+    await espSave()
+    renderESPMain()
+  }
+
+  // ── Collected panel ───────────────────────────────────────────────────────────
+  window.openCollectedPanel = function() {
+    espActiveEl = null
+    renderESPElTabs()
+    const main = document.getElementById('esp-main-panel')
+    const all = espTree.collected.map(k=>({key:k,node:ESP_EL_NODES[k]})).filter(x=>x.node)
+    if (!all.length) {
+      main.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:200px;opacity:.35;gap:.5rem"><div style="font-size:2rem">⬡</div><p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#a89e80">No nodes collected yet — defeat zone bosses in Chapter 2</p></div>`
+      return
+    }
+    main.innerHTML = `
+      <p style="font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#a89e80;margin-bottom:10px">All collected elemental nodes (${all.length})</p>
+      <div class="esp-collected-grid">
+        ${all.map(({key,node})=>{
+          const elDef = ESP_ELEMENTS.find(e=>e.key===node.el)
+          const inUse = Object.values(espTree.slots).includes(key)
+          return `<div class="esp-col-card ${inUse?'in-use':''}" onclick="espOpenSlotFromCollected('${key}')">
+            <div style="font-size:14px;margin-bottom:2px">${elDef?.icon||'⬡'}</div>
+            <div style="font-family:'Cinzel',serif;font-size:11px;color:#e8e3d6">${node.label}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">${node.stat}</div>
+            <div style="font-family:'Share Tech Mono',monospace;font-size:7px;padding:1px 5px;border-radius:10px;margin-top:3px;display:inline-block;background:${node.type==='keystone'?'rgba(176,110,255,.1)':'rgba(244,196,90,.1)'};color:${node.type==='keystone'?'#b06eff':'#f4c45a'};border:.5px solid ${node.type==='keystone'?'rgba(176,110,255,.3)':'rgba(244,196,90,.3)'}">${node.type}</div>
+            ${inUse?`<div style="font-family:'Share Tech Mono',monospace;font-size:7px;color:#7fd6a6;margin-top:2px">✓ placed</div>`:''}
+          </div>`
+        }).join('')}
+      </div>`
+  }
+
+  window.espOpenSlotFromCollected = function(nodeKey) {
+    const nd = ESP_EL_NODES[nodeKey]
+    if (!nd) return
+    espPendingSlot = nd.branch+'_'+nd.type
+    const list = document.getElementById('esp-chooser-list')
+    const elDef = ESP_ELEMENTS.find(e=>e.key===nd.el)
+    list.innerHTML = `<button onclick="espPlaceNode('${nodeKey}')" style="width:100%;text-align:left;background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.3);padding:9px 12px;cursor:pointer">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px">${elDef?.icon||'⬡'}</span>
+        <div>
+          <div style="font-family:'Cinzel',serif;font-size:12px;color:#b06eff">${nd.label}</div>
+          <div style="font-family:'Share Tech Mono',monospace;font-size:8px;color:#a89e80">${nd.stat}</div>
+        </div>
+      </div>
+    </button>`
+    document.getElementById('esp-slot-chooser').classList.add('open')
+  }
+
+  // ── Save ──────────────────────────────────────────────────────────────────────
+  async function espSave(statUpdates={}) {
+    const updates = { esp:espBalance, esp_tree:espTree, ...statUpdates }
+    const { data, error } = await supabase.from('players').update(updates).eq('id',player.id).select().single()
+    if (error) { console.error('[ESP save]', error.message); showToast('ESP save error', true); return }
+    if (data) Object.assign(player, data)
+    updateESPBadge()
+  }
+
+  // ── Boot ESP ──────────────────────────────────────────────────────────────────
+  initESP()
+
+  return { player, cleanup() {} }
+}
+
+export default mountSkills

@@ -54,6 +54,7 @@ export async function renderNav(containerId = 'nav') {
     : ''
 
   const currentPage = location.pathname.split('/').pop()
+  const currentView = new URLSearchParams(location.search).get('view') || 'chapters'
 
   root.innerHTML = `
     <style>
@@ -207,14 +208,16 @@ export async function renderNav(containerId = 'nav') {
         <div class="bm-bottom-row">
           <nav class="bm-links">
             ${[
-              { href: `${base}pages/book.html`,      label: 'Chapters'  },
-              { href: `${base}pages/inventory.html`, label: 'Inventory' },
-              { href: `${base}pages/skills.html`,    label: 'Skills'    },
-              { href: `${base}pages/trader.html`,    label: 'Trader'    },
-              { href: `${base}pages/lobby.html`,     label: 'Lobby'     },
-              { href: `${base}pages/badges.html`,    label: 'Badges'    },
+              { href: `${base}pages/book.html`,                label: 'Chapters',  view: 'chapters'  },
+              { href: `${base}pages/book.html?view=inventory`, label: 'Inventory', view: 'inventory' },
+              { href: `${base}pages/book.html?view=skills`,    label: 'Skills',    view: 'skills'    },
+              { href: `${base}pages/book.html?view=trader`,    label: 'Trader',    view: 'trader'    },
+              { href: `${base}pages/book.html?view=lobby`,     label: 'Lobby',     view: 'lobby'     },
+              { href: `${base}pages/book.html?view=badges`,    label: 'Badges',    view: 'badges'    },
             ].map((l, i, arr) => {
-              const active = l.href.includes(currentPage) && currentPage !== 'index.html'
+              const active = currentPage === 'book.html'
+                ? currentView === l.view
+                : l.href.includes(currentPage) && currentPage !== 'index.html'
               return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
             }).join('')}
             <button class="bm-signout" onclick="signOut()">Sign Out</button>

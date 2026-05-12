@@ -1,0 +1,761 @@
+import { supabase }          from '../supabase.js'
+import { renderNav } from '../components/nav.js'
+
+const MODULE_STYLE_ID = 'book-module-style-lobby'
+const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter <span id=\"ch-num\">1</span> \u00b7 Lobby</p>\n        <h1 class=\"page-title\">Nearby Players</h1>\n        <div style=\"display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem\">\n          <span class=\"blink\" style=\"width:6px;height:6px;border-radius:50%;background:#5ec45e;box-shadow:0 0 4px #5ec45e;display:inline-block;flex-shrink:0\"></span>\n          <span id=\"count\" style=\"font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.06em\">scanning\u2026</span>\n        </div>\n        <hr class=\"ink-divider\">\n        <div id=\"ping-log\" style=\"background:rgba(0,0,0,.06);border-left:2px solid rgba(139,106,32,.3);padding:.6rem .75rem;min-height:44px;border-radius:0 2px 2px 0;margin-bottom:.75rem\">\n          <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink-dim);letter-spacing:.06em\">System scanning\u2026</p>\n        </div>\n        <div id=\"player-list\"></div>\n      </div>\n    </div>\n        <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Your Presence</p>\n        <h2 class=\"page-title\" id=\"own-name\">\u2014</h2>\n        <hr class=\"ink-divider\">\n        <div id=\"own-stats\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"margin-top:.75rem\">\n          <p style=\"font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem\">FIGHT MODES</p>\n          <div style=\"background:rgba(224,85,85,.06);border:.5px solid rgba(224,85,85,.2);border-radius:4px;padding:.5rem .65rem;margin-bottom:.4rem\">\n            <p style=\"font-family:'Cinzel',serif;font-size:.72rem;color:#e05555;margin-bottom:2px\">\u2694 PVP Challenge</p>\n            <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#6b5a35;line-height:1.4\">Target is online. They receive a notification and must accept to fight.</p>\n          </div>\n          <div style=\"background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.2);border-radius:4px;padding:.5rem .65rem\">\n            <p style=\"font-family:'Cinzel',serif;font-size:.72rem;color:#b06eff;margin-bottom:2px\">\ud83c\udf11 Raid Attack</p>\n            <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#6b5a35;line-height:1.4\">Target is away. Auto-resolved by stats. They get a Revenge notice on return.</p>\n          </div>\n        </div>\n        <hr class=\"ink-divider\" style=\"margin-top:.75rem\">\n        <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;letter-spacing:.06em\">\u26a0 Reputation shifts are permanent.</p>\n      </div>\n    </div>\n  </div>\n</div>"
+const MODULE_STYLES = "\n    /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n       SUPERSEDE DARK THEME \u2014 Gold / Amber accent\n       Injected over main.css \u2014 no JS touched.\n    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n        :root {\n      --bg-0:      #14110f;\n      --bg-1:      #2b1d16;\n      --panel:     #f4ead7;\n      --page-l:    #f4ead7;\n      --page-r:    #f1e4cf;\n      --ink:       #2b1d16;\n      --ink-dim:   #5c4638;\n      --ink-faint: #a08060;\n      --ice:       #7a5230;\n      --ice-hot:   #4b2e14;\n      --gold:      #c8a050;\n      --gold-hot:  #e0c070;\n      --gold-dim:  #a08040;\n      --amber:     #d09040;\n      --amber-hot: #e0a050;\n      --warn:      #e06050;\n      --line:      rgba(200,160,80,.30);\n      --green:     #5cae50;\n      --purple:    #8a50c0;\n      --spine-col: #2b1d16;\n    }\n    *, *::before, *::after { box-sizing:border-box; }\n        html, body {\n      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;\n      color: var(--ink) !important;\n      font-family: 'Cormorant Garamond', Georgia, serif !important;\n      min-height: 100vh;\n      overflow-x: hidden;\n    }\n    body::after {\n      content: \"\"; position: fixed; inset: 0; pointer-events: none; z-index: 9998;\n      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);\n    }\n        /* \u2500\u2500 BOOK \u2014 parchment open-book \u2500\u2500 */\n    .book, .craft-grid {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n    }\n    @media(max-width:860px){\n      .book, .craft-grid { grid-template-columns:1fr !important; transform:none !important; border-radius:12px !important; }\n    }\n    /* \u2500\u2500 PAGES \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto; overflow-x: hidden;\n    }\n    .page-left  { background: var(--page-l) !important; border-right: none !important; }\n    .page-right { background: var(--page-r) !important; border-left:  none !important; }\n    /* dot-texture grain */\n    .page-left::before, .page-right::before {\n      content: \"\" !important; position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important; opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    /* spine-edge shadows */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    /* corner brackets */\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important; position: absolute !important;\n      top: 14px !important; left: 14px !important; width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important; position: absolute !important;\n      bottom: 14px !important; right: 14px !important; width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    /* \u2500\u2500 SPINE \u2014 open book gutter / inner binding \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(232,210,170,.0)   0%,\n        rgba(200,170,120,.25)  15%,\n        rgba(160,120,70,.55)   30%,\n        rgba(90,55,20,.88)     43%,\n        rgba(40,20,5,1.0)      50%,\n        rgba(90,55,20,.88)     57%,\n        rgba(160,120,70,.55)   70%,\n        rgba(200,170,120,.25)  85%,\n        rgba(232,210,170,.0)   100%\n      ) !important;\n      border-left:  none !important;\n      border-right: none !important;\n      position: relative; z-index: 5; width: 22px !important;\n      box-shadow: none !important;\n    }\n    .spine::before {\n      content:\"\";\n      position:absolute;\n      top:0; bottom:0; left:50%;\n      width:1px;\n      transform:translateX(-50%);\n      background: linear-gradient(180deg,\n        transparent 0%,\n        rgba(0,8,18,.9) 6%,\n        rgba(0,8,18,.9) 94%,\n        transparent 100%);\n    }\n    .spine::after {\n      content:\"\";\n      position:absolute;\n      top:2px; bottom:2px; left:-3px;\n      width:3px;\n      background: repeating-linear-gradient(\n        180deg,\n        rgba(200,168,74,.05) 0px,\n        rgba(200,168,74,.02) 1px,\n        rgba(0,0,0,.15)      1px,\n        rgba(0,0,0,.05)      2px\n      );\n      border-left:1px solid rgba(200,168,74,.08);\n    }\n    /* \u2500\u2500 TYPOGRAPHY \u2500\u2500 */\n    .chapter-label, .page-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important; letter-spacing: .42em !important;\n      text-transform: uppercase !important;\n      color: var(--gold) !important; margin-bottom: 5px !important;\n    }\n    .page-title, h1.page-title, h2.page-title {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 22px !important; font-weight: 500 !important;\n      letter-spacing: .04em !important; color: var(--ink) !important;\n      margin-bottom: 14px !important;\n    }\n    .ink-divider, hr.ink-divider {\n      border: none !important; border-top: 1px solid var(--line) !important;\n      margin: 12px 0 !important; opacity: 1 !important;\n    }\n    /* body text */\n    p, li, span { color: var(--ink) !important; }\n    /* \u2500\u2500 INLINE COLOURS \u2014 remap parchment browns to gold tones \u2500\u2500 */\n    [style*=\"color:var(--ink)\"] { color: var(--ink) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--ink-dim) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--gold-dim) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--gold-dim) !important; }\n    [style*=\"color:#c8b96e\"] { color: var(--gold) !important; }\n    [style*=\"background:rgba(200,184,128\"] { background: rgba(200,168,74,.08) !important; }\n    [style*=\"border-color:rgba(139,106,32\"] { border-color: rgba(200,168,74,.25) !important; }\n    /* \u2500\u2500 BUTTONS / CHOICES \u2500\u2500 */\n    button:not(.bm-signout), .choice, .combat-btn {\n      background: transparent !important;\n      border: 1px solid var(--line) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important; letter-spacing: .08em !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(200,168,74,.05) !important;\n    }\n    /* \u2500\u2500 STAT BARS \u2500\u2500 */\n    .stat-bar-wrap { background: rgba(255,255,255,.06) !important; border-radius:0 !important; }\n    .stat-key { color: var(--ink-dim) !important; font-family:'JetBrains Mono',monospace !important; font-size:.58rem !important; letter-spacing:.08em !important; }\n    .stat-val { color: var(--ink) !important; }\n    /* \u2500\u2500 MODALS / OVERLAYS \u2500\u2500 */\n    [id$=\"-window\"] > div, .end-box {\n      background: var(--panel) !important;\n      border: 1px solid var(--line) !important;\n      border-radius: 0 !important;\n    }\n    /* \u2500\u2500 SCROLLBAR \u2500\u2500 */\n    ::-webkit-scrollbar{width:5px}\n    ::-webkit-scrollbar-track{background:var(--bg-0)}\n    ::-webkit-scrollbar-thumb{background:var(--line)}\n    ::-webkit-scrollbar-thumb:hover{background:var(--gold-dim)}\n    /* \u2500\u2500 ANIMATE-IN \u2500\u2500 */\n    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}\n    .animate-in{animation:fadeIn .4s ease forwards}\n      /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap, .craft-grid-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n    /* \u2500\u2500 Book \u2500\u2500 */\n    .book, .craft-grid {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n    }\n    @media(max-width:860px) {\n      .book, .craft-grid { grid-template-columns: 1fr !important; transform: none !important; border-radius: 12px !important; }\n    }\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto; overflow-x: hidden;\n    }\n    .page-left::before, .page-right::before {\n      content: \"\" !important; position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important; opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important; position: absolute !important;\n      top: 14px !important; left: 14px !important; width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important; position: absolute !important;\n      bottom: 14px !important; right: 14px !important; width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    /* \u2500\u2500 Spine \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(0,0,0,.0) 0%, rgba(0,0,0,.20) 28%, rgba(0,0,0,.40) 46%,\n        rgba(0,0,0,.50) 50%, rgba(0,0,0,.40) 54%, rgba(0,0,0,.20) 72%, rgba(0,0,0,.0) 100%\n      ) !important;\n      border: none !important; position: relative; z-index: 5;\n      width: 22px !important; min-width: 22px !important;\n      margin: 0 !important; overflow: visible; box-shadow: none !important;\n    }\n    .spine::before {\n      content: \"\"; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg, transparent 0%, rgba(43,29,22,.9) 8%, rgba(43,29,22,.9) 92%, transparent 100%);\n      z-index: 2;\n    }\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n    /* \u2500\u2500 Text & UI colours \u2500\u2500 */\n    h1, h2, h3, h4, h5, h6 { color: var(--ink) !important; }\n    .book p, .book li, .book span, .book label,\n    .book-wrap p, .book-wrap li, .book-wrap span, .book-wrap label { color: var(--ink) !important; }\n    button:not(.bm-signout), .btn { background: rgba(43,29,22,.08); border: 1px solid rgba(138,91,68,.35); color: var(--ink); border-radius: 0; cursor: pointer; transition: border-color .2s, color .2s; }\n    button:hover, .btn:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n    input, select, textarea { background: rgba(43,29,22,.06) !important; border: 1px solid rgba(138,91,68,.35) !important; color: var(--ink) !important; border-radius: 0 !important; }\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.15); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n  \n    @media (max-width: 800px) {\n      .book, .book-body, .craft-grid { flex-direction: column !important; min-height: auto; }\n      .page-left, .page-right { width: 100% !important; padding: 20px 16px !important; }\n      .book-wrap, .craft-grid-wrap { padding: 8px 12px 40px !important; }\n    }\n  "
+
+function installModuleStyle() {
+  document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
+  const style = document.createElement('style')
+  style.id = MODULE_STYLE_ID
+  style.dataset.bookModuleStyle = 'true'
+  style.textContent = MODULE_STYLES
+  document.head.appendChild(style)
+}
+
+export async function mountLobby(__mountOptions = {}) {
+  const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
+  installModuleStyle()
+  host.innerHTML = MODULE_MARKUP
+
+  const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+
+
+  const ADMIN_USER_IDS = new Set(['YOUR_USER_ID_HERE'])
+  function isAdmin(uid) { return ADMIN_USER_IDS.has(uid) }
+
+  const BC = {
+    neutral:{ label:'Neutral', color:'#c8b96e' },
+    red:    { label:'Hunter',  color:'#e05555' },
+    green:  { label:'Helper',  color:'#5ec45e' },
+    elite:  { label:'Elite',   color:'#a07de0' },
+    unknown:{ label:'Unknown', color:'#666'    },
+  }
+  const SC = {
+    online:    { label:'Online',    color:'#5ec45e' },
+    in_combat: { label:'In Combat', color:'#e05555' },
+    idle:      { label:'Idle',      color:'#888'    },
+    boss_fight:{ label:'Boss Fight',color:'#a07de0' },
+  }
+
+  if (!player) throw new Error('no player')
+
+  let nearby = [], selected = null
+  const chapter = player.current_chapter || 1
+
+  document.getElementById('ch-num').textContent = chapter
+  document.getElementById('own-name').textContent = player.username
+
+  if (isAdmin(player.id)) {
+    const nameEl = document.getElementById('own-name')
+    const wrap = document.createElement('div')
+    wrap.style.cssText = 'display:flex;align-items:center;gap:.75rem;margin-bottom:.5rem'
+    const img = document.createElement('img')
+    img.src = '../assets/mysterious_cloaked_player.png'
+    img.style.cssText = 'width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid #00ffe7;box-shadow:0 0 12px #00ffe750'
+    nameEl.parentNode.insertBefore(wrap, nameEl)
+    wrap.appendChild(img); wrap.appendChild(nameEl)
+    const tag = document.createElement('p')
+    tag.style.cssText = "font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#00ffe7;letter-spacing:.12em"
+    tag.textContent = '⚠ ADMIN'
+    wrap.appendChild(tag)
+  }
+
+  const badgeColor = BC[player.badge]?.color || '#c8b96e'
+  document.getElementById('own-stats').innerHTML = [
+    ['Badge',   `<span style="color:${badgeColor}">${BC[player.badge]?.label||'Neutral'}</span>`],
+    ['Level',   player.level],
+    ['Chapter', chapter],
+    ['Status',  `<span style="color:#5ec45e">● Online</span>`],
+  ].map(([k,v]) => `
+    <div style="display:flex;justify-content:space-between;padding:.55rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
+      <span style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.08em">${k}</span>
+      <span style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--ink);font-weight:500">${v}</span>
+    </div>`).join('')
+
+  // ── Presence ──────────────────────────────────────────────
+  async function pushPresence(status = 'online') {
+    // Always fetch fresh player data so resets/level changes reflect immediately
+    const { data: fresh } = await supabase.from('players')
+      .select('level,badge,current_node,current_chapter')
+      .eq('id', player.id).single()
+    const lvl    = fresh?.level        || player.level  || 1
+    const badge  = fresh?.badge        || player.badge  || 'neutral'
+    const node   = fresh?.current_node || player.current_node || 'opening'
+    const ch     = fresh?.current_chapter || chapter
+
+    await supabase.from('presence').upsert({
+      player_id: player.id, username: player.username,
+      chapter: ch, node, badge, level: lvl,
+      status, last_seen_at: new Date().toISOString(),
+    }, { onConflict: 'player_id' })
+  }
+  await pushPresence()
+
+  // ── Load nearby (active in last 5 min) ───────────────────
+  async function load() {
+    const since = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+    const { data } = await supabase.from('presence')
+      .select('*').eq('chapter', chapter).neq('player_id', player.id)
+      .gte('last_seen_at', since).order('last_seen_at', { ascending: false })
+    nearby = data || []
+    document.getElementById('count').textContent = nearby.length + ' detected'
+    renderList()
+  }
+
+  function addPing(msg, badge = 'neutral') {
+    const log = document.getElementById('ping-log')
+    const p = document.createElement('p')
+    p.style.cssText = "font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#8a7850;margin:0 0 2px;letter-spacing:.04em"
+    p.innerHTML = `<span style="color:${BC[badge]?.color||'#c8b96e'}">▲</span> ${msg}`
+    log.insertBefore(p, log.firstChild)
+    while (log.children.length > 6) log.removeChild(log.lastChild)
+  }
+
+  function isPlayerOnline(p) {
+    return (Date.now() - new Date(p.last_seen_at).getTime()) < 3 * 60 * 1000
+  }
+
+  function renderList() {
+    const el = document.getElementById('player-list')
+    if (!nearby.length) {
+      el.innerHTML = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink-dim)">No other players in this chapter yet.</p>`
+      return
+    }
+    el.innerHTML = nearby.map(p => {
+      const bc     = BC[p.badge]  || BC.neutral
+      const isSel  = selected === p.player_id
+      const online = isPlayerOnline(p)
+      return `
+        <div data-pid="${p.player_id}" style="border:.5px solid ${isSel?bc.color:bc.color+'30'};border-radius:5px;padding:.7rem .75rem;cursor:pointer;margin-bottom:6px;background:${isSel?'rgba(200,184,128,.1)':'rgba(0,0,0,.04)'};transition:all .15s">
+          <div style="display:flex;align-items:center;gap:.6rem">
+            ${isAdmin(p.player_id)
+              ? `<img src='../assets/mysterious_cloaked_player.png' style='width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid #00ffe7;box-shadow:0 0 10px #00ffe750;flex-shrink:0'>`
+              : `<div style='width:32px;height:32px;border-radius:50%;border:1px solid ${bc.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-family:Cinzel,serif;color:${bc.color};background:rgba(0,0,0,.15);flex-shrink:0'>${p.username[0].toUpperCase()}</div>`}
+            <div style="flex:1;min-width:0">
+              <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${p.username}</p>
+              <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:var(--ink-dim);margin:0;letter-spacing:.04em">
+                Lvl ${p.level} · <span style="color:${online?'#5ec45e':'#888'}">${online?'● Online':'○ Away'}</span>
+              </p>
+            </div>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.56rem;border:.5px solid ${bc.color+'40'};padding:1px 6px;border-radius:20px;color:${bc.color};letter-spacing:.06em">${bc.label}</span>
+          </div>
+          ${isSel ? `
+            <div style="margin-top:8px;padding-top:7px;border-top:.5px solid rgba(139,106,32,.2)">
+              <div style="display:flex;gap:4px;margin-bottom:4px">
+                <button onclick="sendAction('observe','${p.player_id}','${p.username}')"
+                  style="flex:1;font-family:'IM Fell English',serif;font-size:.78rem;padding:5px;border-radius:3px;border:.5px solid #a07de040;cursor:pointer;background:none;color:#3a3a6a">👁 Observe</button>
+                <button onclick="sendAction('team','${p.player_id}','${p.username}')"
+                  style="flex:1;font-family:'IM Fell English',serif;font-size:.78rem;padding:5px;border-radius:3px;border:.5px solid #5ec45e40;cursor:pointer;background:none;color:#3a6a3a">🤝 Team</button>
+              </div>
+              <div style="display:flex;gap:4px">
+                <button onclick="sendAction('pvp','${p.player_id}','${p.username}')"
+                  style="flex:1;font-family:'IM Fell English',serif;font-size:.78rem;padding:5px;border-radius:3px;border:.5px solid #e0555540;cursor:pointer;background:none;color:#6a2a2a">
+                  ⚔ PVP ${online?'<span style="font-size:.44rem;color:#5ec45e">● Live</span>':'<span style="font-size:.44rem;color:#888">○ Away</span>'}
+                </button>
+                <button onclick="sendAction('raid','${p.player_id}','${p.username}')"
+                  style="flex:1;font-family:'IM Fell English',serif;font-size:.78rem;padding:5px;border-radius:3px;border:.5px solid #b06eff40;cursor:pointer;background:none;color:#4a2a6a">
+                  🌑 Raid
+                </button>
+              </div>
+            </div>` : ''}
+        </div>`
+    }).join('')
+
+    document.querySelectorAll('[data-pid]').forEach(el => {
+      el.addEventListener('click', e => {
+        if (e.target.tagName === 'BUTTON') return
+        const pid = el.dataset.pid
+        selected  = selected === pid ? null : pid
+        renderList()
+      })
+    })
+  }
+
+  window.sendAction = (type, targetId, targetName) => {
+    if (type === 'observe') { showObserveModal(targetId, targetName); return }
+    if (type === 'team')    { showTeamModal(targetId, targetName);    return }
+    if (type === 'pvp')     { showPvpModal(targetId, targetName);     return }
+    if (type === 'raid')    { showRaidModal(targetId, targetName);    return }
+  }
+
+  // ── PVP Challenge Modal ───────────────────────────────────
+  function showPvpModal(targetId, targetName) {
+    document.getElementById('pvp-modal')?.remove()
+    const modal = document.createElement('div')
+    modal.id = 'pvp-modal'
+    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    modal.innerHTML = `
+      <div style="background:#b8a568;border:1px solid #e05555;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.4rem">⚔ PVP Challenge</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.4rem">
+          Challenge <strong>${targetName}</strong> to live combat?
+        </p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#c04040;margin-bottom:.75rem">
+          ⚠ They must accept within 30s. Combat resolves in real time.
+        </p>
+        <div style="display:flex;gap:6px">
+          <button onclick="confirmPvp('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(224,85,85,.25);border:1px solid #e05555;border-radius:3px;padding:.45rem;cursor:pointer">⚔ Send Challenge</button>
+          <button onclick="document.getElementById('pvp-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        </div>
+      </div>`
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+    document.body.appendChild(modal)
+  }
+
+  window.confirmPvp = async (targetId, targetName) => {
+    document.getElementById('pvp-modal')?.remove()
+    await supabase.from('players').update({ reputation:'red', badge:'red' }).eq('id', player.id)
+    player.badge = 'red'
+    const { data: enc } = await supabase.from('encounters').insert({
+      initiator_id: player.id, target_id: targetId,
+      type: 'pvp_challenge', chapter, result: 'pending',
+    }).select().single()
+    await notifyPlayer(targetId, 'pvp_challenge', { from:player.username, fromId:player.id, encounterId:enc?.id })
+    addPing('PVP challenge sent to ' + targetName, 'red')
+    showToast('⚔ Challenge sent — waiting for ' + targetName)
+    // Show waiting modal
+    showWaitingModal(targetName, enc?.id)
+    selected = null; renderList()
+  }
+
+  function showWaitingModal(targetName, encounterId) {
+    document.getElementById('waiting-modal')?.remove()
+    const modal = document.createElement('div')
+    modal.id = 'waiting-modal'
+    modal.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:800;min-width:240px;max-width:300px;background:#1a1208;border:1px solid #e05555;border-radius:6px;padding:.85rem 1rem;box-shadow:0 8px 40px rgba(0,0,0,.9);text-align:center'
+    modal.innerHTML = `
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#e05555;letter-spacing:.08em;margin-bottom:.3rem">⚔ WAITING FOR RESPONSE</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#c8b96e;margin-bottom:.5rem"><strong>${targetName}</strong> has 30 seconds…</p>
+      <div style="height:4px;background:rgba(224,85,85,.15);border-radius:2px;overflow:hidden">
+        <div id="pvp-timer-bar" style="height:100%;background:#e05555;width:100%;transition:width 30s linear"></div>
+      </div>`
+    document.body.appendChild(modal)
+    requestAnimationFrame(() => { document.getElementById('pvp-timer-bar').style.width = '0%' })
+    setTimeout(() => modal.remove(), 31000)
+  }
+
+  // ── Raid Modal ────────────────────────────────────────────
+  async function showRaidModal(targetId, targetName) {
+    document.getElementById('raid-modal')?.remove()
+    const { data: tp } = await supabase.from('players').select('level,atk,def,hp,max_hp').eq('id', targetId).single()
+    const myAtk   = (player.atk||1) + (player.power||0)
+    const theirDef = tp?.def || 0
+    const raidDmg  = Math.max(1, myAtk - Math.floor(theirDef * 0.5))
+    const outcome  = raidDmg >= (tp?.hp||50) ? 'victory' : 'partial'
+
+    const modal = document.createElement('div')
+    modal.id = 'raid-modal'
+    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    modal.innerHTML = `
+      <div style="background:#b8a568;border:1px solid #b06eff;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.4rem">🌑 Raid Attack</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink);margin-bottom:.4rem">
+          Auto-resolved using your current stats vs <strong>${targetName}</strong>'s defense.
+        </p>
+        <div style="background:rgba(176,110,255,.08);border:.5px solid rgba(176,110,255,.25);border-radius:4px;padding:.5rem .65rem;margin-bottom:.6rem">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);line-height:2">
+            Your ATK: <span style="color:#e05555">${myAtk}</span> &nbsp;·&nbsp;
+            Their DEF: <span style="color:#5ec45e">${theirDef}</span> &nbsp;·&nbsp;
+            Damage: <span style="color:#c8b96e">${raidDmg}</span><br>
+            Outcome: <span style="color:${outcome==='victory'?'#5ec45e':'#c8b96e'};font-weight:600">${outcome==='victory'?'TARGET DEFEATED':'PARTIAL HIT'}</span>
+          </div>
+        </div>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#b06eff;margin-bottom:.75rem">
+          They will receive a Revenge notice on their next login.
+        </p>
+        <div style="display:flex;gap:6px">
+          <button onclick="confirmRaid('${targetId}','${targetName}',${raidDmg},'${outcome}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(176,110,255,.25);border:1px solid #b06eff;border-radius:3px;padding:.45rem;cursor:pointer">🌑 Execute Raid</button>
+          <button onclick="document.getElementById('raid-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        </div>
+      </div>`
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove() })
+    document.body.appendChild(modal)
+  }
+
+  window.confirmRaid = async (targetId, targetName, raidDmg, outcome) => {
+    document.getElementById('raid-modal')?.remove()
+    await supabase.from('players').update({ reputation:'red', badge:'red' }).eq('id', player.id)
+    player.badge = 'red'
+    await supabase.from('encounters').insert({
+      initiator_id: player.id, target_id: targetId,
+      type: 'raid', chapter, result: outcome,
+      damage_dealt: raidDmg, notified: false,
+      initiated_at: new Date().toISOString(),
+    })
+    const { data: tp } = await supabase.from('players').select('hp').eq('id', targetId).single()
+    if (tp) await supabase.from('players').update({ hp: Math.max(1, (tp.hp||50) - raidDmg) }).eq('id', targetId)
+    if (outcome === 'victory') await supabase.from('players').update({ pvp_kills:(player.pvp_kills||0)+1 }).eq('id', player.id)
+    addPing('Raided ' + targetName + ' — ' + outcome, 'red')
+    showToast('🌑 Raid: ' + (outcome==='victory' ? 'Target defeated!' : 'Partial hit'))
+    selected = null; renderList()
+  }
+
+  // ── Observe ───────────────────────────────────────────────
+  async function showObserveModal(targetId, targetName) {
+    document.getElementById('observe-modal')?.remove()
+    const { data: tp }    = await supabase.from('players').select('*').eq('id', targetId).single()
+    const { data: tpres } = await supabase.from('presence').select('*').eq('player_id', targetId).single()
+    const bc2 = BC[tp?.badge] || BC.neutral
+    const modal = document.createElement('div')
+    modal.id = 'observe-modal'
+    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    modal.innerHTML = `
+      <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:300px;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Player Profile</p>
+          <button onclick="document.getElementById('observe-modal').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;padding:.6rem;background:rgba(0,0,0,.08);border-radius:4px">
+          <div style="width:44px;height:44px;border-radius:50%;border:2px solid ${bc2.color};display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.1rem;font-weight:600;color:${bc2.color};background:rgba(0,0,0,.2);flex-shrink:0">${targetName[0].toUpperCase()}</div>
+          <div>
+            <p style="font-family:'Cinzel',serif;font-size:.95rem;font-weight:600;color:var(--ink);margin:0 0 2px">${targetName}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:${bc2.color};margin:0;letter-spacing:.06em">${bc2.label} · Level ${tp?.level||'?'}</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:.75rem">
+          ${[['Reputation',tp?.reputation||'neutral','#c8b96e'],['Element',tp?.element||'—','#a8d8ea'],
+             ['⚔ PVP Kills',tp?.pvp_kills||0,'#e05555'],['🤝 Helps',tp?.helps_given||0,'#5ec45e'],
+             ['🗡 Backstabs',tp?.backstabs||0,'#b06eff'],['Chapter',tp?.current_chapter||1,'#c8b96e']
+            ].map(([k,v,c])=>`<div style="background:rgba(0,0,0,.1);border-radius:3px;padding:5px 7px"><span style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);display:block">${k}</span><span style="font-family:'Cinzel',serif;font-size:.82rem;font-weight:600;color:${c}">${v}</span></div>`).join('')}
+        </div>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.06em">
+          Status: <span style="color:${(SC[tpres?.status||'online']||SC.online).color}">${(SC[tpres?.status||'online']||SC.online).label}</span>
+        </p>
+      </div>`
+    modal.addEventListener('click', e => { if (e.target===modal) modal.remove() })
+    document.body.appendChild(modal)
+    addPing('Observing ' + targetName)
+  }
+
+  // ── Team ──────────────────────────────────────────────────
+  function showTeamModal(targetId, targetName) {
+    document.getElementById('team-modal')?.remove()
+    const modal = document.createElement('div')
+    modal.id = 'team-modal'
+    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    modal.innerHTML = `
+      <div style="background:#b8a568;border:1px solid #5ec45e;border-radius:6px;padding:1.25rem;min-width:280px;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink);margin-bottom:.5rem">🤝 Alliance Request</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink);margin-bottom:.75rem">Send a team request to <strong>${targetName}</strong>?</p>
+        <div style="display:flex;gap:6px">
+          <button onclick="confirmTeam('${targetId}','${targetName}')" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(94,196,94,.3);border:1px solid #5ec45e;border-radius:3px;padding:.45rem;cursor:pointer">🤝 Send</button>
+          <button onclick="document.getElementById('team-modal').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:3px;padding:.45rem;cursor:pointer">Cancel</button>
+        </div>
+      </div>`
+    modal.addEventListener('click', e => { if (e.target===modal) modal.remove() })
+    document.body.appendChild(modal)
+  }
+
+  window.confirmTeam = async (targetId, targetName) => {
+    document.getElementById('team-modal')?.remove()
+    await supabase.from('encounters').insert({ initiator_id:player.id, target_id:targetId, type:'team_request', chapter, result:'pending' })
+    await notifyPlayer(targetId, 'team_request', { from:player.username, fromId:player.id })
+    addPing('Alliance request sent to '+targetName, 'green')
+    showToast('Team request sent to '+targetName)
+    selected=null; renderList()
+  }
+
+
+  // ── CRITICAL FIX: subscribe before send ──────────────────
+  async function notifyPlayer(targetId, event, payload) {
+    return new Promise(resolve => {
+      const ch = supabase.channel('notify:'+targetId)
+      ch.subscribe(status => {
+        if (status==='SUBSCRIBED') {
+          ch.send({ type:'broadcast', event, payload })
+            .then(()=>setTimeout(()=>{ supabase.removeChannel(ch); resolve() }, 400))
+            .catch(()=>{ supabase.removeChannel(ch); resolve() })
+        }
+      })
+      setTimeout(()=>{ supabase.removeChannel(ch); resolve() }, 5000)
+    })
+  }
+
+  // ── Listen for incoming notifications ─────────────────────
+  supabase.channel('notify:'+player.id)
+    .on('broadcast', { event:'team_request' },  ({payload})=>showIncomingModal('team', payload.from, payload.fromId, payload.encounterId))
+    .on('broadcast', { event:'pvp_challenge' }, ({payload})=>showIncomingModal('pvp',  payload.from, payload.fromId, payload.encounterId))
+    .on('broadcast', { event:'pvp_accepted' },  ({payload})=>{
+      document.getElementById('waiting-modal')?.remove()
+      showToast('⚔ '+payload.from+' accepted! Combat starting…')
+      addPing(payload.from+' accepted PVP','red')
+      openPvpCombat(payload.fromId, payload.from, payload.encounterId, true) // true = we are attacker
+    })
+    .on('broadcast', { event:'request_accepted' },({payload})=>showToast('🤝 '+payload.from+' accepted your request!'))
+    .on('broadcast', { event:'request_declined' },({payload})=>showToast(payload.from+' declined your request'))
+    .subscribe()
+
+  function showIncomingModal(type, fromName, fromId, encounterId) {
+    document.getElementById('incoming-modal')?.remove()
+    const isPvp = type==='pvp'
+    const modal = document.createElement('div')
+    modal.id = 'incoming-modal'
+    modal.className = 'incoming-pop'
+    modal.style.cssText = `position:fixed;top:80px;right:16px;z-index:800;min-width:260px;max-width:320px;background:${isPvp?'#3a1010':'#101a10'};border:1.5px solid ${isPvp?'#e05555':'#5ec45e'};border-radius:6px;padding:1rem;box-shadow:0 8px 40px rgba(0,0,0,.9)`
+    modal.innerHTML = `
+      <p style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${isPvp?'#e05555':'#5ec45e'};margin-bottom:.3rem">${isPvp?'⚔ PVP Challenge!':'🤝 Alliance Request!'}</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#d4c090;margin-bottom:.5rem"><strong>${fromName}</strong> wants to ${isPvp?'fight you':'team up'}.</p>
+      ${isPvp?`<p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#e07070;margin-bottom:.5rem">30 seconds to respond.</p>`:''}
+      <div style="display:flex;gap:6px">
+        <button onclick="respondRequest('accept','${type}','${fromId}','${fromName}','${encounterId||''}')" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:var(--ink);background:rgba(${isPvp?'224,85,85':'94,196,94'},.4);border:1px solid ${isPvp?'#e05555':'#5ec45e'};border-radius:3px;padding:.4rem;cursor:pointer">✓ Accept</button>
+        <button onclick="respondRequest('decline','${type}','${fromId}','${fromName}','${encounterId||''}')" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#c8c0a0;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.3);border-radius:3px;padding:.4rem;cursor:pointer">✕ Decline</button>
+      </div>`
+    document.body.appendChild(modal)
+    const timer = setTimeout(()=>{ modal.remove(); if(isPvp) respondRequest('timeout',type,fromId,fromName,encounterId) }, 30000)
+    modal._timer = timer
+  }
+
+  window.respondRequest = async (response, type, fromId, fromName, encounterId) => {
+    const modal = document.getElementById('incoming-modal')
+    if (modal?._timer) clearTimeout(modal._timer)
+    modal?.remove()
+
+    if (encounterId) await supabase.from('encounters').update({ result: type+'_'+response }).eq('id', encounterId)
+    else await supabase.from('encounters').insert({
+      initiator_id: fromId, target_id: player.id,
+      type: type+'_request', chapter, result: type+'_'+response,
+    })
+
+    if (response === 'accept' && type === 'pvp') {
+      // Notify challenger then open combat for both
+      await notifyPlayer(fromId, 'pvp_accepted', { from:player.username, fromId:player.id, encounterId })
+      openPvpCombat(fromId, fromName, encounterId, false) // false = we are the defender
+    } else if (response === 'accept') {
+      showToast('🤝 Allied with ' + fromName)
+      addPing('Allied with ' + fromName, 'green')
+      await notifyPlayer(fromId, 'request_accepted', { from:player.username })
+    } else {
+      showToast('Request from ' + fromName + ' declined')
+      await notifyPlayer(fromId, 'request_declined', { from:player.username })
+    }
+  }
+
+  // ── PVP Combat System ─────────────────────────────────────
+  // Simultaneous: both pick → fastest goes first → speed breaks ties
+
+  let pvpState   = null
+  let pvpChannel = null
+
+  async function openPvpCombat(opponentId, opponentName, encounterId, isAttacker) {
+    document.getElementById('waiting-modal')?.remove()
+    document.getElementById('pvp-combat')?.remove()
+    if (pvpChannel) { supabase.removeChannel(pvpChannel); pvpChannel = null }
+
+    const { data: op } = await supabase.from('players')
+      .select('level,atk,def,power,guard,speed,hp,max_hp').eq('id', opponentId).single()
+
+    pvpState = {
+      encounterId, opponentId, opponentName, isAttacker,
+      myHp: player.max_hp||100, opHp: op?.max_hp||100,
+      myMaxHp: player.max_hp||100, opMaxHp: op?.max_hp||100,
+      myAtk: (player.atk||1)+(player.power||0),
+      myDef: (player.def||0)+(player.guard||0),
+      mySpd: player.speed||0,
+      opAtk: (op?.atk||1)+(op?.power||0),
+      opDef: (op?.def||0)+(op?.guard||0),
+      opSpd: op?.speed||0,
+      myPick: null, opPick: null,
+      myPickAt: null, opPickAt: null,
+      round: 1, log: [], ended: false,
+    }
+
+    pvpChannel = supabase.channel('pvp:' + encounterId)
+    pvpChannel
+      .on('broadcast', { event: 'pvp_pick' }, ({ payload }) => receiveOpponentPick(payload))
+      .on('broadcast', { event: 'pvp_end'  }, ({ payload }) => {
+        if (pvpState?.ended) return
+        // winnerId null = draw, both lose
+        const won = payload.winnerId !== null && payload.winnerId === player.id
+        endPvpCombat(won, true)
+      })
+      .subscribe(status => { if (status === 'SUBSCRIBED') renderPvpCombat() })
+  }
+
+  function renderPvpCombat() {
+    document.getElementById('pvp-combat')?.remove()
+    const s = pvpState
+    if (!s) return
+    const myPct = Math.max(0, Math.round(s.myHp/s.myMaxHp*100))
+    const opPct = Math.max(0, Math.round(s.opHp/s.opMaxHp*100))
+    const myCol = myPct>60?'#5ec45e':myPct>30?'#c8b96e':'#e05555'
+    const opCol = opPct>60?'#5ec45e':opPct>30?'#c8b96e':'#e05555'
+
+    const el = document.createElement('div')
+    el.id = 'pvp-combat'
+    el.style.cssText = 'position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;padding:1rem'
+    el.innerHTML = `
+      <div style="background:#0f0c09;border:1px solid #e05555;border-radius:8px;padding:1.25rem;width:100%;max-width:420px;box-shadow:0 0 60px rgba(224,85,85,.25)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <span style="font-family:'Cinzel',serif;font-size:.75rem;color:#e05555;font-weight:600">⚔ PVP COMBAT</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">Round ${s.round}</span>
+        </div>
+        <div style="display:flex;gap:.75rem;margin-bottom:.75rem">
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-family:'Cinzel',serif;font-size:.65rem;color:#c8b96e">${player.username}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:${myCol}">${Math.max(0,s.myHp)}/${s.myMaxHp}</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px">
+              <div style="height:100%;width:${myPct}%;background:${myCol};border-radius:3px;transition:width .4s"></div>
+            </div>
+          </div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;color:#e05555;align-self:center">VS</div>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+              <span style="font-family:'Cinzel',serif;font-size:.65rem;color:#c8b96e">${s.opponentName}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:${opCol}">${Math.max(0,s.opHp)}/${s.opMaxHp}</span>
+            </div>
+            <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px">
+              <div style="height:100%;width:${opPct}%;background:${opCol};border-radius:3px;transition:width .4s"></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:rgba(0,0,0,.4);border:.5px solid rgba(200,184,128,.1);border-radius:4px;padding:.5rem .65rem;min-height:52px;max-height:90px;overflow-y:auto;margin-bottom:.6rem;font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);line-height:1.7">
+          ${s.log.length ? s.log.slice(-5).map(l=>`<div>${l}</div>`).join('') : '<div style="color:#5a4825">Both players choose…</div>'}
+        </div>
+        <div style="font-family:'Share Tech Mono',monospace;font-size:.5rem;letter-spacing:.07em;margin-bottom:.5rem;text-align:center;color:${s.myPick?'#5ec45e':'#c8b96e'}">
+          ${s.myPick ? (s.opPick ? '⚡ RESOLVING…' : `✓ ${s.myPick.toUpperCase()} locked — waiting for ${s.opponentName}…`) : 'CHOOSE YOUR ACTION'}
+        </div>
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+          <button onclick="pvpPick('strike')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(224,85,85,${s.myPick==='strike'?.5:.25});border:${s.myPick==='strike'?'2px':'1px'} solid #e05555;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='strike'?.4:1}">
+            ⚔ Strike<br><span style="font-size:.48rem;color:#6a2a2a">${s.myAtk} ATK</span>
+          </button>
+          <button onclick="pvpPick('defend')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(94,196,94,${s.myPick==='defend'?.4:.18});border:${s.myPick==='defend'?'2px':'1px'} solid #5ec45e;border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='defend'?.4:1}">
+            🛡 Defend<br><span style="font-size:.48rem;color:#2a6a2a">${s.myDef} DEF</span>
+          </button>
+          <button onclick="pvpPick('heavy')" ${s.myPick?'disabled':''} style="flex:1;font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,${s.myPick==='heavy'?.4:.18});border:${s.myPick==='heavy'?'2px':'1px'} solid rgba(200,184,128,.6);border-radius:3px;padding:.5rem;cursor:${s.myPick?'default':'pointer'};opacity:${s.myPick&&s.myPick!=='heavy'?.4:1}">
+            💥 Heavy<br><span style="font-size:.48rem;color:#5a4825">×1.5 −HP</span>
+          </button>
+        </div>
+        <button onclick="pvpForfeit()" style="width:100%;font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5a4825;background:none;border:.5px solid rgba(200,184,128,.12);border-radius:3px;padding:.3rem;cursor:pointer">Forfeit</button>
+      </div>`
+    document.body.appendChild(el)
+  }
+
+  window.pvpPick = (action) => {
+    const s = pvpState
+    if (!s || s.myPick || s.ended) return
+    s.myPick = action
+    s.myPickAt = Date.now()
+    // Clear any waiting timeout
+    if (s._pickTimer) { clearTimeout(s._pickTimer); s._pickTimer = null }
+    renderPvpCombat()
+    if (pvpChannel) pvpChannel.send({ type:'broadcast', event:'pvp_pick', payload:{ action, pickedAt: s.myPickAt, fromName: player.username } })
+    if (s.opPick) {
+      resolveRound()
+    } else {
+      // If opponent doesn't pick in 15s, auto-pick defend for them
+      s._pickTimer = setTimeout(() => {
+        if (pvpState && pvpState.myPick && !pvpState.opPick && !pvpState.ended) {
+          pvpState.opPick = 'defend'
+          pvpState.opPickAt = Date.now()
+          resolveRound()
+        }
+      }, 15000)
+    }
+  }
+
+  function receiveOpponentPick(payload) {
+    const s = pvpState
+    if (!s || s.ended) return
+    s.opPick = payload.action
+    s.opPickAt = payload.pickedAt
+    // Clear auto-defend timeout since opponent picked
+    if (s._pickTimer) { clearTimeout(s._pickTimer); s._pickTimer = null }
+    renderPvpCombat()
+    if (s.myPick) resolveRound()
+    else {
+      // Start timeout for us to pick
+      s._pickTimer = setTimeout(() => {
+        if (pvpState && pvpState.opPick && !pvpState.myPick && !pvpState.ended) {
+          pvpState.myPick = 'defend'
+          pvpState.myPickAt = Date.now()
+          resolveRound()
+        }
+      }, 15000)
+    }
+  }
+
+  function resolveRound() {
+    const s = pvpState
+    if (!s || s.ended) return
+
+    const myFirst = s.myPickAt < s.opPickAt || (s.myPickAt === s.opPickAt && s.mySpd >= s.opSpd)
+    const first  = myFirst ? { name:player.username, action:s.myPick, atk:s.myAtk, def:s.myDef } : { name:s.opponentName, action:s.opPick, atk:s.opAtk, def:s.opDef }
+    const second = myFirst ? { name:s.opponentName, action:s.opPick, atk:s.opAtk, def:s.opDef } : { name:player.username, action:s.myPick, atk:s.myAtk, def:s.myDef }
+
+    function calcDmg(att, defAction, defDef) {
+      if (att.action === 'defend') return 0
+      const base = att.action === 'heavy' ? Math.floor(att.atk*1.5) : att.atk
+      const mit  = defAction === 'defend' ? defDef : Math.floor(defDef*0.4)
+      return Math.max(0, base - mit + Math.floor(Math.random()*3) - 1)
+    }
+
+    const firstDmg  = calcDmg(first,  second.action, second.def)
+    const secondDmg = calcDmg(second, first.action,  first.def)
+    const firstCost  = first.action  === 'heavy' ? Math.floor((myFirst?s.myMaxHp:s.opMaxHp)*0.1) : 0
+    const secondCost = second.action === 'heavy' ? Math.floor((myFirst?s.opMaxHp:s.myMaxHp)*0.1) : 0
+
+    if (myFirst) {
+      s.myHp = Math.max(0, s.myHp - firstCost)
+      s.opHp = Math.max(0, s.opHp - firstDmg)
+      if (s.opHp > 0) { s.opHp = Math.max(0, s.opHp - secondCost); s.myHp = Math.max(0, s.myHp - secondDmg) }
+    } else {
+      s.opHp = Math.max(0, s.opHp - firstCost)
+      s.myHp = Math.max(0, s.myHp - firstDmg)
+      if (s.myHp > 0) { s.myHp = Math.max(0, s.myHp - secondCost); s.opHp = Math.max(0, s.opHp - secondDmg) }
+    }
+
+    const label = a => a==='defend'?'defends':a==='heavy'?'heavy strikes':'strikes'
+    s.log.push(`— Round ${s.round} (${myFirst?player.username:s.opponentName} faster) —`)
+    s.log.push(`${first.name} ${label(first.action)}${first.action!=='defend'?' for '+firstDmg+' dmg':''}`)
+    if (s.myHp > 0 || s.opHp > 0)
+      s.log.push(`${second.name} ${label(second.action)}${second.action!=='defend'?' for '+secondDmg+' dmg':''}`)
+
+    s.myPick=null; s.opPick=null; s.myPickAt=null; s.opPickAt=null; s.round++
+
+    const iWon  = s.opHp<=0 && s.myHp>0
+    const iLost = s.myHp<=0 && s.opHp>0
+    const isDraw= s.myHp<=0 && s.opHp<=0
+
+    if (iWon || iLost || isDraw) {
+      const winnerId = iWon ? player.id : iLost ? s.opponentId : null
+      // Mark ended before broadcast so the pvp_end echo doesn't double-fire
+      s.ended = true
+      if (pvpChannel) pvpChannel.send({ type:'broadcast', event:'pvp_end', payload:{ winnerId } })
+      setTimeout(() => endPvpCombat(iWon || isDraw, false), 200)
+      return
+    }
+    renderPvpCombat()
+  }
+
+  async function endPvpCombat(won, fromRemote) {
+    // Guard against double-call
+    if (!pvpState || pvpState.ended) return
+    pvpState.ended = true
+
+    // Snapshot state before any async ops clear it
+    const s = { ...pvpState }
+
+    // Tear down UI and channel
+    document.getElementById('pvp-combat')?.remove()
+    if (pvpChannel) { supabase.removeChannel(pvpChannel); pvpChannel = null }
+    pvpState = null
+
+    // Save to DB
+    try {
+      await supabase.from('encounters').update({
+        result: won ? 'pvp_victory' : 'pvp_defeat',
+        resolved_at: new Date().toISOString(),
+      }).eq('id', s.encounterId)
+      if (won) {
+        const newKills = (player.pvp_kills||0) + 1
+        player.pvp_kills = newKills
+        const m = player.moral_score||0, hg = player.helps_given||0, pk = newKills
+        let newBadge = 'neutral'
+        if (m >= 60 && (hg >= 3 || pk === 0)) newBadge = 'elite'
+        else if (m >= 20)                      newBadge = 'green'
+        else if (m <= -20 || (pk >= 5 && pk > hg*3)) newBadge = 'red'
+        player.badge = newBadge
+        await supabase.from('players').update({ pvp_kills: newKills, badge: newBadge, reputation: newBadge }).eq('id', player.id)
+      }
+    } catch(e) { console.error('pvp save error', e) }
+
+    // Remove any existing result screen
+    document.getElementById('pvp-result')?.remove()
+
+    // Build result screen
+    const el = document.createElement('div')
+    el.id = 'pvp-result'
+    el.style.cssText = 'position:fixed;inset:0;z-index:910;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.9)'
+    const borderCol = won ? '#5ec45e' : '#e05555'
+    const glowCol   = won ? 'rgba(94,196,94,.4)' : 'rgba(224,85,85,.4)'
+    const titleCol  = won ? '#5ec45e' : '#e05555'
+    const titleText = won ? 'VICTORY' : 'DEFEAT'
+    const subText   = won ? `You defeated ${s.opponentName}.` : `${s.opponentName} defeated you.`
+
+    el.innerHTML = `
+      <div style="background:#0f0c09;border:2px solid ${borderCol};border-radius:8px;padding:1.75rem 1.5rem;text-align:center;max-width:300px;box-shadow:0 0 50px ${glowCol}">
+        <p style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:800;color:${titleCol};margin-bottom:.35rem;letter-spacing:.1em">${titleText}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:#c8b96e;margin-bottom:1.25rem">${subText}</p>
+        <button id="pvp-result-btn" style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);background:rgba(200,184,128,.45);border:1px solid rgba(200,184,128,.7);border-radius:4px;padding:.5rem 1.75rem;cursor:pointer;width:100%">← Return to Lobby</button>
+      </div>`
+    document.body.appendChild(el)
+
+    // Use addEventListener so button always works regardless of pvpState
+    document.getElementById('pvp-result-btn').addEventListener('click', () => {
+      el.remove()
+      load()
+    })
+
+    addPing((won ? 'Victory over ' : 'Defeated by ') + s.opponentName, won ? 'green' : 'red')
+  }
+
+  window.pvpForfeit = async () => {
+    if (!pvpState || pvpState.ended) return
+    // Tell opponent they won
+    if (pvpChannel) {
+      pvpChannel.send({ type:'broadcast', event:'pvp_end', payload:{ winnerId: pvpState.opponentId } })
+    }
+    // Small delay so broadcast goes out before channel teardown
+    setTimeout(() => endPvpCombat(false, false), 150)
+  }
+
+  // ── Raid notifications on login ───────────────────────────
+  async function checkRaidNotifications() {
+    const { data: raids } = await supabase.from('encounters')
+      .select('*').eq('target_id', player.id).eq('type', 'raid').eq('notified', false)
+      .order('initiated_at', { ascending:false })
+    if (!raids?.length) return
+    for (const raid of raids) {
+      const { data: att } = await supabase.from('players').select('username').eq('id', raid.initiator_id).single()
+      showRaidNotice(raid, att?.username||'Unknown')
+      await supabase.from('encounters').update({ notified:true }).eq('id', raid.id)
+    }
+  }
+
+  function showRaidNotice(raid, attackerName) {
+    const modal = document.createElement('div')
+    modal.className = 'incoming-pop'
+    modal.style.cssText = 'position:fixed;top:80px;left:16px;z-index:800;min-width:260px;max-width:300px;background:#2a1030;border:1.5px solid #b06eff;border-radius:6px;padding:1rem;box-shadow:0 8px 40px rgba(0,0,0,.9)'
+    modal.innerHTML = `
+      <p style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:#b06eff;margin-bottom:.3rem">🌑 You Were Raided!</p>
+      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#d4c090;margin-bottom:.4rem"><strong>${attackerName}</strong> attacked while you were away.</p>
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#b06eff;margin-bottom:.65rem">
+        Result: <span style="color:${raid.result==='victory'?'#e05555':'#c8b96e'}">${raid.result==='victory'?'YOU WERE DEFEATED':'PARTIAL HIT'}</span> · Damage: <span style="color:#e05555">${raid.damage_dealt||0}</span>
+      </p>
+      <div style="display:flex;gap:6px">
+        <button onclick="takeRevenge('${raid.initiator_id}','${attackerName}',this.closest('[style]'))" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:var(--ink);background:rgba(176,110,255,.4);border:1px solid #b06eff;border-radius:3px;padding:.4rem;cursor:pointer">⚔ Revenge</button>
+        <button onclick="this.closest('[style*=fixed]').remove()" style="flex:1;font-family:'Cinzel',serif;font-size:.75rem;color:#c8c0a0;background:rgba(200,184,128,.1);border:.5px solid rgba(200,184,128,.3);border-radius:3px;padding:.4rem;cursor:pointer">Dismiss</button>
+      </div>`
+    document.body.appendChild(modal)
+    addPing('You were raided by '+attackerName, 'red')
+  }
+
+  window.takeRevenge = async (targetId, targetName, modalEl) => {
+    modalEl?.remove()
+    const { data: pres } = await supabase.from('presence').select('last_seen_at').eq('player_id', targetId).single()
+    const online = pres && (Date.now() - new Date(pres.last_seen_at).getTime()) < 3 * 60 * 1000
+    if (online) showPvpModal(targetId, targetName)
+    else showRaidModal(targetId, targetName)
+  }
+
+  // ── Realtime lobby updates ────────────────────────────────
+  supabase.channel('lobby:ch'+chapter)
+    .on('postgres_changes',{event:'*',schema:'public',table:'presence',filter:`chapter=eq.${chapter}`},payload=>{
+      const row=payload.new
+      if (!row||row.player_id===player.id) return
+      if (payload.eventType==='INSERT') addPing(row.username+' entered the area', row.badge||'neutral')
+      load()
+    }).subscribe()
+
+  setInterval(()=>pushPresence(), 20000)
+  await load()
+  await checkRaidNotifications()
+
+  return { player, cleanup() {} }
+}
+
+export default mountLobby
