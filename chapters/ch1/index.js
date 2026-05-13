@@ -1,5 +1,5 @@
 import { supabase } from '../../supabase.js'
-import { renderNav, showSysOverlay, showToast } from '../../components/nav.js'
+// renderNav, showSysOverlay, showToast are exposed as window globals by book.html
 import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
@@ -33,7 +33,7 @@ export async function mountChapter1(__mountOptions = {}) {
   }
 
   // ── App state ────────────────────────────────────
-  let player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
   if (!player) throw new Error('no player')
 
   let currentHp = player.hp || 100
@@ -92,7 +92,7 @@ export async function mountChapter1(__mountOptions = {}) {
     player.level  = level
     player.xp     = newXp
 
-    showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
+    window.showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
     renderHUD()
 
     return { level, max_hp: newMaxHp, hp: newHp, xp: newXp,
@@ -849,7 +849,7 @@ export async function mountChapter1(__mountOptions = {}) {
       document.getElementById('story-text').textContent = 'Error: node "' + nodeId + '" not found.'
       return
     }
-    if (node.sysMsg) showSysOverlay(node.sysMsg)
+    if (node.sysMsg) window.showSysOverlay(node.sysMsg)
 
     const stEl = document.getElementById('story-text')
     stEl.textContent = node.text || ''
@@ -1694,7 +1694,7 @@ export async function mountChapter1(__mountOptions = {}) {
         await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
         for (const { k, lv } of leveledUp) {
           const sk = BATTLE_SKILLS[k] || NOTABLE_SKILLS[k]
-          showToast('✦ ' + (sk?.label || k) + ' passive reached Lv ' + lv + '!')
+          window.showToast('✦ ' + (sk?.label || k) + ' passive reached Lv ' + lv + '!')
         }
 
         // Increment helps_given if this was an ally-assist fight
@@ -1831,14 +1831,14 @@ export async function mountChapter1(__mountOptions = {}) {
               updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
               player.skill_points  = updates.skill_points
               player.sp_claimed    = updates.sp_claimed
-              showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
+              window.showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
             } else {
-              showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
+              window.showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
             }
             // ── Watcher Item Set — rare drop (35% per piece) ──
             await dropWatcherSet()
           } else {
-            showToast('Victory! +' + (enemy.xp||50) + ' XP gained!')
+            window.showToast('Victory! +' + (enemy.xp||50) + ' XP gained!')
             // ── Zone guardian Watcher piece drops ──
             const curBossKey = NODES[nodeId]?.bossKey
             if (curBossKey === 'sentinel') {
@@ -2266,7 +2266,7 @@ export async function mountChapter1(__mountOptions = {}) {
       const newLv = getSkillLevel(key)
       if (newLv > prevLv) {
         const sk = BATTLE_SKILLS[key]
-        showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
+        window.showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
       }
       // Awaited save so failures surface in console
       const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
@@ -3027,7 +3027,7 @@ export async function mountChapter1(__mountOptions = {}) {
       }
       const { error } = await supabase.from('inventory').insert(row)
       if (!error) {
-        showToast(`★ ${piece.name} dropped!`)
+        window.showToast(`★ ${piece.name} dropped!`)
         queueLoot(piece.name, 1, piece.img)
       }
     }
