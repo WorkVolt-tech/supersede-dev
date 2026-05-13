@@ -1,5 +1,4 @@
 import { supabase }           from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-inventory'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n\n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Equipment</p>\n        <h1 class=\"page-title\">Loadout</h1>\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:var(--ink-dim);margin-bottom:.5rem\" id=\"equip-hint\">Select an item from the right, then click a slot.</p>\n        <hr class=\"ink-divider\">\n        <div id=\"equip-slots\"></div>\n        <div id=\"set-bonus-panel\" style=\"margin-top:.5rem\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"total-stats\" style=\"font-family:'Share Tech Mono',monospace;font-size:.65rem;color:var(--ink-dim);display:flex;gap:1.5rem;letter-spacing:.06em\"></div>\n      </div>\n    </div>\n\n    \n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Item Bag</p>\n        <h2 class=\"page-title\" id=\"bag-count\">\u2014 items</h2>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;gap:3px;margin-bottom:.75rem;flex-wrap:wrap\" id=\"filter-tabs\"></div>\n        <div class=\"item-grid\" id=\"item-grid\"></div>\n        <div id=\"item-detail\"></div>\n      </div>\n    </div>\n  </div>\n</div>"
@@ -19,7 +18,7 @@ export async function mountInventory(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-    const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+    const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
     if (!player) throw new Error('no player')
 
   const ITEM_IMAGES = {
@@ -327,7 +326,7 @@ export async function mountInventory(__mountOptions = {}) {
       const newGold = (player.gold || 0) + totalGold
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
-      showToast('Sold ' + toSell.length + ' item(s) for ◈' + totalGold)
+      window.showToast('Sold ' + toSell.length + ' item(s) for ◈' + totalGold)
       sellSelected.clear()
       sellMode = false
       selectedId = null
@@ -852,7 +851,7 @@ export async function mountInventory(__mountOptions = {}) {
         speed_bonus:0, insight_bonus:0, luck_bonus:0,
       }).eq('id', itemId)
       document.getElementById('equipped-modal')?.remove()
-      showToast('Runes destroyed')
+      window.showToast('Runes destroyed')
       await load()
     }
 
@@ -861,7 +860,7 @@ export async function mountInventory(__mountOptions = {}) {
       if (!item) return
       const slotDef = SLOTS.find(s=>s.key===slot)
       if (!slotDef.accepts.includes(item.subtype||item.item_type)) {
-        showToast(`${item.name} can't go in ${slotDef.label}`, true); return
+        window.showToast(`${item.name} can't go in ${slotDef.label}`, true); return
       }
       // Unequip current in slot
       const current = items.find(i=>i.equipped_slot===slot)
@@ -872,7 +871,7 @@ export async function mountInventory(__mountOptions = {}) {
         if (oh) await supabase.from('inventory').update({equipped_slot:null}).eq('id',oh.id)
       }
       await supabase.from('inventory').update({equipped_slot:slot}).eq('id',itemId)
-      showToast(`${item.name} equipped`)
+      window.showToast(`${item.name} equipped`)
       selectedId = null
       await load()
     }
@@ -881,7 +880,7 @@ export async function mountInventory(__mountOptions = {}) {
       const item = items.find(i=>i.equipped_slot===slot)
       if (!item) return
       await supabase.from('inventory').update({equipped_slot:null}).eq('id',item.id)
-      showToast(`${item.name} unequipped`)
+      window.showToast(`${item.name} unequipped`)
       await load()
     }
 
@@ -1095,7 +1094,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const sockets = item.sockets_total || 0
       const used    = item.sockets_used  || 0
-      if (used >= sockets) { showToast('All sockets filled', true); return }
+      if (used >= sockets) { window.showToast('All sockets filled', true); return }
 
       const newRunes  = [...(item.socketed_runes||[]), runeKey]
       const newUsed   = used + 1
@@ -1126,8 +1125,8 @@ export async function mountInventory(__mountOptions = {}) {
         }
       }
 
-      if (rw) showToast('✦ Runeword activated: ' + rw.name + '!')
-      else    showToast('Rune socketed — ' + newRunes.length + '/' + sockets + ' filled')
+      if (rw) window.showToast('✦ Runeword activated: ' + rw.name + '!')
+      else    window.showToast('Rune socketed — ' + newRunes.length + '/' + sockets + ' filled')
 
       selectedId = itemId
       await load()
@@ -1174,7 +1173,7 @@ export async function mountInventory(__mountOptions = {}) {
         speed_bonus:0, insight_bonus:0, luck_bonus:0,
       }).eq('id', itemId)
 
-      showToast('Runes removed — returned to inventory')
+      window.showToast('Runes removed — returned to inventory')
       selectedId = itemId
       await load()
     }
@@ -1189,7 +1188,7 @@ export async function mountInventory(__mountOptions = {}) {
       const newGold = (player.gold || 0) + sellPrice
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
-      showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+      window.showToast('Sold ' + itemName + ' for ◈' + sellPrice)
       selectedId = null
       await load()
     }
@@ -1201,7 +1200,7 @@ export async function mountInventory(__mountOptions = {}) {
       const newGold = (player.gold || 0) + total
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
-      showToast('Sold ' + (qty||1) + '× ' + itemName + ' for ◈' + total)
+      window.showToast('Sold ' + (qty||1) + '× ' + itemName + ' for ◈' + total)
       selectedId = null
       await load()
     }
@@ -1222,11 +1221,11 @@ export async function mountInventory(__mountOptions = {}) {
         const healed = newHp - currentHp
         // Save to DB
         await supabase.from('players').update({ hp: newHp }).eq('id', player.id)
-        showToast('+' + healed + ' HP restored (' + newHp + '/' + maxHp + ')')
+        window.showToast('+' + healed + ' HP restored (' + newHp + '/' + maxHp + ')')
       } else if (item.special_effect) {
-        showToast(item.name + ' used — ' + item.special_effect)
+        window.showToast(item.name + ' used — ' + item.special_effect)
       } else {
-        showToast(item.name + ' used')
+        window.showToast(item.name + ' used')
       }
 
       // Consume item

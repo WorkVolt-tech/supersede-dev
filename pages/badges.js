@@ -1,5 +1,4 @@
 import { supabase }  from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-badges'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Hall of Records</p>\n        <h1 class=\"page-title\">Earned Seals</h1>\n        <p id=\"earned-count\" style=\"font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.06em;margin-bottom:.5rem\"></p>\n        <hr class=\"ink-divider\">\n        <div id=\"earned-seals\" style=\"display:grid;grid-template-columns:repeat(2,1fr);gap:1rem\"></div>\n        <p id=\"no-badges\" style=\"display:none;font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:var(--ink-dim)\">No seals earned yet. Complete Chapter 1 to begin.</p>\n      </div>\n    </div>\n        <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Sealed Records</p>\n        <h2 class=\"page-title\">In Progress</h2>\n        <hr class=\"ink-divider\">\n        <div id=\"locked-badges\"></div>\n      </div>\n    </div>\n  </div>\n</div>"
@@ -19,7 +18,7 @@ export async function mountBadges(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-    const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+    const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
     if (!player) throw new Error('no player')
 
     const ALL_BADGES = [

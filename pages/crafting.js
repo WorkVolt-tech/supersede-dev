@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-crafting'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n\n  <div class=\"craft-grid book\">\n    <!-- Left: item selector -->\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Crafting Table</p>\n        <h1 class=\"page-title\">Socket Runes</h1>\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.82rem;color:#7a6435;margin-bottom:.5rem\">\n          Socket runes dropped from combat into your gear. Matching combinations form powerful Runewords.\n        </p>\n        <hr class=\"ink-divider\">\n\n        <!-- Filter tabs -->\n        <div style=\"display:flex;gap:4px;margin-bottom:.75rem;flex-wrap:wrap\" id=\"filter-tabs\">\n          <button onclick=\"setFilter('all')\"       id=\"ft-all\"       style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;border:.5px solid rgba(139,106,32,.3);background:rgba(139,106,32,.15);border-radius:20px;padding:2px 9px;cursor:pointer;color:#1a1208\">all</button>\n          <button onclick=\"setFilter('weapon')\"    id=\"ft-weapon\"    style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;border:.5px solid rgba(139,106,32,.2);background:none;border-radius:20px;padding:2px 9px;cursor:pointer;color:#7a6435\">weapon</button>\n          <button onclick=\"setFilter('armor')\"     id=\"ft-armor\"     style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;border:.5px solid rgba(139,106,32,.2);background:none;border-radius:20px;padding:2px 9px;cursor:pointer;color:#7a6435\">armor</button>\n          <button onclick=\"setFilter('accessory')\" id=\"ft-accessory\" style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;border:.5px solid rgba(139,106,32,.2);background:none;border-radius:20px;padding:2px 9px;cursor:pointer;color:#7a6435\">accessory</button>\n        </div>\n\n        <!-- Item list -->\n        <div id=\"item-list\" style=\"max-height:420px;overflow-y:auto;scrollbar-width:thin\"></div>\n      </div>\n    </div>\n\n    \n    <!-- Right: socketing UI -->\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div id=\"socket-panel\">\n          <p style=\"font-family:'IM Fell English',serif;font-style:italic;color:#7a6435;margin-top:2rem;text-align:center\">\n            \u2190 Select an item to begin socketing\n          </p>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>"
@@ -19,7 +18,7 @@ export async function mountCrafting(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-  const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
 
 
   const ITEM_IMAGES = {
@@ -334,17 +333,17 @@ export async function mountCrafting(__mountOptions = {}) {
   }
 
   window.socketRune = async function(runeKey, runeItemId) {
-    if (!selectedItem) { showToast('Select an item first',true); return }
+    if (!selectedItem) { window.showToast('Select an item first',true); return }
     const item = selectedItem
     const sockets = item.sockets_total || 0
     const used    = item.sockets_used  || 0
 
-    if (sockets === 0) { showToast('Item has no sockets — visit the Runesmith',true); return }
-    if (used >= sockets) { showToast('All sockets are filled',true); return }
+    if (sockets === 0) { window.showToast('Item has no sockets — visit the Runesmith',true); return }
+    if (used >= sockets) { window.showToast('All sockets are filled',true); return }
 
     // Check rune qty
     const runeItem = runeInventory.find(r=>r.id===runeItemId)
-    if (!runeItem || (runeItem.quantity||0) < 1) { showToast('No runes left',true); return }
+    if (!runeItem || (runeItem.quantity||0) < 1) { window.showToast('No runes left',true); return }
 
     // Add rune to item
     const newRunes    = [...(item.socketed_runes||[]), runeKey]
@@ -376,8 +375,8 @@ export async function mountCrafting(__mountOptions = {}) {
       await supabase.from('inventory').update({ quantity: runeItem.quantity - 1 }).eq('id', runeItemId)
     }
 
-    if (rw) showToast(`✨ Runeword activated: ${rw.name}!`)
-    else    showToast(`Rune socketed — ${newRunes.length}/${sockets} filled`)
+    if (rw) window.showToast(`✨ Runeword activated: ${rw.name}!`)
+    else    window.showToast(`Rune socketed — ${newRunes.length}/${sockets} filled`)
 
     await load()
 
@@ -409,7 +408,7 @@ export async function mountCrafting(__mountOptions = {}) {
       power_bonus:0,control_bonus:0,guard_bonus:0,speed_bonus:0,insight_bonus:0,luck_bonus:0,
     }).eq('id', item.id)
 
-    showToast('Runes removed — returned to inventory')
+    window.showToast('Runes removed — returned to inventory')
     await load()
 
   // Pick up pending socket from Runesmith
@@ -421,7 +420,7 @@ export async function mountCrafting(__mountOptions = {}) {
     // Show a prompt to pick which item to add socket to
     const eligible = items.filter(i => i.rarity === pendingSocket && (i.sockets_total||0) < maxForRarity)
     if (eligible.length > 0) {
-      showToast(`Select a ${pendingSocket} item from the list to add your socket`, false)
+      window.showToast(`Select a ${pendingSocket} item from the list to add your socket`, false)
       // Mark items as socket-pending
       document.querySelectorAll('.item-pick').forEach(el => {
         const item = items.find(i=>i.id===el.dataset.id)
@@ -435,18 +434,18 @@ export async function mountCrafting(__mountOptions = {}) {
       window.selectItem = async function(id) {
         const item = items.find(i=>i.id===id)
         if (!item) return
-        if (item.rarity !== pendingSocket) { showToast(`Select a ${pendingSocket} item`,true); return }
+        if (item.rarity !== pendingSocket) { window.showToast(`Select a ${pendingSocket} item`,true); return }
         const maxS = SOCKET_MAX[item.rarity] || 1
-        if ((item.sockets_total||0) >= maxS) { showToast('Already at max sockets',true); return }
+        if ((item.sockets_total||0) >= maxS) { window.showToast('Already at max sockets',true); return }
         await supabase.from('inventory').update({ sockets_total:(item.sockets_total||0)+1 }).eq('id',id)
-        showToast('Socket added!')
+        window.showToast('Socket added!')
         window.selectItem = origSelect
         await load()
         selectedItem = items.find(i=>i.id===id) || null
         renderSocketPanel()
       }
     } else {
-      showToast(`No ${pendingSocket} items available for socketing`, true)
+      window.showToast(`No ${pendingSocket} items available for socketing`, true)
     }
   }
     selectedItem = items.find(i=>i.id===item.id) || null
@@ -572,7 +571,7 @@ export async function mountCrafting(__mountOptions = {}) {
     // Show a prompt to pick which item to add socket to
     const eligible = items.filter(i => i.rarity === pendingSocket && (i.sockets_total||0) < maxForRarity)
     if (eligible.length > 0) {
-      showToast(`Select a ${pendingSocket} item from the list to add your socket`, false)
+      window.showToast(`Select a ${pendingSocket} item from the list to add your socket`, false)
       // Mark items as socket-pending
       document.querySelectorAll('.item-pick').forEach(el => {
         const item = items.find(i=>i.id===el.dataset.id)
@@ -586,18 +585,18 @@ export async function mountCrafting(__mountOptions = {}) {
       window.selectItem = async function(id) {
         const item = items.find(i=>i.id===id)
         if (!item) return
-        if (item.rarity !== pendingSocket) { showToast(`Select a ${pendingSocket} item`,true); return }
+        if (item.rarity !== pendingSocket) { window.showToast(`Select a ${pendingSocket} item`,true); return }
         const maxS = SOCKET_MAX[item.rarity] || 1
-        if ((item.sockets_total||0) >= maxS) { showToast('Already at max sockets',true); return }
+        if ((item.sockets_total||0) >= maxS) { window.showToast('Already at max sockets',true); return }
         await supabase.from('inventory').update({ sockets_total:(item.sockets_total||0)+1 }).eq('id',id)
-        showToast('Socket added!')
+        window.showToast('Socket added!')
         window.selectItem = origSelect
         await load()
         selectedItem = items.find(i=>i.id===id) || null
         renderSocketPanel()
       }
     } else {
-      showToast(`No ${pendingSocket} items available for socketing`, true)
+      window.showToast(`No ${pendingSocket} items available for socketing`, true)
     }
   }
 

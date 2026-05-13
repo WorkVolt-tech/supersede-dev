@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-vehicle'
 const MODULE_MARKUP = "<canvas id=\"game-canvas\"></canvas>\n<div id=\"hud\">\n  <div class=\"hud-block\">\n    <div class=\"hud-lbl\">HULL</div>\n    <div class=\"hud-val\" id=\"hud-hp\">100</div>\n    <div class=\"hud-bar-wrap\"><div class=\"hud-bar\" id=\"bar-hp\" style=\"background:#5ec45e;width:100%\"></div></div>\n  </div>\n  <div class=\"hud-block center\">\n    <div class=\"hud-wave\" id=\"hud-wave\">WAVE 1</div>\n    <div style=\"font-size:.45rem;color:#7a6435;letter-spacing:.08em\" id=\"hud-dest\">---</div>\n    <div style=\"font-size:.48rem;color:#ffcc00;letter-spacing:.04em\" id=\"hud-combo\"></div>\n  </div>\n  <div class=\"hud-block right\">\n    <div class=\"hud-lbl\">EYES DOWN</div>\n    <div class=\"hud-val\" id=\"hud-eyes\">0</div>\n    <div style=\"font-size:.44rem;color:#b06eff;letter-spacing:.04em\" id=\"hud-score\">SCORE 0</div>\n  </div>\n</div>\n<div id=\"wave-banner\">WAVE 1</div>\n<div id=\"combo-display\"></div>\n<div id=\"special-bar\"></div>\n<div id=\"screen-flash\"></div>\n<div id=\"joystick-outer\"><div id=\"joystick-inner\" style=\"position:absolute\"></div></div>\n<button id=\"shoot-btn\" style=\"display:none\">\ud83d\udd25</button>\n<button id=\"special-btn-touch\" style=\"display:none\">\u26a1</button>\n<div id=\"chapter-select\">\n  <h1>\ud83d\udce1 SELECT DESTINATION</h1>\n  <p style=\"font-size:.6rem;color:#7a6435;text-align:center;max-width:300px\">Survive the road. Destroy the Eyes. Reach the chapter.</p>\n  <div class=\"chapter-grid\" id=\"chapter-grid\"></div>\n  <button class=\"back-btn\" id=\"back-btn\">\u2190 Back to Garage</button>\n</div>\n<div id=\"end-overlay\">\n  <div id=\"end-title\"></div>\n  <div id=\"end-sub\"></div>\n  <div id=\"end-stats-row\" class=\"end-stats\"></div>\n  <button class=\"end-btn\" id=\"end-primary\" onclick=\"handleEndPrimary()\">Continue</button>\n  <button class=\"end-btn secondary\" onclick=\"goTo('garage.html')\">\u2190 Garage</button>\n</div>"
@@ -19,7 +18,7 @@ export async function mountVehicle(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-  let player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
   if(!player){window.bookNavigate('book.html');throw 0}
   document.getElementById('nav')?.remove()
 

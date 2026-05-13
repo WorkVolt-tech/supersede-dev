@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-garage'
 const MODULE_MARKUP = "<div class=\"garage-wrap animate-in\">\n  <div class=\"garage-header\">\n    <div>\n      <div class=\"garage-title\">Garage</div>\n      <div class=\"garage-sub\">Build \u00b7 Upgrade \u00b7 Drive</div>\n    </div>\n    <button class=\"btn-secondary\" onclick=\"goTo('book.html')\">\u2190 Book</button>\n  </div>\n\n  <!-- Materials strip -->\n  <div class=\"materials-strip\" id=\"materials-strip\">\n    <div class=\"mat-chip\">Loading...</div>\n  </div>\n\n  <!-- Vehicle select -->\n  <div class=\"section\">\n    <div class=\"section-label\">Your Vehicles</div>\n    <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.75rem;color:var(--ink-dim);margin-bottom:.85rem;line-height:1.6\">All three vehicles are permanently yours. Select one to drive, then install upgrades using your materials.</p>\n    <div class=\"vehicle-grid\" id=\"vehicle-grid\">Loading...</div>\n  </div>\n\n  <!-- Upgrades -->\n  <div class=\"section\" id=\"upgrade-section\" style=\"display:none\">\n    <div class=\"section-label\">Installed Upgrades</div>\n    <div class=\"upgrade-grid\" id=\"upgrade-grid\"></div>\n    <div class=\"action-row\">\n      <button class=\"btn-secondary\" id=\"upgrade-shop-btn\" onclick=\"openUpgradeShop()\">+ Install Upgrade</button>\n    </div>\n  </div>\n\n  <!-- Drive -->\n  <div class=\"drive-section\">\n    <button class=\"drive-btn\" id=\"drive-btn\" disabled onclick=\"drive()\">\u25b6 Drive</button>\n    <div class=\"drive-label\" id=\"drive-label\">Select a vehicle to drive</div>\n  </div>\n</div>\n\n<!-- Upgrade shop modal -->\n<div id=\"shop-modal\" style=\"display:none;position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.88);overflow-y:auto\">\n  <div class=\"shop-modal-inner\">\n    <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem\">\n      <div style=\"font-family:'Cinzel',serif;font-size:.88rem;color:var(--rust);letter-spacing:.08em\">Upgrade Shop</div>\n      <button onclick=\"closeUpgradeShop()\" style=\"background:rgba(255,255,255,.06);border:1px solid rgba(200,168,74,.2);color:var(--ink);font-size:.85rem;cursor:pointer;padding:3px 8px;border-radius:3px;font-family:'Share Tech Mono',monospace\">\u2715</button>\n    </div>\n    <div id=\"shop-list\"></div>\n  </div>\n</div>\n\n<div id=\"toast\"></div>"
@@ -19,7 +18,7 @@ export async function mountGarage(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-  const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
 
 
   // ── Vehicle definitions ───────────────────────────────────

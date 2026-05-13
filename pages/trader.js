@@ -1,5 +1,4 @@
 import { supabase }             from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-trader'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">NPC Directory</p>\n        <h1 class=\"page-title\">Available</h1>\n        <hr class=\"ink-divider\">\n        <div id=\"npc-list\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center\">\n          <span style=\"font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);letter-spacing:.08em\">GOLD</span>\n          <span id=\"gold-display\" style=\"font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#c8b96e\">\u25c8 0</span>\n        </div>\n      </div>\n    </div>\n        <div class=\"page-right parchment\">\n      <div class=\"page-inner\" id=\"npc-panel\">\n        <div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;gap:.5rem\">\n          <span style=\"font-size:2.5rem\">\ud83e\udded</span>\n          <p style=\"font-family:'IM Fell English',serif;font-style:italic;color:var(--ink)\">Select an NPC to interact.</p>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>"
@@ -84,7 +83,7 @@ export async function mountTrader(__mountOptions = {}) {
       },
     ]
 
-    const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+    const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
     if (!player) throw new Error('no player')
 
     const chapter = player.current_chapter || 1
@@ -347,7 +346,7 @@ export async function mountTrader(__mountOptions = {}) {
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
       document.getElementById('gold-display').textContent = '◈ ' + newGold
-      showToast('Sold ' + sellable.length + ' item(s) for ◈' + total)
+      window.showToast('Sold ' + sellable.length + ' item(s) for ◈' + total)
       traderSellMode = false
       traderSellSelected.clear()
       const sd = document.getElementById('tab-content-sell')
@@ -361,7 +360,7 @@ export async function mountTrader(__mountOptions = {}) {
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
       document.getElementById('gold-display').textContent = '◈ ' + newGold
-      showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+      window.showToast('Sold ' + itemName + ' for ◈' + sellPrice)
       const sd = document.getElementById('tab-content-sell')
       if (sd) renderSellTab(sd)
     }
@@ -372,7 +371,7 @@ export async function mountTrader(__mountOptions = {}) {
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
       document.getElementById('gold-display').textContent = '◈ ' + newGold
-      showToast('Sold ' + qty + '× ' + itemName + ' for ◈' + total)
+      window.showToast('Sold ' + qty + '× ' + itemName + ' for ◈' + total)
       const sd = document.getElementById('tab-content-sell')
       if (sd) renderSellTab(sd)
     }
@@ -383,13 +382,13 @@ export async function mountTrader(__mountOptions = {}) {
       await supabase.from('players').update({ gold: newGold }).eq('id', player.id)
       player.gold = newGold
       document.getElementById('gold-display').textContent = '◈ ' + newGold
-      showToast('Sold ' + itemName + ' for ◈' + sellPrice)
+      window.showToast('Sold ' + itemName + ' for ◈' + sellPrice)
       window.switchTab('sell', '')
     }
 
     window.buyItem = async (itemKey) => {
       const item = itemMasters[itemKey]
-      if (!item||(player.gold||0)<item.buy_price) { showToast('Not enough gold',true); return }
+      if (!item||(player.gold||0)<item.buy_price) { window.showToast('Not enough gold',true); return }
       const newGold = player.gold - item.buy_price
       await supabase.from('players').update({gold:newGold}).eq('id',player.id)
       player.gold = newGold
@@ -431,13 +430,13 @@ export async function mountTrader(__mountOptions = {}) {
         quantity:       1,
         gold_exchanged: item.buy_price,
       })
-      showToast(`Bought ${item.name}`)
+      window.showToast(`Bought ${item.name}`)
       renderNPCPanel()
     }
 
     window.heal = async (action, cost) => {
       const goldCost = parseInt(cost)
-      if ((player.gold||0)<goldCost) { showToast('Not enough gold',true); return }
+      if ((player.gold||0)<goldCost) { window.showToast('Not enough gold',true); return }
       let newHp = player.hp||100
       const maxHp = player.max_hp||100
       if (action==='heal_full') newHp = maxHp
@@ -446,7 +445,7 @@ export async function mountTrader(__mountOptions = {}) {
       await supabase.from('players').update({hp:newHp,gold:newGold}).eq('id',player.id)
       player.hp=newHp; player.gold=newGold
       document.getElementById('gold-display').textContent = `◈ ${newGold}`
-      showToast(`Healed to ${newHp} HP`)
+      window.showToast(`Healed to ${newHp} HP`)
       renderNPCPanel()
     }
 

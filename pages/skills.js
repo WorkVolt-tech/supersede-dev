@@ -1,5 +1,4 @@
 import { supabase } from '../supabase.js'
-import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-skills'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Character</p>\n        <h1 class=\"page-title\">Skill Tree</h1>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">SKILL POINTS</p>\n            <p id=\"sp-display\" style=\"font-family:'Cinzel',serif;font-size:1.4rem;font-weight:600;color:#c8b96e;margin:0\">0</p>\n          </div>\n          <div style=\"display:flex;flex-direction:column;gap:5px;align-items:flex-end\">\n            <button onclick=\"openTree()\" style=\"font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);border-radius:3px;padding:.45rem 1rem;cursor:pointer\">\u2b21 Open Skill Tree</button>\n            <button onclick=\"openResetConfirm()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.3rem .75rem;cursor:pointer\">\u21ba Reset Skills</button>\n          </div>\n        </div>\n        <hr class=\"ink-divider\">\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem\">Unlocked nodes</p>\n        <div id=\"unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">ELEMENTAL SP</p>\n            <p id=\"esp-display\" style=\"font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#b06eff;margin:0\">0</p>\n          </div>\n          <button onclick=\"openESP()\" style=\"font-family:'Cinzel',serif;font-size:.75rem;color:#e8e3d6;background:rgba(176,110,255,.15);border:1px solid rgba(176,110,255,.4);border-radius:3px;padding:.4rem .9rem;cursor:pointer\">\u2b21 Elemental Tree</button>\n        </div>\n        <div id=\"esp-unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n\n      </div>\n    </div>\n\n    \n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Battle Setup</p>\n        <h2 class=\"page-title\">Combat Skills</h2>\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim);margin-bottom:.5rem\">\n          Assign unlocked skills to battle slots. Max 4 active skills in combat.\n        </p>\n        <hr class=\"ink-divider\">\n        <div id=\"battle-slots-page\" style=\"display:flex;flex-direction:column;gap:6px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"skill-detail-page\" style=\"min-height:60px\"></div>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- Fullscreen overlay -->\n<div id=\"tree-overlay\">\n  <div id=\"tree-topbar\">\n    <h2>\u2b21 Skill Tree</h2>\n    <span class=\"sp-badge\" id=\"sp-badge\">0 SP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <span style=\"font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#a08858\">Scroll to zoom \u00b7 Drag to pan</span>\n      <button class=\"tree-reset-btn\" onclick=\"openResetConfirm()\">\u21ba Reset</button>\n      <button class=\"tree-slots-btn\" onclick=\"toggleSlotsBar()\">\u2694 Battle Slots</button>\n      <button class=\"tree-close-btn\" onclick=\"closeTree()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"tree-canvas-wrap\">\n    <svg id=\"tree-svg\"></svg>\n    <div id=\"tree-canvas\"></div>\n  </div>\n  <canvas id=\"minimap\" width=\"130\" height=\"100\"></canvas>\n</div>\n\n<!-- Slots sidebar -->\n<div id=\"slots-bar\">\n  <p style=\"font-family:'Cinzel',serif;font-size:.85rem;color:#c8b96e;margin:0 0 .5rem\">\u2694 Battle Slots</p>\n  <p style=\"font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a08858;margin:0 0 .6rem\">Max 4 active skills in combat</p>\n  <div id=\"slots-list\"></div>\n</div>\n\n<!-- Node detail panel -->\n<div id=\"node-detail\">\n  <button id=\"detail-close\" onclick=\"closeDetail()\">\u2715</button>\n  <div id=\"detail-inner\"></div>\n</div>\n\n<!-- ESP Overlay -->\n<div id=\"esp-overlay\">\n  <div id=\"esp-topbar\">\n    <h2>\u2b21 Elemental Skill Tree</h2>\n    <span class=\"esp-badge\" id=\"esp-badge\">0 ESP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <button class=\"esp-close-btn\" onclick=\"openCollectedPanel()\" style=\"color:#b06eff;border-color:rgba(176,110,255,.4)\">\u2b21 Collected</button>\n      <button class=\"esp-close-btn\" onclick=\"closeESP()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"esp-body\">\n    <div id=\"esp-sidebar\">\n      <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#f4c45a;margin-bottom:4px\">Elements</p>\n      <div id=\"esp-el-tabs\"></div>\n    </div>\n    <div id=\"esp-main-panel\">\n      <div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.5rem;opacity:.35\">\n        <div style=\"font-size:2rem\">\u2b21</div>\n        <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#a89e80\">Select an element</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- ESP Slot Chooser -->\n<div id=\"esp-slot-chooser\">\n  <div class=\"esp-chooser-inner\">\n    <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#f4c45a;margin-bottom:.75rem\">Choose a node to place</p>\n    <div id=\"esp-chooser-list\"></div>\n    <button onclick=\"closeESPChooser()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a89e80;background:none;border:.5px solid #26232f;padding:5px 14px;margin-top:.75rem;width:100%;cursor:pointer\">Cancel</button>\n  </div>\n</div>"
@@ -329,7 +328,7 @@ export async function mountSkills(__mountOptions = {}) {
   let slotsDirty = false
 
   // ── Init ─────────────────────────────────────────────
-  const player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
   if (!player) throw new Error('no player')
 
   // Diagnostic: confirm player loaded correctly
@@ -423,10 +422,11 @@ export async function mountSkills(__mountOptions = {}) {
   // Re-render the SVG connector lines.
   //
   // Every edge is always drawn so the tree's structure is visible, like a
-  // physical tree diagram. When a node is selected, the full chain of edges
-  // from the center of the tree out to that node lights up — the "path
-  // you're taking" to reach it. We walk back through requires recursively
-  // until we hit the root.
+  // physical tree diagram. When a node is selected, only the edges that
+  // connect that node directly to its immediate parents light up — we
+  // deliberately do NOT walk the prereq chain back to root, and we do NOT
+  // extend forward to its children. The selection only highlights the node
+  // you're going to, and the lines that bring you to it.
   //
   // Cheap to call — replaces the SVG's inner HTML, doesn't rebuild the HTML
   // node layer or re-bind any click handlers.
@@ -434,24 +434,15 @@ export async function mountSkills(__mountOptions = {}) {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    // Walk from selectedNode back through requires to the root, collecting
-    // every edge along the way. Edge keys use parentId\x00childId so the
-    // separator stays safe regardless of node id characters. The visited
-    // Set protects against accidental cycles in the graph.
+    // Edge keys (parentId\x00childId) entering the currently selected node.
+    // \x00 keeps the separator safe regardless of what characters node ids
+    // contain.
     const litEdges = new Set()
     if (selectedNode) {
-      const visited = new Set()
-      const walk = (id) => {
-        if (visited.has(id)) return
-        visited.add(id)
-        const nd = NODES.find(n => n.id === id)
-        if (!nd || !nd.requires) return
-        for (const req of nd.requires) {
-          litEdges.add(req + '\x00' + id)
-          walk(req)
-        }
+      const sel = NODES.find(n => n.id === selectedNode)
+      if (sel && sel.requires) {
+        for (const req of sel.requires) litEdges.add(req + '\x00' + selectedNode)
       }
-      walk(selectedNode)
     }
 
     let lines = ''
@@ -669,12 +660,12 @@ export async function mountSkills(__mountOptions = {}) {
     }
 
     const { data, error } = await supabase.from('players').update(update).eq('id', player.id).select().single()
-    if (error) { console.error('doUnlock save error:', error.message); showToast('Error saving — check console'); return }
+    if (error) { console.error('doUnlock save error:', error.message); window.showToast('Error saving — check console'); return }
     if (data) Object.assign(player, data)
     player.skills_unlocked = skillsUnlocked
     player.skill_points    = skillPoints
     updateSPDisplay()
-    showToast('✦ ' + nd.label + ' unlocked!')
+    window.showToast('✦ ' + nd.label + ' unlocked!')
     buildTree()
     showNodeDetail(nd)
     renderPageSummary()
@@ -706,12 +697,12 @@ export async function mountSkills(__mountOptions = {}) {
     if (isPassive) {
       // Passive goes into P1 (index 4) or P2 (index 5)
       const passiveFilled = newSkills.slice(ACTIVE_SLOTS).filter(Boolean).length
-      if (passiveFilled >= PASSIVE_SLOTS) { showToast('Passive slots full — P1 and P2 are taken'); return }
+      if (passiveFilled >= PASSIVE_SLOTS) { window.showToast('Passive slots full — P1 and P2 are taken'); return }
       newSkills.push(id)
     } else {
       // Active goes into first open A1–A4 slot (indices 0–3)
       const firstEmpty = newSkills.findIndex((s, i) => i < ACTIVE_SLOTS && !s)
-      if (firstEmpty === -1) { showToast('Active slots full — A1 to A4 are taken'); return }
+      if (firstEmpty === -1) { window.showToast('Active slots full — A1 to A4 are taken'); return }
       newSkills[firstEmpty] = id
     }
 
@@ -743,12 +734,12 @@ export async function mountSkills(__mountOptions = {}) {
       .update({ battle_skills: battleSkills })
       .eq('id', player.id)
       .select().single()
-    if (error) { console.error('confirmSaveSlots error:', error.message); showToast('Error saving slots — check console'); return }
+    if (error) { console.error('confirmSaveSlots error:', error.message); window.showToast('Error saving slots — check console'); return }
     player.battle_skills = battleSkills
     slotsDirty = false
     renderSlotsBar()
     renderBattleSlotsPage()
-    showToast('✦ Battle slots saved!')
+    window.showToast('✦ Battle slots saved!')
   }
 
   window.cancelSlotEdits = () => {
@@ -929,7 +920,7 @@ export async function mountSkills(__mountOptions = {}) {
 
   // ── Reset ────────────────────────────────────────────
   window.openResetConfirm = () => {
-    if (!skillsUnlocked.length) { showToast('No skills to reset'); return }
+    if (!skillsUnlocked.length) { window.showToast('No skills to reset'); return }
     document.getElementById('rst-modal')?.remove()
     const spent = skillsUnlocked.reduce((s, id) => s + (NODES.find(n=>n.id===id)?.cost||0), 0)
     const m = document.createElement('div')
@@ -965,14 +956,14 @@ export async function mountSkills(__mountOptions = {}) {
     const newSP = skillPoints + spent
     const payload = { skills_unlocked:[], battle_skills:[], skill_points:newSP, ...statUpdates }
     const { error } = await supabase.from('players').update(payload).eq('id', player.id).select().single()
-    if (error) { console.error('confirmReset error:', error.message); showToast('Error resetting — check console'); return }
+    if (error) { console.error('confirmReset error:', error.message); window.showToast('Error resetting — check console'); return }
     skillsUnlocked=[]; battleSkills=[]; pendingBattleSkills=[]; skillPoints=newSP; slotsDirty=false
     Object.assign(player, { skills_unlocked:[], battle_skills:[], skill_points:newSP, ...statUpdates })
     document.getElementById('rst-modal')?.remove()
     updateSPDisplay()
     renderPageSummary(); renderBattleSlotsPage(); renderSlotsBar()
     if (document.getElementById('tree-overlay').classList.contains('open')) buildTree()
-    showToast('Skills reset — ' + newSP + ' SP refunded')
+    window.showToast('Skills reset — ' + newSP + ' SP refunded')
   }
 
   // ── Pan & Zoom ───────────────────────────────────────
@@ -1379,8 +1370,8 @@ export async function mountSkills(__mountOptions = {}) {
     if (!nd) return
     const branchNodes = ESP_BASE[nd.branch]
     const idx = branchNodes.indexOf(nodeId)
-    if (idx > 0 && !espTree.base.includes(branchNodes[idx-1])) { showToast('Unlock previous node first'); return }
-    if (espBalance < nd.cost) { showToast('Not enough ESP'); return }
+    if (idx > 0 && !espTree.base.includes(branchNodes[idx-1])) { window.showToast('Unlock previous node first'); return }
+    if (espBalance < nd.cost) { window.showToast('Not enough ESP'); return }
     espBalance -= nd.cost
     espTree.base.push(nodeId)
     const val = nd.val || 1
@@ -1388,7 +1379,7 @@ export async function mountSkills(__mountOptions = {}) {
     player[nd.col] = (player[nd.col]||0) + val
     statUpdates[nd.col] = player[nd.col]
     await espSave(statUpdates)
-    showToast(`✦ ${nd.label} — +${val} ${nd.col}`)
+    window.showToast(`✦ ${nd.label} — +${val} ${nd.col}`)
     renderESPMain()
   }
 
@@ -1441,7 +1432,7 @@ export async function mountSkills(__mountOptions = {}) {
     espTree.slots[espPendingSlot] = nodeKey
     closeESPChooser()
     await espSave()
-    showToast(`✦ ${nd.label} placed!`)
+    window.showToast(`✦ ${nd.label} placed!`)
     renderESPMain()
   }
 
@@ -1500,7 +1491,7 @@ export async function mountSkills(__mountOptions = {}) {
   async function espSave(statUpdates={}) {
     const updates = { esp:espBalance, esp_tree:espTree, ...statUpdates }
     const { data, error } = await supabase.from('players').update(updates).eq('id',player.id).select().single()
-    if (error) { console.error('[ESP save]', error.message); showToast('ESP save error', true); return }
+    if (error) { console.error('[ESP save]', error.message); window.showToast('ESP save error', true); return }
     if (data) Object.assign(player, data)
     updateESPBadge()
   }
