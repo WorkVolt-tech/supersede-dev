@@ -1,5 +1,5 @@
 import { supabase } from '../../supabase.js'
-import { renderNav, showSysOverlay, showToast } from '../../components/nav.js'
+// renderNav, showSysOverlay, showToast are exposed as window globals by book.html
 import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
@@ -928,7 +928,7 @@ export async function mountChapter2(__mountOptions = {}) {
     const d = markBossDefeated(flag)
     await save({ defeated_bosses: d })
     const elName = ELEMENT_NAMES[elementKey] || elementKey
-    showSysOverlay(
+    window.showSysOverlay(
       `Resonance established: ${elName}.\nFor this chapter, the System recognizes you as this.\nThe Judges will evaluate accordingly.`,
       'info'
     )
@@ -1143,7 +1143,7 @@ export async function mountChapter2(__mountOptions = {}) {
   function render() {
     const node=NODES[nodeId]
     if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
-    if (node.sysMsg) showSysOverlay(node.sysMsg)
+    if (node.sysMsg) window.showSysOverlay(node.sysMsg)
     const stEl=document.getElementById('story-text')
     // judges_verdict composes its text from live player state — every other
     // node uses its authored node.text as-is.
@@ -1427,7 +1427,7 @@ export async function mountChapter2(__mountOptions = {}) {
       const newLv = _skillLv(key)
       if (newLv > prevLv) {
         const sk = BATTLE_SKILLS[key]
-        showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
+        window.showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
       }
       const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
       if (error) console.error('[skill_levels save]', error.message)
@@ -1714,8 +1714,8 @@ export async function mountChapter2(__mountOptions = {}) {
             updates.skill_points=(player.skill_points||0)+1
             updates.sp_claimed=(player.sp_claimed||0)+1
             player.skill_points=updates.skill_points; player.sp_claimed=updates.sp_claimed
-            showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP · +1 SP')
-          } else { showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP') }
+            window.showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP · +1 SP')
+          } else { window.showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP') }
         }
         // ── ESP award on zone boss win ──
         const WIN_ELEMENT_MAP2 = {
@@ -1734,10 +1734,10 @@ export async function mountChapter2(__mountOptions = {}) {
             const elNodes=['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k'].map(s=>elKey+'_'+s).filter(k=>!espTree.collected.includes(k))
             if(elNodes.length){espTree.collected.push(...elNodes);player.esp_tree=espTree;updates.esp_tree=espTree}
             const newEsp=(player.esp||0)+3; player.esp=newEsp; updates.esp=newEsp
-            showToast('⬡ +3 ESP · '+elKey+' nodes unlocked!')
+            window.showToast('⬡ +3 ESP · '+elKey+' nodes unlocked!')
           } else {
             const newEsp=(player.esp||0)+1; player.esp=newEsp; updates.esp=newEsp
-            showToast('⬡ +1 ESP')
+            window.showToast('⬡ +1 ESP')
           }
         }
         const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
@@ -2000,7 +2000,7 @@ export async function mountChapter2(__mountOptions = {}) {
     const sg=levelsGained
     const us={atk:(player.atk||1)+sg,def:(player.def||0)+sg,power:(player.power||0)+sg,guard:(player.guard||0)+sg,speed:(player.speed||0)+sg,insight:(player.insight||0)+sg,luck:(player.luck||0)+sg,control:(player.control||0)+sg}
     Object.assign(player,us);currentHp=newHp;player.max_hp=newMaxHp;player.level=level;player.xp=newXp
-    showToast('LEVEL UP! Lvl '+level+' — +5 HP · +1 all stats · +'+spGained+' SP!')
+    window.showToast('LEVEL UP! Lvl '+level+' — +5 HP · +1 all stats · +'+spGained+' SP!')
     renderHUD()
     return{level,max_hp:newMaxHp,hp:newHp,xp:newXp,skill_points:newSP,sp_claimed:player.sp_claimed,...us}
   }
@@ -2140,7 +2140,7 @@ export async function mountChapter2(__mountOptions = {}) {
   }
 
   // ── Init ──────────────────────────────────────────
-  let player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
+  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
   if (!player) throw new Error('no player')
 
   let currentHp = player.hp || 100
