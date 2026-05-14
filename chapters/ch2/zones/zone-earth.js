@@ -48,6 +48,7 @@ It doesn't rush. It doesn't need to.`,
     choices: [
       { label: 'Fight the Stone Crawler', next: 'zone_earth_enemy_1' },
       { label: 'Collapse a section of floor on top of it', sub: 'Costs a structural point — weakens it but damages the area', next: 'zone_earth_collapse' },
+      { label: 'A signal flare two levels down — Builders trapped in collapsed stairwell', sub: 'Three of Sera\'s people, pinned in rubble.', next: 'zone_earth_builders' },
     ],
   },
 
@@ -183,6 +184,42 @@ Your interface: TERRA ZONE — FULLY CLAIMED. Terra resonance locked.
 A rune sits in the rubble, warm to the touch.`,
     xp: 80, rewards: [{ itemKey: 'rune_terra', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Builder Rescue event (#7) ────────────────────────────────────────────
+  zone_earth_builders: {
+    id: 'zone_earth_builders', type: 'story',
+    text: `Two levels down. A stairwell has partially collapsed, and three Builders are trapped on a slab of broken floor with a Stone Crawler grinding toward them from the far side. They have a winch anchor set, but the Crawler's between them and the way out.
+
+One of them sees you on the level above. Doesn't shout. Just raises a hand. Steady. Patient. Bleeding from the temple.`,
+    choices: [
+      { label: 'Drop down and engage', sub: 'Builders support — easier combat', next: 'zone_earth_builders_combat' },
+      { label: 'Wait it out. Take the gear after', sub: 'Moral -10', next: 'zone_earth_builders_loot', moral: -10 },
+      { label: 'Move on — not your fight', sub: 'The System notes this', next: 'zone_earth_explore_1', allianceTag: 'cowardice' },
+    ],
+  },
+  zone_earth_builders_combat: {
+    id: 'zone_earth_builders_combat', type: 'combat',
+    text: `You drop down. The lead Builder hands off her winch line to her partner without looking — pivots, picks up a length of rebar like a spear. "Right side." That's all the planning you get. It's enough.`,
+    enemy: { name: 'Stone Crawler', icon: '🪨', hp: 110, atk: 18, def: 13, xp: 120,
+      loot: [{ itemKey: 'rune_terra', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }] },
+    onWin: 'zone_earth_builders_win', onLose: 'zone_earth_explore_1',
+  },
+  zone_earth_builders_win: {
+    id: 'zone_earth_builders_win', type: 'story',
+    text: `The Crawler goes still. The lead Builder steadies herself against a column, wipes blood from her face. "We had a backup plan. It was a worse plan. You didn't have to do that." She presses a pack into your hand. "But you did. Sera will know."
+
+Your comm chirps. "I see you. Keep going."`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'rare_component', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_earth_explore_2', moral: 10, allianceTag: 'builders_helped' }],
+  },
+  zone_earth_builders_loot: {
+    id: 'zone_earth_builders_loot', type: 'story',
+    text: `You watch from the level above. The Crawler doesn't rush — Crawlers never rush. The slab tips. The screaming is short.
+
+When the dust settles, the Crawler retreats back into the structure. You climb down. You take what's worth taking. You don't look at the faces.`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 4 }, { itemKey: 'rare_component', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_earth_explore_2' }],
   },
 
 }
