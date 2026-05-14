@@ -420,32 +420,31 @@ export async function mountSkills(__mountOptions = {}) {
   }
 
   // Re-render the SVG connector lines.
-  // All edges are drawn faintly so the tree's structure is visible. When a
-  // node is clicked, the path from the center of the tree out to that one
-  // node lights up in its branch colour. Nothing else lights up — not other
-  // unlocked nodes, not branches the player has invested in. Only the path
-  // to the currently-selected node.
+  // All edges are drawn faintly so the tree's structure is visible. Paths to
+  // every unlocked node are lit up permanently in their branch colour. The
+  // path to a selected (but not yet unlocked) node is also shown as a preview.
   function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    // Walk back from the selected node through `requires` to root, recording
-    // every edge along the chain. Empty when no node is selected.
+    // Walk back from a node through `requires` to root, recording every edge.
     const litEdges = new Set()
-    if (selectedNode) {
-      const visited = new Set()
-      const walk = (id) => {
-        if (visited.has(id)) return
-        visited.add(id)
-        const nd = NODES.find(n => n.id === id)
-        if (!nd || !nd.requires) return
-        for (const req of nd.requires) {
-          litEdges.add(req + '\x00' + id)
-          walk(req)
-        }
+    const visited = new Set()
+    const walk = (id) => {
+      if (visited.has(id)) return
+      visited.add(id)
+      const nd = NODES.find(n => n.id === id)
+      if (!nd || !nd.requires) return
+      for (const req of nd.requires) {
+        litEdges.add(req + '\x00' + id)
+        walk(req)
       }
-      walk(selectedNode)
     }
+
+    // Light up paths for all permanently unlocked nodes
+    for (const id of skillsUnlocked) walk(id)
+    // Also preview the path to a selected node that isn't unlocked yet
+    if (selectedNode && !skillsUnlocked.includes(selectedNode)) walk(selectedNode)
 
     let lines = ''
     NODES.forEach(nd => {
