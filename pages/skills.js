@@ -420,50 +420,31 @@ export async function mountSkills(__mountOptions = {}) {
   }
 
   // Re-render the SVG connector lines.
-  //
-  // Mirrors the line styling from the original working skills.html — every
-  // edge is drawn so the tree's structure is always visible (neutral gold,
-  // thin). When a node is selected, every edge along the prerequisite chain
-  // from the center of the tree out to that node lights up in its branch
-  // colour (thicker).
-  //
-  // The visited Set protects against accidental cycles in the requires graph.
-  // Cheap to call — replaces only the SVG's inner HTML; doesn't rebuild the
-  // HTML node layer or re-bind click handlers.
+  // Identical logic to the original working skills.html: every edge is drawn,
+  // lit when both endpoints are unlocked (or when the child is available and
+  // its parent is unlocked), dashed when the child is available but this
+  // particular parent isn't yet unlocked. Selection has no effect on lines —
+  // the selection highlight lives on the node ring itself.
   function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    const litEdges = new Set()
-    if (selectedNode) {
-      const visited = new Set()
-      const walk = (id) => {
-        if (visited.has(id)) return
-        visited.add(id)
-        const nd = NODES.find(n => n.id === id)
-        if (!nd || !nd.requires) return
-        for (const req of nd.requires) {
-          litEdges.add(req + '\x00' + id)
-          walk(req)
-        }
-      }
-      walk(selectedNode)
-    }
-
     let lines = ''
     NODES.forEach(nd => {
+      const ndUnlocked  = isUnlocked(nd)
+      const ndAvailable = !ndUnlocked && isAvailable(nd)
       nd.requires.forEach(req => {
         const par = NODES.find(n => n.id === req)
         if (!par) return
-        const lit = litEdges.has(req + '\x00' + nd.id)
-        // Lit: branch colour, thicker. Unlit: neutral gold, thin.
-        // (Identical styling to the original working skills.html buildTree.)
-        const col = lit
-          ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
-          : 'rgba(180,140,60,.35)'
-        const sw = lit ? 2.5 : 1.2
-        const cls = lit ? ' class="sn-line lit"' : ' class="sn-line"'
-        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"${cls}/>`
+        const parUnlocked = isUnlocked(par)
+        const lit    = (ndUnlocked && parUnlocked) || (ndAvailable && parUnlocked)
+        const dashed = ndAvailable && !parUnlocked
+        const col = lit    ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
+                  : dashed ? 'rgba(180,140,60,.2)'
+                           : 'rgba(180,140,60,.35)'
+        const sw   = lit ? 2.5 : 1.2
+        const dash = dashed ? ' stroke-dasharray="4,4"' : ''
+        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"${dash}/>`
       })
     })
     svg.innerHTML = lines
