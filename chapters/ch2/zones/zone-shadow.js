@@ -52,6 +52,7 @@ It finds you.`,
     choices: [
       { label: 'Fight the Shade Drifter', next: 'zone_shadow_enemy_1' },
       { label: 'Stand completely still — let it pass through you', sub: 'Costs HP — it ignores you after', next: 'zone_shadow_still' },
+      { label: 'A shape in the dark — Hunter scouts hiding in the shadow cover', sub: 'Voss\'s people. Confront them.', next: 'zone_shadow_hunters' },
     ],
   },
 
@@ -191,6 +192,20 @@ Your interface: UMBRA ZONE — FULLY CLAIMED. Umbra resonance locked.
 A rune sits on the floor where the shadow was thickest.`,
     xp: 80, rewards: [{ itemKey: 'rune_umbra', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Hunter Scout encounter (humanoid — triggers spare/execute prompt on win)
+  zone_shadow_hunters: {
+    id: 'zone_shadow_hunters', type: 'combat',
+    text: `Two Hunters step out of the shadow cover — they were using the zone's darkness as ambush ground. Knives drawn before you can blink. Voss trained them well.`,
+    enemy: {
+      name: 'Hunter Scout Pair', icon: '🗡️',
+      hp: 100, atk: 24, def: 6, xp: 130,
+      humanoid: true,
+      loot: [{ itemKey: 'knife', qty: 1 }, { itemKey: 'worn_boots', qty: 1 }],
+      executeLoot: [{ itemKey: 'scrap_blade', qty: 1 }],
+    },
+    onWin: 'zone_shadow_explore_2', onLose: 'zone_shadow_explore_1',
   },
 
 }
