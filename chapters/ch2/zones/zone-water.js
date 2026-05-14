@@ -60,6 +60,7 @@ It registers your heat signature and orients.`,
     choices: [
       { label: 'Fight the Flood Wraith', next: 'zone_water_enemy_1' },
       { label: 'Submerge and move under it', sub: 'Risky — costs HP but avoids the fight', next: 'zone_water_submerge' },
+      { label: 'Voices in the next room — Builders pinned down by elementals', sub: 'Three of Sera\'s people in trouble.', next: 'zone_water_builders' },
     ],
   },
 
@@ -199,6 +200,42 @@ Your interface: AQUA ZONE — FULLY CLAIMED. Aqua resonance locked.
 A rune rises to the surface near where she stood.`,
     xp: 80, rewards: [{ itemKey: 'rune_aqua', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Builder Rescue event (#7) ────────────────────────────────────────────
+  zone_water_builders: {
+    id: 'zone_water_builders', type: 'story',
+    text: `Three Builders backed into the corner of a flooded mechanical room — water up to their chests, a pair of Flood Wraiths circling. The lead Builder spots you. She's bleeding from a cut above her eyebrow but she doesn't shout. Just one short tactical hand sign: HELP IF YOU CAN.
+
+The Wraiths are closing.`,
+    choices: [
+      { label: 'Wade in and fight beside them', sub: 'Builders support — easier combat', next: 'zone_water_builders_combat' },
+      { label: 'Hang back. Wait. Take their gear after', sub: 'Moral -10', next: 'zone_water_builders_loot', moral: -10 },
+      { label: 'Retreat — too risky', sub: 'The System notes this', next: 'zone_water_explore_1', allianceTag: 'cowardice' },
+    ],
+  },
+  zone_water_builders_combat: {
+    id: 'zone_water_builders_combat', type: 'combat',
+    text: `You wade in. The lead Builder calls a flank, two of them angle around the column. Together you push the Wraiths apart. The fight is mean but fast.`,
+    enemy: { name: 'Flood Wraith Pack', icon: '💧', hp: 85, atk: 14, def: 7, xp: 110,
+      loot: [{ itemKey: 'rune_aqua', qty: 1 }] },
+    onWin: 'zone_water_builders_win', onLose: 'zone_water_explore_1',
+  },
+  zone_water_builders_win: {
+    id: 'zone_water_builders_win', type: 'story',
+    text: `"Hold." The lead Builder rises, wipes water from her face. "That was clean work. You're on the log." She presses a small foil-wrapped pack into your hand. "Sera will know."
+
+Your comm chirps once. Sera's voice, brief: "I see you."`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+    choices: [{ label: 'Continue', next: 'zone_water_explore_2', moral: 10, allianceTag: 'builders_helped' }],
+  },
+  zone_water_builders_loot: {
+    id: 'zone_water_builders_loot', type: 'story',
+    text: `You wait at the doorway. The Wraiths do what Wraiths do. The Builders fight hard. The Builders lose.
+
+The water goes still after, and you wade in. They had supplies on them. They won't need them now.`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 3 }, { itemKey: 'flashlight', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_water_explore_2' }],
   },
 
 }
