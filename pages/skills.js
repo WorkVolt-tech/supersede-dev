@@ -421,22 +421,19 @@ export async function mountSkills(__mountOptions = {}) {
 
   // Re-render the SVG connector lines.
   //
-  // Every edge is always drawn so the tree's structure is visible, like a
-  // physical tree diagram. When a node is selected, the full chain of edges
-  // from the center of the tree out to that node lights up — the "path
-  // you're taking" to reach it. We walk back through requires recursively
-  // until we hit the root.
+  // Mirrors the line styling from the original working skills.html — every
+  // edge is drawn so the tree's structure is always visible (neutral gold,
+  // thin). When a node is selected, every edge along the prerequisite chain
+  // from the center of the tree out to that node lights up in its branch
+  // colour (thicker).
   //
-  // Cheap to call — replaces the SVG's inner HTML, doesn't rebuild the HTML
-  // node layer or re-bind any click handlers.
+  // The visited Set protects against accidental cycles in the requires graph.
+  // Cheap to call — replaces only the SVG's inner HTML; doesn't rebuild the
+  // HTML node layer or re-bind click handlers.
   function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    // Walk from selectedNode back through requires to the root, collecting
-    // every edge along the way. Edge keys use parentId\x00childId so the
-    // separator stays safe regardless of node id characters. The visited
-    // Set protects against accidental cycles in the graph.
     const litEdges = new Set()
     if (selectedNode) {
       const visited = new Set()
@@ -459,13 +456,14 @@ export async function mountSkills(__mountOptions = {}) {
         const par = NODES.find(n => n.id === req)
         if (!par) return
         const lit = litEdges.has(req + '\x00' + nd.id)
-        const col = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
-        // Default: faint structural line in the branch colour.
-        // Lit:     full-strength, thicker, with a glow filter applied via CSS.
-        const opacity = lit ? '0.95' : '0.28'
-        const sw      = lit ? 3.5   : 1.4
-        const cls     = lit ? ' class="sn-line lit"' : ' class="sn-line"'
-        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round" opacity="${opacity}"${cls}/>`
+        // Lit: branch colour, thicker. Unlit: neutral gold, thin.
+        // (Identical styling to the original working skills.html buildTree.)
+        const col = lit
+          ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
+          : 'rgba(180,140,60,.35)'
+        const sw = lit ? 2.5 : 1.2
+        const cls = lit ? ' class="sn-line lit"' : ' class="sn-line"'
+        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"${cls}/>`
       })
     })
     svg.innerHTML = lines
