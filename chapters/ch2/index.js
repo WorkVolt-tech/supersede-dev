@@ -995,6 +995,13 @@ export async function mountChapter2(__mountOptions = {}) {
       const nb=calcBadge(nm,player.pvp_kills,player.helps_given)
       updates.badge=nb; updates.reputation=nb; player.badge=nb
     }
+    // Optional allianceTag on the chosen option — pushes a flag onto the
+    // player's alliance_log array so later content can react to it. Used by
+    // the Builder rescue side quests (#7) and the cowardice / retreat hooks.
+    if (choice.allianceTag) {
+      const log = [...(player.alliance_log||[]), choice.allianceTag]
+      updates.alliance_log = log; player.alliance_log = log
+    }
     if (choice.outcome) outcome=choice.outcome
     if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
     if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
@@ -1034,6 +1041,28 @@ export async function mountChapter2(__mountOptions = {}) {
     zone_boss_wind:'Aero', zone_boss_plant:'Flora', zone_boss_metal:'Ferro',
     zone_boss_poison:'Venom',
   }
+
+  // Faction-tinted closing paragraph for zone boss-win nodes (#25).
+  // Builder-aligned (formally signed OR helped a rescue): Sera ack via comm.
+  // Hunter-aligned (low moral, no Builder alliance): Voss watches silently.
+  // Otherwise (neutral): the authored node.text is returned unchanged.
+  // Only fires for nodes matching /^zone_\w+_boss_win$/ — never modifies
+  // anything else. Pure function; no state mutation.
+  function appendFactionOutro(baseText, nid, p) {
+    if (!/^zone_\w+_boss_win$/.test(nid)) return baseText
+    const log = p.alliance_log || []
+    const builderAligned = log.includes('builders') || log.includes('builders_helped')
+    const moral = p.moral_score || 0
+    const hunterAligned = !builderAligned && moral <= -30
+    if (builderAligned) {
+      return baseText + '\n\nSera\'s voice comes through your comm, low and clean: "Good. That makes another. We\'re counting." A pause, just long enough to register. "Keep counting with us."'
+    }
+    if (hunterAligned) {
+      return baseText + '\n\nWhen you turn, Voss is leaning in the doorway. They don\'t say anything. They look you over once, the way you\'d appraise a useful tool, and then walk out without a sound. They were watching the whole fight.'
+    }
+    return baseText
+  }
+
   function buildJudgesVerdict(p) {
     const moral       = p.moral_score || 0
     const helps       = p.helps_given || 0
@@ -1146,8 +1175,11 @@ export async function mountChapter2(__mountOptions = {}) {
     if (node.sysMsg) window.showSysOverlay(node.sysMsg)
     const stEl=document.getElementById('story-text')
     // judges_verdict composes its text from live player state — every other
-    // node uses its authored node.text as-is.
-    stEl.textContent = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
+    // node uses its authored node.text as-is, with one exception: zone boss-win
+    // nodes get a faction-tinted closing paragraph appended (Sera for Builders,
+    // Voss for Hunter-aligned, nothing for neutral). The base text stays intact.
+    const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
+    stEl.textContent = appendFactionOutro(baseText, nodeId, player)
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
     // Judge image near boss (and on the verdict scene)
