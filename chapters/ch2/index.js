@@ -1745,8 +1745,50 @@ export async function mountChapter2(__mountOptions = {}) {
         const nextNode=isBoss?'chapter_end_ch2':onWin
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
-        $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
-        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+
+        // ── Humanoid enemies → Spare/Execute prompt (combat-driven reputation) ──
+        // Constructs/drones go straight to the Continue button; humans deserve
+        // a moral beat. Sparing nudges moral_score up and logs a spare; executing
+        // nudges it down, increments pvp_kills, and (if the node defines it)
+        // awards extra loot. Either choice still proceeds to `nextNode`, unless
+        // the node defines onSpare/onExecute as explicit override destinations.
+        const node = NODES[nodeId]
+        if (enemy.humanoid && !isBoss) {
+          $('combat-over').innerHTML = `
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--ink);margin:0 0 10px 0">
+              They're down — bleeding, conscious, looking at you. The System is watching.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="choice" data-spare>
+                <span class="choice-arrow">✦</span>
+                <span class="choice-body">Spare them<span class="choice-sub">Moral +5 · the System notes mercy</span></span>
+              </button>
+              <button class="choice danger" data-execute>
+                <span class="choice-arrow">✖</span>
+                <span class="choice-body">Execute<span class="choice-sub">Moral -5 · the System notes the kill</span></span>
+              </button>
+            </div>`
+          const handleSpare = async () => {
+            const m = Math.max(-100, Math.min(100, (player.moral_score||0)+5))
+            const log = [...(player.alliance_log||[]), 'spared_humanoid']
+            await save({ moral_score: m, alliance_log: log })
+            goTo(node?.onSpare || nextNode)
+          }
+          const handleExecute = async () => {
+            const m = Math.max(-100, Math.min(100, (player.moral_score||0)-5))
+            const log = [...(player.alliance_log||[]), 'executed_humanoid']
+            const upd = { moral_score: m, alliance_log: log, pvp_kills: (player.pvp_kills||0)+1 }
+            await save(upd)
+            // Optional extra loot for executing — node author opts in via `executeLoot`
+            if (enemy.executeLoot) for (const l of enemy.executeLoot) await addItem(l.itemKey, l.qty)
+            goTo(node?.onExecute || nextNode)
+          }
+          $('combat-over').querySelector('[data-spare]')?.addEventListener('click', handleSpare)
+          $('combat-over').querySelector('[data-execute]')?.addEventListener('click', handleExecute)
+        } else {
+          $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+          $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+        }
       } else if (result==='escape') {
         await save({hp:currentHp})
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
