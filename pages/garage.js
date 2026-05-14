@@ -77,7 +77,6 @@ export async function mountGarage(__mountOptions = {}) {
     medkit:'Medkit', knife:'Knife', worn_boots:'Worn Boots',
   }
 
-  let player = null
   let materials = {}  // item_key → quantity
   let vehicleData = null  // from players table: { type, parts, upgrades[] }
 
