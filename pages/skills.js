@@ -321,10 +321,6 @@ export async function mountSkills(__mountOptions = {}) {
   // ── State ────────────────────────────────────────────
   let skillsUnlocked, battleSkills, skillPoints
   let selectedNode = null
-  // Tracks which unlocked nodes the user has clicked on. Each clicked-unlocked
-  // node draws its line back to its parent. Lines accumulate as you click
-  // more nodes — clicking a new node does NOT remove previously lit lines.
-  const litNodes = new Set()
   let scale = 0.5, panX = 0, panY = 0
   let isDragging = false, dragStartX, dragStartY, panStartX, panStartY
   const CANVAS_W = 2000, CANVAS_H = 2000
@@ -424,25 +420,44 @@ export async function mountSkills(__mountOptions = {}) {
   }
 
   // Re-render the SVG connector lines.
-  // A line appears ONLY when an unlocked node has been clicked. For each
-  // clicked-unlocked node, the line from it to its parent is drawn (provided
-  // the parent is also unlocked). Lines accumulate as the user clicks more
-  // unlocked nodes; clicking a new node never erases previous lines.
-  // Unlocked nodes that haven't been clicked appear with their icon as
-  // normal but with no line — clicking them adds the line.
+  // All edges are drawn faintly so the tree's structure is visible. When a
+  // node is clicked, the path from the center of the tree out to that one
+  // node lights up in its branch colour. Nothing else lights up — not other
+  // unlocked nodes, not branches the player has invested in. Only the path
+  // to the currently-selected node.
   function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
+    // Walk back from the selected node through `requires` to root, recording
+    // every edge along the chain. Empty when no node is selected.
+    const litEdges = new Set()
+    if (selectedNode) {
+      const visited = new Set()
+      const walk = (id) => {
+        if (visited.has(id)) return
+        visited.add(id)
+        const nd = NODES.find(n => n.id === id)
+        if (!nd || !nd.requires) return
+        for (const req of nd.requires) {
+          litEdges.add(req + '\x00' + id)
+          walk(req)
+        }
+      }
+      walk(selectedNode)
+    }
+
     let lines = ''
-    litNodes.forEach(id => {
-      const nd = NODES.find(n => n.id === id)
-      if (!nd || !isUnlocked(nd)) return
+    NODES.forEach(nd => {
       nd.requires.forEach(req => {
         const par = NODES.find(n => n.id === req)
-        if (!par || !isUnlocked(par)) return
-        const col = nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e'
-        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>`
+        if (!par) return
+        const lit = litEdges.has(req + '\x00' + nd.id)
+        const col = lit
+          ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
+          : 'rgba(180,140,60,.35)'
+        const sw  = lit ? 2.5 : 1.2
+        lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`
       })
     })
     svg.innerHTML = lines
@@ -564,9 +579,6 @@ export async function mountSkills(__mountOptions = {}) {
   // ── Node click ───────────────────────────────────────
   function onNodeClick(nd) {
     selectedNode = nd.id
-    // Only unlocked nodes contribute lines. Clicking an unlocked node adds it
-    // to litNodes; clicking a locked node only sets selection (no line added).
-    if (isUnlocked(nd)) litNodes.add(nd.id)
     refreshSelected()
     refreshLines()
     showNodeDetail(nd)
