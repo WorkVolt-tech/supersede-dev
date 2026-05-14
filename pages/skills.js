@@ -422,11 +422,10 @@ export async function mountSkills(__mountOptions = {}) {
   // Re-render the SVG connector lines.
   //
   // Every edge is always drawn so the tree's structure is visible, like a
-  // physical tree diagram. When a node is selected, only the edges that
-  // connect that node directly to its immediate parents light up — we
-  // deliberately do NOT walk the prereq chain back to root, and we do NOT
-  // extend forward to its children. The selection only highlights the node
-  // you're going to, and the lines that bring you to it.
+  // physical tree diagram. When a node is selected, the full chain of edges
+  // from the center of the tree out to that node lights up — the "path
+  // you're taking" to reach it. We walk back through requires recursively
+  // until we hit the root.
   //
   // Cheap to call — replaces the SVG's inner HTML, doesn't rebuild the HTML
   // node layer or re-bind any click handlers.
@@ -434,15 +433,24 @@ export async function mountSkills(__mountOptions = {}) {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    // Edge keys (parentId\x00childId) entering the currently selected node.
-    // \x00 keeps the separator safe regardless of what characters node ids
-    // contain.
+    // Walk from selectedNode back through requires to the root, collecting
+    // every edge along the way. Edge keys use parentId\x00childId so the
+    // separator stays safe regardless of node id characters. The visited
+    // Set protects against accidental cycles in the graph.
     const litEdges = new Set()
     if (selectedNode) {
-      const sel = NODES.find(n => n.id === selectedNode)
-      if (sel && sel.requires) {
-        for (const req of sel.requires) litEdges.add(req + '\x00' + selectedNode)
+      const visited = new Set()
+      const walk = (id) => {
+        if (visited.has(id)) return
+        visited.add(id)
+        const nd = NODES.find(n => n.id === id)
+        if (!nd || !nd.requires) return
+        for (const req of nd.requires) {
+          litEdges.add(req + '\x00' + id)
+          walk(req)
+        }
       }
+      walk(selectedNode)
     }
 
     let lines = ''
