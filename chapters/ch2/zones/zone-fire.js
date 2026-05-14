@@ -64,6 +64,7 @@ It finds yours.`,
     choices: [
       { label: 'Fight the Char Hound', next: 'zone_fire_enemy_1' },
       { label: 'Try to slip past — you track cold', sub: 'Costs HP if you fail', next: 'zone_fire_slip_1' },
+      { label: 'Movement by the back exit — Hunter scouts working the zone', sub: 'Voss\'s people. Confront them.', next: 'zone_fire_hunters' },
     ],
   },
 
@@ -217,6 +218,20 @@ Your interface: IGNIS ZONE — FULLY CLAIMED. Ignis resonance locked.
 A rune sits in the rubble where it stood.`,
     xp: 80, rewards: [{ itemKey: 'rune_ignis', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Hunter Scout encounter (humanoid — triggers spare/execute prompt on win)
+  zone_fire_hunters: {
+    id: 'zone_fire_hunters', type: 'combat',
+    text: `Two Hunters — Voss's people, geared for solo work, here for whatever they can carry out. They see you. The taller one swears, draws.`,
+    enemy: {
+      name: 'Hunter Scout Pair', icon: '🗡️',
+      hp: 110, atk: 22, def: 8, xp: 130,
+      humanoid: true,
+      loot: [{ itemKey: 'scrap_metal', qty: 2 }, { itemKey: 'energy_drink', qty: 1 }],
+      executeLoot: [{ itemKey: 'medkit', qty: 1 }],
+    },
+    onWin: 'zone_fire_explore_2', onLose: 'zone_fire_explore_1',
   },
 
 }
