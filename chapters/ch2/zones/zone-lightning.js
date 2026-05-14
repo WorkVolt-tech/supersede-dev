@@ -64,6 +64,7 @@ That's you.`,
     choices: [
       { label: 'Fight the Arc Spawn', next: 'zone_lightning_enemy_1' },
       { label: 'Use a display unit as a ground — draw it into the electronics', sub: 'Costs a turn but weakens it first', next: 'zone_lightning_ground' },
+      { label: 'Someone\'s in the back room — Hunter scouts tapping the power grid', sub: 'Voss\'s people. Confront them.', next: 'zone_lightning_hunters' },
     ],
   },
 
@@ -215,6 +216,20 @@ Your interface: VOLT ZONE — FULLY CLAIMED. Volt resonance locked.
 A rune crackles on the floor among the wreckage.`,
     xp: 80, rewards: [{ itemKey: 'rune_volt', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Hunter Scout encounter (humanoid — triggers spare/execute prompt on win)
+  zone_lightning_hunters: {
+    id: 'zone_lightning_hunters', type: 'combat',
+    text: `Two Hunters working a tap into the back-room power conduit — illegal, dangerous, and worth a fortune in salvaged current. They're so focused they don't hear you until the conduit sparks. Then they turn, hands already on weapons.`,
+    enemy: {
+      name: 'Hunter Scout Pair', icon: '🗡️',
+      hp: 100, atk: 23, def: 7, xp: 130,
+      humanoid: true,
+      loot: [{ itemKey: 'flashlight', qty: 2 }, { itemKey: 'scrap_metal', qty: 1 }],
+      executeLoot: [{ itemKey: 'energy_drink', qty: 2 }],
+    },
+    onWin: 'zone_lightning_explore_2', onLose: 'zone_lightning_explore_1',
   },
 
 }
