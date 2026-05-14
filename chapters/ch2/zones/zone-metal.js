@@ -48,6 +48,7 @@ Its magnetism is strong enough to affect your equipment too.`,
     choices: [
       { label: 'Fight the Iron Drone', next: 'zone_metal_enemy_1' },
       { label: 'Ground yourself against the shelving and wait for it to pass', sub: 'Takes time — safer option', next: 'zone_metal_ground' },
+      { label: 'Cart rolling at the end of the aisle — Hunter scouts scrapping the magnetic equipment', sub: 'Voss\'s people. Confront them.', next: 'zone_metal_hunters' },
     ],
   },
 
@@ -200,6 +201,20 @@ Your interface: FERRO ZONE — FULLY CLAIMED. Ferro resonance locked.
 A rune sits inside the furnace-core, visible through the grate. Still warm.`,
     xp: 80, rewards: [{ itemKey: 'rune_ferro', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Hunter Scout encounter (humanoid — triggers spare/execute prompt on win)
+  zone_metal_hunters: {
+    id: 'zone_metal_hunters', type: 'combat',
+    text: `Two Hunters with a half-loaded scrap cart. Magnetized panels, ferro-charged fastener bundles, anything they can fence later. They see you and reach for their weapons. The cart squeals as one of them kicks it aside.`,
+    enemy: {
+      name: 'Hunter Scout Pair', icon: '🗡️',
+      hp: 125, atk: 22, def: 10, xp: 135,
+      humanoid: true,
+      loot: [{ itemKey: 'scrap_metal', qty: 3 }, { itemKey: 'scrap_blade', qty: 1 }],
+      executeLoot: [{ itemKey: 'scrap_shield', qty: 1 }],
+    },
+    onWin: 'zone_metal_explore_2', onLose: 'zone_metal_explore_1',
   },
 
 }
