@@ -50,6 +50,7 @@ It drops now.`,
     choices: [
       { label: 'Fight the Thorn Stalker', next: 'zone_plant_enemy_1' },
       { label: 'Grab a vine and swing to the next aisle', sub: 'Costs HP if you slip — avoids the fight if successful', next: 'zone_plant_swing' },
+      { label: 'Shouting in the greenhouse — Builders cornered by Thorn Stalkers', sub: 'Three of Sera\'s people, surrounded.', next: 'zone_plant_builders' },
     ],
   },
 
@@ -206,6 +207,42 @@ Your interface: FLORA ZONE — FULLY CLAIMED. Flora resonance locked.
 A rune sits at the base of the sapling, wrapped in a single small vine.`,
     xp: 80, rewards: [{ itemKey: 'rune_flora', qty: 1 }],
     choices: [{ label: 'Return to the district', next: 'district_hub' }],
+  },
+
+  // ── Builder Rescue event (#7) ────────────────────────────────────────────
+  zone_plant_builders: {
+    id: 'zone_plant_builders', type: 'story',
+    text: `Three Builders backed against the greenhouse wall — vines whipping, two Thorn Stalkers closing on them from above. The lead Builder spots you first; her free hand is pressing a tourniquet on her partner's leg.
+
+She doesn't ask. She just looks at you, then at the Stalkers, then back at you.`,
+    choices: [
+      { label: 'Move in and fight beside them', sub: 'Builders support — easier combat', next: 'zone_plant_builders_combat' },
+      { label: 'Stay back. Take their gear when it\'s over', sub: 'Moral -10', next: 'zone_plant_builders_loot', moral: -10 },
+      { label: 'Back out quietly', sub: 'The System notes this', next: 'zone_plant_explore_1', allianceTag: 'cowardice' },
+    ],
+  },
+  zone_plant_builders_combat: {
+    id: 'zone_plant_builders_combat', type: 'combat',
+    text: `You go in low under the vines. The Builders pivot — one drops the tourniquet, picks up a length of pipe, gets to work. Three on two. The Stalkers don't get to choose their angles.`,
+    enemy: { name: 'Thorn Stalker Pair', icon: '🌿', hp: 90, atk: 15, def: 8, xp: 115,
+      loot: [{ itemKey: 'rune_flora', qty: 1 }] },
+    onWin: 'zone_plant_builders_win', onLose: 'zone_plant_explore_1',
+  },
+  zone_plant_builders_win: {
+    id: 'zone_plant_builders_win', type: 'story',
+    text: `"Two on one is bad math. You changed the math." The lead Builder applies a pressure bandage to her partner with practiced speed. "We won't forget that."
+
+Your comm chirps: Sera. "Logged. Thank you."`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+    choices: [{ label: 'Continue', next: 'zone_plant_explore_2', moral: 10, allianceTag: 'builders_helped' }],
+  },
+  zone_plant_builders_loot: {
+    id: 'zone_plant_builders_loot', type: 'story',
+    text: `You hold position behind a tipped-over planter. The Stalkers do what Stalkers do. The wounded one goes first. The other two don't last much longer.
+
+You wait until the vines stop moving, then walk in and take what they had. The lead Builder's eyes are still open. You don't close them.`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 3 }, { itemKey: 'knife', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_plant_explore_2' }],
   },
 
 }
