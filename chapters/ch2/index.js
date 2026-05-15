@@ -125,8 +125,8 @@ export async function mountChapter2(__mountOptions = {}) {
   The question is where to go first.`,
       xp: 40,
       choices: [
-        { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders_first' },
-        { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts_first' },
+        { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders' },
+        { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts' },
         { label: 'Go to the intact shop',             sub: 'NPC trader — neutral ground',        next: 'trader_intro' },
         { label: 'Head to the main plaza',            sub: 'See what else is active',            next: 'plaza_arrival' },
       ],
@@ -155,6 +155,66 @@ export async function mountChapter2(__mountOptions = {}) {
         { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -5',        next: 'meet_hunters',   moral: -5 },
         { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
         { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
+      ],
+    },
+
+    // ── Faction approach scenes ──────────────────────────────────────────
+    // Originally the four plaza choices linked here, but only plaza_center
+    // had ever been written. The other three now exist as short approach
+    // scenes that funnel into the same downstream alliance nodes the wait
+    // path uses (builders_alliance, hunters_voss_goal, ghosts_deep).
+    meet_builders: {
+      id: 'meet_builders', type: 'story',
+      text: `You walk toward the Builders directly. The reaction is immediate — the tall woman with the grey-streaked hair sets down whatever she was working on and gives you her full attention. The others don't stop what they're doing, but you can feel that they're listening.
+
+  "You came over." She doesn't smile, but there's something approving in the way she says it. "Most people circle the plaza first. I respect that you didn't."
+
+  She extends a hand. "Sera. I lead the Builders here. Salvage, stabilization, anything that needs hands and a plan. We've been waiting for someone from your chapter to come through. The Hunters have been waiting too, but for different reasons."
+
+  Behind her, a kid with a carefully bandaged hand gives you a small nod. Not performative. Just acknowledgment.`,
+      choices: [
+        { label: '"What do you need?"',            sub: 'Ask what the work looks like', next: 'builders_deep' },
+        { label: '"Tell me about the alliance."',  sub: 'Cut to the offer',             next: 'builders_deep' },
+        { label: 'Hear out the Hunters first',     sub: 'Walk over to Voss',            next: 'meet_hunters' },
+      ],
+    },
+
+    meet_hunters: {
+      id: 'meet_hunters', type: 'story',
+      text: `You walk toward the Hunters. The smile under the cracked visor tilts up a degree. You can feel Sera's eyes on your back from across the plaza, but she doesn't call out. The Hunters didn't expect you, exactly — but they were ready for you.
+
+  "Interesting." The Hunter with the visor pulls it up. The face underneath is younger than you expected, and very tired. "Voss. I run what the Builders call 'the destabilizing element' and what we call 'the people who get things done.'"
+
+  Voss doesn't extend a hand. They tilt their head instead.
+
+  "Three faction caches in this district. System-locked. We have the location on one of them. We're missing the people. You look like someone who's been keeping their options open — that's a compliment, where I come from."
+
+  Behind them, the other Hunters watch you without pretending not to.`,
+      choices: [
+        { label: '"What\'s in it for me?"',         sub: 'Direct — Voss likes direct',     next: 'hunters_voss_goal' },
+        { label: '"Tell me about the cache."',      sub: 'Get to the offer',               next: 'hunters_voss_goal' },
+        { label: 'Hear out the Builders first',    sub: 'Walk over to Sera',              next: 'meet_builders' },
+      ],
+    },
+
+    meet_ghosts: {
+      id: 'meet_ghosts', type: 'story',
+      text: `You sit down on the planter beside the Ghosts. None of the three of them react immediately. After a moment, the one closest to you — faded jacket, soft posture — shifts so their shoulder isn't blocking the plaza.
+
+  "Good spot," they say, like they're commenting on the weather. "Both factions can see you. Neither can pretend they don't see you. That's the only neutral move left in this district."
+
+  They look at you sideways.
+
+  "We're Rue. Some of us. I think most of us. The Ghosts aren't really a group — we're just people who decided the choice between Builder and Hunter isn't a choice we want to make. The district has nine elemental zones the System sealed when the alliances started fracturing. You don't need either faction to enter them — but they open differently depending on who you're walking with."
+
+  Rue gestures toward the plaza without looking at it.
+
+  "You can still pick a side. We're not going to stop you. We just want you to know that 'neither' is on the table."`,
+      choices: [
+        { label: '"Tell me more about the zones."', sub: 'Ask about the System',          next: 'ghosts_deep' },
+        { label: 'Stand up and approach Sera',     sub: 'Choose the Builders',           next: 'meet_builders' },
+        { label: 'Stand up and approach Voss',     sub: 'Choose the Hunters',            next: 'meet_hunters' },
+        { label: 'Stay where you are',              sub: 'Continue with Rue',             next: 'ghosts_deep' },
       ],
     },
 
