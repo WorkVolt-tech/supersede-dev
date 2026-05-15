@@ -1515,16 +1515,101 @@ You leave them to it.`,
     const onEscape = node.onEscape || (inZone ? 'district_hub' : null)
     buildCombatUI(panel,node.enemy,node.onWin,node.onLose,onEscape,false)
   }
+  // ── Twin Judges scaling (#20 / #21) ──────────────────────────────────────
+  // Composes the Judges fight stats and form from the player's actual record.
+  // Pure: takes a player and returns { form, label, hp, atk, def, modifiers[] }.
+  // form  : 'mercy' | 'wrath' | 'both' — picks the rendered narrative form
+  // label : short string shown in the System call-out before the fight
+  // hp/atk/def : baseline + record-derived adjustments
+  // modifiers : array of human-readable strings (rendered in the call-out)
+  function composeJudgesForm(p, baseEnemy) {
+    const moral       = p.moral_score || 0
+    const log         = p.alliance_log || []
+    const builderHelps = log.filter(x => x === 'builders_helped').length + (log.includes('sera_met') && log.includes('builders_helped') ? 1 : 0)
+    const backstabs   = (p.backstabs || 0) + (log.filter(x => x === 'executed_humanoid').length)
+    const cowardice   = log.includes('cowardice')
+    const lvl         = p.level || 1
+
+    // Form selection: strong moral lean ⇒ that Judge dominates the fight.
+    // Otherwise both fight together (the default mixed form).
+    let form
+    if      (moral >= 40)  form = 'mercy'
+    else if (moral <= -40) form = 'wrath'
+    else                   form = 'both'
+
+    // Stat composition. Baseline starts at the authored values and is shaped
+    // by which form leads. Mercy form is endurance: higher HP, lower ATK.
+    // Wrath form is brutality: lower HP, higher ATK. Both is the in-between.
+    let hp  = (baseEnemy.hp  || 380) + lvl * 20
+    let atk = (baseEnemy.atk || 22)  + Math.floor(lvl * 1.5)
+    let def = (baseEnemy.def || 14)
+
+    const modifiers = []
+    if (form === 'mercy') {
+      hp  = Math.round(hp  * 1.25)  // longer fight
+      atk = Math.round(atk * 0.85)  // softer hits
+      modifiers.push('Mercy leads — the fight is longer, the strikes lighter.')
+    } else if (form === 'wrath') {
+      hp  = Math.round(hp  * 0.85)  // shorter fight
+      atk = Math.round(atk * 1.25)  // brutal hits
+      modifiers.push('Wrath leads — the fight is brief and ugly.')
+    } else {
+      modifiers.push('Mercy and Wrath together — neither yields to the other.')
+    }
+
+    // Builder credit reduces Wrath's pressure (her sword stays half-sheathed).
+    // Applies even outside the Wrath-led form because Mercy intervenes too.
+    if (builderHelps > 0) {
+      const cut = Math.min(40, builderHelps * 15)
+      hp -= cut
+      modifiers.push(`Builder credit (${builderHelps}): Wrath's pressure -${cut} HP.`)
+    }
+
+    // Wrath's "Accountant" passive: every backstab / execution sharpens her.
+    // Cap at +8 ATK so the math stays survivable even on Wrath-dominant runs.
+    if (backstabs > 0) {
+      const add = Math.min(8, backstabs)
+      atk += add
+      modifiers.push(`Backstabs / executions (${backstabs}): Wrath's accountant adds +${add} ATK.`)
+    }
+
+    // Cowardice flag tips the fight psychologically. The damage boost is
+    // applied during combat (see buildCombatUI), not at composition time —
+    // we just surface the modifier here so the player sees the warning.
+    if (cowardice) modifiers.push("Cowardice noted — Wrath strikes harder while you're below half HP.")
+
+    const label = form === 'mercy' ? 'MERCY LEADS'
+                : form === 'wrath' ? 'WRATH LEADS'
+                : 'BOTH JUDGES';
+
+    return { form, label, hp, atk, def, modifiers, cowardice }
+  }
+
   function renderBoss(panel,node) {
     const lvl=player.level||1
     const enemy={...node.enemy}
-    // Scale to player level
-    enemy.hp = node.enemy.hp + lvl*20
-    enemy.atk = node.enemy.atk + Math.floor(lvl*1.5)
 
     // Is this a zone boss (not the Twin Judges)?
     const isZoneBoss = node.bossKey && node.bossKey !== 'twin_judges'
     const isBoss = !isZoneBoss  // only Twin Judges triggers chapter-end logic
+
+    // Twin Judges: derive stats + form from the player's record.
+    // Zone bosses use the original level-scaled stats.
+    let judgesForm = null
+    if (node.bossKey === 'twin_judges') {
+      const composed = composeJudgesForm(player, node.enemy)
+      enemy.hp  = composed.hp
+      enemy.atk = composed.atk
+      enemy.def = composed.def
+      enemy.name = composed.form === 'mercy' ? 'Mercy (leading) · Wrath (silent)'
+                 : composed.form === 'wrath' ? 'Wrath (leading) · Mercy (silent)'
+                 : 'The Twin Judges'
+      judgesForm = composed
+    } else {
+      // Standard zone-boss scaling
+      enemy.hp  = node.enemy.hp  + lvl * 20
+      enemy.atk = node.enemy.atk + Math.floor(lvl * 1.5)
+    }
 
     // Zone bosses use their own onLose/onEscape (back to approach node)
     // Twin Judges fall back to pre_boss_ch2
@@ -1545,6 +1630,7 @@ You leave them to it.`,
     buildCombatUI(panel,enemy,node.onWin,onLose,onEscape,isBoss,{
       playerMoral: player.moral_score||0,
       elementsAttempted,
+      judgesForm,
     })
   }
 
@@ -1700,8 +1786,25 @@ You leave them to it.`,
       ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
       : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
 
+    // ── Twin Judges form banner (#20 / #21) ────────────────────────────────
+    // Shown only when the Judges fight is active. Renders the leading Judge,
+    // the form name, and a short bulleted list of record-derived modifiers so
+    // the player understands what the System is doing to this encounter.
+    const judgesBanner = extraCtx.judgesForm
+      ? `<div class="combat-judges-form" style="margin-bottom:10px;padding:8px 10px;border:1px solid rgba(138,91,68,.40);background:rgba(244,234,215,.55);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--ink)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="font-size:11px">⚖</span>
+            <span style="font-weight:600;letter-spacing:.16em">${extraCtx.judgesForm.label}</span>
+          </div>
+          ${extraCtx.judgesForm.modifiers.map(m =>
+            `<div style="margin-left:14px;font-style:italic;color:var(--ink-dim);font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:0;line-height:1.4">▸ ${m}</div>`
+          ).join('')}
+         </div>`
+      : ''
+
     panel.innerHTML =
       '<div class="combat-panel" id="'+cid+'-combat-wrap">'
+      + judgesBanner
       + '<div class="combat-enemy-row">'
       + enemyImg
       + '<div style="flex:1">'
@@ -2144,6 +2247,11 @@ You leave them to it.`,
         if(statusEffects.phantomStep){statusEffects.phantomStep=false;messages.push(enemy.name+' attacks — but you phase out!');return}
         let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
         eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
+        // Cowardice modifier (#20): Twin Judges hit harder while player is
+        // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
+        if (extraCtx.judgesForm?.cowardice && currentHp > 0 && currentHp <= maxPlayerHp * 0.5) {
+          eDmg = Math.round(eDmg * 1.2)
+        }
         if(statusEffects.invulnerable){messages.push(enemy.name+' strikes — you are <em>invulnerable</em>!');if(statusEffects.divineBarrierReflect){const r=Math.round(eDmg*0.5);enemyHp=Math.max(0,enemyHp-r);messages.push('✨ Reflected <strong>'+r+'</strong> damage!')};statusEffects.invulnerable=false;statusEffects.divineBarrierReflect=false;return}
         if(statusEffects.foresightThisTurn){eDmg=Math.round(eDmg*0.1);statusEffects.foresightThisTurn=false;messages.push('🔮 Hex Weave absorbed most damage!')}
         if(statusEffects.waterShield>0){const abs=Math.min(statusEffects.waterShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.waterShield=Math.max(0,statusEffects.waterShield-abs);if(abs>0)messages.push('💧 Shield absorbed <strong>'+abs+'</strong>!')}
