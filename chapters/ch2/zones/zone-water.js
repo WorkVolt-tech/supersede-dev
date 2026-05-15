@@ -211,7 +211,7 @@ The Wraiths are closing.`,
     choices: [
       { label: 'Wade in and fight beside them', sub: 'Builders support — easier combat', next: 'zone_water_builders_combat' },
       { label: 'Hang back. Wait. Take their gear after', sub: 'Moral -10', next: 'zone_water_builders_loot', moral: -10 },
-      { label: 'Retreat — too risky', sub: 'The System notes this', next: 'zone_water_explore_1', allianceTag: 'cowardice' },
+      { label: 'Retreat — too risky', sub: 'The System notes this', next: 'zone_water_explore_1', allianceTagRepeatable: 'cowardice' },
     ],
   },
   zone_water_builders_combat: {
@@ -227,7 +227,7 @@ The Wraiths are closing.`,
 
 Your comm chirps once. Sera's voice, brief: "I see you."`,
     rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
-    choices: [{ label: 'Continue', next: 'zone_water_explore_2', moral: 10, allianceTag: 'builders_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_water_explore_2', moral: 10, allianceTagRepeatable: 'builders_helped' }],
   },
   zone_water_builders_loot: {
     id: 'zone_water_builders_loot', type: 'story',
