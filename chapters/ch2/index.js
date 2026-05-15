@@ -445,7 +445,7 @@ She turns back toward the corridor. Just before she rounds the corner: "Stay ali
       // flags, not a literal inventory item.
       cost: [{ itemKey: 'medical_pack', qty: 2 }],
       rewards: [{ itemKey: 'rare_component', qty: 1 }],
-      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'builders_helped' }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
     },
     sera_declined: {
       id: 'sera_declined', type: 'story',
@@ -499,7 +499,7 @@ When you return to the corridor, Voss is still leaning on the ATM. They've watch
 
 "Interesting choice." That's all they say.`,
       rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
-      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'builders_helped' }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
     },
     voss_declined: {
       id: 'voss_declined', type: 'story',
@@ -546,6 +546,223 @@ You leave them to it.`,
     },
 
     // ═══════════════════════════════
+    // THE SWEEP (#11) — forced plaza encounter
+    // Fires from the hub interrupt when tension >= 35 and !sweep_fired.
+    // Player has cleared at least 3 zones by definition (cache must have
+    // resolved first, which sets cache_seen). The Sweep is a single major
+    // alignment choice — defend, join, or escape — and never re-fires.
+    // ═══════════════════════════════
+    sweep_arrival: {
+      id: 'sweep_arrival', type: 'story',
+      text: `You're cutting through the central plaza when you hear it — voices raised, then the wet crack of a fist on a face, then shouting. Builders and Hunters have squared up by the fountain. Eight, maybe ten people total. Sera is in front of her crew, hand up, trying to make the moment hold. Voss is across from her, hands open and empty, smiling the way someone smiles before they tell you something is your fault.
+
+The plaza has been waiting for this. The district has too.
+
+A Hunter on Voss's left pulls a knife — slowly, openly, the way you pull a knife when you want to be sure it gets counted.
+
+Tam — the kid with the bandaged hand — steps from behind Sera. They're holding a length of rebar. Their face is white.
+
+The fight is going to happen in about ten seconds. The only question is who you stand next to when it does.`,
+      sysMsg: 'THE SWEEP — district alignment is forcing a clash. Choose carefully.',
+      choices: [
+        { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +15', next: 'sweep_defend_combat', moral: 15, allianceTag: 'sweep_builders' },
+        { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -15', next: 'sweep_join_combat', moral: -15, allianceTag: 'sweep_hunters' },
+        { label: 'Leave the plaza',         sub: 'Let them sort it out · cowardice noted', next: 'sweep_escape', allianceTag: 'sweep_walked' },
+      ],
+    },
+    sweep_defend_combat: {
+      id: 'sweep_defend_combat', type: 'combat',
+      text: `You move to Sera's flank. She doesn't look at you — but her stance shifts, recalibrating around the new line. Tam slides in behind you. The Hunter on Voss's left lunges first.`,
+      enemy: {
+        name: 'Hunter Strike Team', icon: '⚔️',
+        hp: 180, atk: 24, def: 10, xp: 240,
+        // Deliberately NOT humanoid: this is a faction set-piece, not a
+        // post-combat mercy beat. The moral choice happens in sweep_arrival.
+        loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_blade', qty: 1 }],
+      },
+      onWin: 'sweep_defend_win', onLose: 'district_hub',
+    },
+    sweep_defend_win: {
+      id: 'sweep_defend_win', type: 'story',
+      text: `The Hunters break. Two of them are down. The rest drag the wounded away — including Voss, who walks out under their own power, blood on their cheek and that same small smile fixed in place.
+
+Sera lowers her hands slowly. The plaza is loud with breathing.
+
+"You picked a side, then." She doesn't say thank you. She nods once.
+
+Tam is staring at you. They look — not impressed. Steady. Like they're memorizing your face for later. They give a small nod and step back behind Sera.
+
+Your interface registers a quiet update: ALLIANCE LOG — Builders: Sweep defended. The System has logged the moment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sweep_join_combat: {
+      id: 'sweep_join_combat', type: 'combat',
+      text: `You step across the line. Voss's smile widens a fraction — they've been watching this potential the whole chapter. The Builders see you move and Sera's expression goes very still. Tam's hand tightens on the rebar.
+
+Sera moves first. She always was the calmest fighter in the district.`,
+      enemy: {
+        name: 'Builder Strike Team', icon: '🛡️',
+        hp: 200, atk: 22, def: 14, xp: 240,
+        loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_shield', qty: 1 }],
+      },
+      onWin: 'sweep_join_win', onLose: 'district_hub',
+    },
+    sweep_join_win: {
+      id: 'sweep_join_win', type: 'story',
+      text: `Sera goes down first. She fights well — she fights better than you expected — but she fights without joy, and that's the difference.
+
+When it's over, Tam is still standing. They're holding the rebar in both hands now, knuckles white, looking at Sera on the ground.
+
+Voss puts a hand on your shoulder, briefly. "You'll be famous in this district," they say. "For a little while. Then you'll be useful, which is better."
+
+Tam doesn't move. They're staring at Sera. They're not going to forget this. Neither are you.
+
+Your interface registers a quiet update: ALLIANCE LOG — Hunters: Sweep joined. The System has logged the moment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sweep_escape: {
+      id: 'sweep_escape', type: 'story',
+      text: `You back out of the plaza before either side notices you arrive. You hear it start behind you — the first shout, then the first crash, then a sound that might be a body hitting tile.
+
+You don't turn around.
+
+You find a side corridor and keep moving. By the time the sounds fade you're three blocks away and you don't know who won.
+
+Later, in the hub, the district feels different. Neither faction is in their usual position. People are missing on both sides. Nobody asks where you were. The way nobody asks is its own kind of answer.
+
+Your interface registers a quiet update: ALLIANCE LOG — Sweep avoided. The System has logged the silence.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'cowardice' }],
+    },
+
+    // ═══════════════════════════════
+    // PURE HERO FINALE (#27)
+    // Intercepts at pre_boss_ch2 entry when:
+    //   moral_score >= 60  AND
+    //   alliance_log includes 'sweep_builders'  AND
+    //   >= 5 zone bosses cleared
+    // Sera offers a last defense of the plaza. Player can accept to lock the
+    // hero finale (defends with Builder allies, then Judges fight where
+    // Mercy is fully present) or decline (proceeds to normal Judges flow).
+    // ═══════════════════════════════
+    hero_finale_offer: {
+      id: 'hero_finale_offer', type: 'story',
+      text: `Sera is waiting for you at the edge of the plaza. The Builders have been quietly working — you can see it now in the way the rubble has been moved, the lines of sight cleared, the choke points planned.
+
+"The Judges are coming." She's not asking. She's stating it. "We've been watching the system messages. We have maybe an hour. Maybe less."
+
+Tam steps up beside her. The bandage on their hand is gone. There's a new scar there instead — a clean line, healed past the worst of it.
+
+"We're going to defend this plaza," Sera says. "Not because we think we'll stop them. Because we want them to see a district that didn't fold." She looks at you steadily. "We'd like you to stand with us. One last fight before the assessment. The Judges will see it. They'll see what kind of place you helped make."
+
+Behind her, the other Builders are taking positions. A dozen of them. Not many. Enough.
+
+"This isn't required. You can walk past us right now and the Judges will still come for you. The fight just won't have us in it."`,
+      sysMsg: 'HERO TRACK UNLOCKED — defend the plaza with the Builders before facing the Judges.',
+      choices: [
+        { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +10', next: 'hero_finale_combat', moral: 10, allianceTag: 'hero_finale_done' },
+        { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+      ],
+    },
+    hero_finale_combat: {
+      id: 'hero_finale_combat', type: 'combat',
+      text: `The Hunter remnants come fast — Voss not among them, but their best operators. Sera's line holds. Tam's holds. You're at the apex of the formation. The first wave breaks against you like a wave on cliff.`,
+      enemy: {
+        name: 'Hunter Remnants', icon: '⚔️',
+        hp: 240, atk: 26, def: 12, xp: 280,
+        loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_shield', qty: 1 }],
+      },
+      onWin: 'hero_finale_done', onLose: 'pre_boss_ch2',
+    },
+    hero_finale_done: {
+      id: 'hero_finale_done', type: 'story',
+      text: `The Hunters break. Not many of them die. They retreat in good order — Voss's training showing in how they pull back.
+
+Sera lets out a breath she's clearly been holding for a long time. She turns to face you. "Thank you." Just that, just two words, said the way she says things she means.
+
+Tam looks at you. There's something in their face you haven't seen there before. Permission, maybe. The kind of permission a kid grants an adult after long observation.
+
+"Mercy will see this," Sera says. "She's the one who designed this kind of mattering."
+
+The plaza is quiet again. The Judges are coming. But this time you won't be standing in it alone.`,
+      rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 3 }],
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+
+    // ═══════════════════════════════
+    // PURE VILLAIN FINALE (#26)
+    // Intercepts at pre_boss_ch2 entry when:
+    //   moral_score <= -60  AND
+    //   alliance_log includes 'sweep_hunters'  AND
+    //   >= 5 zone bosses cleared
+    // Voss offers a final sweep of the last Builder positions, with Tam
+    // standing in the way. Player can complete the run (Judges fight where
+    // Wrath dominates entirely) or decline (proceeds to normal Judges).
+    // ═══════════════════════════════
+    villain_finale_offer: {
+      id: 'villain_finale_offer', type: 'story',
+      text: `Voss intercepts you in the corridor approaching the plaza. The smile is there but it's tired around the edges. They've been working.
+
+"There's one more position." They don't bother with preamble anymore — you're past that. "The Builders' last holdout. Three of them. The kid is with them. We can clear it before the Judges arrive. The Judges will see a district that committed all the way."
+
+A pause. They're watching your face.
+
+"I'm not asking you to do something I haven't done. But you're better at it than I am now. You've been moving differently the last few zones. Like you stopped needing to think about it."
+
+The corridor is dark. The Judges are coming. Voss isn't going to ask twice.`,
+      sysMsg: 'VILLAIN TRACK UNLOCKED — finish the district before facing the Judges.',
+      choices: [
+        { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -10', next: 'villain_finale_combat', moral: -10, allianceTag: 'villain_finale_done' },
+        { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+      ],
+    },
+    villain_finale_combat: {
+      id: 'villain_finale_combat', type: 'combat',
+      text: `The Builders' last position is a service corridor. Two of them go down fast — they were tired. The third puts up a real fight before Voss takes them from behind.
+
+Then it's just the kid. Tam. Standing in front of a doorway. Holding the same length of rebar from the plaza. They've been crying. They are not crying now.`,
+      enemy: {
+        name: 'Tam', icon: '⚔️',
+        hp: 130, atk: 24, def: 10, xp: 200,
+        humanoid: true,
+        loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+        executeLoot: [{ itemKey: 'judges_seal', qty: 1 }],
+      },
+      onWin: 'villain_finale_done', onLose: 'pre_boss_ch2',
+      onSpare: 'villain_finale_done_spared',
+      onExecute: 'villain_finale_done_executed',
+    },
+    villain_finale_done: {
+      id: 'villain_finale_done', type: 'story',
+      text: `Tam is down. Voss steps past you, checks them, says nothing. The corridor is silent in a way the district has never been.
+
+"It's done." Voss is matter-of-fact. They look at you with something that's not quite respect but isn't far from it. "Wrath will see this. Mercy won't even speak. That's the form you've earned."
+
+The Judges are still coming. But there's nothing left in this district for them to weigh except you.`,
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+    villain_finale_done_spared: {
+      id: 'villain_finale_done_spared', type: 'story',
+      text: `Tam is on the ground but breathing. You step over them. Voss watches.
+
+"Interesting," Voss says. Just that.
+
+You don't look back. The Judges are coming.`,
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+    villain_finale_done_executed: {
+      id: 'villain_finale_done_executed', type: 'story',
+      text: `Tam doesn't make a sound. You move past Voss without looking at them. The seal on Tam's vest comes off easily — Sera's mark. You take it.
+
+When you step back into the corridor, Voss is gone. The plaza is empty.
+
+The Judges are already there.`,
+      rewards: [{ itemKey: 'judges_seal', qty: 1 }],
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+
+    // ═══════════════════════════════
     // NPC TRADER
     // ═══════════════════════════════
     trader_intro: {
@@ -562,10 +779,10 @@ You leave them to it.`,
 
   A name tag on the counter reads PELL, written in careful block letters.`,
       choices: [
-        { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop' },
-        { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore' },
-        { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges' },
-        { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub' },
+        { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop',  allianceTag: 'pell_met' },
+        { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore',  allianceTag: 'pell_met' },
+        { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges', allianceTag: 'pell_met' },
+        { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub', allianceTag: 'pell_met' },
       ],
     },
 
@@ -653,9 +870,9 @@ You leave them to it.`,
 
   They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
       choices: [
-        { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5 },
-        { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10 },
-        { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20 },
+        { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5, allianceTag: 'cache_seen' },
+        { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10, allianceTag: 'cache_seen' },
+        { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20, allianceTag: 'cache_seen' },
       ],
     },
 
@@ -1136,11 +1353,16 @@ You leave them to it.`,
   async function _goToCore(nextId, choice={}) {
     if (!NODES[nextId]) return
 
-    // ── NPC interrupt: Sera / Voss / Rue mid-zone check-ins (#1 #2 #3) ──
+    // ── District clock + NPC interrupts on hub entry (#1 #2 #3 #23) ──
     // When the player heads to district_hub, decide whether to redirect them
-    // through an NPC encounter first. Each NPC fires at most once per run,
-    // tracked by entries in alliance_log (sera_met / voss_met / rue_met).
-    // The NPC nodes themselves loop back to district_hub when done.
+    // through a one-time event first, and fire any milestone sysMsgs the
+    // clock has crossed. Triggers in order of priority:
+    //   1. cache_betrayal_offer if zones cleared >= 3 and not yet seen (#23)
+    //   2. Sera / Voss / Rue check-ins (#1 / #2 / #3)
+    // Each fires at most once per run via flags in alliance_log.
+    // Milestone sysMsgs (the Sweep warning, the Judges call) are passive —
+    // they show on top of the hub without changing where you land.
+    const pendingClockFlags = []
     if (nextId === 'district_hub') {
       const log = player.alliance_log || []
       const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
@@ -1148,8 +1370,23 @@ You leave them to it.`,
       const moral = player.moral_score || 0
       const executedHumanoid = log.includes('executed_humanoid')
 
+      // Cache auto-fire (#23): once you've cleared 3 zones, the alliance you
+      // either signed with or watched form has reached its peak — and that's
+      // exactly when Voss decides to offer the cache. If you've already seen
+      // the cache offer in this run (any of: considered / refused / reported)
+      // the alliance_log carries 'cache_seen' and we skip the redirect.
+      if (!log.includes('cache_seen') && defeated >= 3) {
+        nextId = 'cache_betrayal_offer'
+      }
+      // The Sweep (#5 + #11): factions clash in the plaza when tension boils
+      // over. Requires the cache to have resolved first (so it lands as a
+      // mid-chapter beat, not a first thing), and tension >= 35.
+      else if (!log.includes('sweep_fired') && log.includes('cache_seen') && computeTension(player) >= 35) {
+        nextId = 'sweep_arrival'
+        pendingClockFlags.push('sweep_fired')
+      }
       // Sera (#1): builder-flavour, fires after first rescue + first zone clear
-      if (!log.includes('sera_met') && helpedRescue && defeated >= 1) {
+      else if (!log.includes('sera_met') && helpedRescue && defeated >= 1) {
         nextId = 'sera_checkin'
       }
       // Voss (#2): villain-flavour, fires for clearly villain players
@@ -1160,6 +1397,34 @@ You leave them to it.`,
       else if (!log.includes('rue_met') && defeated >= 2) {
         nextId = 'rue_intel'
       }
+
+      // Passive clock milestones (#23): fire sysMsg overlays the first time
+      // the player crosses each threshold. The corresponding alliance_log
+      // flag (clock_6 / clock_8) gets added to updates below so it doesn't
+      // re-fire on subsequent hub returns.
+      if (defeated >= 6 && !log.includes('clock_6')) {
+        pendingClockFlags.push('clock_6')
+        setTimeout(() => window.showSysOverlay('SIX ZONES CLAIMED. The Judges have begun their preparation.', 'warn'), 800)
+      }
+      if (defeated >= 8 && !log.includes('clock_8')) {
+        pendingClockFlags.push('clock_8')
+        setTimeout(() => window.showSysOverlay('EIGHT ZONES CLAIMED. The Twin Judges are summoning. Finish what you intend to finish.', 'warn'), 800)
+      }
+    }
+
+    // ── Pure hero / pure villain finale interrupt (#26 / #27) ──────────────
+    // When the player heads to pre_boss_ch2, check finale eligibility. Each
+    // finale fires at most once per run, gated by alliance_log flags. Below
+    // the eligibility thresholds, this is a no-op and the normal Judges flow
+    // runs unchanged.
+    if (nextId === 'pre_boss_ch2') {
+      const log = player.alliance_log || []
+      const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+      const moral = player.moral_score || 0
+      const heroEligible    = moral >= 60  && log.includes('sweep_builders') && defeated >= 5 && !log.includes('hero_finale_done')
+      const villainEligible = moral <= -60 && log.includes('sweep_hunters')  && defeated >= 5 && !log.includes('villain_finale_done')
+      if      (heroEligible)    nextId = 'hero_finale_offer'
+      else if (villainEligible) nextId = 'villain_finale_offer'
     }
 
     const cur = NODES[nodeId]
@@ -1176,8 +1441,24 @@ You leave them to it.`,
     // Optional allianceTag on the chosen option — pushes a flag onto the
     // player's alliance_log array so later content can react to it. Used by
     // the Builder rescue side quests (#7) and the cowardice / retreat hooks.
-    if (choice.allianceTag) {
+    // Idempotent: skip the push if the tag is already in the log. Tags that
+    // ARE allowed to repeat (e.g. 'builders_helped' is counted multiple times
+    // in the Judges fight) shouldn't use this single-fire path — they live
+    // in choice.allianceTagRepeatable instead.
+    if (choice.allianceTag && !(player.alliance_log||[]).includes(choice.allianceTag)) {
       const log = [...(player.alliance_log||[]), choice.allianceTag]
+      updates.alliance_log = log; player.alliance_log = log
+    }
+    if (choice.allianceTagRepeatable) {
+      const log = [...(player.alliance_log||[]), choice.allianceTagRepeatable]
+      updates.alliance_log = log; player.alliance_log = log
+    }
+    // Apply pending district-clock flags collected in the hub-interrupt block
+    // above. Done here so we have access to `updates`. Merges with any prior
+    // alliance_log mutation rather than overwriting it.
+    if (pendingClockFlags.length) {
+      const base = updates.alliance_log || player.alliance_log || []
+      const log = [...base, ...pendingClockFlags]
       updates.alliance_log = log; player.alliance_log = log
     }
     if (choice.outcome) outcome=choice.outcome
@@ -1435,9 +1716,10 @@ You leave them to it.`,
         const choice = choices[Number(btn.dataset.choiceIndex)] || {}
         if (choice._unmetRequires) return  // gated; no-op
         goTo(choice.next || '', {
-          moral:        choice.moral        || 0,
-          outcome:      choice.outcome      || '',
-          allianceTag:  choice.allianceTag  || null,
+          moral:                  choice.moral                  || 0,
+          outcome:                choice.outcome                || '',
+          allianceTag:            choice.allianceTag            || null,
+          allianceTagRepeatable:  choice.allianceTagRepeatable  || null,
         })
       })
     })
@@ -1459,6 +1741,13 @@ You leave them to it.`,
     const resDisplay = resonance
       ? `CHAPTER RESONANCE: ${ELEMENT_NAMES[resonance]} — established this run`
       : `CHAPTER RESONANCE: None — defeat a zone boss to establish`
+    // District clock: count cleared zone bosses (#23). The chapter has
+    // forced beats at 3 (cache offer), 6 (Judges prepare), and 8 (Judges
+    // summon).
+    const zonesClear = defeated.filter(b => b.startsWith('zone_boss_')).length
+    // Cold War tension (#5). Computed from alliance_log — readout below.
+    const tens  = computeTension(player)
+    const tensSign = tens > 0 ? '+' : ''
 
     stEl.textContent=`The shopping district spreads out before you. Ten elemental zones pulse across your radar — some bright and accessible, others dim, waiting for the right resonance to open them.
 
@@ -1467,6 +1756,8 @@ You leave them to it.`,
   ALLIANCE LOG: ${hasAlliance?'Builders (Active)':'No alliances recorded'}
   MORAL SCORE: ${moral>0?'+':''}${moral}
   ${resDisplay}
+  DISTRICT PROGRESS: ${zonesClear} / 10 zones cleared
+  TENSION: ${tensionLabel(tens)} (${tensSign}${tens})
   JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
 
     let zonesHtml = ZONES.map(z=>{
@@ -1522,20 +1813,72 @@ You leave them to it.`,
   // label : short string shown in the System call-out before the fight
   // hp/atk/def : baseline + record-derived adjustments
   // modifiers : array of human-readable strings (rendered in the call-out)
+  // ── Cold War tension (#5) ────────────────────────────────────────────────
+  // Computes the current Builder ↔ Hunter tension level from the player's
+  // alliance_log entries. Pure: never mutates state. The chapter doesn't
+  // store this number; it's recomputed on each hub entry from the flags
+  // already in the log.
+  //   negative → peace-aligned (Builders dominant)
+  //   ~0       → neutral / balanced
+  //   positive → conflict-aligned (Hunters dominant)
+  // Capped at ±60 so a long pile of similar flags doesn't run away.
+  function computeTension(p) {
+    const log = p.alliance_log || []
+    let t = 0
+    for (const x of log) {
+      if      (x === 'builders_helped')   t -= 5   // helped rescue
+      else if (x === 'spared_humanoid')   t -= 3   // chose mercy
+      else if (x === 'sera_met')          t -= 2   // Sera engagement (any outcome)
+      else if (x === 'executed_humanoid') t += 10  // chose violence
+      else if (x === 'voss_aligned')      t += 15  // intercepted runner
+      else if (x === 'cowardice')         t += 5   // refused to engage
+    }
+    // If the player reported the cache to Sera, that's a strong peace signal.
+    // We detect it indirectly: cache_seen with moral_score >= 10 implies
+    // cache_reported (the +20 moral outcome).
+    if (log.includes('cache_seen') && (p.moral_score || 0) >= 10) t -= 8
+    return Math.max(-60, Math.min(60, t))
+  }
+
+  // Tension descriptor for the hub status panel.
+  function tensionLabel(t) {
+    if (t <= -20) return 'PEACE — Builder cooperation dominant'
+    if (t <=  -5) return 'STABLE — Builder lean'
+    if (t <   10) return 'BALANCED — Factions watching each other'
+    if (t <   25) return 'TENSION — Conflict rising'
+    return                'COLD WAR — Hunters mobilizing'
+  }
+
   function composeJudgesForm(p, baseEnemy) {
     const moral       = p.moral_score || 0
     const log         = p.alliance_log || []
-    const builderHelps = log.filter(x => x === 'builders_helped').length + (log.includes('sera_met') && log.includes('builders_helped') ? 1 : 0)
-    const backstabs   = (p.backstabs || 0) + (log.filter(x => x === 'executed_humanoid').length)
+    // Sweep result counts as a strong faction commitment: defending the
+    // Builders adds Builder credit; joining the Hunters adds backstab weight.
+    const sweepBuilders = log.includes('sweep_builders') ? 2 : 0
+    const sweepHunters  = log.includes('sweep_hunters')  ? 3 : 0
+    const builderHelps = log.filter(x => x === 'builders_helped').length
+                       + (log.includes('sera_met') && log.includes('builders_helped') ? 1 : 0)
+                       + sweepBuilders
+    const backstabs   = (p.backstabs || 0)
+                      + (log.filter(x => x === 'executed_humanoid').length)
+                      + sweepHunters
     const cowardice   = log.includes('cowardice')
     const lvl         = p.level || 1
 
     // Form selection: strong moral lean ⇒ that Judge dominates the fight.
     // Otherwise both fight together (the default mixed form).
+    // Finale flags (#26 / #27) override the form entirely: completing the
+    // hero finale forces Mercy regardless of other numbers; completing the
+    // villain finale forces Wrath. The finale also amplifies the stat shift
+    // so the fight feels meaningfully different from the moral-only path.
+    const heroFinale    = log.includes('hero_finale_done')
+    const villainFinale = log.includes('villain_finale_done')
     let form
-    if      (moral >= 40)  form = 'mercy'
-    else if (moral <= -40) form = 'wrath'
-    else                   form = 'both'
+    if      (heroFinale)    form = 'mercy'
+    else if (villainFinale) form = 'wrath'
+    else if (moral >= 40)   form = 'mercy'
+    else if (moral <= -40)  form = 'wrath'
+    else                    form = 'both'
 
     // Stat composition. Baseline starts at the authored values and is shaped
     // by which form leads. Mercy form is endurance: higher HP, lower ATK.
@@ -1548,11 +1891,17 @@ You leave them to it.`,
     if (form === 'mercy') {
       hp  = Math.round(hp  * 1.25)  // longer fight
       atk = Math.round(atk * 0.85)  // softer hits
-      modifiers.push('Mercy leads — the fight is longer, the strikes lighter.')
+      modifiers.push(heroFinale
+        ? 'Hero finale committed — Mercy is fully present. Wrath does not speak.'
+        : 'Mercy leads — the fight is longer, the strikes lighter.')
+      if (heroFinale) { hp = Math.round(hp * 1.10); atk = Math.round(atk * 0.92) }
     } else if (form === 'wrath') {
       hp  = Math.round(hp  * 0.85)  // shorter fight
       atk = Math.round(atk * 1.25)  // brutal hits
-      modifiers.push('Wrath leads — the fight is brief and ugly.')
+      modifiers.push(villainFinale
+        ? 'Villain finale committed — Wrath is undivided. Mercy refuses to look.'
+        : 'Wrath leads — the fight is brief and ugly.')
+      if (villainFinale) { atk = Math.round(atk * 1.10); hp = Math.round(hp * 0.95) }
     } else {
       modifiers.push('Mercy and Wrath together — neither yields to the other.')
     }
