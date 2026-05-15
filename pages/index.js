@@ -1,12 +1,22 @@
 import { supabase } from '../../supabase.js'
 // renderNav, showSysOverlay, showToast are exposed as window globals by book.html
-import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
-import { NODES } from './nodes.js'
+import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
+import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
+import ZONE_FIRE      from './zones/zone-fire.js'
+import ZONE_WATER     from './zones/zone-water.js'
+import ZONE_LIGHTNING from './zones/zone-lightning.js'
+import ZONE_ARCANE    from './zones/zone-arcane.js'
+import ZONE_SHADOW    from './zones/zone-shadow.js'
+import ZONE_EARTH     from './zones/zone-earth.js'
+import ZONE_WIND      from './zones/zone-wind.js'
+import ZONE_PLANT     from './zones/zone-plant.js'
+import ZONE_METAL     from './zones/zone-metal.js'
+import ZONE_POISON    from './zones/zone-poison.js'
 
-const MODULE_STYLE_ID = 'book-module-style-chapter-1'
-const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 1 \u2014 System Initialization</p>\n        <p class=\"chapter-sub\">The world stops. The game begins.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
-const MODULE_STYLES = "\n    /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n       PARCHMENT BOOK THEME \u2014 Warm Ink / Aged Paper\n       Matches the interactive book page-flip UI.\n    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n       :root {\n      --bg-0:      #14110f;\n      --bg-1:      #2b1d16;\n      --panel:     #f4ead7;\n      --page-l:    #f4ead7;\n      --page-r:    #f1e4cf;\n      --ink:       #2b1d16;\n      --ink-dim:   #5c4638;\n      --ink-faint: #a08060;\n      --ice:       #7a5230;\n      --ice-hot:   #4b2e14;\n      --gold:      #c8a050;\n      --gold-hot:  #e0c070;\n      --gold-dim:  #a08040;\n      --amber:     #d09040;\n      --amber-hot: #e0a050;\n      --warn:      #e06050;\n      --line:      rgba(200,160,80,.30);\n      --green:     #5cae50;\n      --purple:    #8a50c0;\n      --spine-col: #2b1d16;\n    }\n    *, *::before, *::after { box-sizing: border-box; }\n\n    /* \u2500\u2500 Global reset \u2500\u2500 */\n    html, body {\n      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;\n      color: var(--ink) !important;\n      font-family: 'Cormorant Garamond', Georgia, serif !important;\n      min-height: 100vh;\n      overflow-x: hidden;\n    }\n\n    /* Warm ambient glow */\n    body::after {\n      content: \"\"; position: fixed; inset: 0; pointer-events: none; z-index: 9998;\n      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);\n    }\n\n    /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n\n    /* \u2500\u2500 Book \u2014 warm parchment open-book \u2500\u2500 */\n    .book {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: none !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n    }\n    @media(max-width: 860px) {\n      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }\n    }\n\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto;\n      overflow-x: hidden;\n    }\n    /* Dot-texture paper grain */\n    .page-left::before, .page-right::before {\n      content: \"\" !important;\n      position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important;\n      opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    /* Spine-edge shadow */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    /* Decorative corner brackets */\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 14px !important; left: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important;\n      position: absolute !important;\n      bottom: 14px !important; right: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n\n    /* \u2500\u2500 Chapter label / subtitle \u2500\u2500 */\n    .chapter-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .42em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      margin-bottom: 5px !important;\n    }\n    .chapter-sub {\n      font-size: 17px !important;\n      font-style: italic !important;\n      color: var(--ink) !important;\n      margin-bottom: 0 !important;\n    }\n\n        /* \u2500\u2500 Divider \u2500\u2500 */\n    .ink-divider, hr.ink-divider {\n      border: none !important;\n      border-top: 1px solid rgba(200,180,120,.40) !important;\n      margin: 12px 0 !important;\n      opacity: 1 !important;\n    }\n\n    /* \u2500\u2500 Body text colour remaps \u2500\u2500 */\n    p, li, span { color: var(--ink) !important; }\n    [style*=\"color:var(--ink)\"] { color: var(--ink) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--ink-dim) !important; }\n    /* Normalize stale light-yellow inline colors on parchment pages only. */\n    .parchment [style*=\"color:#c8b96e\"], .parchment [style*=\"color: #c8b96e\"],\n    .parchment [style*=\"color:#c8b880\"], .parchment [style*=\"color: #c8b880\"],\n    .parchment [style*=\"color:#f0d060\"], .parchment [style*=\"color: #f0d060\"],\n    .parchment [style*=\"color:#e8d8b0\"], .parchment [style*=\"color: #e8d8b0\"],\n    .parchment [style*=\"color:#f0e0c0\"], .parchment [style*=\"color: #f0e0c0\"],\n    .parchment [style*=\"color:#f0c080\"], .parchment [style*=\"color: #f0c080\"],\n    .parchment [style*=\"color:#a08858\"], .parchment [style*=\"color: #a08858\"],\n    .parchment [style*=\"color:#e8d8a8\"], .parchment [style*=\"color: #e8d8a8\"] { color: var(--ink) !important; }\n    [style*=\"background:rgba(200,184,128\"] { background: rgba(138,91,68,.08) !important; }\n    [style*=\"border-color:rgba(139,106,32\"] { border-color: rgba(138,91,68,.30) !important; }\n\n    /* \u2500\u2500 Story text \u2500\u2500 */\n    .story-text {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 17px !important;\n      line-height: 1.65 !important;\n      color: var(--ink) !important;\n      white-space: pre-line !important;\n    }\n    .story-text.drop-cap::first-letter {\n      font-size: 3.8em !important;\n      float: left !important;\n      line-height: .78 !important;\n      margin: .05em .12em 0 0 !important;\n      color: var(--gold) !important;\n      font-weight: 600 !important;\n    }\n\n    /* \u2500\u2500 Notice / outcome box \u2500\u2500 */\n    .notice-box {\n      border: 1px solid rgba(200,180,120,.50) !important;\n      background: rgba(30,20,15,.85) !important;\n      color: #f0d060 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .06em !important;\n      padding: 10px 14px !important;\n      border-radius: 0 !important;\n      margin-top: 14px !important;\n    }\n\n        /* \u2500\u2500 HUD (parchment-readable) \u2500\u2500 */\n    #hud { color: var(--ink); }\n    #hud p, #hud span, #hud div { color: var(--ink); }\n    /* seal-label: NO !important so inline color:${bc} wins for badge tint */\n    #hud .hud-badge-row .hud-seal-label { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .04em; }\n    #hud .hud-chapter { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .62rem !important; letter-spacing: .08em !important; }\n    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }\n    #hud .stat-val { color: var(--ink) !important; font-family: 'JetBrains Mono',monospace !important; font-weight: 600; }\n    #hud .stat-bar-wrap { background: rgba(43,29,22,.18) !important; border-radius: 0 !important; }\n    #hud .stat-box { background: rgba(138,91,68,.10) !important; border: 1px solid rgba(138,91,68,.35) !important; border-radius: 0 !important; }\n    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; letter-spacing: .08em !important; }\n    #hud .stat-box-val { color: var(--ink) !important; font-family: 'Cinzel',serif !important; font-weight: 600 !important; }\n    #hud button {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.40) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-family: 'JetBrains Mono',monospace !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    #hud button:hover { border-color: var(--gold-dim) !important; color: var(--gold-dim) !important; background: rgba(138,91,68,.06) !important; }\n    #hud div[onclick] {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.45) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-weight: 500;\n    }\n    /* Remap stale light-on-cream inline colors anywhere inside the HUD */\n    #hud [style*=\"color:#c8b96e\"], #hud [style*=\"color: #c8b96e\"],\n    #hud [style*=\"color:#c8b880\"], #hud [style*=\"color: #c8b880\"],\n    #hud [style*=\"color:#f0d060\"], #hud [style*=\"color: #f0d060\"],\n    #hud [style*=\"color:#e8d8b0\"], #hud [style*=\"color: #e8d8b0\"],\n    #hud [style*=\"color:#f0e0c0\"], #hud [style*=\"color: #f0e0c0\"],\n    #hud [style*=\"color:#f0c080\"], #hud [style*=\"color: #f0c080\"] { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Buttons / choices \u2014 warm parchment \u2500\u2500 */\n    button:not(.bm-signout), .choice, .combat-btn {\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important; letter-spacing: .08em !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Choices panel \u2500\u2500 */\n    .choices-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important;\n      letter-spacing: .38em !important;\n      text-transform: uppercase !important;\n      color: var(--ink-dim) !important;\n      margin-bottom: 12px !important;\n    }\n    .choices { display: flex; flex-direction: column; gap: 8px; }\n\n    button.choice, .choice {\n      background: rgba(244,234,215,.60) !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      padding: 12px 14px !important;\n      text-align: left !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, transform .2s !important;\n      display: flex !important;\n      align-items: flex-start !important;\n      gap: 10px !important;\n      width: 100% !important;\n      font-family: 'Cormorant Garamond', serif !important;\n    }\n    button.choice:hover, .choice:hover {\n      border-color: var(--ice) !important;\n      background: rgba(138,91,68,.12) !important;\n      transform: translateX(4px) !important;\n    }\n    button.choice.danger, .choice.danger {\n      border-color: rgba(192,57,43,.35) !important;\n    }\n    button.choice.danger:hover, .choice.danger:hover {\n      border-color: var(--warn) !important;\n      background: rgba(192,57,43,.08) !important;\n    }\n    button.choice.locked, .choice.locked {\n      opacity: .45 !important;\n      cursor: default !important;\n      border-color: rgba(138,91,68,.15) !important;\n    }\n    .choice-arrow {\n      color: var(--gold) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 13px !important;\n      flex-shrink: 0 !important;\n      margin-top: 1px !important;\n    }\n    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }\n    .choice-body {\n      font-size: 17px !important;\n      color: var(--ink) !important;\n      display: flex !important;\n      flex-direction: column !important;\n    }\n    .choice-sub {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .06em !important;\n      color: var(--ink-dim) !important;\n      margin-top: 3px !important;\n    }\n\n    /* \u2500\u2500 Stat bars \u2500\u2500 */\n    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }\n    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }\n    .stat-val { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Combat panel \u2500\u2500 */\n    .combat-panel {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 16px !important;\n      position: relative;\n    }\n    .combat-panel::before {\n      content: \"\"; position: absolute; top: -1px; left: -1px;\n      width: 12px; height: 12px;\n      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);\n    }\n    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }\n    .combat-enemy-icon { font-size: 2.5rem; }\n    .combat-enemy-name {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 20px !important; font-weight: 600 !important;\n      letter-spacing: .04em !important; color: var(--ink) !important;\n    }\n    .combat-log {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-style: italic !important;\n      font-size: 15px !important;\n      line-height: 1.55 !important;\n      color: var(--ink-dim) !important;\n      background: rgba(0,0,0,.06) !important;\n      border: 1px solid rgba(138,91,68,.20) !important;\n      border-radius: 0 !important;\n      padding: 10px 12px !important;\n      min-height: 3rem !important;\n      margin-bottom: 10px !important;\n    }\n    .combat-log em     { color: var(--gold) !important; font-style: italic; }\n    .combat-log strong { color: var(--warn) !important; font-style: normal; }\n    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }\n    .stat-bar-wrap {\n      flex: 1; height: 5px !important;\n      background: rgba(0,0,0,.08) !important;\n      border-radius: 0 !important; overflow: hidden;\n    }\n    .stat-bar { height: 100%; transition: width .4s, background .4s; }\n    .stat-key {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .58rem !important; letter-spacing: .08em !important;\n      color: var(--ink-dim) !important; min-width: 44px;\n    }\n    .stat-val {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; color: var(--ink) !important;\n      min-width: 50px; text-align: right;\n    }\n\n    /* \u2500\u2500 Combat action buttons \u2500\u2500 */\n    .combat-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; letter-spacing: .06em !important;\n      color: var(--ink) !important;\n      background: rgba(244,234,215,.50) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: .45rem .5rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, color .2s !important;\n      display: flex !important; align-items: center !important; justify-content: center !important;\n    }\n    .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.10) !important;\n    }\n    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }\n\n    /* stat-grid inside HUD */\n    .stat-grid {\n      display: grid;\n      grid-template-columns: repeat(3,1fr);\n      gap: 4px; margin-top: 6px;\n    }\n\n    /* \u2500\u2500 End screen \u2500\u2500 */\n    .end-box {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 20px !important;\n      position: relative;\n    }\n    .end-box::before { content:\"\"; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }\n    .end-box::after  { content:\"\"; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }\n    .end-title {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 22px !important; font-weight: 600 !important;\n      letter-spacing: .06em !important;\n      color: var(--gold) !important;\n      margin-bottom: 10px !important;\n    }\n    .end-sub {\n      font-style: italic !important;\n      font-size: 16px !important;\n      color: var(--ink-dim) !important;\n      line-height: 1.55 !important;\n      margin-bottom: 14px !important;\n    }\n    .end-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .75rem !important;\n      letter-spacing: .14em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      padding: .55rem 1.2rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n      text-decoration: none !important;\n      display: inline-block !important;\n    }\n    .end-btn:hover {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n        /* \u2500\u2500 System overlay messages \u2500\u2500 */\n    .sys-overlay, [id=\"sys-overlay\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .08em !important;\n      border-radius: 4px !important;\n      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .sys-overlay span, [id=\"sys-overlay\"] span,\n    .sys-overlay p, [id=\"sys-overlay\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Toast \u2500\u2500 */\n    .toast, [class*=\"toast\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      border-radius: 4px !important;\n      font-size: 11px !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .toast span, [class*=\"toast\"] span,\n    .toast p, [class*=\"toast\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Loot window \u2500\u2500 */\n    #loot-window {\n      background: rgba(241,228,207,.96) !important;\n      border-color: rgba(138,91,68,.40) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n    }\n    #loot-window p, #loot-window span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Stat window modal \u2500\u2500 */\n    #stat-window > div {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n    #stat-window * { color: var(--ink) !important; }\n    #stat-window [style*=\"background:rgba(200\"] {\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Judge image \u2500\u2500 */\n    #judge-img {\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;\n    }\n\n    /* \u2500\u2500 combat-over \u2500\u2500 */\n    [id$=\"-combat-over\"] { color: var(--ink) !important; }\n    [id$=\"-combat-over\"] button {\n      font-family: 'JetBrains Mono', monospace !important;\n      color: var(--ink) !important;\n      background: rgba(138,91,68,.07) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      cursor: pointer !important;\n      transition: border-color .15s, color .15s !important;\n    }\n    [id$=\"-combat-over\"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n\n    /* \u2500\u2500 Modals \u2500\u2500 */\n    [id$=\"-window\"] > div, .end-box {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n\n    /* \u2500\u2500 Right panel zone cards \u2500\u2500 */\n    #right-panel div[onclick] { border-radius: 0 !important; }\n\n    /* \u2500\u2500 Spine \u2014 warm book gutter \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(232,210,170,.0)   0%,\n        rgba(200,170,120,.25)  15%,\n        rgba(160,120,70,.55)   30%,\n        rgba(90,55,20,.88)     43%,\n        rgba(40,20,5,1.0)      50%,\n        rgba(90,55,20,.88)     57%,\n        rgba(160,120,70,.55)   70%,\n        rgba(200,170,120,.25)  85%,\n        rgba(232,210,170,.0)   100%\n      ) !important;\n      border-left:  none !important;\n      border-right: none !important;\n      position: relative; z-index: 5;\n      width: 32px !important;\n      min-width: 32px !important;\n      margin: 0 !important;\n      overflow: visible;\n      box-shadow: none !important;\n    }\n    .spine::before {\n      content: \"\";\n      position: absolute;\n      top: 0; bottom: 0; left: 50%;\n      width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg,\n        transparent 0%,\n        rgba(43,29,22,.9) 8%,\n        rgba(43,29,22,.9) 92%,\n        transparent 100%);\n      z-index: 2;\n    }\n    .spine::after {\n      content: \"\";\n      position: absolute;\n      top: 2px; bottom: 2px; left: -3px;\n      width: 3px;\n      background: repeating-linear-gradient(\n        180deg,\n        rgba(138,91,68,.08) 0px,\n        rgba(138,91,68,.03) 1px,\n        rgba(0,0,0,.10)     1px,\n        rgba(0,0,0,.04)     2px\n      );\n      border-left: 1px solid rgba(138,91,68,.12);\n      z-index: 1;\n    }\n\n    /* \u2500\u2500 Scrollbar \u2500\u2500 */\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n\n    /* \u2500\u2500 Page-flip decorative animation \u2500\u2500 */\n    /* \u2500\u2500 Page-flip animation \u2014 triggered on navigation only \u2500\u2500 */\n    @keyframes bookPageFlip {\n      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }\n      6%   { opacity: .92; }\n      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }\n      80%  { opacity: 0; }\n      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }\n    }\n    .page-flip-decorator {\n      position: absolute;\n      top: 0; right: 0;\n      width: 50%; height: 100%;\n      transform-origin: left center;\n      pointer-events: none;\n      z-index: 40;\n      opacity: 0;\n      background: linear-gradient(to left, rgba(241,228,207,.96) 0%, rgba(230,215,190,.92) 60%, rgba(215,196,165,.72) 100%);\n      box-shadow: -4px 0 20px rgba(0,0,0,.15);\n    }\n    .page-flip-decorator.playing {\n      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;\n    }\n    .page-flip-decorator::after { content: \"\"; }\n  "
+const MODULE_STYLE_ID = 'book-module-style-chapter-2'
+const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
+const MODULE_STYLES = "\n    /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n       PARCHMENT BOOK THEME \u2014 Warm Ink / Aged Paper\n       Matches the interactive book page-flip UI.\n    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n        :root {\n      --bg-0:      #14110f;\n      --bg-1:      #2b1d16;\n      --panel:     #f4ead7;\n      --page-l:    #f4ead7;\n      --page-r:    #f1e4cf;\n      --ink:       #2b1d16;\n      --ink-dim:   #5c4638;\n      --ink-faint: #a08060;\n      --ice:       #7a5230;\n      --ice-hot:   #4b2e14;\n      --gold:      #c8a050;\n      --gold-hot:  #e0c070;\n      --gold-dim:  #a08040;\n      --amber:     #d09040;\n      --amber-hot: #e0a050;\n      --warn:      #e06050;\n      --line:      rgba(200,160,80,.30);\n      --green:     #5cae50;\n      --purple:    #8a50c0;\n      --spine-col: #2b1d16;\n    }\n    *, *::before, *::after { box-sizing: border-box; }\n\n    /* \u2500\u2500 Global reset \u2500\u2500 */\n    html, body {\n      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;\n      color: var(--ink) !important;\n      font-family: 'Cormorant Garamond', Georgia, serif !important;\n      min-height: 100vh;\n      overflow-x: hidden;\n    }\n\n    /* Warm ambient glow behind the book */\n    body::after {\n      content: \"\"; position: fixed; inset: 0; pointer-events: none; z-index: 9998;\n      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);\n    }\n\n    /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n\n    /* \u2500\u2500 Book \u2014 warm parchment open-book \u2500\u2500 */\n    .book {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: none !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n    }\n    @media(max-width: 860px) {\n      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }\n    }\n\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto;\n      overflow-x: hidden;\n    }\n    /* Dot-texture paper grain overlay */\n    .page-left::before, .page-right::before {\n      content: \"\" !important;\n      position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important;\n      opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    /* Decorative corner brackets \u2014 parchment style */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    /* Decorative gold corner rules inside pages */\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 14px !important; left: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important;\n      position: absolute !important;\n      bottom: 14px !important; right: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n\n    /* \u2500\u2500 Spine \u2014 warm book gutter \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(232,210,170,.0)   0%,\n        rgba(200,170,120,.25)  15%,\n        rgba(160,120,70,.55)   30%,\n        rgba(90,55,20,.88)     43%,\n        rgba(40,20,5,1.0)      50%,\n        rgba(90,55,20,.88)     57%,\n        rgba(160,120,70,.55)   70%,\n        rgba(200,170,120,.25)  85%,\n        rgba(232,210,170,.0)   100%\n      ) !important;\n      border-left:  none !important;\n      border-right: none !important;\n      position: relative; z-index: 5;\n      width: 32px !important;\n      min-width: 32px !important;\n      margin: 0 !important;\n      overflow: visible;\n      box-shadow: none !important;\n    }\n\n    /* Hairline crease at the very centre */\n    .spine::before {\n      content: \"\";\n      position: absolute;\n      top: 0; bottom: 0;\n      left: 50%;\n      width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg,\n        transparent 0%,\n        rgba(43,29,22,.9) 8%,\n        rgba(43,29,22,.9) 92%,\n        transparent 100%);\n      z-index: 2;\n    }\n    .spine::after {\n      content: \"\";\n      position: absolute;\n      top: 2px; bottom: 2px; left: -3px;\n      width: 3px;\n      background: repeating-linear-gradient(\n        180deg,\n        rgba(138,91,68,.08) 0px,\n        rgba(138,91,68,.03) 1px,\n        rgba(0,0,0,.10)     1px,\n        rgba(0,0,0,.04)     2px\n      );\n      border-left: 1px solid rgba(138,91,68,.12);\n      z-index: 1;\n    }\n\n    /* Page curl shadow cast onto left page from the binding */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    /* Page curl shadow cast onto right page from the binding */\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n\n         /* \u2500\u2500 Chapter label / subtitle \u2500\u2500 */\n    .chapter-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .42em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      margin-bottom: 5px !important;\n    }\n    .chapter-sub {\n      font-size: 17px !important;\n      font-style: italic !important;\n      color: var(--ink) !important;\n      margin-bottom: 0 !important;\n    }\n\n        /* \u2500\u2500 Divider \u2500\u2500 */\n    .ink-divider, hr.ink-divider {\n      border: none !important;\n      border-top: 1px solid rgba(200,180,120,.40) !important;\n      margin: 12px 0 !important;\n      opacity: 1 !important;\n    }\n\n    /* \u2500\u2500 Body text colour remaps \u2500\u2500 */\n    p, li, span { color: var(--ink) !important; }\n    [style*=\"color:var(--ink)\"] { color: var(--ink) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--ink-dim) !important; }\n    /* Normalize stale light-yellow inline colors on parchment pages only. */\n    .parchment [style*=\"color:#c8b96e\"], .parchment [style*=\"color: #c8b96e\"],\n    .parchment [style*=\"color:#c8b880\"], .parchment [style*=\"color: #c8b880\"],\n    .parchment [style*=\"color:#f0d060\"], .parchment [style*=\"color: #f0d060\"],\n    .parchment [style*=\"color:#e8d8b0\"], .parchment [style*=\"color: #e8d8b0\"],\n    .parchment [style*=\"color:#f0e0c0\"], .parchment [style*=\"color: #f0e0c0\"],\n    .parchment [style*=\"color:#f0c080\"], .parchment [style*=\"color: #f0c080\"],\n    .parchment [style*=\"color:#a08858\"], .parchment [style*=\"color: #a08858\"],\n    .parchment [style*=\"color:#e8d8a8\"], .parchment [style*=\"color: #e8d8a8\"] { color: var(--ink) !important; }\n    [style*=\"background:rgba(200,184,128\"] { background: rgba(138,91,68,.08) !important; }\n    [style*=\"border-color:rgba(139,106,32\"] { border-color: rgba(138,91,68,.30) !important; }\n\n    /* \u2500\u2500 Story text \u2500\u2500 */\n    .story-text {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 17px !important;\n      line-height: 1.65 !important;\n      color: var(--ink) !important;\n      white-space: pre-line !important;\n    }\n    .story-text.drop-cap::first-letter {\n      font-size: 3.8em !important;\n      float: left !important;\n      line-height: .78 !important;\n      margin: .05em .12em 0 0 !important;\n      color: var(--gold) !important;\n      font-weight: 600 !important;\n    }\n\n        /* \u2500\u2500 Notice / outcome box \u2500\u2500 */\n    .notice-box {\n      border: 1px solid rgba(200,180,120,.50) !important;\n      background: rgba(30,20,15,.85) !important;\n      color: #f0d060 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .06em !important;\n      padding: 10px 14px !important;\n      border-radius: 0 !important;\n      margin-top: 14px !important;\n    }\n\n        /* \u2500\u2500 HUD (parchment-readable) \u2500\u2500 */\n    #hud { color: var(--ink); }\n    #hud p, #hud span, #hud div { color: var(--ink); }\n    /* seal-label: NO !important so inline color:${bc} wins for badge tint */\n    #hud .hud-badge-row .hud-seal-label { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .04em; }\n    #hud .hud-chapter { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .62rem !important; letter-spacing: .08em !important; }\n    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }\n    #hud .stat-val { color: var(--ink) !important; font-family: 'JetBrains Mono',monospace !important; font-weight: 600; }\n    #hud .stat-bar-wrap { background: rgba(43,29,22,.18) !important; border-radius: 0 !important; }\n    #hud .stat-box { background: rgba(138,91,68,.10) !important; border: 1px solid rgba(138,91,68,.35) !important; border-radius: 0 !important; }\n    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; letter-spacing: .08em !important; }\n    #hud .stat-box-val { color: var(--ink) !important; font-family: 'Cinzel',serif !important; font-weight: 600 !important; }\n    #hud button {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.40) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-family: 'JetBrains Mono',monospace !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    #hud button:hover { border-color: var(--gold-dim) !important; color: var(--gold-dim) !important; background: rgba(138,91,68,.06) !important; }\n    #hud div[onclick] {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.45) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-weight: 500;\n    }\n    /* Remap stale light-on-cream inline colors anywhere inside the HUD */\n    #hud [style*=\"color:#c8b96e\"], #hud [style*=\"color: #c8b96e\"],\n    #hud [style*=\"color:#c8b880\"], #hud [style*=\"color: #c8b880\"],\n    #hud [style*=\"color:#f0d060\"], #hud [style*=\"color: #f0d060\"],\n    #hud [style*=\"color:#e8d8b0\"], #hud [style*=\"color: #e8d8b0\"],\n    #hud [style*=\"color:#f0e0c0\"], #hud [style*=\"color: #f0e0c0\"],\n    #hud [style*=\"color:#f0c080\"], #hud [style*=\"color: #f0c080\"] { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Buttons / choices \u2014 warm parchment style \u2500\u2500 */\n    button:not(.bm-signout), .choice, .combat-btn {\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important; letter-spacing: .08em !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Choices panel \u2500\u2500 */\n    .choices-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important;\n      letter-spacing: .38em !important;\n      text-transform: uppercase !important;\n      color: var(--ink-dim) !important;\n      margin-bottom: 12px !important;\n    }\n    .choices { display: flex; flex-direction: column; gap: 8px; }\n\n    button.choice, .choice {\n      background: rgba(244,234,215,.60) !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      padding: 12px 14px !important;\n      text-align: left !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, transform .2s !important;\n      display: flex !important;\n      align-items: flex-start !important;\n      gap: 10px !important;\n      width: 100% !important;\n      font-family: 'Cormorant Garamond', serif !important;\n    }\n    button.choice:hover, .choice:hover {\n      border-color: var(--gold) !important;\n      background: rgba(138,91,68,.12) !important;\n      transform: translateX(4px) !important;\n    }\n    button.choice.danger, .choice.danger {\n      border-color: rgba(192,57,43,.35) !important;\n    }\n    button.choice.danger:hover, .choice.danger:hover {\n      border-color: var(--warn) !important;\n      background: rgba(192,57,43,.08) !important;\n    }\n    button.choice.locked, .choice.locked {\n      opacity: .45 !important;\n      cursor: default !important;\n      border-color: rgba(138,91,68,.15) !important;\n    }\n    .choice-arrow {\n      color: var(--gold) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 13px !important;\n      flex-shrink: 0 !important;\n      margin-top: 1px !important;\n    }\n    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }\n    .choice-body {\n      font-size: 17px !important;\n      color: var(--ink) !important;\n      display: flex !important;\n      flex-direction: column !important;\n    }\n    .choice-sub {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .06em !important;\n      color: var(--ink-dim) !important;\n      margin-top: 3px !important;\n    }\n\n    /* \u2500\u2500 Stat bars \u2500\u2500 */\n    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }\n    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }\n    .stat-val { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Combat panel \u2500\u2500 */\n    .combat-panel {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 16px !important;\n      position: relative;\n    }\n    .combat-panel::before {\n      content: \"\"; position: absolute; top: -1px; left: -1px;\n      width: 12px; height: 12px;\n      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);\n    }\n    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }\n    .combat-enemy-icon { font-size: 2.5rem; }\n    .combat-enemy-name {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 20px !important; font-weight: 600 !important;\n      letter-spacing: .04em !important; color: var(--ink) !important;\n    }\n    .combat-log {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-style: italic !important;\n      font-size: 15px !important;\n      line-height: 1.55 !important;\n      color: var(--ink-dim) !important;\n      background: rgba(0,0,0,.06) !important;\n      border: 1px solid rgba(138,91,68,.20) !important;\n      border-radius: 0 !important;\n      padding: 10px 12px !important;\n      min-height: 3rem !important;\n      margin-bottom: 10px !important;\n    }\n    .combat-log em     { color: var(--gold) !important; font-style: italic; }\n    .combat-log strong { color: var(--warn) !important; font-style: normal; }\n    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }\n    .stat-bar-wrap {\n      flex: 1; height: 5px !important;\n      background: rgba(0,0,0,.08) !important;\n      border-radius: 0 !important; overflow: hidden;\n    }\n    .stat-bar { height: 100%; transition: width .4s, background .4s; }\n    .stat-key {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .58rem !important; letter-spacing: .08em !important;\n      color: var(--ink-dim) !important; min-width: 44px;\n    }\n    .stat-val {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; color: var(--ink) !important;\n      min-width: 50px; text-align: right;\n    }\n\n    /* combat action buttons */\n    .combat-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; letter-spacing: .06em !important;\n      color: var(--ink) !important;\n      background: rgba(244,234,215,.50) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: .45rem .5rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, color .2s !important;\n      display: flex !important; align-items: center !important; justify-content: center !important;\n    }\n    .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.10) !important;\n    }\n    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }\n\n    /* stat-grid inside HUD */\n    .stat-grid {\n      display: grid;\n      grid-template-columns: repeat(3,1fr);\n      gap: 4px; margin-top: 6px;\n    }\n\n    /* \u2500\u2500 End screen \u2500\u2500 */\n    .end-box {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 20px !important;\n      position: relative;\n    }\n    .end-box::before { content:\"\"; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }\n    .end-box::after  { content:\"\"; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }\n    .end-title {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 22px !important; font-weight: 600 !important;\n      letter-spacing: .06em !important;\n      color: var(--gold) !important;\n      margin-bottom: 10px !important;\n    }\n    .end-sub {\n      font-style: italic !important;\n      font-size: 16px !important;\n      color: var(--ink-dim) !important;\n      line-height: 1.55 !important;\n      margin-bottom: 14px !important;\n    }\n    .end-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .75rem !important;\n      letter-spacing: .14em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      padding: .55rem 1.2rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n      text-decoration: none !important;\n      display: inline-block !important;\n    }\n    .end-btn:hover {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n         /* \u2500\u2500 System overlay messages \u2500\u2500 */\n    .sys-overlay, [id=\"sys-overlay\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .08em !important;\n      border-radius: 4px !important;\n      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .sys-overlay span, [id=\"sys-overlay\"] span,\n    .sys-overlay p, [id=\"sys-overlay\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Toast \u2500\u2500 */\n    .toast, [class*=\"toast\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      border-radius: 4px !important;\n      font-size: 11px !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .toast span, [class*=\"toast\"] span,\n    .toast p, [class*=\"toast\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Loot window \u2500\u2500 */\n    #loot-window {\n      background: rgba(241,228,207,.96) !important;\n      border-color: rgba(138,91,68,.40) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n    }\n    #loot-window p, #loot-window span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Stat window modal \u2500\u2500 */\n    #stat-window > div {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n    #stat-window * { color: var(--ink) !important; }\n    #stat-window [style*=\"background:rgba(200\"] {\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Farm zones + location hub \u2500\u2500 */\n    #right-panel div[onclick] { border-radius: 0 !important; }\n\n    /* \u2500\u2500 Watcher image \u2500\u2500 */\n    #watcher-img {\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;\n    }\n\n    /* \u2500\u2500 Eye encounter overlay \u2500\u2500 */\n    #eye-encounter-overlay {\n      background: rgba(20,14,10,.97) !important;\n    }\n\n    /* \u2500\u2500 combat-over \u2500\u2500 */\n    [id$=\"-combat-over\"] { color: var(--ink) !important; }\n    [id$=\"-combat-over\"] button {\n      font-family: 'JetBrains Mono', monospace !important;\n      color: var(--ink) !important;\n      background: rgba(138,91,68,.07) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      cursor: pointer !important;\n      transition: border-color .15s, color .15s !important;\n    }\n    [id$=\"-combat-over\"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n\n    /* \u2500\u2500 Modals \u2500\u2500 */\n    [id$=\"-window\"] > div, .end-box {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n\n    /* \u2500\u2500 Scrollbar \u2500\u2500 */\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n\n    /* \u2500\u2500 Page-flip animation \u2014 triggered on navigation only \u2500\u2500 */\n    @keyframes bookPageFlip {\n      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }\n      6%   { opacity: .92; }\n      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }\n      80%  { opacity: 0; }\n      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }\n    }\n    .page-flip-decorator {\n      position: absolute;\n      top: 0; right: 0;\n      width: 50%; height: 100%;\n      transform-origin: left center;\n      pointer-events: none;\n      z-index: 40;\n      opacity: 0;\n      background: linear-gradient(to left, rgba(244,234,215,.96) 0%, rgba(235,220,195,.92) 60%, rgba(220,200,170,.72) 100%);\n      box-shadow: -4px 0 20px rgba(0,0,0,.15);\n    }\n    .page-flip-decorator.playing {\n      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;\n    }\n    .page-flip-decorator::after { content: \"\"; }\n  "
 
 function installModuleStyle() {
   document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
@@ -17,134 +27,2957 @@ function installModuleStyle() {
   document.head.appendChild(style)
 }
 
-export async function mountChapter1(__mountOptions = {}) {
+export async function mountChapter2(__mountOptions = {}) {
   const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-  // ── Chapter data ─────────────────────────────────
+  window._enemyAI = { resolveEnemyTurn }
 
+  // ═══════════════════════════════════════════════════════════
+  // CHAPTER 2 NODES & CONFIG
+  // ═══════════════════════════════════════════════════════════
+  const NODES = {
+    ...ZONE_FIRE,
+    ...ZONE_WATER,
+    ...ZONE_LIGHTNING,
+    ...ZONE_ARCANE,
+    ...ZONE_SHADOW,
+    ...ZONE_EARTH,
+    ...ZONE_WIND,
+    ...ZONE_PLANT,
+    ...ZONE_METAL,
+    ...ZONE_POISON,  // ═══════════════════════════════
+    // OPENING — ARRIVAL
+    // ═══════════════════════════════
+    opening: {
+      id: 'opening', type: 'story',
+      text: `The road ends at a collapsed overpass.
 
-  // ── Constants ────────────────────────────────────
-  // XP needed to reach next level — exponential curve
-  // Level 1→2: 100, 2→3: 150, 3→4: 225, 4→5: 337, 5→6: 506, 6→7: 759...
-  function xpForLevel(level) {
-    return Math.floor(100 * Math.pow(1.5, level - 1))
+  Beyond it, the shopping district stretches out — or what's left of it. Glass storefronts shattered inward. Mannequins knocked from their pedestals, frozen mid-fall. A banner reading GRAND REOPENING hangs diagonally across an entrance, half-burned, swaying in a wind that shouldn't exist.
+
+  Your vehicle idles at the edge. The road here is cracked — something hit it from below.
+
+  Your interface updates:
+
+  CHAPTER 2 — BROKEN ALLIANCES
+  ZONE: Kessler Shopping District
+  STATUS: Contested. Multiple player factions active.
+
+  Three signals pulse on your radar. Close together, then moving apart. People — or something pretending to be.
+
+  A message appears in your interface. No sender ID:
+
+  "You'll need to pick a side eventually. Everyone does. The ones who don't just end up in the middle when it collapses."
+
+  You get out of the vehicle.`,
+      sysMsg: 'Chapter 2 active. Faction activity detected across the district. Proceed with caution.',
+      choices: [
+        { label: 'Move toward the market plaza', sub: 'Three signals are clustered there', next: 'plaza_arrival' },
+        { label: 'Scout the perimeter first',    sub: 'Get the lay of the land before making contact', next: 'scout_perimeter' },
+        { label: 'Check your interface systems', sub: 'Review what carried over from Chapter 1', next: 'interface_check' },
+      ],
+    },
+
+    interface_check: {
+      id: 'interface_check', type: 'story',
+      text: `You stand at the edge of the district and pull up your full interface display.
+
+  Everything you built in Chapter 1 is still there. The stats. The badge. The items. Whatever relationship you have with the System — it followed you here.
+
+  There's one new tab, though. FACTION ALIGNMENT. It's empty. A note below reads:
+
+  "Your position will be calculated from your actions in this district. You don't choose a faction — the faction chooses you, based on what you do."
+
+  Below that:
+
+  ELEMENTAL PATHS AVAILABLE: 9
+  STATUS: Locked. Complete district encounters to access.
+
+  There's a third section. ALLIANCE LOG. Also empty. The header reads:
+
+  "Cooperation and betrayal are both tracked here. The Judges will review this record."
+
+  You close the interface.
+
+  Something is watching the district. You can feel it — not like the Watcher. Quieter. More patient. Like something waiting to see what you'll become before it decides what to do about it.`,
+      choices: [
+        { label: 'Move into the district', next: 'plaza_arrival' },
+      ],
+    },
+
+    scout_perimeter: {
+      id: 'scout_perimeter', type: 'story',
+      text: `You move along the outer edge of the district. Broken fencing. An overturned food truck. The smell of something that burned days ago.
+
+  You find three things:
+
+  One: a group of players hauling salvage into a parking structure, working in silence with practiced efficiency. They clock you but don't stop moving.
+
+  Two: a solo player crouched behind a collapsed wall, watching the same group. When they notice you noticing them, they don't run — they just hold up two fingers. Wait.
+
+  Three: a shopfront that's still intact. The lights are on inside. A handwritten sign on the door reads:
+
+  OPEN. TRADING. WEAPONS. INFO. NO QUESTIONS.
+
+  Your interface marks all three positions. Your radar has been accurate so far.
+
+  The question is where to go first.`,
+      xp: 40,
+      choices: [
+        { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders' },
+        { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts' },
+        { label: 'Go to the intact shop',             sub: 'NPC trader — neutral ground',        next: 'trader_intro' },
+        { label: 'Head to the main plaza',            sub: 'See what else is active',            next: 'plaza_arrival' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // PLAZA — THE THREE FACTIONS
+    // ═══════════════════════════════
+    plaza_arrival: {
+      id: 'plaza_arrival', type: 'story',
+      text: `The plaza is a wide open square at the center of the district. A fountain in the middle, dry, full of broken glass. Around the edges, three distinct groups.
+
+  On the left — the Builders. Eight or nine players, maybe more. They've pushed broken furniture into a defensive perimeter and are actively restoring a food stall at the far end. Someone is keeping inventory on a tablet. They have a visible stockpile. They look established.
+
+  On the right — the Hunters. Smaller group. Five. They're not working. They're watching. Every one of them has their interface open on the other groups' positions. One of them, a lean figure with a cracked visor, is smiling at something you can't see.
+
+  In the middle — the Ghosts. Not really a group. Just people sitting near each other by choice or proximity. Not talking much. Not committed to either side. Three of them, spread out enough to look casual but close enough to have a plan.
+
+  And then there's you.
+
+  Three different kinds of stares land on you at the same moment.
+
+  Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
+      choices: [
+        { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +10',   next: 'meet_builders',  moral: 10 },
+        { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -5',        next: 'meet_hunters',   moral: -5 },
+        { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
+        { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
+      ],
+    },
+
+    // ── Faction approach scenes ──────────────────────────────────────────
+    // Originally the four plaza choices linked here, but only plaza_center
+    // had ever been written. The other three now exist as short approach
+    // scenes that funnel into the same downstream alliance nodes the wait
+    // path uses (builders_alliance, hunters_voss_goal, ghosts_deep).
+    meet_builders: {
+      id: 'meet_builders', type: 'story',
+      text: `You walk toward the Builders directly. The reaction is immediate — the tall woman with the grey-streaked hair sets down whatever she was working on and gives you her full attention. The others don't stop what they're doing, but you can feel that they're listening.
+
+  "You came over." She doesn't smile, but there's something approving in the way she says it. "Most people circle the plaza first. I respect that you didn't."
+
+  She extends a hand. "Sera. I lead the Builders here. Salvage, stabilization, anything that needs hands and a plan. We've been waiting for someone from your chapter to come through. The Hunters have been waiting too, but for different reasons."
+
+  Behind her, a kid with a carefully bandaged hand gives you a small nod. Not performative. Just acknowledgment.`,
+      choices: [
+        { label: '"What do you need?"',            sub: 'Ask what the work looks like', next: 'builders_deep' },
+        { label: '"Tell me about the alliance."',  sub: 'Cut to the offer',             next: 'builders_deep' },
+        { label: 'Hear out the Hunters first',     sub: 'Walk over to Voss',            next: 'meet_hunters' },
+      ],
+    },
+
+    meet_hunters: {
+      id: 'meet_hunters', type: 'story',
+      text: `You walk toward the Hunters. The smile under the cracked visor tilts up a degree. You can feel Sera's eyes on your back from across the plaza, but she doesn't call out. The Hunters didn't expect you, exactly — but they were ready for you.
+
+  "Interesting." The Hunter with the visor pulls it up. The face underneath is younger than you expected, and very tired. "Voss. I run what the Builders call 'the destabilizing element' and what we call 'the people who get things done.'"
+
+  Voss doesn't extend a hand. They tilt their head instead.
+
+  "Three faction caches in this district. System-locked. We have the location on one of them. We're missing the people. You look like someone who's been keeping their options open — that's a compliment, where I come from."
+
+  Behind them, the other Hunters watch you without pretending not to.`,
+      choices: [
+        { label: '"What\'s in it for me?"',         sub: 'Direct — Voss likes direct',     next: 'hunters_voss_goal' },
+        { label: '"Tell me about the cache."',      sub: 'Get to the offer',               next: 'hunters_voss_goal' },
+        { label: 'Hear out the Builders first',    sub: 'Walk over to Sera',              next: 'meet_builders' },
+      ],
+    },
+
+    meet_ghosts: {
+      id: 'meet_ghosts', type: 'story',
+      text: `You sit down on the planter beside the Ghosts. None of the three of them react immediately. After a moment, the one closest to you — faded jacket, soft posture — shifts so their shoulder isn't blocking the plaza.
+
+  "Good spot," they say, like they're commenting on the weather. "Both factions can see you. Neither can pretend they don't see you. That's the only neutral move left in this district."
+
+  They look at you sideways.
+
+  "We're Rue. Some of us. I think most of us. The Ghosts aren't really a group — we're just people who decided the choice between Builder and Hunter isn't a choice we want to make. The district has nine elemental zones the System sealed when the alliances started fracturing. You don't need either faction to enter them — but they open differently depending on who you're walking with."
+
+  Rue gestures toward the plaza without looking at it.
+
+  "You can still pick a side. We're not going to stop you. We just want you to know that 'neither' is on the table."`,
+      choices: [
+        { label: '"Tell me more about the zones."', sub: 'Ask about the System',          next: 'ghosts_deep' },
+        { label: 'Stand up and approach Sera',     sub: 'Choose the Builders',           next: 'meet_builders' },
+        { label: 'Stand up and approach Voss',     sub: 'Choose the Hunters',            next: 'meet_hunters' },
+        { label: 'Stay where you are',              sub: 'Continue with Rue',             next: 'ghosts_deep' },
+      ],
+    },
+
+    plaza_center: {
+      id: 'plaza_center', type: 'story',
+      text: `You walk to the fountain and sit on the edge of it. Glass crunches under your boots. You wait.
+
+  It takes about forty seconds. Then someone from each group peels off and approaches — not together, but in loose orbit, like they've done this before. Like standing at the fountain is a neutral zone everyone agreed on without saying it.
+
+  The Builder is a tall woman with grey-streaked hair and methodical eyes. She looks at you like she's already cataloguing your usefulness.
+
+  The Hunter has the cracked visor. Up close the smile is less unsettling and more exhausted — like someone who decided to be threatening because it was simpler.
+
+  The Ghost is barely there. Faded jacket, soft voice. They don't introduce themselves. They just sit next to you on the fountain's edge like they've known you for a while.
+
+  The Builder speaks first. "You came from the road. That means you were in Chapter 1."
+
+  Not a question.`,
+      choices: [
+        { label: '"I finished Chapter 1."',          sub: 'Straightforward — neutral response', next: 'faction_talk_honest' },
+        { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -5 },
+        { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 10 },
+      ],
+    },
+
+    faction_talk_honest: {
+      id: 'faction_talk_honest', type: 'story',
+      text: `"Finished it," the Builder repeats. "Good. We need people who can finish things."
+
+  The Hunter with the cracked visor tilts their head. "What's your badge?"
+
+  You show them. They study it — all three of them, for a half-second, in the way people do when they're calculating something.
+
+  The Ghost speaks, almost to themselves: "Honest answer. That's unusual here."
+
+  The Builder extends a hand. "Sera. I run the Builders. We salvage, we stabilize, we protect what we build. Join a work rotation for a day and we'll give you access to our stockpile and the path we've been clearing." She pauses. "No obligation. We're not recruiting. We're just solving problems."
+
+  The Hunter doesn't offer a name. "We've identified three faction caches in this district. Sealed. System-protected. The only way to open them is a coordinated push — or convincing someone else to take the risk while you wait for the split." The smile again. "We call it 'Mutual Benefit.'"
+
+  The Ghost looks at the sky. "There are nine elemental zones in this district. I've found two. The System sealed them off when the alliances started fracturing. You want in — you need to be the kind of person a zone will open for."
+
+  Three offers. Three completely different definitions of what it means to be useful.`,
+      choices: [
+        { label: 'Ask Sera more about the Builders',  next: 'builders_deep' },
+        { label: 'Ask the Hunter about the caches',   next: 'hunters_deep' },
+        { label: 'Ask the Ghost about the elements',  next: 'ghosts_deep' },
+        { label: 'Head into the district',            next: 'district_hub' },
+      ],
+    },
+
+    faction_talk_evasive: {
+      id: 'faction_talk_evasive', type: 'story',
+      text: `The Hunter laughs — short and genuine. "Survived it. Yeah. That's the right word."
+
+  Sera, the Builder, doesn't smile. She files something away behind her eyes and waits.
+
+  The Ghost says nothing for a long moment. Then: "You're deciding what version of yourself to be in this chapter. That's fine. We all are."
+
+  The Hunter leans forward. "Here's what I'll tell you. There are three sealed caches in this district. The System put them there. The Builders are going to try to open them cooperatively. They'll succeed, and they'll share the contents, and it will be fair and organized and documented." A pause. "Or — someone could let the Builders do the work, and then take one of the caches while everyone's celebrating the other two." Another pause. "I'm not saying that's a good idea. I'm saying the System allows it. I find that interesting."
+
+  The Hunter stands up. "Name's Voss. Find me when you decide what kind of chapter this is going to be."`,
+      choices: [
+        { label: 'Follow Voss to learn more',       next: 'hunters_deep' },
+        { label: 'Talk to Sera instead',             next: 'builders_deep' },
+        { label: 'Talk to the Ghost',                next: 'ghosts_deep' },
+        { label: 'Head into the district alone',     next: 'district_hub' },
+      ],
+    },
+
+    faction_talk_helper: {
+      id: 'faction_talk_helper', type: 'story',
+      text: `Something shifts in Sera's posture. Not much — she's controlled — but it shifts.
+
+  "Good," she says. "We need people who remember that."
+
+  The Hunter's smile flickers. Recalculating. They don't leave — but they take a small step back.
+
+  The Ghost looks at you steadily. "The System tracked that in Chapter 1. It's tracking it now. I don't know what it does with that information. I don't think we're supposed to know."
+
+  Sera speaks at a normal pace, like she has unlimited time: "We have four active projects. Clearing the east corridor, establishing a medical station near the food court, inventorying the sealed shops, and — the one I actually need help with — the three elemental zones that shut down when the district went hostile. They respond to cooperative energy. My theory is they won't open for someone who came alone with no intention of sharing what they find." She looks at you. "You helped people in Chapter 1. That's a starting point. Work with us for a few hours and I think those zones will open."
+
+  She means it. No negotiation in her voice. Just information, offered without leverage.`,
+      choices: [
+        { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 10 },
+        { label: 'Ask about the elemental zones',    next: 'ghosts_deep' },
+        { label: 'Explore the district first',       next: 'district_hub' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // FACTION DEEP DIVES
+    // ═══════════════════════════════
+    builders_deep: {
+      id: 'builders_deep', type: 'story',
+      text: `Sera walks you through their setup while she works. Compact, efficient — no wasted motion.
+
+  "We have eleven active members. Three more who come and go. In Chapter 1, all of us made choices that pushed our moral scores positive. Not because we were told to. Because we watched what happened when people didn't."
+
+  She shows you the inventory on her tablet. Organized by type, by location, by priority. It's the most structured thing you've seen since the System started.
+
+  "The shopping district has resources. Real ones — not System drops, but actual food, medicine, tools. The sealed shops are full of it. The problem is they're locked. System-locked. The System requires an alliance signature to unlock each one — at least two players with compatible moral profiles, agreeing to share contents." She looks up. "The Hunters figured out the same thing. Their solution was to find someone who would sign as a partner, then take everything and run before the signature expires."
+
+  She goes back to her tablet.
+
+  "We've completed two unlocks. Shared everything both times. The third one is the largest. And we're short a partner with the right profile."
+
+  She doesn't say anything else. She lets you think.`,
+      xp: 50,
+      choices: [
+        { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +15',  next: 'builders_alliance', moral: 15 },
+        { label: "Ask what you'd get out of it",  sub: 'Practical question',              next: 'builders_negotiation' },
+        { label: 'Keep your options open',        sub: 'Non-committal',                   next: 'district_hub' },
+      ],
+    },
+
+    builders_negotiation: {
+      id: 'builders_negotiation', type: 'story',
+      text: `Sera doesn't look offended. She expected the question.
+
+  "Access to our stockpile. A guaranteed share of whatever's in the third cache. Backup on the elemental zones — we've mapped three of the nine and cleared the approaches." She pauses. "And the honest version: we'll vouch for you to the Judges."
+
+  You raise an eyebrow.
+
+  "The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two evaluators — one looks at what you built, one looks at what you took. At the end of this chapter, everyone faces one of them, or both. I don't know exactly how it works. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
+
+  She picks the tablet back up.
+
+  "I'm not trying to scare you into it. I'm telling you what I know. You can decide what that's worth."`,
+      choices: [
+        { label: 'Sign the alliance',  sub: 'moral +15', next: 'builders_alliance', moral: 15 },
+        { label: 'Decline, stay free', sub: 'Keep all options',  next: 'district_hub' },
+      ],
+    },
+
+    builders_alliance: {
+      id: 'builders_alliance', type: 'story',
+      text: `You sign the alliance interface. A soft chime. A line of text:
+
+  ALLIANCE FORMED: [YOUR NAME] + BUILDERS
+  COOPERATIVE PROTOCOL ACTIVE
+  BENEFITS: Stockpile access, zone clearance support, vouched reputation
+
+  Sera extends her hand again — this time to shake. "Good. Come find me when you want to work on the cache. In the meantime, the elemental zones should start responding to you." She gestures toward the east side of the district. "Fire zone is that direction. Lightning's near the old sports store. Water's in the food court basement. Start wherever makes sense for how you fight."
+
+  One of the other Builders — a kid, maybe twenty, with a carefully bandaged hand — gives you a small nod as you pass. Not performative. Just acknowledgment.
+
+  Your interface updates: ALLIANCE LOG — Builders: Active. Cooperation credit recorded.`,
+      xp: 80,
+      rewards: [{ itemKey: 'builders_cache_key', qty: 1 }],
+      choices: [
+        { label: 'Head to the elemental zones', next: 'district_hub' },
+        { label: 'Ask about the Judges',        next: 'judge_lore_builders' },
+      ],
+    },
+
+    hunters_deep: {
+      id: 'hunters_deep', type: 'story',
+      text: `Voss takes you somewhere the others can't hear. A gutted electronics shop with all the screens still on, showing static.
+
+  "I'll be straight with you," they say. Which is probably what they say to everyone, you think. But they continue: "The Builders are going to open that third cache. Eleven players, moral scores high, organized — they'll do it. The question is what happens in the four minutes after it opens before they've distributed everything."
+
+  Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Mercy evaluates what you built and with whom. Judge Wrath evaluates what you took and how."
+
+  They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once." They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
+
+  They lean against a broken shelf. "I'm not recruiting you to betray the Builders. I'm telling you the System doesn't care which path you pick. It just wants you to pick deliberately."`,
+      xp: 50,
+      choices: [
+        { label: 'Ask what Voss wants',          next: 'hunters_voss_goal' },
+        { label: 'Ask about the elemental zones', next: 'ghosts_deep' },
+        { label: 'Head into the district',       next: 'district_hub' },
+      ],
+    },
+
+    hunters_voss_goal: {
+      id: 'hunters_voss_goal', type: 'story',
+      text: `"What do I want?" Voss looks almost amused. "I want to face Judge Wrath. Specifically. I want to see what the System thinks I'm worth after everything I've done in this city."
+
+  A pause.
+
+  "I betrayed three people in Chapter 1. None of them were weak. I made choices that lowered my moral score past the point of easy recovery. And I'm not — I don't regret it. I made calculated decisions and they worked." They look at you steadily. "I'm not asking you to do the same. I'm saying the System built a Judge for people like me. That means the System expected people like me. Maybe even needed us."
+
+  They push off the shelf.
+
+  "The elemental zones respond to character. Not good character or bad character. Just clarity. If you know what you are — really know — the zones open. The ones who get stuck are the ones pretending." Voss smiles. "The Shadow zone, specifically, is for people who've made a cost and paid it. If your moral score is below a threshold, it opens easy. If you're faking it — it stays shut."
+
+  They head for the door. "Find the Ghost if you want the map. They've been to all nine."`,
+      choices: [
+        { label: 'Find the Ghost',          next: 'ghosts_deep' },
+        { label: 'Head to the zones alone', next: 'district_hub' },
+      ],
+    },
+
+    ghosts_deep: {
+      id: 'ghosts_deep', type: 'story',
+      text: `The Ghost — they eventually tell you their name is Rue — has a map.
+
+  Not a System map. A physical one, drawn on the back of a parking ticket with a pen that's running out of ink. Somehow it's more accurate than your interface.
+
+  "Nine zones," Rue says, spreading it on a dust-covered bench. "One for each element. Fire, Water, Lightning, Arcane, Shadow, Earth, Wind, Plant, Metal. The System placed them in specific locations — each one in a part of the district that matches its nature."
+
+  They trace the path with one finger.
+
+  "Fire's in the old kitchen supply store. Lots of copper and heat damage already — it was near something that burned." A pause. "Water's in the food court basement where the pipes burst. Earth's in the parking structure — concrete, weight, layers. Shadow's under the closed cinema. Wind's in the atrium where the roof caved and the crossdraft never stopped. Lightning's at the old electronics hub." They look up. "Arcane is in the bookshop at the center. Plant is in the garden center near the south exit. Metal is in the hardware megastore."
+
+  Rue rolls the map. "I've been to all nine. None of them opened for me. I'm not sure what I am yet."
+
+  They hand you the map. "Maybe you are."`,
+      xp: 60,
+      rewards: [{ itemKey: 'district_map', qty: 1 }],
+      choices: [
+        { label: 'Ask what the zones give you',     next: 'zone_explanation' },
+        { label: 'Head into the district',          next: 'district_hub' },
+      ],
+    },
+
+    zone_explanation: {
+      id: 'zone_explanation', type: 'story',
+      text: `"Each zone is a skill tree," Rue says. "Elemental. Connected to the five branches — offense, defense, flow, arcane, decay. Each element has variations for each build type, so whatever you focused on in Chapter 1, there's a version of each element that extends it."
+
+  They pause. "You can only activate one element at a time. The System calls it resonance. You can unlock nodes in multiple elemental trees — learn from them, understand them — but only one element resonates actively in any given fight."
+
+  "So pick the one that fits how you fight. Or pick the one the zone opens for. They're not always the same thing."
+
+  A silence.
+
+  "The Judges respond to elemental resonance. Judge Mercy — the cooperation Judge — responds to Water, Plant, Earth, Wind, Arcane. Protective elements. Patient ones. Judge Wrath — the dominance Judge — responds to Fire, Lightning, Shadow, Metal. Aggressive elements. Precise ones."
+
+  Rue looks at the map in your hands. "I don't think either Judge is worse than the other. I think they're the same difficulty, tuned for different kinds of players." A long pause. "I think the System is fair, actually. I just haven't figured out what that means yet."`,
+      choices: [
+        { label: 'Head to the district hub',  next: 'district_hub' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // DISTRICT HUB — 9 ELEMENTAL ZONES
+    // ═══════════════════════════════
+    district_hub: {
+      id: 'district_hub', type: 'story',
+      text: `The shopping district spreads out before you. Mostly intact structures, mostly emptied of people — whoever was here before the System arrived either left or became something else. The silence has weight. Not the frozen silence of Chapter 1. This is the silence of aftermath.
+
+  Your interface shows ten elemental zones distributed across the district. Some are accessible immediately. Others glow dim — locked, waiting for a threshold you haven't reached yet.
+
+  Below the zone map, two separate indicators:
+
+  ALLIANCE LOG: Active entries determine which Judge evaluates your cooperation record.
+  ELEMENTAL RESONANCE: Elements attempted are recorded. Commitment is tracked.
+
+  A quiet system note beneath both:
+
+  "Only one element can be active at a time. Attempting additional elements does not increase rewards. The system is watching what you choose to do with that information."
+
+  The Builders are working somewhere to the east. Voss is watching somewhere to the north. Rue is near the fountain, eyes on the map.
+
+  The district is yours to move through. When you've finished what you came here for — the Judges will find you.`,
+      choices: [], // rendered dynamically by renderDistrictHub
+    },
+
+    // ═══════════════════════════════
+    // NPC CHECK-INS (#1 / #2 / #3)
+    // Triggered by interrupt in _goToCore when player heads to district_hub.
+    // Each fires once; the marker (sera_met / voss_met / rue_met) is set
+    // when the player exits the node via any choice, so the encounter cannot
+    // re-fire if reloaded mid-conversation.
+    // ═══════════════════════════════
+    sera_checkin: {
+      id: 'sera_checkin', type: 'story',
+      text: `Sera intercepts you near the east edge of the plaza. Same composed posture, same precise way of moving — but she's covered in concrete dust and there's blood drying on one cuff.
+
+"You helped one of our teams. I owed you a conversation." She doesn't smile but her voice softens by a measured degree. "I'm short on field hands. The medical station two blocks over needs a resupply — two medical packs, anything you can spare. The team running it is good, but they're cut off until we can clear the lower corridor."
+
+She watches you, patient.
+
+"Take this as the favor it is. Not an obligation. The Builders don't trade in obligations."`,
+      choices: [
+        { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +10 · Builder credit', next: 'sera_gave', moral: 10, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
+        { label: '"I don\'t have any to spare."', sub: 'Honest — no penalty', next: 'sera_declined', allianceTag: 'sera_met' },
+        { label: 'Walk past her without speaking', sub: 'Moral -5 · the System notes the silence', next: 'sera_ignored', moral: -5, allianceTag: 'sera_met' },
+      ],
+    },
+    sera_gave: {
+      id: 'sera_gave', type: 'story',
+      text: `Sera takes the packs without ceremony. "Logged. Tam will know." She looks at you a beat longer than she needs to. "Some of us are keeping count of who shows up. I wanted you to know that's a thing."
+
+She turns back toward the corridor. Just before she rounds the corner: "Stay alive."`,
+      // Mechanically: 1 rare_component as a small thank-you. The "Builder's
+      // Mark" concept (#20 Judge scaling hook) is tracked via alliance_log
+      // flags, not a literal inventory item.
+      cost: [{ itemKey: 'medical_pack', qty: 2 }],
+      rewards: [{ itemKey: 'rare_component', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
+    },
+    sera_declined: {
+      id: 'sera_declined', type: 'story',
+      text: `Sera nods once — the nod of someone whose first instinct was to be insulted and whose second instinct caught the first. "Understood. Stay alive out there." She turns and goes.
+
+You hear her start running before she's even out of sight.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sera_ignored: {
+      id: 'sera_ignored', type: 'story',
+      text: `You keep walking. Sera watches you pass. She doesn't follow. She doesn't say anything.
+
+Behind you, after a long pause, her boots scuff and head the other direction.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    voss_offer: {
+      id: 'voss_offer', type: 'story',
+      text: `Voss is leaning on a derelict ATM near the north corridor when you come back. They don't pretend to be doing anything else.
+
+"You're making good time. I noticed." They tilt their head. "There's a Builder runner due through the underpass in maybe ten minutes. Carrying salvage. Decent salvage — Sera's people inventory carefully. If they don't make it back, the salvage is yours and nobody on Sera's side knows for certain what happened."
+
+A small pause. Voss doesn't smile.
+
+"I'm not asking you to pull a trigger. I'm telling you there's an option. Information has value. You don't even have to act on it."`,
+      choices: [
+        { label: '"Tell me where." (intercept the runner)', sub: 'Moral -15 · gear loot · Voss credit', next: 'voss_intercept', moral: -15, allianceTag: 'voss_met' },
+        { label: '"Tell me where." (warn the runner)', sub: 'Moral +10 · Builder credit', next: 'voss_warned', moral: 10, allianceTag: 'voss_met' },
+        { label: '"Not interested."', sub: 'No change', next: 'voss_declined', allianceTag: 'voss_met' },
+      ],
+    },
+    voss_intercept: {
+      id: 'voss_intercept', type: 'story',
+      text: `You take Voss's directions. The underpass is dim, narrow, perfect for the work. The runner doesn't see you coming.
+
+It's the kid. The one with the bandaged hand, from the alliance scene. They look up at the last second. Their hand goes for a tool, not a weapon. They're not even sure how to do this part.
+
+You take what you came for. You don't look at the face for long.
+
+Voss is gone when you get back to the corridor. There's a single rune left on the wall where they were leaning. Bonus. Acknowledgment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'rune_umbra', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'voss_aligned' }],
+    },
+    voss_warned: {
+      id: 'voss_warned', type: 'story',
+      text: `You take Voss's directions — and use them the other way. You catch the runner before the underpass, point out where the ambush would be, watch the kid's eyes get very wide.
+
+They press a small foil packet into your hand without breaking eye contact. "Sera will know." They take the long way back.
+
+When you return to the corridor, Voss is still leaning on the ATM. They've watched the whole thing on a salvaged security feed. They don't look angry. They look curious.
+
+"Interesting choice." That's all they say.`,
+      rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
+    },
+    voss_declined: {
+      id: 'voss_declined', type: 'story',
+      text: `Voss watches you go without comment. They're still leaning on the ATM when you glance back over your shoulder.
+
+A few minutes later you hear the runner pass through the underpass uneventfully. Voss never moved.
+
+Information has value. Sometimes the value is knowing it was offered, and noting who offered.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    rue_intel: {
+      id: 'rue_intel', type: 'story',
+      text: `Rue is sitting cross-legged on a planter near the fountain, marking up their physical map with a pen that's about to die. They look up when you approach.
+
+"You've cleared two. The pattern's showing." They tap the map. "Hunter scouts have been moving on the zones you haven't hit yet. Voss is testing them. Testing you too, probably."
+
+They turn the map toward you.
+
+"Two of the remaining zones have a Hunter pair set up at the entry. I can tell you which ones. Walk in knowing where they are and you can avoid them clean, or hit them from an angle they're not expecting. Or — your choice — ignore this entirely."
+
+Rue waits. They have all the time in the world.`,
+      choices: [
+        { label: '"Tell me." (Hunter positions marked on your map)', sub: 'Future zones — clean approach available', next: 'rue_shared', allianceTag: 'rue_met' },
+        { label: '"I\'ll figure it out myself."', sub: 'No change', next: 'rue_declined', allianceTag: 'rue_met' },
+      ],
+    },
+    rue_shared: {
+      id: 'rue_shared', type: 'story',
+      text: `Rue marks two of the remaining zones with a small dot. "Hunters in the entry rooms. You'll see them before they see you if you remember." They roll the map up.
+
+"For what it's worth — they don't all take Voss's offers. Some of them just need the salvage. Up to you what you do when you meet them."
+
+They go back to their pen.`,
+      rewards: [{ itemKey: 'district_map', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'rue_aligned' }],
+    },
+    rue_declined: {
+      id: 'rue_declined', type: 'story',
+      text: `Rue shrugs — a small, neutral motion. "Suit yourself. I'm not going anywhere." They go back to the map.
+
+You leave them to it.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    // ═══════════════════════════════
+    // THE SWEEP (#11) — forced plaza encounter
+    // Fires from the hub interrupt when tension >= 35 and !sweep_fired.
+    // Player has cleared at least 3 zones by definition (cache must have
+    // resolved first, which sets cache_seen). The Sweep is a single major
+    // alignment choice — defend, join, or escape — and never re-fires.
+    // ═══════════════════════════════
+    sweep_arrival: {
+      id: 'sweep_arrival', type: 'story',
+      text: `You're cutting through the central plaza when you hear it — voices raised, then the wet crack of a fist on a face, then shouting. Builders and Hunters have squared up by the fountain. Eight, maybe ten people total. Sera is in front of her crew, hand up, trying to make the moment hold. Voss is across from her, hands open and empty, smiling the way someone smiles before they tell you something is your fault.
+
+The plaza has been waiting for this. The district has too.
+
+A Hunter on Voss's left pulls a knife — slowly, openly, the way you pull a knife when you want to be sure it gets counted.
+
+Tam — the kid with the bandaged hand — steps from behind Sera. They're holding a length of rebar. Their face is white.
+
+The fight is going to happen in about ten seconds. The only question is who you stand next to when it does.`,
+      sysMsg: 'THE SWEEP — district alignment is forcing a clash. Choose carefully.',
+      choices: [
+        { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +15', next: 'sweep_defend_combat', moral: 15, allianceTag: 'sweep_builders' },
+        { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -15', next: 'sweep_join_combat', moral: -15, allianceTag: 'sweep_hunters' },
+        { label: 'Leave the plaza',         sub: 'Let them sort it out · cowardice noted', next: 'sweep_escape', allianceTag: 'sweep_walked' },
+      ],
+    },
+    sweep_defend_combat: {
+      id: 'sweep_defend_combat', type: 'combat',
+      text: `You move to Sera's flank. She doesn't look at you — but her stance shifts, recalibrating around the new line. Tam slides in behind you. The Hunter on Voss's left lunges first.`,
+      enemy: {
+        name: 'Hunter Strike Team', icon: '⚔️',
+        hp: 180, atk: 24, def: 10, xp: 240,
+        // Deliberately NOT humanoid: this is a faction set-piece, not a
+        // post-combat mercy beat. The moral choice happens in sweep_arrival.
+        loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_blade', qty: 1 }],
+      },
+      onWin: 'sweep_defend_win', onLose: 'district_hub',
+    },
+    sweep_defend_win: {
+      id: 'sweep_defend_win', type: 'story',
+      text: `The Hunters break. Two of them are down. The rest drag the wounded away — including Voss, who walks out under their own power, blood on their cheek and that same small smile fixed in place.
+
+Sera lowers her hands slowly. The plaza is loud with breathing.
+
+"You picked a side, then." She doesn't say thank you. She nods once.
+
+Tam is staring at you. They look — not impressed. Steady. Like they're memorizing your face for later. They give a small nod and step back behind Sera.
+
+Your interface registers a quiet update: ALLIANCE LOG — Builders: Sweep defended. The System has logged the moment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sweep_join_combat: {
+      id: 'sweep_join_combat', type: 'combat',
+      text: `You step across the line. Voss's smile widens a fraction — they've been watching this potential the whole chapter. The Builders see you move and Sera's expression goes very still. Tam's hand tightens on the rebar.
+
+Sera moves first. She always was the calmest fighter in the district.`,
+      enemy: {
+        name: 'Builder Strike Team', icon: '🛡️',
+        hp: 200, atk: 22, def: 14, xp: 240,
+        loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_shield', qty: 1 }],
+      },
+      onWin: 'sweep_join_win', onLose: 'district_hub',
+    },
+    sweep_join_win: {
+      id: 'sweep_join_win', type: 'story',
+      text: `Sera goes down first. She fights well — she fights better than you expected — but she fights without joy, and that's the difference.
+
+When it's over, Tam is still standing. They're holding the rebar in both hands now, knuckles white, looking at Sera on the ground.
+
+Voss puts a hand on your shoulder, briefly. "You'll be famous in this district," they say. "For a little while. Then you'll be useful, which is better."
+
+Tam doesn't move. They're staring at Sera. They're not going to forget this. Neither are you.
+
+Your interface registers a quiet update: ALLIANCE LOG — Hunters: Sweep joined. The System has logged the moment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sweep_escape: {
+      id: 'sweep_escape', type: 'story',
+      text: `You back out of the plaza before either side notices you arrive. You hear it start behind you — the first shout, then the first crash, then a sound that might be a body hitting tile.
+
+You don't turn around.
+
+You find a side corridor and keep moving. By the time the sounds fade you're three blocks away and you don't know who won.
+
+Later, in the hub, the district feels different. Neither faction is in their usual position. People are missing on both sides. Nobody asks where you were. The way nobody asks is its own kind of answer.
+
+Your interface registers a quiet update: ALLIANCE LOG — Sweep avoided. The System has logged the silence.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'cowardice' }],
+    },
+
+    // ═══════════════════════════════
+    // PURE HERO FINALE (#27)
+    // Intercepts at pre_boss_ch2 entry when:
+    //   moral_score >= 60  AND
+    //   alliance_log includes 'sweep_builders'  AND
+    //   >= 5 zone bosses cleared
+    // Sera offers a last defense of the plaza. Player can accept to lock the
+    // hero finale (defends with Builder allies, then Judges fight where
+    // Mercy is fully present) or decline (proceeds to normal Judges flow).
+    // ═══════════════════════════════
+    hero_finale_offer: {
+      id: 'hero_finale_offer', type: 'story',
+      text: `Sera is waiting for you at the edge of the plaza. The Builders have been quietly working — you can see it now in the way the rubble has been moved, the lines of sight cleared, the choke points planned.
+
+"The Judges are coming." She's not asking. She's stating it. "We've been watching the system messages. We have maybe an hour. Maybe less."
+
+Tam steps up beside her. The bandage on their hand is gone. There's a new scar there instead — a clean line, healed past the worst of it.
+
+"We're going to defend this plaza," Sera says. "Not because we think we'll stop them. Because we want them to see a district that didn't fold." She looks at you steadily. "We'd like you to stand with us. One last fight before the assessment. The Judges will see it. They'll see what kind of place you helped make."
+
+Behind her, the other Builders are taking positions. A dozen of them. Not many. Enough.
+
+"This isn't required. You can walk past us right now and the Judges will still come for you. The fight just won't have us in it."`,
+      sysMsg: 'HERO TRACK UNLOCKED — defend the plaza with the Builders before facing the Judges.',
+      choices: [
+        { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +10', next: 'hero_finale_combat', moral: 10, allianceTag: 'hero_finale_done' },
+        { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+      ],
+    },
+    hero_finale_combat: {
+      id: 'hero_finale_combat', type: 'combat',
+      text: `The Hunter remnants come fast — Voss not among them, but their best operators. Sera's line holds. Tam's holds. You're at the apex of the formation. The first wave breaks against you like a wave on cliff.`,
+      enemy: {
+        name: 'Hunter Remnants', icon: '⚔️',
+        hp: 240, atk: 26, def: 12, xp: 280,
+        loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_shield', qty: 1 }],
+      },
+      onWin: 'hero_finale_done', onLose: 'pre_boss_ch2',
+    },
+    hero_finale_done: {
+      id: 'hero_finale_done', type: 'story',
+      text: `The Hunters break. Not many of them die. They retreat in good order — Voss's training showing in how they pull back.
+
+Sera lets out a breath she's clearly been holding for a long time. She turns to face you. "Thank you." Just that, just two words, said the way she says things she means.
+
+Tam looks at you. There's something in their face you haven't seen there before. Permission, maybe. The kind of permission a kid grants an adult after long observation.
+
+"Mercy will see this," Sera says. "She's the one who designed this kind of mattering."
+
+The plaza is quiet again. The Judges are coming. But this time you won't be standing in it alone.`,
+      rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 3 }],
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+
+    // ═══════════════════════════════
+    // PURE VILLAIN FINALE (#26)
+    // Intercepts at pre_boss_ch2 entry when:
+    //   moral_score <= -60  AND
+    //   alliance_log includes 'sweep_hunters'  AND
+    //   >= 5 zone bosses cleared
+    // Voss offers a final sweep of the last Builder positions, with Tam
+    // standing in the way. Player can complete the run (Judges fight where
+    // Wrath dominates entirely) or decline (proceeds to normal Judges).
+    // ═══════════════════════════════
+    villain_finale_offer: {
+      id: 'villain_finale_offer', type: 'story',
+      text: `Voss intercepts you in the corridor approaching the plaza. The smile is there but it's tired around the edges. They've been working.
+
+"There's one more position." They don't bother with preamble anymore — you're past that. "The Builders' last holdout. Three of them. The kid is with them. We can clear it before the Judges arrive. The Judges will see a district that committed all the way."
+
+A pause. They're watching your face.
+
+"I'm not asking you to do something I haven't done. But you're better at it than I am now. You've been moving differently the last few zones. Like you stopped needing to think about it."
+
+The corridor is dark. The Judges are coming. Voss isn't going to ask twice.`,
+      sysMsg: 'VILLAIN TRACK UNLOCKED — finish the district before facing the Judges.',
+      choices: [
+        { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -10', next: 'villain_finale_combat', moral: -10, allianceTag: 'villain_finale_done' },
+        { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+      ],
+    },
+    villain_finale_combat: {
+      id: 'villain_finale_combat', type: 'combat',
+      text: `The Builders' last position is a service corridor. Two of them go down fast — they were tired. The third puts up a real fight before Voss takes them from behind.
+
+Then it's just the kid. Tam. Standing in front of a doorway. Holding the same length of rebar from the plaza. They've been crying. They are not crying now.`,
+      enemy: {
+        name: 'Tam', icon: '⚔️',
+        hp: 130, atk: 24, def: 10, xp: 200,
+        humanoid: true,
+        loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+        executeLoot: [{ itemKey: 'judges_seal', qty: 1 }],
+      },
+      onWin: 'villain_finale_done', onLose: 'pre_boss_ch2',
+      onSpare: 'villain_finale_done_spared',
+      onExecute: 'villain_finale_done_executed',
+    },
+    villain_finale_done: {
+      id: 'villain_finale_done', type: 'story',
+      text: `Tam is down. Voss steps past you, checks them, says nothing. The corridor is silent in a way the district has never been.
+
+"It's done." Voss is matter-of-fact. They look at you with something that's not quite respect but isn't far from it. "Wrath will see this. Mercy won't even speak. That's the form you've earned."
+
+The Judges are still coming. But there's nothing left in this district for them to weigh except you.`,
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+    villain_finale_done_spared: {
+      id: 'villain_finale_done_spared', type: 'story',
+      text: `Tam is on the ground but breathing. You step over them. Voss watches.
+
+"Interesting," Voss says. Just that.
+
+You don't look back. The Judges are coming.`,
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+    villain_finale_done_executed: {
+      id: 'villain_finale_done_executed', type: 'story',
+      text: `Tam doesn't make a sound. You move past Voss without looking at them. The seal on Tam's vest comes off easily — Sera's mark. You take it.
+
+When you step back into the corridor, Voss is gone. The plaza is empty.
+
+The Judges are already there.`,
+      rewards: [{ itemKey: 'judges_seal', qty: 1 }],
+      choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+    },
+
+    // ═══════════════════════════════
+    // NPC TRADER
+    // ═══════════════════════════════
+    trader_intro: {
+      id: 'trader_intro', type: 'story',
+      text: `The intact shop is a narrow space — a phone repair kiosk that someone has converted into something else. Behind the counter sits a small person with careful hands and a headset they're not using anymore.
+
+  They look up when you enter. Not startled. Like they've been waiting.
+
+  "You're not from this district," they say. "Good. The ones from here bring too much history."
+
+  They gesture at the shelves behind them. Not phone parts anymore — material goods, System-compatible items, a few things you recognize from Chapter 1 loot tables.
+
+  "I trade for scraps, for information, and occasionally for favors. Standard System economy." They tilt their head. "You look like you need something. You also look like you're not sure what it is yet. That's fine. Take a look."
+
+  A name tag on the counter reads PELL, written in careful block letters.`,
+      choices: [
+        { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop',  allianceTag: 'pell_met' },
+        { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore',  allianceTag: 'pell_met' },
+        { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges', allianceTag: 'pell_met' },
+        { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub', allianceTag: 'pell_met' },
+      ],
+    },
+
+    trader_shop: {
+      id: 'trader_shop', type: 'story',
+      text: `Pell slides a short list across the counter. Handwritten, organized into columns.
+
+  WEAPONS: Notched blade (atk +6), Shock rod (atk +4, lightning damage), Reinforced gloves (atk +3, guard +2)
+
+  ARMOR: Patchwork vest (def +8), Wired jacket (def +5, speed +2), Glass-fiber shield (guard +8)
+
+  CONSUMABLES: Stabilizer pack (restore 40 HP), Signal jammer (1-turn enemy stun), Adrenaline spike (speed +5 for 1 fight)
+
+  MATERIALS: Scrap runs, component packs, and two items marked ELEMENTAL REAGENT — one labeled Ignis Seed, one labeled Aqua Cord.
+
+  "Elemental Reagents are new this chapter," Pell says. "They don't do anything on their own. Take them to the right zone and they open the zone faster — like a key that makes the lock easier." They shrug. "Or don't. The zones open for the right person without any key. It just takes longer."`,
+      rewards: [],
+      choices: [
+        { label: 'Buy the Ignis Seed for 80 gold',        sub: 'Fire zone accelerant', next: 'buy_ignis_seed' },
+        { label: 'Buy the Aqua Cord for 80 gold',         sub: 'Water zone accelerant', next: 'buy_aqua_cord' },
+        { label: 'Buy a Stabilizer pack for 50 gold',     sub: 'Restore 40 HP', next: 'buy_stabilizer' },
+        { label: 'Look but don\'t buy anything',          next: 'trader_intro' },
+      ],
+    },
+
+    buy_ignis_seed:  { id:'buy_ignis_seed',  type:'story', text:`Pell wraps it in foil. "Don't drop it. It doesn't explode but it does stain everything permanently orange."`, rewards:[{itemKey:'ignis_seed',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+    buy_aqua_cord:   { id:'buy_aqua_cord',   type:'story', text:`Pell hands it over — a length of silvery cord that's always slightly damp. "Don't ask what it's made of. I asked. I regret it."`, rewards:[{itemKey:'aqua_cord',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+    buy_stabilizer:  { id:'buy_stabilizer',  type:'story', text:`Pell slides the pack across without ceremony. "Reliable. I've tested everything I sell." They say it flatly enough that you believe them.`, rewards:[{itemKey:'stabilizer_pack',qty:1}], choices:[{label:'Continue', next:'district_hub'}] },
+
+    trader_lore: {
+      id: 'trader_lore', type: 'story',
+      text: `Pell leans on the counter.
+
+  "The nine zones were always here. Before the System activated — they were just buildings. Places. The fire zone was a kitchen supply store. The lightning zone was an electronics hub." They pause. "The System put something in them when it arrived. Not locked them — seeded them. Like it was curious what would grow."
+
+  A quiet moment.
+
+  "The zones respond to resonance. That's the official System term. Resonance is what happens when who you are and what you're standing in match closely enough. A fire zone resonates with aggression — not anger, aggression. The kind that's cold and deliberate. A water zone resonates with patience — not passivity, patience. The ability to absorb and redirect." Pell tilts their head. "I've been in and out of this district for a week. I think about it differently now."
+
+  "The zones don't want you to be special. They want you to be consistent."`,
+      choices: [
+        { label: 'Ask about the Judges', next: 'trader_judges' },
+        { label: 'Go to the district',   next: 'district_hub' },
+      ],
+    },
+
+    trader_judges: {
+      id: 'trader_judges', type: 'story',
+      text: `Pell's expression changes slightly. More careful.
+
+  "The Judges. Right." They come around the counter and sit on a stool. "I saw Mercy once, at the end of someone else's run. Briefly. It looked like — the most patient thing I've ever seen. Like it had been waiting a very long time and wasn't surprised by anything."
+
+  A long pause.
+
+  "Wrath I've only heard about. Players who faced Wrath describe it as... precise. Like it already knew what you'd done and was just confirming the math. No judgment in the face. Just accounting."
+
+  Pell looks at you directly.
+
+  "I don't know which one you'll face. I don't think anyone does until the chapter ends. But I'll tell you what I've observed: the players who faced both at once — the ones who did some of everything — they came out changed differently than the ones who faced just one. Not better or worse. Just different kinds of changed." 
+
+  They stand and go back behind the counter.
+
+  "Both Judges can be beaten. Both Judges can be respected. The System doesn't punish you for who you are. It evaluates you. That's different."`,
+      choices: [
+        { label: 'Go into the district', next: 'district_hub' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // THE BETRAYAL OPPORTUNITY
+    // ═══════════════════════════════
+    cache_betrayal_offer: {
+      id: 'cache_betrayal_offer', type: 'story',
+      text: `You're passing through the east corridor when Voss falls into step beside you. Silent until they choose to speak.
+
+  "The Builders are signing the third cache right now," Voss says. "Sera and two others. Alliance signature, full cooperative protocol." A pause. "There's a four-minute window after the cache opens where the distribution protocol hasn't locked in. Items are accessible to anyone with hands."
+
+  They keep walking.
+
+  "I'm not going to take it. I want to be clear — I'm not doing this. My record is already what it is and one cache isn't interesting to me." They glance sideways at you. "But someone could. The Builders trust you. You could be standing right there."
+
+  They stop walking.
+
+  "I'm telling you because the System knows about this opportunity whether you take it or not. The Judges know. Mercy will know you didn't betray your allies. Wrath will know you chose not to when you could." Voss almost smiles. "Either way, it becomes part of your record. Deliberate choice is what matters — not which choice."
+
+  They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
+      choices: [
+        { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5, allianceTag: 'cache_seen' },
+        { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10, allianceTag: 'cache_seen' },
+        { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20, allianceTag: 'cache_seen' },
+      ],
+    },
+
+    cache_consider: {
+      id: 'cache_consider', type: 'story',
+      text: `You go to the cache opening.
+
+  The Builders are there — Sera, two others named Dov and Mira, and the bandaged-hand kid from yesterday. They've completed the unlock. The cache is open. Contents spill out on a cloth they've laid on the floor: medical supplies, two weapon upgrades, three material packs, and a sealed System container with a glyph on the side.
+
+  Sera looks up and nods at you. Waves you closer. She's already started tallying the split.
+
+  The four-minute window ticks in your peripheral interface. Invisible to them.
+
+  You look at the cache. You look at Sera's careful hands doing the tally. You look at the bandaged kid taking inventory with a cracked stylus.
+
+  Your interface: MORAL DECISION POINT. This action will be recorded.
+
+  Two paths forward from here — take, or stand.`,
+      choices: [
+        { label: 'Take nothing — stand with the Builders', sub: 'moral +15, full alliance maintained', next: 'cache_stood', moral: 15 },
+        { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -40. Recorded permanently.', next: 'cache_betrayed', moral: -40 },
+      ],
+    },
+
+    cache_stood: {
+      id: 'cache_stood', type: 'story',
+      text: `The four minutes pass. The distribution protocol locks in.
+
+  Sera hands you your share: a medical pack, a material bundle, and a small weapon component you don't have a name for yet.
+
+  "Good work," she says, without looking up.
+
+  The bandaged kid — you learn their name is Tam — gives you a fistbump. Unselfconscious. Like it was the obvious thing to do.
+
+  Your interface: ALLIANCE LOG UPDATED. Cache cooperation recorded. Mercy weight +3.
+
+  You don't feel heroic. You feel like someone who made a decision and then stuck with it. The System doesn't seem to have an opinion about that distinction.
+
+  Sera catches your eye. "The Judges will see this. What you could have done and didn't. I think that matters to Mercy." She pauses. "I think it matters to Wrath too, differently."`,
+      xp: 100,
+      rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 3 }],
+      choices: [
+        { label: 'Head to the elemental zones', next: 'district_hub' },
+      ],
+    },
+
+    cache_betrayed: {
+      id: 'cache_betrayed', type: 'story',
+      text: `You take the sealed container. Move fast. Out of the room before the distribution protocol locks in.
+
+  Sera's voice, behind you: "—hey—"
+
+  You don't stop.
+
+  Outside, the container opens: two item upgrades, a rare material. Worth something.
+
+  Your interface: BETRAYAL RECORDED. Alliance: Builders — BROKEN. Moral −40. Backstab counter: +1. Wrath weight +5.
+
+  The container is in your pack. The items are real. The record is real.
+
+  Voss passes you on a side corridor without stopping. Just a small nod — not approval, just acknowledgment. You made a deliberate choice. They respect deliberate choices.
+
+  The Builders won't trust you again this chapter. Some zones that respond to cooperation will be harder to access now. The Shadow zone, however, and the Fire zone — your interface shows them both lit up clearly. Resonating.
+
+  The System didn't punish you. It updated you.`,
+      xp: 60,
+      rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+      choices: [
+        { label: 'Head to the Shadow zone', sub: 'Now open to you', next: 'zone_shadow' },
+        { label: 'Go to the district hub',  next: 'district_hub' },
+      ],
+    },
+
+    cache_refused: {
+      id: 'cache_refused', type: 'story',
+      text: `You keep walking. Voss watches you go.
+
+  Later, Sera finds you near the map station. "Voss told me what they offered you." She's direct about it, no setup. "Thank you for not taking it."
+
+  "You weren't there," you say.
+
+  "I know. That's why it counts."
+
+  She adds something to your share of the cache distribution — a small extra, unmarked. The bandaged kid, Tam, gives you a more formal nod this time. Like something's been decided about you.
+
+  Your interface: MORAL RECORD — Refusal logged. Mercy weight +5. Wrath weight −2.
+
+  It doesn't feel like a big moment. It probably shouldn't.`,
+      xp: 120,
+      rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 4 }],
+      choices: [
+        { label: 'Head to the elemental zones', next: 'district_hub' },
+      ],
+    },
+
+    cache_reported: {
+      id: 'cache_reported', type: 'story',
+      text: `You find Sera before the opening. Tell her what Voss offered. No commentary — just the facts.
+
+  She listens without interrupting. When you finish she nods once.
+
+  "Voss does this," she says. "Tests people. I don't think they're malicious. I think they're curious." A pause. "We'll keep an eye on the window. Thank you."
+
+  At the cache opening, Voss appears. They see you. They see Sera's people distributed around the room. They see you meet their eye.
+
+  For a moment nothing happens.
+
+  Then Voss nods — small, real — and leaves without a word.
+
+  Sera's team completes the opening cleanly. Your share is full, plus a bonus Sera calls "trustworthy conduct." Tam high-fives you. You let them.
+
+  Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Mercy weight +8. Moral +20. Permanent flag: "Can be trusted under pressure."`,
+      xp: 150,
+      rewards: [{ itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_metal', qty: 5 }],
+      choices: [
+        { label: 'Head to the elemental zones', next: 'district_hub' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // SYSTEM ESCALATION NODES
+    // (triggered when player enters a 2nd or 3rd+ element zone)
+    // ═══════════════════════════════
+    zone_second_element_warning: {
+      id: 'zone_second_element_warning', type: 'story',
+      text: `Your interface flickers.
+
+  Not a glitch. Something deliberate.
+
+  A single line appears in a font you haven't seen the system use before — slightly smaller, monospace, cold:
+
+  "Greed detected."
+
+  A pause. Then:
+
+  "Deviation from chosen path observed."
+
+  The zone behind you closes. Not locked — just no longer interested in you. The elemental resonance you carried into it reads as background noise now. Whatever it recognized in you was already spent elsewhere.
+
+  The new zone ahead activates anyway. The System doesn't close doors out of punishment. It opens them without enthusiasm.
+
+  Your interface updates: Enemy parameters escalating.
+  All enemies in remaining zones: ×2 HP, ATK, DEF, SPD.
+  XP per kill: unchanged.
+
+  The next zone will not provide guidance. The system has stopped calibrating for your success.`,
+      sysMsg: 'Deviation from chosen path observed. Escalating trial parameters.',
+      choices: [
+        { label: 'Continue into the district', next: 'district_hub' },
+      ],
+    },
+
+    zone_third_element_warning: {
+      id: 'zone_third_element_warning', type: 'story',
+      text: `No flicker this time.
+
+  The system message appears directly on top of your field of view — not in the interface panel, not in a notification. Embedded in your vision like a heads-up display that doesn't belong to you:
+
+  "Power without commitment is instability."
+
+  Then:
+
+  "Escalating trial parameters."
+
+  Then nothing. The message doesn't clear. It fades, slowly, over fifteen seconds. Like it wants you to read it multiple times.
+
+  The zone ahead is active. The enemies inside are — different. Not visually. But the way they move has changed. Faster. More deliberate. Like something recalibrated them while you were deciding to come here.
+
+  Your interface: All enemies — ×4 HP, ATK, DEF, SPD.
+  Environmental hazards: active.
+  System support: withdrawn.
+
+  A final line, in a smaller font than everything else, as if the system is saying it to itself:
+
+  "You were given a path. You chose to take more. Now survive the weight of it."`,
+      sysMsg: 'Power without commitment is instability. Parameters at ×4. System support withdrawn.',
+      choices: [
+        { label: 'Enter the zone anyway', next: 'district_hub' },
+      ],
+    },
+
+    judge_lore_builders: {
+      id: 'judge_lore_builders', type: 'story',
+      text: `"Mercy and Wrath," Sera says. "We've been piecing together what we know."
+
+  She sits down. This is a longer conversation.
+
+  "Mercy appeared at the end of Chapter 1 for two players on our network who we know had high cooperation scores. Both described the same thing: an entity that was calm, precise, and — strange word for a System entity — kind. Not soft. Just fair. It evaluated what they built, who they helped, what they gave up. It didn't ask them to justify their choices. It just — confirmed them. And then it fought them."
+
+  "It's still a boss fight?"
+
+  "It's still a boss fight." She almost smiles. "The System evaluates you and then tests you. That's what it does. Mercy is hard. But the players who faced it said it felt like the System respecting them enough to take them seriously." 
+
+  She pauses.
+
+  "Wrath. The two people I know of who faced Wrath were quieter about it afterward. Not damaged — just quieter. One of them said: 'It knew exactly what I'd done and it didn't blink. It just wanted to see if I was as good at fighting as I was at taking.'" She looks at you. "Both players survived. Both players changed differently."`,
+      choices: [
+        { label: 'Head to the elemental zones', next: 'district_hub' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // PRE-BOSS CONVERGENCE
+    // ═══════════════════════════════
+    pre_boss_ch2: {
+      id: 'pre_boss_ch2', type: 'story',
+      text: `Your interface pulses once. An unfamiliar color — not the usual gold. Something cooler. More deliberate.
+
+  CHAPTER ASSESSMENT COMPLETE.
+  MORAL RECORD: Compiled.
+  ALLIANCE LOG: Compiled.
+  ELEMENTAL RESONANCE: Recorded.
+  ELEMENTS ATTEMPTED: Recorded.
+
+  TWIN JUDGES: Summoned.
+
+  The district goes quiet in a new way. Not the System-pause quiet. Not the aftermath quiet. A third kind of quiet — expectation made physical.
+
+  The plaza is empty now. The Builders are gone. Voss is gone. Rue is gone. Pell's shop is dark.
+
+  It's just you and the fountain and the broken glass and whatever's coming.
+
+  Two shapes at the far end of the plaza. One moving toward you with the patience of something that has been waiting in exactly this way for exactly this moment. The other standing still — already there, somehow, without having arrived.
+
+  Your interface shows both:
+
+  JUDGE KAELITH — Evaluator of Cooperation
+  JUDGE MORREN — Evaluator of Dominance
+
+  Two axes. Two records. Both present.
+
+  A system message, the last one before the fight:
+
+  "The system adapts to human choices. This is what that looks like."
+
+  Below it, quieter, as if the system didn't mean for you to read it:
+
+  "The form this takes depends on what you built. Both of what you built."`,
+      choices: [
+        { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'judges_verdict' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // JUDGES VERDICT — dynamic record readout
+    // (text composed at render-time from real player state)
+    // ═══════════════════════════════
+    judges_verdict: {
+      id: 'judges_verdict', type: 'story',
+      sysMsg: 'TWIN JUDGES — Record review in progress.',
+      text: '',
+      choices: [
+        { label: 'Stand before them', sub: 'The reading is finished. The fight begins.', next: 'boss_judges' },
+      ],
+    },
+
+    // ═══════════════════════════════
+    // BOSS FIGHT — TWIN JUDGES
+    // ═══════════════════════════════
+    boss_judges: {
+      id: 'boss_judges', type: 'boss',
+      text: `The reading is finished. The interfaces fold away — every choice, every alliance, every elemental zone, every life ended or spared, returned to wherever the System keeps things it has already accounted for.
+
+  Both Judges look at you now. Not the record — you.
+
+  Mercy's halo settles into its working state, twice the complexity of any System display you've seen.
+  Wrath's compression sharpens.
+
+  Neither of them speaks again.
+
+  The fight begins.`,
+      enemy: {
+        name: 'The Twin Judges',
+        icon: '⚖️',
+        hp: 380,
+        atk: 22,
+        def: 14,
+        xp: 600,
+        img: '../assets/boss/twin_judges.png',
+        loot: [{ itemKey: 'judges_seal', qty: 1 }, { itemKey: 'rune_lux', qty: 1 }],
+      },
+      bossKey: 'twin_judges',
+      onWin:  'chapter_end_ch2',
+      onLose: 'pre_boss_ch2',
+    },
+
+    // ═══════════════════════════════
+    // CHAPTER END
+    // ═══════════════════════════════
+    chapter_end_ch2: {
+      id: 'chapter_end_ch2', type: 'end',
+    },
+
+  } // END NODES
+
+  // ═══════════════════════════════════════════════════════════
+  // ENGINE — mirrors chapter1 exactly
+  // ═══════════════════════════════════════════════════════════
+
+  function xpForLevel(lv) { return Math.floor(100 * Math.pow(1.5, lv - 1)) }
+  function getDefeatedBosses() { return player.defeated_bosses || [] }
+  function markBossDefeated(key) { const d=[...getDefeatedBosses()]; if(!d.includes(key)) d.push(key); player.defeated_bosses=d; return d }
+  function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;',
+    }[ch]))
   }
 
-  // ── App state ────────────────────────────────────
-  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
-  if (!player) throw new Error('no player')
-
-  let currentHp = player.hp || 100
-  let nodeId    = (player.current_node || '').startsWith('ch1_')
-    ? player.current_node.replace('ch1_', '')
-    : 'opening'
-  let bossMode  = 'solo'
-  let outcome   = null
-
-  if (!NODES[nodeId]) nodeId = 'opening'
-
-  // ── Level up logic ───────────────────────────────
-  async function checkLevelUp(oldXp, newXp, oldLevel) {
-    let level   = oldLevel
-    let xp      = newXp
-    let leveled = false
-    let levelsGained = 0
-
-    while (xp >= xpForLevel(level)) {
-      xp -= xpForLevel(level)
-      level += 1
-      leveled = true
-      levelsGained++
+  async function addItem(itemKey, qty) {
+    const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    if (ex) { await supabase.from('inventory').update({ quantity: ex.quantity + qty }).eq('id', ex.id); return }
+    const ITEM_DEF = {
+      builders_cache_key: { name:"Builder's Cache Key", item_type:'key',      rarity:'uncommon',  icon:'🗝️' },
+      district_map:       { name:'District Map',         item_type:'material', rarity:'common',    icon:'🗺️' },
+      ignis_seed:         { name:'Ignis Seed',           item_type:'material', rarity:'uncommon',  icon:'🔥' },
+      aqua_cord:          { name:'Aqua Cord',            item_type:'material', rarity:'uncommon',  icon:'💧' },
+      stabilizer_pack:    { name:'Stabilizer Pack',      item_type:'consumable',rarity:'common',   icon:'💊', hp_restore:40 },
+      medical_pack:       { name:'Medical Pack',         item_type:'consumable',rarity:'common',   icon:'🩹', hp_restore:30 },
+      scrap_metal:        { name:'Scrap Metal',          item_type:'material', rarity:'common',    icon:'⚙️' },
+      rare_component:     { name:'Rare Component',       item_type:'material', rarity:'rare',      icon:'🔮' },
+      judges_seal:        { name:"Judges' Seal",         item_type:'accessory',rarity:'legendary', icon:'⚖️' },
+      rune_ignis:         { name:'Ignis Rune',           item_type:'material', rarity:'uncommon',  icon:'🔥' },
+      rune_aqua:          { name:'Aqua Rune',            item_type:'material', rarity:'uncommon',  icon:'💧' },
+      rune_volt:          { name:'Volt Rune',            item_type:'material', rarity:'uncommon',  icon:'⚡' },
+      rune_lux:           { name:'Lux Rune',             item_type:'material', rarity:'uncommon',  icon:'✨' },
+      rune_umbra:         { name:'Umbra Rune',           item_type:'material', rarity:'uncommon',  icon:'🌑' },
+      rune_terra:         { name:'Terra Rune',           item_type:'material', rarity:'uncommon',  icon:'🪨' },
+      rune_aero:          { name:'Aero Rune',            item_type:'material', rarity:'uncommon',  icon:'💨' },
+      rune_flora:         { name:'Flora Rune',           item_type:'material', rarity:'uncommon',  icon:'🌿' },
+      rune_ferro:         { name:'Ferro Rune',           item_type:'material', rarity:'uncommon',  icon:'⚙️' },
+      rune_venin:         { name:'Venin Rune',           item_type:'material', rarity:'uncommon',  icon:'☠️' },
+      venom_compound:     { name:'Unstable Compound',    item_type:'consumable',rarity:'rare',     icon:'☠️', hp_restore:0 },
     }
+    const def = ITEM_DEF[itemKey] || { name:itemKey, item_type:'material', rarity:'common', icon:'📦' }
+    const { error } = await supabase.from('inventory').insert({
+      player_id:     player.id,
+      item_key:      itemKey,
+      quantity:      qty,
+      name:          def.name,
+      item_type:     def.item_type      || 'material',
+      rarity:        def.rarity         || 'common',
+      icon:          def.icon           || '📦',
+      element:       def.element        || 'none',
+      hp_restore:    def.hp_restore     || 0,
+      atk_bonus:     def.atk_bonus      || 0,
+      def_bonus:     def.def_bonus      || 0,
+      power_bonus:   def.power_bonus    || 0,
+      guard_bonus:   def.guard_bonus    || 0,
+      speed_bonus:   def.speed_bonus    || 0,
+      control_bonus: def.control_bonus  || 0,
+      insight_bonus: def.insight_bonus  || 0,
+      luck_bonus:    def.luck_bonus     || 0,
+      agility_bonus: def.agility_bonus  || 0,
+      max_hp_bonus:  def.max_hp_bonus   || 0,
+      two_handed:    def.two_handed     || false,
+      sockets_total: 0,
+      sockets_used:  0,
+      socketed_runes:[],
+    })
+    if (error) console.error('[ch2 addItem]', itemKey, error.message)
+  }
 
-    if (!leveled) return null
+  // Deduct `qty` of `itemKey` from the player's inventory. Decrements the
+  // existing row; deletes the row if quantity hits zero. Silent no-op if the
+  // player doesn't have the item — callers should pre-check inventory if the
+  // outcome depends on a successful deduction. Used by `cur.cost` arrays.
+  async function removeItem(itemKey, qty) {
+    const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    if (!ex) return
+    const remaining = ex.quantity - qty
+    if (remaining <= 0) await supabase.from('inventory').delete().eq('id', ex.id)
+    else await supabase.from('inventory').update({ quantity: remaining }).eq('id', ex.id)
+  }
 
-    // +5 HP per level (not 20)
-    const newMaxHp  = (player.max_hp || 100) + levelsGained * 5
-    const newHp     = newMaxHp  // full restore on level up
+  // Check whether the player has `qty` of `itemKey` available. Used to gate
+  // choices behind inventory costs (e.g. Sera asking for medical packs).
+  async function hasItem(itemKey, qty) {
+    const { data:ex } = await supabase.from('inventory').select('quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    return !!ex && ex.quantity >= qty
+  }
 
-    // 1 SP per level gained
-    const spGained  = levelsGained * 1
-    const newSP     = (player.skill_points || 0) + spGained
-    player.skill_points = newSP
-    const newClaimed = (player.sp_claimed || 0) + spGained
-    player.sp_claimed = newClaimed
-
-    // +1 to all base stats per level
-    const statGain = levelsGained
-    const updStats = {
-      atk:     (player.atk     || 1) + statGain,
-      def:     (player.def     || 0) + statGain,
-      power:   (player.power   || 0) + statGain,
-      guard:   (player.guard   || 0) + statGain,
-      speed:   (player.speed   || 0) + statGain,
-      insight: (player.insight || 0) + statGain,
-      luck:    (player.luck    || 0) + statGain,
-      control: (player.control || 0) + statGain,
-      agility: (player.agility || 0) + statGain,
-    }
-    Object.assign(player, updStats)
-
-    currentHp = newHp
-    player.max_hp = newMaxHp
-    player.level  = level
-    player.xp     = newXp
-
-    window.showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
+  async function save(updates) {
+    Object.assign(player, updates)
+    const { data, error } = await supabase.from('players').update(updates).eq('id', player.id).select().single()
+    if (error) console.error('[ch2 save]', error.message)
+    // Merge DB-returned fields into the existing player object instead of
+    // rebinding the variable. Same rationale as ch1/index.js save(): keeps
+    // reference identity stable across modules (book.html currentPlayer,
+    // sibling pages like skills/inventory) so post-save mutations remain
+    // visible everywhere instead of getting orphaned on the old reference.
+    if (data) { Object.assign(player, data); currentHp = data.hp }
     renderHUD()
-
-    return { level, max_hp: newMaxHp, hp: newHp, xp: newXp,
-             skill_points: newSP, sp_claimed: newClaimed, ...updStats }
   }
 
-  // ── HUD ──────────────────────────────────────────
+  function calcBadge(moral, pvpKills, helpsGiven) {
+    const m=moral||0, pk=pvpKills||0, hg=helpsGiven||0
+    if (m>=60&&(hg>=3||pk===0)) return 'elite'
+    if (m>=20) return 'green'
+    if (m<=-20||(pk>=5&&pk>hg*3)) return 'red'
+    return 'neutral'
+  }
+
+  // ── Chapter Resonance ─────────────────────────────────────────────────────────
+  // Resonance is set when the player defeats their first zone boss.
+  // It persists for the chapter run. Restarting the chapter resets it.
+  const RESONANCE_PREFIX = 'element_resonance_'
+
+  function getChapterResonance() {
+    const d = player.defeated_bosses || []
+    const entry = d.find(k => k.startsWith(RESONANCE_PREFIX))
+    return entry ? entry.replace(RESONANCE_PREFIX, '') : null
+  }
+
+  async function setChapterResonance(elementKey) {
+    const flag = RESONANCE_PREFIX + elementKey
+    if ((player.defeated_bosses||[]).includes(flag)) return // already set
+    const d = markBossDefeated(flag)
+    await save({ defeated_bosses: d })
+    const elName = ELEMENT_NAMES[elementKey] || elementKey
+    window.showSysOverlay(
+      `Resonance established: ${elName}.\nFor this chapter, the System recognizes you as this.\nThe Judges will evaluate accordingly.`,
+      'info'
+    )
+  }
+
+  function isDeviating(zoneElement) {
+    const resonance = getChapterResonance()
+    if (!resonance) return false
+    return resonance !== zoneElement
+  }
+
+
+  window.goTo = async function goTo(nextId, choice={}) {
+    if (!NODES[nextId]) return
+
+    // ── Resonance deviation warning ───────────────────────────────────────────
+    // If player has a chapter resonance and is entering a different element zone,
+    // show a confirmation overlay before proceeding.
+    const zoneElement = ZONE_ELEMENT_MAP[nextId]
+    if (zoneElement && isDeviating(zoneElement)) {
+      const resonance   = getChapterResonance()
+      const resName     = ELEMENT_NAMES[resonance]  || resonance
+      const zoneName    = ELEMENT_NAMES[zoneElement] || zoneElement
+      const existing    = document.getElementById('deviation-warning')
+      if (existing) existing.remove()
+      const el = document.createElement('div')
+      el.id = 'deviation-warning'
+      el.style.cssText = 'position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:1rem'
+      el.innerHTML = `<div style="max-width:400px;background:#12111a;border:1px solid #f4c45a44;padding:1.5rem;border-radius:4px;text-align:center">
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#f4c45a;letter-spacing:.12em;margin-bottom:.75rem">DEVIATION DETECTED</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8e3d6;line-height:1.6;margin-bottom:.5rem">Your chapter resonance is <strong style="color:#f4c45a">${resName}</strong>.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:#857f92;line-height:1.6;margin-bottom:1.25rem">Entering the ${zoneName} zone will escalate enemy parameters. The Judges will note the deviation.<br><br>This path again?</p>
+        <div style="display:flex;gap:.75rem;justify-content:center">
+          <button id="deviation-enter-anyway" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
+          <button id="deviation-turn-back" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92;background:transparent;border:1px solid #26232f;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
+        </div>
+      </div>`
+      document.body.appendChild(el)
+      document.getElementById('deviation-enter-anyway').addEventListener('click', () => {
+        el.remove()
+        window._goToConfirmed(nextId, choice)
+      })
+      document.getElementById('deviation-turn-back').addEventListener('click', () => el.remove())
+      return
+    }
+
+    await _goToCore(nextId, choice)
+  }
+
+  window._goToConfirmed = async function(nextId, choice) {
+    await _goToCore(nextId, choice)
+  }
+
+  async function _goToCore(nextId, choice={}) {
+    if (!NODES[nextId]) return
+
+    // ── District clock + NPC interrupts on hub entry (#1 #2 #3 #23) ──
+    // When the player heads to district_hub, decide whether to redirect them
+    // through a one-time event first, and fire any milestone sysMsgs the
+    // clock has crossed. Triggers in order of priority:
+    //   1. cache_betrayal_offer if zones cleared >= 3 and not yet seen (#23)
+    //   2. Sera / Voss / Rue check-ins (#1 / #2 / #3)
+    // Each fires at most once per run via flags in alliance_log.
+    // Milestone sysMsgs (the Sweep warning, the Judges call) are passive —
+    // they show on top of the hub without changing where you land.
+    const pendingClockFlags = []
+    if (nextId === 'district_hub') {
+      const log = player.alliance_log || []
+      const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+      const helpedRescue = log.includes('builders_helped')
+      const moral = player.moral_score || 0
+      const executedHumanoid = log.includes('executed_humanoid')
+
+      // Cache auto-fire (#23): once you've cleared 3 zones, the alliance you
+      // either signed with or watched form has reached its peak — and that's
+      // exactly when Voss decides to offer the cache. If you've already seen
+      // the cache offer in this run (any of: considered / refused / reported)
+      // the alliance_log carries 'cache_seen' and we skip the redirect.
+      if (!log.includes('cache_seen') && defeated >= 3) {
+        nextId = 'cache_betrayal_offer'
+      }
+      // The Sweep (#5 + #11): factions clash in the plaza when tension boils
+      // over. Requires the cache to have resolved first (so it lands as a
+      // mid-chapter beat, not a first thing), and tension >= 35.
+      else if (!log.includes('sweep_fired') && log.includes('cache_seen') && computeTension(player) >= 35) {
+        nextId = 'sweep_arrival'
+        pendingClockFlags.push('sweep_fired')
+      }
+      // Sera (#1): builder-flavour, fires after first rescue + first zone clear
+      else if (!log.includes('sera_met') && helpedRescue && defeated >= 1) {
+        nextId = 'sera_checkin'
+      }
+      // Voss (#2): villain-flavour, fires for clearly villain players
+      else if (!log.includes('voss_met') && (moral <= -20 || executedHumanoid) && defeated >= 1) {
+        nextId = 'voss_offer'
+      }
+      // Rue (#3): cadence, fires after the second cleared zone
+      else if (!log.includes('rue_met') && defeated >= 2) {
+        nextId = 'rue_intel'
+      }
+
+      // Passive clock milestones (#23): fire sysMsg overlays the first time
+      // the player crosses each threshold. The corresponding alliance_log
+      // flag (clock_6 / clock_8) gets added to updates below so it doesn't
+      // re-fire on subsequent hub returns.
+      if (defeated >= 6 && !log.includes('clock_6')) {
+        pendingClockFlags.push('clock_6')
+        setTimeout(() => window.showSysOverlay('SIX ZONES CLAIMED. The Judges have begun their preparation.', 'warn'), 800)
+      }
+      if (defeated >= 8 && !log.includes('clock_8')) {
+        pendingClockFlags.push('clock_8')
+        setTimeout(() => window.showSysOverlay('EIGHT ZONES CLAIMED. The Twin Judges are summoning. Finish what you intend to finish.', 'warn'), 800)
+      }
+    }
+
+    // ── Pure hero / pure villain finale interrupt (#26 / #27) ──────────────
+    // When the player heads to pre_boss_ch2, check finale eligibility. Each
+    // finale fires at most once per run, gated by alliance_log flags. Below
+    // the eligibility thresholds, this is a no-op and the normal Judges flow
+    // runs unchanged.
+    if (nextId === 'pre_boss_ch2') {
+      const log = player.alliance_log || []
+      const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+      const moral = player.moral_score || 0
+      const heroEligible    = moral >= 60  && log.includes('sweep_builders') && defeated >= 5 && !log.includes('hero_finale_done')
+      const villainEligible = moral <= -60 && log.includes('sweep_hunters')  && defeated >= 5 && !log.includes('villain_finale_done')
+      if      (heroEligible)    nextId = 'hero_finale_offer'
+      else if (villainEligible) nextId = 'villain_finale_offer'
+    }
+
+    const cur = NODES[nodeId]
+    const oldXp=player.xp||0, oldLvl=player.level||1
+    const updates = { current_node:'ch2_'+nextId }
+    if (cur?.xp)     { updates.xp=oldXp+cur.xp; player.xp=updates.xp }
+    if (cur?.hpLoss) { currentHp=Math.max(1,currentHp-cur.hpLoss); updates.hp=currentHp }
+    if (choice.moral) {
+      const oldMoral = player.moral_score||0
+      const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
+      const nm=Math.max(-100,Math.min(100,oldMoral+choice.moral))
+      updates.moral_score=nm; player.moral_score=nm
+      const nb=calcBadge(nm,player.pvp_kills,player.helps_given)
+      updates.badge=nb; updates.reputation=nb; player.badge=nb
+
+      // ── Visible feedback on moral changes ────────────────────────────────
+      // Toast the delta with the new total so the player sees the swing
+      // even when it doesn't cross a reputation band. If the band DID change
+      // (Neutral → Green, Green → Elite, Neutral → Red, etc.) escalate to a
+      // sysOverlay since that's a more meaningful event.
+      const sign = choice.moral > 0 ? '+' : ''
+      const ntot = nm > 0 ? '+'+nm : String(nm)
+      const isErr = choice.moral < 0
+      window.showToast(`Moral ${sign}${choice.moral} · now ${ntot}`, isErr)
+
+      if (nb !== oldBadge) {
+        const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
+        const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
+        window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+      }
+    }
+    // Optional allianceTag on the chosen option — pushes a flag onto the
+    // player's alliance_log array so later content can react to it. Used by
+    // the Builder rescue side quests (#7) and the cowardice / retreat hooks.
+    // Idempotent: skip the push if the tag is already in the log. Tags that
+    // ARE allowed to repeat (e.g. 'builders_helped' is counted multiple times
+    // in the Judges fight) shouldn't use this single-fire path — they live
+    // in choice.allianceTagRepeatable instead.
+    if (choice.allianceTag && !(player.alliance_log||[]).includes(choice.allianceTag)) {
+      const log = [...(player.alliance_log||[]), choice.allianceTag]
+      updates.alliance_log = log; player.alliance_log = log
+    }
+    if (choice.allianceTagRepeatable) {
+      const log = [...(player.alliance_log||[]), choice.allianceTagRepeatable]
+      updates.alliance_log = log; player.alliance_log = log
+    }
+    // Apply pending district-clock flags collected in the hub-interrupt block
+    // above. Done here so we have access to `updates`. Merges with any prior
+    // alliance_log mutation rather than overwriting it.
+    if (pendingClockFlags.length) {
+      const base = updates.alliance_log || player.alliance_log || []
+      const log = [...base, ...pendingClockFlags]
+      updates.alliance_log = log; player.alliance_log = log
+    }
+    if (choice.outcome) outcome=choice.outcome
+    // Apply cost (item deductions) then rewards (item additions) for the
+    // current node we're leaving. cost runs first so the player sees the
+    // expected net change.
+    if (cur?.cost)    for (const c of cur.cost)    await removeItem(c.itemKey, c.qty)
+    if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey, r.qty)
+    if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
+
+    // ── Set chapter resonance on first zone boss kill ─────────────────────────
+    const WIN_ELEMENT_MAP = {
+      zone_fire_boss_win:'fire',      zone_water_boss_win:'water',
+      zone_lightning_boss_win:'lightning', zone_arcane_boss_win:'arcane',
+      zone_shadow_boss_win:'shadow',  zone_earth_boss_win:'earth',
+      zone_wind_boss_win:'wind',      zone_plant_boss_win:'plant',
+      zone_metal_boss_win:'metal',    zone_poison_boss_win:'poison',
+    }
+    if (WIN_ELEMENT_MAP[nextId] && !getChapterResonance()) {
+      await setChapterResonance(WIN_ELEMENT_MAP[nextId])
+    }
+
+    await save(updates)
+    // ── Page-flip animation on navigation ──
+    const flipEl = document.querySelector('.page-flip-decorator')
+    if (flipEl) {
+      flipEl.classList.remove('playing')
+      void flipEl.offsetWidth
+      flipEl.classList.add('playing')
+      flipEl.addEventListener('animationend', () => flipEl.classList.remove('playing'), { once: true })
+    }
+    const lp=document.getElementById('left-page')
+    lp.style.cssText+='transition:opacity .3s,transform .3s;opacity:0;transform:translateX(-8px)'
+    setTimeout(()=>{ nodeId=nextId; render(); lp.style.opacity='1'; lp.style.transform='translateX(0)'; window.scrollTo({top:0,behavior:'smooth'}) },320)
+  }
+
+  // ── Dynamic verdict text composed from real player flags. ──────────
+  // Lives next to render() so the special-case in render() can call it.
+  // All inputs are read-only; this function never mutates state.
+  const ZONE_BOSS_TO_ELEMENT = {
+    zone_boss_fire:'Ignis', zone_boss_water:'Aqua', zone_boss_lightning:'Volt',
+    zone_boss_arcane:'Arcane', zone_boss_shadow:'Umbra', zone_boss_earth:'Terra',
+    zone_boss_wind:'Aero', zone_boss_plant:'Flora', zone_boss_metal:'Ferro',
+    zone_boss_poison:'Venom',
+  }
+
+  // Faction-tinted closing paragraph for zone boss-win nodes (#25).
+  // Builder-aligned (formally signed OR helped a rescue): Sera ack via comm.
+  // Hunter-aligned (low moral, no Builder alliance): Voss watches silently.
+  // Otherwise (neutral): the authored node.text is returned unchanged.
+  // Only fires for nodes matching /^zone_\w+_boss_win$/ — never modifies
+  // anything else. Pure function; no state mutation.
+  function appendFactionOutro(baseText, nid, p) {
+    if (!/^zone_\w+_boss_win$/.test(nid)) return baseText
+    const log = p.alliance_log || []
+    const builderAligned = log.includes('builders') || log.includes('builders_helped')
+    const moral = p.moral_score || 0
+    const hunterAligned = !builderAligned && moral <= -30
+    if (builderAligned) {
+      return baseText + '\n\nSera\'s voice comes through your comm, low and clean: "Good. That makes another. We\'re counting." A pause, just long enough to register. "Keep counting with us."'
+    }
+    if (hunterAligned) {
+      return baseText + '\n\nWhen you turn, Voss is leaning in the doorway. They don\'t say anything. They look you over once, the way you\'d appraise a useful tool, and then walk out without a sound. They were watching the whole fight.'
+    }
+    return baseText
+  }
+
+  // Zone aftermath lines (#24). Prepended to zone entry nodes only.
+  // Fires when the player enters a new zone after having cleared others —
+  // the world acknowledges the trail of clearings behind them. Doesn't
+  // mention specific elements; cumulative tone only. Pure: no state mutation.
+  // Only triggers on nodes that are exactly 'zone_<element>' (no suffix).
+  function prependZoneAftermath(baseText, nid, p) {
+    if (!/^zone_(fire|water|lightning|arcane|shadow|earth|wind|plant|metal|poison)$/.test(nid)) return baseText
+    const cleared = (p.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+    let line = ''
+    if      (cleared === 0) return baseText  // first zone — nothing to acknowledge yet
+    else if (cleared <= 2)  line = 'The district feels slightly different than it did the last time you crossed it. The plaza is quieter. Pell is unloading something into the back of the shop. You see them notice you pass.'
+    else if (cleared <= 4)  line = 'You\'ve been moving through the district for a while now. Builder runners have started nodding at you in passing. Voss watches you for a beat longer than they used to before going back to whatever they were doing.'
+    else if (cleared <= 6)  line = 'There is a quality of attention in the district now. People step back from doorways when you enter rooms. Not afraid — measuring. The System is not the only thing keeping a record.'
+    else                    line = 'The district has settled into something cold around you. Most of the regulars have stopped speaking to you outright. Even Rue, when you pass them at the fountain, only nods. Whatever you are now, the people who live here recognize it.'
+    return line + '\n\n' + baseText
+  }
+
+  function buildJudgesVerdict(p) {
+    const moral       = p.moral_score || 0
+    const helps       = p.helps_given || 0
+    const pvpKills    = p.pvp_kills   || 0
+    const lvl         = p.level       || 1
+    const hasAlliance = (p.alliance_log || []).includes('builders')
+    const defeated    = p.defeated_bosses || []
+
+    const zonesCleared = defeated.filter(b => b in ZONE_BOSS_TO_ELEMENT)
+    const zoneNames    = zonesCleared.map(b => ZONE_BOSS_TO_ELEMENT[b])
+    const zoneCount    = zonesCleared.length
+
+    // Mercy lines (cooperation side of the ledger)
+    const mercy = []
+    if (hasAlliance && moral >= 0) {
+      mercy.push('▸ You signed an alliance with the Builders in this district. The signature still holds.')
+    } else if (hasAlliance && moral < -10) {
+      mercy.push('▸ You signed an alliance with the Builders. The signature broke under pressure.')
+    }
+    if (helps >= 5) {
+      mercy.push('▸ Your record from before this carries ' + helps + ' acts of help to the System\'s stranded.')
+    } else if (helps >= 1) {
+      mercy.push('▸ You helped ' + helps + ' of the System\'s stranded in another life. I have not forgotten.')
+    }
+    if (moral >= 60) {
+      mercy.push('▸ Moral score: +' + moral + '. The pattern is consistent.')
+    } else if (moral >= 20) {
+      mercy.push('▸ Moral score: +' + moral + '. Cooperation outweighs the rest.')
+    }
+    if (!mercy.length) {
+      mercy.push('▸ Your record contains few entries on my side.')
+      mercy.push('▸ Acknowledged.')
+    }
+
+    // Wrath lines (dominance side of the ledger)
+    const wrath = []
+    if (moral <= -60) {
+      wrath.push('▸ Moral score: ' + moral + '. The pattern is committed.')
+    } else if (moral <= -20) {
+      wrath.push('▸ Moral score: ' + moral + '. The hand was offered. You weighed it.')
+    }
+    if (pvpKills >= 5) {
+      wrath.push('▸ Lives ended by your hand: ' + pvpKills + '. Recorded.')
+    } else if (pvpKills >= 1) {
+      wrath.push('▸ ' + pvpKills + ' live' + (pvpKills === 1 ? '' : 's') + ' ended by your hand. Acknowledged.')
+    }
+    if (zoneCount >= 5) {
+      wrath.push('▸ Elemental guardians felled: ' + zoneCount + '. You did not pass through this district. You took it.')
+    } else if (zoneCount >= 1) {
+      wrath.push('▸ You cleared ' + zoneCount + ' guardian' + (zoneCount === 1 ? '' : 's') + ' on the way here.')
+    }
+    if (lvl >= 14) {
+      wrath.push('▸ You arrived at level ' + lvl + '. You did not arrive empty-handed.')
+    }
+    if (!wrath.length) {
+      wrath.push('▸ Your record contains few entries on my side.')
+      wrath.push('▸ Acknowledged.')
+    }
+
+    // Resonance line (the column between them)
+    let resonance
+    if      (zoneCount === 0)  resonance = '▸ No elements claimed. You walked through the district untouched by what it offered.'
+    else if (zoneCount === 1)  resonance = '▸ One element claimed: ' + zoneNames[0] + '. Singular commitment.'
+    else if (zoneCount <= 3)   resonance = '▸ ' + zoneCount + ' elements claimed: ' + zoneNames.join(', ') + '. Focused reach.'
+    else if (zoneCount <= 6)   resonance = '▸ ' + zoneCount + ' elements claimed: ' + zoneNames.join(', ') + '. Broad reach.'
+    else                       resonance = '▸ ' + zoneCount + ' of 10 elements claimed: ' + zoneNames.join(', ') + '. You reached for everything within reach.'
+
+    // Closing line — who leads
+    let closing
+    if      (moral >=  60)        closing = 'Mercy speaks first. "You built more than you took. We see it." Wrath inclines its head — the smallest acknowledgement — and they step forward together, Mercy in the lead.'
+    else if (moral <= -60)        closing = 'Wrath speaks first. "You took more than you built. Clarity respected." Mercy inclines its head — the smallest acknowledgement — and they step forward together, Wrath in the lead.'
+    else if (Math.abs(moral)<20)  closing = 'Mercy looks at Wrath. "Mixed," she says. "Tested both ways," Wrath agrees. Neither leads. Both step forward at once.'
+    else if (moral > 0)           closing = 'Mercy nods to Wrath. They step forward in unison — both ledgers active, with Mercy closer to your shoulder.'
+    else                          closing = 'Wrath nods to Mercy. They step forward in unison — both ledgers active, with Wrath closer to your shoulder.'
+
+    return [
+      'Two interfaces unfold in front of you.',
+      '',
+      'Mercy stands to your left. Tall. Still. Cataloguing.',
+      'Wrath stands to your right. Smaller. Compressed. Already finished reading.',
+      '',
+      'Neither of them looks at you yet. They look at the record.',
+      '',
+      '═══════════════════════════════════════',
+      'MERCY READS, slowly:',
+      '',
+      mercy.join('\n'),
+      '',
+      '═══════════════════════════════════════',
+      'WRATH READS, faster:',
+      '',
+      wrath.join('\n'),
+      '',
+      '═══════════════════════════════════════',
+      'ELEMENTAL RESONANCE — the column between them:',
+      '',
+      resonance,
+      '',
+      '═══════════════════════════════════════',
+      '',
+      'They finish reading at the same moment. They look at each other for exactly long enough to make a decision.',
+      '',
+      closing,
+    ].join('\n')
+  }
+
+  async function render() {
+    const node=NODES[nodeId]
+    if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
+    if (node.sysMsg) window.showSysOverlay(node.sysMsg)
+
+    // Pre-resolve choice.requires gating (used by Sera giving 2 medical packs,
+    // any future inventory-gated choice). Adds a transient `_unmetRequires`
+    // flag on the choice that renderChoices below reads to disable the button.
+    if (Array.isArray(node.choices)) {
+      for (const c of node.choices) {
+        if (Array.isArray(c.requires) && c.requires.length) {
+          let ok = true
+          for (const r of c.requires) if (!(await hasItem(r.itemKey, r.qty))) { ok = false; break }
+          c._unmetRequires = !ok
+        } else {
+          c._unmetRequires = false
+        }
+      }
+    }
+
+    const stEl=document.getElementById('story-text')
+    // judges_verdict composes its text from live player state — every other
+    // node uses its authored node.text as-is, with one exception: zone boss-win
+    // nodes get a faction-tinted closing paragraph appended (Sera for Builders,
+    // Voss for Hunter-aligned, nothing for neutral). The base text stays intact.
+    const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
+    stEl.textContent = appendFactionOutro(prependZoneAftermath(baseText, nodeId, player), nodeId, player)
+    stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
+
+    // Judge image near boss (and on the verdict scene)
+    const judgeNodes=['pre_boss_ch2','judges_verdict','boss_judges']
+    const judgeImg=document.getElementById('judge-img')
+    if (judgeNodes.includes(nodeId)) {
+      if (!judgeImg) {
+        const img=document.createElement('img');img.id='judge-img'
+        img.src='../assets/boss/twin_judges.png';img.alt='The Twin Judges'
+        img.style.cssText='width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:'+(nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)')
+        stEl.insertAdjacentElement('afterend',img);setTimeout(()=>img.style.opacity='1',100)
+      } else { judgeImg.style.filter=nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)';judgeImg.style.opacity='1' }
+    } else { judgeImg?.remove() }
+
+    document.getElementById('outcome-box').style.display='none'
+    const panel=document.getElementById('right-panel')
+    if      (node.type==='boss')   renderBoss(panel,node)
+    else if (node.type==='combat') renderCombat(panel,node)
+    else if (node.type==='end')    renderEnd(panel,node)
+    else if (nodeId==='district_hub') renderDistrictHub(panel)
+    else                           renderChoices(panel,node)
+  }
+
+  function renderChoices(panel,node) {
+    const choices=node.choices||[]
+    if (!choices.length) { panel.innerHTML=''; return }
+
+    // Detect if we're inside an elemental zone so we can show a retreat button
+    const zoneIds = ['zone_fire','zone_water','zone_lightning','zone_arcane','zone_shadow','zone_earth','zone_wind','zone_plant','zone_metal','zone_poison']
+    const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
+
+    const retreatBtn = inZone
+      ? `<button class="choice" data-next="district_hub" style="margin-top:8px;border-color:rgba(255,255,255,.15);opacity:.7">
+          <span class="choice-arrow" style="color:var(--ink-dim)">↩</span>
+          <span class="choice-body" style="color:var(--ink-dim)">Retreat to District Hub<span class="choice-sub">Leave this zone — come back stronger</span></span>
+         </button>`
+      : ''
+
+    panel.innerHTML='<p class="choices-label">What do you do?</p><div class="choices">'+
+      choices.map((c,index)=>{
+        const variant=c.variant?' choice-'+c.variant:''
+        const sub=c.sub?'<span class="choice-sub">'+escapeHtml(c.sub)+'</span>':''
+        // Optional `requires` on a choice: [{itemKey,qty}] — choice is hidden
+        // (disabled visually + no click handler) if any requirement isn't met.
+        // Resolved synchronously against the cached check below.
+        const disabled = c._unmetRequires ? ' disabled' : ''
+        const style = c._unmetRequires ? ' style="opacity:.35;cursor:not-allowed"' : ''
+        return '<button class="choice'+variant+'" data-choice-index="'+index+'"'+disabled+style+'>'+
+          '<span class="choice-arrow">→</span>'+
+          '<span class="choice-body">'+escapeHtml(c.label)+sub+'</span>'+
+          '</button>'
+      }).join('')+retreatBtn+'</div>'
+    panel.querySelectorAll('[data-choice-index]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = choices[Number(btn.dataset.choiceIndex)] || {}
+        if (choice._unmetRequires) return  // gated; no-op
+        goTo(choice.next || '', {
+          moral:                  choice.moral                  || 0,
+          outcome:                choice.outcome                || '',
+          allianceTag:            choice.allianceTag            || null,
+          allianceTagRepeatable:  choice.allianceTagRepeatable  || null,
+        })
+      })
+    })
+    panel.querySelector('[data-next="district_hub"]')?.addEventListener('click', () => goTo('district_hub'))
+  }
+
+  // District hub — 9 elemental zones
+
+  function renderDistrictHub(panel) {
+    const defeated = getDefeatedBosses()
+    const judgeReady = defeated.includes('twin_judges')
+
+    // Build story events status
+    const moral=player.moral_score||0
+    const hasAlliance = (player.alliance_log||[]).includes('builders')
+
+    const stEl=document.getElementById('story-text')
+    const resonance = getChapterResonance()
+    const resDisplay = resonance
+      ? `CHAPTER RESONANCE: ${ELEMENT_NAMES[resonance]} — established this run`
+      : `CHAPTER RESONANCE: None — defeat a zone boss to establish`
+    // District clock: count cleared zone bosses (#23). The chapter has
+    // forced beats at 3 (cache offer), 6 (Judges prepare), and 8 (Judges
+    // summon).
+    const zonesClear = defeated.filter(b => b.startsWith('zone_boss_')).length
+    // Cold War tension (#5). Computed from alliance_log — readout below.
+    const tens  = computeTension(player)
+    const tensSign = tens > 0 ? '+' : ''
+
+    stEl.textContent=`The shopping district spreads out before you. Ten elemental zones pulse across your radar — some bright and accessible, others dim, waiting for the right resonance to open them.
+
+  Your interface shows the faction positions, the zone locations, and below it all, a quiet indicator:
+
+  ALLIANCE LOG: ${hasAlliance?'Builders (Active)':'No alliances recorded'}
+  MORAL SCORE: ${moral>0?'+':''}${moral}
+  ${resDisplay}
+  DISTRICT PROGRESS: ${zonesClear} / 10 zones cleared
+  TENSION: ${tensionLabel(tens)} (${tensSign}${tens})
+  JUDGES: ${judgeReady?'Both defeated — Chapter complete':'Watching'}`
+
+    let zonesHtml = ZONES.map(z=>{
+      const bossKey = 'zone_boss_'+z.id.replace('zone_','')
+      const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
+      const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
+      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px">
+        ${imgHtml}
+        <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
+          <span style="font-size:1rem">${z.icon}</span>
+          <div style="flex:1;min-width:0">
+            <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'var(--ink-dim)'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
+          </div>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
+        </div>
+      </div>`
+    }).join('')
+
+    let eventsHtml = `<div style="margin-top:.75rem">
+      <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem">STORY EVENTS</p>
+      <div data-go="cache_betrayal_offer" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s">
+        <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">⚖️ The Cache Offer</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">A decision waits in the east corridor</p>
+      </div>
+      <div data-go="trader_intro" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s">
+        <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
+      </div>
+      <div data-go="pre_boss_ch2" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s">
+        <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
+      </div>
+    </div>`
+
+    panel.innerHTML=`<p class="choices-label">District Map</p><div style="max-height:65vh;overflow-y:auto;padding-right:2px">${zonesHtml}${eventsHtml}</div>`
+    panel.querySelectorAll('[data-go]').forEach(el => {
+      el.addEventListener('click', () => goTo(el.dataset.go))
+    })
+  }
+
+  // Combat + boss engines (full implementation)
+  function renderCombat(panel,node) {
+    const zoneIds = ['zone_fire','zone_water','zone_lightning','zone_arcane','zone_shadow','zone_earth','zone_wind','zone_plant','zone_metal','zone_poison']
+    const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
+    const onEscape = node.onEscape || (inZone ? 'district_hub' : null)
+    buildCombatUI(panel,node.enemy,node.onWin,node.onLose,onEscape,false)
+  }
+  // ── Twin Judges scaling (#20 / #21) ──────────────────────────────────────
+  // Composes the Judges fight stats and form from the player's actual record.
+  // Pure: takes a player and returns { form, label, hp, atk, def, modifiers[] }.
+  // form  : 'mercy' | 'wrath' | 'both' — picks the rendered narrative form
+  // label : short string shown in the System call-out before the fight
+  // hp/atk/def : baseline + record-derived adjustments
+  // modifiers : array of human-readable strings (rendered in the call-out)
+  // ── Cold War tension (#5) ────────────────────────────────────────────────
+  // Computes the current Builder ↔ Hunter tension level from the player's
+  // alliance_log entries. Pure: never mutates state. The chapter doesn't
+  // store this number; it's recomputed on each hub entry from the flags
+  // already in the log.
+  //   negative → peace-aligned (Builders dominant)
+  //   ~0       → neutral / balanced
+  //   positive → conflict-aligned (Hunters dominant)
+  // Capped at ±60 so a long pile of similar flags doesn't run away.
+  function computeTension(p) {
+    const log = p.alliance_log || []
+    let t = 0
+    for (const x of log) {
+      if      (x === 'builders_helped')   t -= 5   // helped rescue
+      else if (x === 'spared_humanoid')   t -= 3   // chose mercy
+      else if (x === 'sera_met')          t -= 2   // Sera engagement (any outcome)
+      else if (x === 'executed_humanoid') t += 10  // chose violence
+      else if (x === 'voss_aligned')      t += 15  // intercepted runner
+      else if (x === 'cowardice')         t += 5   // refused to engage
+    }
+    // If the player reported the cache to Sera, that's a strong peace signal.
+    // We detect it indirectly: cache_seen with moral_score >= 10 implies
+    // cache_reported (the +20 moral outcome).
+    if (log.includes('cache_seen') && (p.moral_score || 0) >= 10) t -= 8
+    return Math.max(-60, Math.min(60, t))
+  }
+
+  // Tension descriptor for the hub status panel.
+  function tensionLabel(t) {
+    if (t <= -20) return 'PEACE — Builder cooperation dominant'
+    if (t <=  -5) return 'STABLE — Builder lean'
+    if (t <   10) return 'BALANCED — Factions watching each other'
+    if (t <   25) return 'TENSION — Conflict rising'
+    return                'COLD WAR — Hunters mobilizing'
+  }
+
+  function composeJudgesForm(p, baseEnemy) {
+    const moral       = p.moral_score || 0
+    const log         = p.alliance_log || []
+    // Sweep result counts as a strong faction commitment: defending the
+    // Builders adds Builder credit; joining the Hunters adds backstab weight.
+    const sweepBuilders = log.includes('sweep_builders') ? 2 : 0
+    const sweepHunters  = log.includes('sweep_hunters')  ? 3 : 0
+    const builderHelps = log.filter(x => x === 'builders_helped').length
+                       + (log.includes('sera_met') && log.includes('builders_helped') ? 1 : 0)
+                       + sweepBuilders
+    const backstabs   = (p.backstabs || 0)
+                      + (log.filter(x => x === 'executed_humanoid').length)
+                      + sweepHunters
+    const cowardice   = log.includes('cowardice')
+    const lvl         = p.level || 1
+
+    // Form selection: strong moral lean ⇒ that Judge dominates the fight.
+    // Otherwise both fight together (the default mixed form).
+    // Finale flags (#26 / #27) override the form entirely: completing the
+    // hero finale forces Mercy regardless of other numbers; completing the
+    // villain finale forces Wrath. The finale also amplifies the stat shift
+    // so the fight feels meaningfully different from the moral-only path.
+    const heroFinale    = log.includes('hero_finale_done')
+    const villainFinale = log.includes('villain_finale_done')
+    let form
+    if      (heroFinale)    form = 'mercy'
+    else if (villainFinale) form = 'wrath'
+    else if (moral >= 40)   form = 'mercy'
+    else if (moral <= -40)  form = 'wrath'
+    else                    form = 'both'
+
+    // Stat composition. Baseline starts at the authored values and is shaped
+    // by which form leads. Mercy form is endurance: higher HP, lower ATK.
+    // Wrath form is brutality: lower HP, higher ATK. Both is the in-between.
+    let hp  = (baseEnemy.hp  || 380) + lvl * 20
+    let atk = (baseEnemy.atk || 22)  + Math.floor(lvl * 1.5)
+    let def = (baseEnemy.def || 14)
+
+    const modifiers = []
+    if (form === 'mercy') {
+      hp  = Math.round(hp  * 1.25)  // longer fight
+      atk = Math.round(atk * 0.85)  // softer hits
+      modifiers.push(heroFinale
+        ? 'Hero finale committed — Mercy is fully present. Wrath does not speak.'
+        : 'Mercy leads — the fight is longer, the strikes lighter.')
+      if (heroFinale) { hp = Math.round(hp * 1.10); atk = Math.round(atk * 0.92) }
+    } else if (form === 'wrath') {
+      hp  = Math.round(hp  * 0.85)  // shorter fight
+      atk = Math.round(atk * 1.25)  // brutal hits
+      modifiers.push(villainFinale
+        ? 'Villain finale committed — Wrath is undivided. Mercy refuses to look.'
+        : 'Wrath leads — the fight is brief and ugly.')
+      if (villainFinale) { atk = Math.round(atk * 1.10); hp = Math.round(hp * 0.95) }
+    } else {
+      modifiers.push('Mercy and Wrath together — neither yields to the other.')
+    }
+
+    // Builder credit reduces Wrath's pressure (her sword stays half-sheathed).
+    // Applies even outside the Wrath-led form because Mercy intervenes too.
+    if (builderHelps > 0) {
+      const cut = Math.min(40, builderHelps * 15)
+      hp -= cut
+      modifiers.push(`Builder credit (${builderHelps}): Wrath's pressure -${cut} HP.`)
+    }
+
+    // Wrath's "Accountant" passive: every backstab / execution sharpens her.
+    // Cap at +8 ATK so the math stays survivable even on Wrath-dominant runs.
+    if (backstabs > 0) {
+      const add = Math.min(8, backstabs)
+      atk += add
+      modifiers.push(`Backstabs / executions (${backstabs}): Wrath's accountant adds +${add} ATK.`)
+    }
+
+    // Cowardice flag tips the fight psychologically. The damage boost is
+    // applied during combat (see buildCombatUI), not at composition time —
+    // we just surface the modifier here so the player sees the warning.
+    if (cowardice) modifiers.push("Cowardice noted — Wrath strikes harder while you're below half HP.")
+
+    // Elemental purity (#15) — count distinct elements the player has put
+    // skill points into this chapter. The chapter's stated thesis is that
+    // the System rewards commitment and notes greed. We translate that into
+    // a stat shift on the Judges fight:
+    //   1 element  → Resonant buff: enemy ATK -10%, Mercy notes the focus
+    //   2 elements → no effect (default mixed allowance)
+    //   3+         → Greed Mark debuff: enemy ATK +12%, Wrath notes the spread
+    const ELEMENT_PREFIXES = ['ignis_', 'aqua_', 'volt_', 'arcane_', 'umbra_', 'terra_', 'aero_', 'flora_', 'ferro_', 'venin_']
+    const skills = p.skills_unlocked || []
+    const elementsInvested = new Set()
+    for (const s of skills) {
+      for (const prefix of ELEMENT_PREFIXES) {
+        if (s.startsWith(prefix)) { elementsInvested.add(prefix.replace('_', '')); break }
+      }
+    }
+    const elementCount = elementsInvested.size
+    if (elementCount === 1) {
+      atk = Math.round(atk * 0.90)
+      modifiers.push(`Resonant focus (1 element): Mercy notes the commitment — Judges' ATK -10%.`)
+    } else if (elementCount >= 3) {
+      atk = Math.round(atk * 1.12)
+      modifiers.push(`Greed Mark (${elementCount} elements): Wrath notes the spread — Judges' ATK +12%.`)
+    }
+
+    const label = form === 'mercy' ? 'MERCY LEADS'
+                : form === 'wrath' ? 'WRATH LEADS'
+                : 'BOTH JUDGES';
+
+    return { form, label, hp, atk, def, modifiers, cowardice }
+  }
+
+  function renderBoss(panel,node) {
+    const lvl=player.level||1
+    const enemy={...node.enemy}
+
+    // Is this a zone boss (not the Twin Judges)?
+    const isZoneBoss = node.bossKey && node.bossKey !== 'twin_judges'
+    const isBoss = !isZoneBoss  // only Twin Judges triggers chapter-end logic
+
+    // Twin Judges: derive stats + form from the player's record.
+    // Zone bosses use the original level-scaled stats.
+    let judgesForm = null
+    if (node.bossKey === 'twin_judges') {
+      const composed = composeJudgesForm(player, node.enemy)
+      enemy.hp  = composed.hp
+      enemy.atk = composed.atk
+      enemy.def = composed.def
+      enemy.name = composed.form === 'mercy' ? 'Mercy (leading) · Wrath (silent)'
+                 : composed.form === 'wrath' ? 'Wrath (leading) · Mercy (silent)'
+                 : 'The Twin Judges'
+      judgesForm = composed
+    } else {
+      // Standard zone-boss scaling
+      enemy.hp  = node.enemy.hp  + lvl * 20
+      enemy.atk = node.enemy.atk + Math.floor(lvl * 1.5)
+    }
+
+    // Zone bosses use their own onLose/onEscape (back to approach node)
+    // Twin Judges fall back to pre_boss_ch2
+    const onLose   = node.onLose   || (isZoneBoss ? 'district_hub' : 'pre_boss_ch2')
+    const onEscape = node.onEscape || (isZoneBoss ? 'district_hub' : 'pre_boss_ch2')
+
+    const elementsAttempted = (() => {
+      const elementKeys = ['ignis','aqua','volt','arcane','umbra','terra','aero','flora','ferro','venom']
+      const skills = player.skills_unlocked || []
+      const defeated = player.defeated_bosses || []
+      const found = new Set()
+      for (const k of elementKeys) {
+        if (skills.some(s=>s.startsWith(k+'_')) || defeated.includes(k)) found.add(k)
+      }
+      return Math.max(1, found.size)
+    })()
+
+    buildCombatUI(panel,enemy,node.onWin,onLose,onEscape,isBoss,{
+      playerMoral: player.moral_score||0,
+      elementsAttempted,
+      judgesForm,
+    })
+  }
+
+  function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
+    const cid='cb'+Math.random().toString(36).slice(2,7)
+    const $=id=>panel.querySelector('#'+cid+'-'+id)
+
+    let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100
+    let over=false, defending=false
+    let currentHp = player.hp || 100
+
+    window._enemyAIState = initEnemyState(enemy)
+
+    function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
+    function playerDEF() { return (player.def||2)+(player.guard||0)*.5+(player.armor||0) }
+    function playerSPD() { return (player.speed||5)+(player.agility||0)*.5 }
+    function enemySPD()  { return enemy.spd||5 }
+    const eqLuck = player.luck||0
+
+    // ── SKILL DEFINITIONS ────────────────────────────────────────────────────
+    const BATTLE_SKILLS = {
+      darkness_passive_backstab:      {label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff'},
+      darkness_skill_shadow_step:     {label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores DEF',         fn:'shadowStep'},
+      darkness_ultimate_void_zone:    {label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',       fn:'voidZone'},
+      earth_passive_damage_reduction: {label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c'},
+      earth_skill_rock_armor:         {label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',              fn:'rockArmor'},
+      earth_ultimate_earthquake:      {label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',      fn:'earthquake'},
+      fire_passive_burn:              {label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500'},
+      fire_skill_fire_blast:          {label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',     fn:'fireBlast'},
+      fire_ultimate_inferno_zone:     {label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',          fn:'infernoZone'},
+      light_passive_boost_allies:     {label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700'},
+      light_skill_heal_pulse:         {label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                    fn:'healPulse'},
+      light_ultimate_divine_barrier:  {label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',    fn:'divineBarrier'},
+      lightning_passive_chain_damage: {label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff'},
+      lightning_skill_lightning_strike:{label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',          fn:'lightningStrike'},
+      lightning_ultimate_thunderstorm:{label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',              fn:'thunderstorm'},
+      metal_passive_reflect:          {label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0'},
+      metal_skill_blade_form:         {label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK+20, SPD+5 for 2 turns',        fn:'bladeForm'},
+      metal_ultimate_iron_domain:     {label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',          fn:'ironDomain'},
+      plant_passive_heal_still:       {label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e'},
+      plant_skill_root_trap:          {label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',          fn:'rootTrap'},
+      plant_ultimate_nature_overgrowth:{label:'Overgrowth',    type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',             fn:'overgrowth'},
+      water_passive_regen:            {label:'Flow',           type:'passive',  el:'water',     color:'#0088ff'},
+      water_skill_water_shield:       {label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',            fn:'waterShield'},
+      water_ultimate_tsunami:         {label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',       fn:'tsunami'},
+      wind_passive_dodge:             {label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea'},
+      wind_skill_dash_strike:         {label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',        fn:'dashStrike'},
+      wind_ultimate_tornado_field:    {label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, SPD×2',             fn:'tornadoField'},
+    }
+    const NOTABLE_SKILLS = {
+      ofn1:{label:'Warbound',      type:'active',  branch:'offense',color:'#e05555',desc:'ATK +15% this turn.',                                 fn:'warbound'},
+      ofn2:{label:'Amplifier',     type:'passive', branch:'offense',color:'#992222',desc:'Power contributes ×0.4 extra ATK.'},
+      ofn3:{label:'Spellblade',    type:'passive', branch:'offense',color:'#e05555',desc:'15% chance to poison on Strike.'},
+      ofn4:{label:'Executioner',   type:'active',  branch:'offense',color:'#e05555',desc:'+25% dmg to enemies below 30% HP.',                  fn:'embersEnd'},
+      ofn5:{label:'Hex Cannon',    type:'active',  branch:'offense',color:'#992222',desc:'Heavy Strike poisons: 5 dmg/turn × 3 turns.',        fn:'venomLance'},
+      ofn6:{label:'Predator',      type:'active',  branch:'offense',color:'#e05555',desc:'Gain +20 ATK for 2 turns.',                          fn:'predator'},
+      of_ks1:{label:'Bloodthirst', type:'active',  branch:'offense',color:'#c8512a',desc:'On kill: +20% HP & +10 ATK for 2 turns.',            fn:'bloodthirst'},
+      of_ks2:{label:'Spell Surge', type:'active',  branch:'offense',color:'#b06eff',desc:'Next skill: ×1.5 dmg, ignores 50% DEF.',             fn:'spellSurge'},
+      dfn1:{label:'Iron Tide',     type:'passive', branch:'defense',color:'#5ec45e',desc:'First time below 50% HP: +20 DEF for 2 turns.'},
+      dfn2:{label:'Absorption',    type:'passive', branch:'defense',color:'#3db89a',desc:'Every 3 hits taken: Defend heals 15 HP.'},
+      dfn3:{label:'Thorns',        type:'passive', branch:'defense',color:'#5ec45e',desc:'20% chance to stun enemy when hit.'},
+      dfn4:{label:'Fortress',      type:'active',  branch:'defense',color:'#5ec45e',desc:'Below 30% HP: +20 DEF & +15 dmg.',                  fn:'pressureWave'},
+      dfn5:{label:'Retaliation',   type:'passive', branch:'defense',color:'#3db89a',desc:'After 3 hits in a row: auto counter 50% ATK.'},
+      dfn6:{label:'Bulwark',       type:'active',  branch:'defense',color:'#5ec45e',desc:'DEF doubled next turn.',                             fn:'chargedStance'},
+      df_ks1:{label:'Deep Current',type:'active',  branch:'defense',color:'#3db89a',desc:'+30 DEF 2 turns, absorb next hit.',                  fn:'deepCurrent'},
+      df_ks2:{label:'Iron Mirror', type:'active',  branch:'defense',color:'#5ec45e',desc:'Reflect 40% of next hit, +15 DEF.',                  fn:'ironMirror'},
+      fln1:{label:'Razor Tempo',   type:'passive', branch:'flow',   color:'#5eaee0',desc:'Strike always goes first.'},
+      fln2:{label:'Ghost Step',    type:'passive', branch:'flow',   color:'#5eaee0',desc:'15% dodge; on dodge, free counter.'},
+      fln3:{label:'Lockdown',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Reduce enemy SPD by 6.',                             fn:'heavyGround'},
+      fln4:{label:'Flicker',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'After dodging: next Strike deals ×2 dmg.'},
+      fln5:{label:'Stagger',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'20% chance per turn: enemy misses.'},
+      fln6:{label:'Momentum',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Ground spike: 20 dmg, ignores 30% DEF.',             fn:'earthSpike'},
+      fl_ks1:{label:'Phantom Step',type:'active',  branch:'flow',   color:'#5eaee0',desc:'Untargetable 1 turn + guaranteed crit.',             fn:'phantomStep'},
+      fl_ks2:{label:'Time Lock',   type:'active',  branch:'flow',   color:'#88ccff',desc:'Freeze enemy 1 turn, next attack ×2.',               fn:'timeLock'},
+      arn1:{label:'Sharp Mind',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight +1 ATK per 3 pts.'},
+      arn2:{label:'Hex Weave',     type:'active',  branch:'arcane', color:'#b06eff',desc:'Reduce incoming dmg 90% this turn.',                 fn:'foresight'},
+      arn3:{label:'Wild Proc',     type:'passive', branch:'arcane', color:'#d4a843',desc:'Each Luck pt +0.5% crit dmg.'},
+      arn4:{label:'Prescience',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight reduces enemy crit chance.'},
+      arn5:{label:'Ricochet',      type:'passive', branch:'arcane', color:'#d4a843',desc:'20% chance attacks hit twice (40% dmg).'},
+      arn6:{label:'Mind Pierce',   type:'active',  branch:'arcane', color:'#b06eff',desc:'Next attack crits ×1.75.',                           fn:'preciseStrike'},
+      ar_ks1:{label:'Sixth Sense', type:'active',  branch:'arcane', color:'#b06eff',desc:'Know enemy move, -80% dmg if correct.',              fn:'sixthSense'},
+      ar_ks2:{label:'Chaos Engine',type:'active',  branch:'arcane', color:'#d4a843',desc:'Random powerful effect.',                            fn:'chaosEngine'},
+      dcn1:{label:'Nightshroud',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'First turn free dodge + 50% ATK counter.',          fn:'nightshroud'},
+      dcn2:{label:'Umbral Veil',   type:'passive', branch:'decay',  color:'#9a6fd8',desc:'15% dodge; on dodge, 50% ATK counter.'},
+      dcn3:{label:'Thornwall',     type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Defend reflects 15% dmg as thorns.',                fn:'thornwall'},
+      dcn4:{label:'Shade Walk',    type:'passive', branch:'decay',  color:'#9a6fd8',desc:'+5 SPD, +4 Power. On kill +15 SPD.'},
+      dcn5:{label:'Enduring Root', type:'passive', branch:'decay',  color:'#9a6fd8',desc:'Cannot be stunned or rooted.'},
+      dcn6:{label:'Dread Pulse',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Each hit reduces enemy ATK by 2 (×3 max).',        fn:'dreadPulse'},
+      dc_ks1:{label:'Reaper Form', type:'active',  branch:'decay',  color:'#9a6fd8',desc:'ATK ×1.5, ignore DEF for 2 turns.',                 fn:'reaperForm'},
+      dc_ks2:{label:'Ancient Root',type:'active',  branch:'decay',  color:'#5ec45e',desc:'Shield 20% max HP at battle start.',                fn:'ancientRoot'},
+    }
+    Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
+
+    const battleSkillKeys = player.battle_skills || []
+
+    // ── Status effects ───────────────────────────────────────────────────────
+    let statusEffects = {
+      playerATKBonus:0, playerDEFBonus:0, playerSPDBonus:0,
+      ignoreEnemyDEF:false, invulnerable:false, waterShield:0,
+      enemyATKMult:1.0, enemyStunTurns:0,
+      burnTurns:0, burnDmg:3, infernoTurns:0, regenTurns:0, rootTrapTurns:0,
+      skillCooldowns:{},
+    }
+
+    const T=[0,10,25,50,90,150,240,380,590,900]
+    function _skillLv(key) {
+      const sl=(player.skill_levels||{})[key]; if(!sl) return 1
+      let lv=1; for(let i=1;i<T.length;i++){if(sl.uses>=T[i])lv=i+1;else break} return Math.min(10,lv)
+    }
+    function skillScale(key){return 0.5+(_skillLv(key)-1)*(0.5/9)}
+    async function recordSkillUse(key) {
+      const sl = player.skill_levels || {}
+      if (!sl[key]) sl[key] = { uses: 0 }
+      const prevLv = _skillLv(key)
+      sl[key].uses++
+      player.skill_levels = sl
+      const newLv = _skillLv(key)
+      if (newLv > prevLv) {
+        const sk = BATTLE_SKILLS[key]
+        window.showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
+      }
+      const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
+      if (error) console.error('[skill_levels save]', error.message)
+    }
+
+    // ── Apply passives ────────────────────────────────────────────────────────
+    const unlocked=player.skills_unlocked||[], inBattle=player.battle_skills||[]
+    const has=k=>inBattle.includes(k)
+    if(unlocked.includes('water_passive_regen'))            statusEffects.regenTurns=999
+    if(unlocked.includes('earth_passive_damage_reduction')){const lv=_skillLv('earth_passive_damage_reduction');statusEffects.playerDEFBonus+=Math.round(5+(lv-1))}
+    if(unlocked.includes('metal_passive_reflect'))          statusEffects.metalReflect=true
+    if(has('ofn2')) statusEffects.flameFist=true
+    if(has('ofn3')) statusEffects.venomFang=true
+    if(has('dfn1')) statusEffects.tidalResolve=true
+    if(has('dfn2')) statusEffects.absorption=true
+    if(has('dfn3')) statusEffects.liveWire=true
+    if(has('dfn5')) statusEffects.arcReflex=true
+    if(has('fln1')) statusEffects.razorTempo=true
+    if(has('fln2')) statusEffects.ghostStep=true
+    if(has('fln4')) statusEffects.flicker=true
+    if(has('fln5')) statusEffects.tremorStep=true
+    if(has('arn1')) statusEffects.sharpMind=true
+    if(has('arn3')) statusEffects.razorLuck=true
+    if(has('arn4')) statusEffects.prescience=true
+    if(has('arn5')) statusEffects.ricochet=true
+    if(has('dcn2')) statusEffects.umbralVeil=true
+    if(has('dcn4')) statusEffects.shadeWalk=true
+    if(has('dcn5')) statusEffects.enduringRoot=true
+    if(has('dc_ks2'))statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2)
+
+    // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
+    const enemyImg = enemy.img
+      ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
+      : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
+
+    // ── Twin Judges form banner (#20 / #21) ────────────────────────────────
+    // Shown only when the Judges fight is active. Renders the leading Judge,
+    // the form name, and a short bulleted list of record-derived modifiers so
+    // the player understands what the System is doing to this encounter.
+    const judgesBanner = extraCtx.judgesForm
+      ? `<div class="combat-judges-form" style="margin-bottom:10px;padding:8px 10px;border:1px solid rgba(138,91,68,.40);background:rgba(244,234,215,.55);font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;color:var(--ink)">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+            <span style="font-size:11px">⚖</span>
+            <span style="font-weight:600;letter-spacing:.16em">${extraCtx.judgesForm.label}</span>
+          </div>
+          ${extraCtx.judgesForm.modifiers.map(m =>
+            `<div style="margin-left:14px;font-style:italic;color:var(--ink-dim);font-family:'Cormorant Garamond',serif;font-size:13px;letter-spacing:0;line-height:1.4">▸ ${m}</div>`
+          ).join('')}
+         </div>`
+      : ''
+
+    panel.innerHTML =
+      '<div class="combat-panel" id="'+cid+'-combat-wrap">'
+      + judgesBanner
+      + '<div class="combat-enemy-row">'
+      + enemyImg
+      + '<div style="flex:1">'
+      + '<p class="combat-enemy-name">'+enemy.name+'</p>'
+      + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div></div>'
+      + '<p id="'+cid+'-e-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">'+enemyHp+' / '+maxEnemyHp+' HP</p>'
+      + '</div></div>'
+      + '<div class="combat-log" id="'+cid+'-combat-log">The encounter begins.</div>'
+      + '<div class="stat-row" style="margin-bottom:.4rem">'
+      + '<span class="stat-key" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>'
+      + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div></div>'
+      + '<span id="'+cid+'-c-player-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">'+currentHp+'/'+maxPlayerHp+'</span>'
+      + '</div>'
+      + '<div id="'+cid+'-combat-actions">'
+      + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">'
+      + '<button class="combat-btn" id="'+cid+'-btn-strike" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Fast attack. Always goes first."><span style="font-size:1.1rem;line-height:1">⚔</span><span>Strike</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">FAST · FIRST</span></button>'
+      + '<button class="combat-btn" id="'+cid+'-btn-heavy"  style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="High damage but slower."><span style="font-size:1.1rem;line-height:1">💥</span><span>Heavy</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">HIGH DMG · SLOW</span></button>'
+      + '<button class="combat-btn" id="'+cid+'-btn-defend" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Halve incoming damage."><span style="font-size:1.1rem;line-height:1">🛡</span><span>Defend</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">BLOCK · FIRST</span></button>'
+      + '</div>'
+      + '<div id="'+cid+'-skill-slots-row" style="margin-bottom:4px"></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+      + '<button class="combat-btn" id="'+cid+'-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>'
+      + (onEscape ? '<button class="combat-btn" id="'+cid+'-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>' : '<span></span>')
+      + '</div>'
+      + '</div>'
+      + '<div id="'+cid+'-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05)">'
+      + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>'
+      + '<div id="'+cid+'-items-list"></div>'
+      + '<button id="'+cid+'-items-close" style="font-family:\'IM Fell English\',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>'
+      + '</div>'
+      + '<div id="'+cid+'-combat-over" style="display:none;text-align:center;padding:.5rem"></div>'
+      + '</div>'
+    function syncBars() {
+      const ePct=Math.max(0,Math.round(enemyHp/maxEnemyHp*100))
+      const pPct=Math.max(0,Math.round(currentHp/maxPlayerHp*100))
+      const eBar=$('e-bar'), eHp=$('e-hp'), pBar=$('c-player-bar'), pHp=$('c-player-hp')
+      if(eBar){eBar.style.width=ePct+'%'; eBar.style.background=ePct>50?'#e05555':'#c8b96e'}
+      if(eHp) eHp.textContent=enemyHp+' / '+maxEnemyHp+' HP'
+      if(pBar){pBar.style.width=pPct+'%'; pBar.style.background=pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555'}
+      if(pHp) pHp.textContent=currentHp+'/'+maxPlayerHp
+      updateHpBar(currentHp)
+    }
+
+    function log(msg) {
+      const el=$('combat-log')
+      if(el){el.innerHTML=msg; el.style.animation='none'; void el.offsetWidth; el.style.animation='fadeIn .3s ease'}
+    }
+
+    // ── Render battle skill slots — exact mirror of chapter1 ─────────────────
+    function renderSkillSlots() {
+      const row=$('skill-slots-row')
+      if(!row) return
+
+      const activeSkills  = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type!=='passive'})
+      const passiveSkills = battleSkillKeys.filter(k=>{const s=BATTLE_SKILLS[k];return s&&s.type==='passive'})
+
+      const passiveStrip = passiveSkills.length
+        ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'
+          + passiveSkills.map(k=>{
+              const sk=BATTLE_SKILLS[k]
+              return '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.44rem;color:'+sk.color+';border:.5px solid '+sk.color+'50;border-radius:12px;padding:1px 6px;background:'+sk.color+'12;letter-spacing:.04em">⚡ '+sk.label+' (passive)</span>'
+            }).join('')
+          + '</div>'
+        : ''
+
+      if(!activeSkills.length) {
+        row.innerHTML = passiveStrip
+          + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">'
+          + (battleSkillKeys.length===0
+              ? 'No active skills assigned — visit Skills page'
+              : battleSkillKeys.length+' skill key(s) found but not recognized — visit Skills page to re-save')
+          + '</p>'
+        return
+      }
+
+      const EL_ICON={fire:'🔥',water:'💧',earth:'🪨',wind:'💨',dark:'🌑',light:'✨',lightning:'⚡',metal:'⚙',plant:'🌿'}
+      let html = passiveStrip
+      html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
+      html += '<div style="display:grid;grid-template-columns:'+(activeSkills.length===1?'1fr':activeSkills.length===2?'1fr 1fr':'1fr 1fr 1fr')+';gap:4px">'
+
+      html += activeSkills.map(k=>{
+        const sk     = BATTLE_SKILLS[k]
+        const cd     = statusEffects.skillCooldowns[k]||0
+        const isUlt  = sk.type==='ultimate'
+        const lv     = _skillLv(k)
+        const lvColor= lv>=10?'#ffd700':lv>=7?'#c8b96e':lv>=4?'#a0c080':'#9a8858'
+        const pct    = Math.round((0.5+(lv-1)*(0.5/9))*100)
+        const elIcon = EL_ICON[sk.el]||'✦'
+        const cdLabel= cd>0 ? cd+' turn'+(cd>1?'s':'') : null
+        const border = isUlt ? 'border-color:'+sk.color+'70' : 'border-color:'+sk.color+'40'
+        const cdOverlay = cd>0
+          ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px"><span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">'+cdLabel+'</span></div>'
+          : ''
+        const iconFilter = cd>0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px '+sk.color+'88)'
+        const btnColor   = cd>0 ? 'rgba(200,160,60,.35)' : sk.color
+        const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto">'
+
+        return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
+          + ' data-skill-key="'+k+'"'
+          + (cd>0?' disabled':'')
+          + ' title="'+(sk.desc||sk.label)+' (Lv'+lv+' · '+pct+'% power)"'
+          + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;'+border+';color:'+btnColor+';position:relative;overflow:hidden">'
+          + cdOverlay
+          + '<span style="font-size:1rem;line-height:1;filter:'+iconFilter+'">'+imgTag
+          + '<span style="font-size:1rem;margin:0 auto;display:none">'+elIcon+'</span>'
+          + '</span>'
+          + '<span style="font-size:.58rem;font-weight:600;letter-spacing:.02em">'+(isUlt?'★ ':'')+sk.label+'</span>'
+          + '<span style="font-size:.42rem;color:'+lvColor+';letter-spacing:.04em">Lv'+lv+' · '+pct+'%</span>'
+          + '</button>'
+      }).join('')
+
+      html += '</div>'
+      row.innerHTML = html
+      row.querySelectorAll('[data-skill-key]').forEach(btn => {
+        btn.addEventListener('click', () => useSkillLocal(btn.dataset.skillKey))
+      })
+    }
+
+    function setButtons(enabled) {
+      ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id=>{
+        const b=$(id); if(b) b.disabled=!enabled
+      })
+      battleSkillKeys.forEach(k=>{
+        const b=$('btn-skill-'+k)
+        if(b&&enabled){b.disabled=(statusEffects.skillCooldowns[k]||0)>0}
+        else if(b){b.disabled=true}
+      })
+    }
+
+    const useSkillLocal = function(key) {
+      if (over) return
+      const sk = BATTLE_SKILLS[key]
+      if (!sk) return
+      const cd = statusEffects.skillCooldowns[key] || 0
+      if (cd > 0) { log('Skill on cooldown (' + cd + ' turns)'); return }
+      doTurn('skill', key)
+    }
+    window['useSkill_' + cid] = useSkillLocal
+    const itemCloseBtn = $('items-close')
+    if (itemCloseBtn) itemCloseBtn.addEventListener('click', () => { $('items-panel').style.display = 'none' })
+
+    // ── Items panel ───────────────────────────────────────────────────────────
+    $('btn-items').addEventListener('click', async () => {
+      if(over) return
+      const itemsPanel=$('items-panel')
+      const list=$('items-list')
+      if(itemsPanel.style.display!=='none'){itemsPanel.style.display='none'; return}
+      itemsPanel.style.display='block'
+      list.innerHTML='<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
+      const {data}=await supabase.from('inventory').select('*')
+        .eq('player_id',player.id).in('item_type',['consumable','key']).gt('quantity',0).order('item_type')
+      const usable=(data||[]).filter(i=>i.hp_restore>0||['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
+      if(!usable.length){list.innerHTML='<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'; return}
+      const RC={common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
+      list.innerHTML=usable.map((item,index)=>`
+        <div data-combat-item-index="${index}"
+          style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px">
+          <div style="flex:1;min-width:0">
+            <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${escapeHtml(item.name)}</p>
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">${escapeHtml(item.hp_restore>0?'+'+item.hp_restore+' HP':item.special_effect||'Special effect')}</p>
+          </div>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
+        </div>`).join('')
+      list.querySelectorAll('[data-combat-item-index]').forEach(el => {
+        el.addEventListener('click', () => {
+          const item = usable[Number(el.dataset.combatItemIndex)]
+          if (!item) return
+          window['combatUseItem_'+cid](item.id, item.name, item.hp_restore || 0, item.quantity || 1, item.special_effect || '')
+        })
+      })
+    })
+
+    window['combatUseItem_'+cid] = async function(itemId,itemName,hpRestore,qty,specialEffect) {
+      const maxHp=player.max_hp||100
+      if(hpRestore>0){
+        const healed=Math.min(maxHp,currentHp+hpRestore)-currentHp
+        currentHp=Math.min(maxHp,currentHp+hpRestore); syncBars()
+        await supabase.from('players').update({hp:currentHp}).eq('id',player.id)
+        player.hp=currentHp
+        log('Used '+itemName+' — restored '+healed+' HP. ('+currentHp+'/'+maxHp+')')
+      } else if(itemName==='Phoenix Feather'){
+        window._hasRevive=true; log('Phoenix Feather equipped — will auto-revive at 20 HP.')
+      } else if(itemName==='Explosion Scroll'){
+        window._forceMaxHit=true; log('Explosion Scroll loaded — next attack deals maximum damage.')
+      } else if(itemName==='Lava Bomb'){
+        enemyHp=0; syncBars(); log('Lava Bomb detonated — enemy destroyed instantly.')
+        $('items-panel').style.display='none'
+        if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+        else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+        await endCombat('win'); return
+      } else {log('Cannot use '+itemName+' here.'); return}
+      $('items-panel').style.display='none'
+      if(qty<=1)await supabase.from('inventory').delete().eq('id',itemId)
+      else await supabase.from('inventory').update({quantity:qty-1}).eq('id',itemId)
+    }
+
+    renderSkillSlots()
+    syncBars()
+
+    // ── Button event listeners ─────────────────────────────────────────────────
+    ;[['btn-strike','strike'],['btn-heavy','heavy'],['btn-defend','defend']].forEach(([id,action])=>{
+      const b=$(id); if(b) b.addEventListener('click',()=>{if(!over)doTurn(action,null)})
+    })
+    const escBtn=$('btn-escape')
+    if(escBtn) escBtn.addEventListener('click',()=>{
+      if(over)return
+      log('You disengage and retreat.')
+      endCombat('escape')
+    })
+
+    // ── End combat ────────────────────────────────────────────────────────────
+    async function endCombat(result) {
+      if (over) return; over=true
+      setButtons(false)
+      if (result==='win') {
+        const oldXp=player.xp||0, oldLvl=player.level||1
+        const newXp=oldXp+(enemy.xp||50)
+        const updates={xp:newXp,hp:currentHp}
+
+        // ── Mark boss defeated + loot (zone bosses AND Twin Judges) ──
+        const bossNode=NODES[nodeId]
+        if (bossNode?.bossKey) {
+          const d=markBossDefeated(bossNode.bossKey)
+          updates.defeated_bosses=d
+        }
+        if (enemy.loot) for(const l of enemy.loot) await addItem(l.itemKey,l.qty)
+
+        if (isBoss) {
+          // Twin Judges only — chapter unlock + per-form SP
+          const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
+          updates.chapters_unlocked=uls
+          // ── Per-form SP ──
+          const moral = extraCtx.playerMoral||0, elems = extraCtx.elementsAttempted||1
+          let formKey
+          if     (Math.abs(moral)>=70&&elems>=3) formKey='verdict'
+          else if(Math.abs(moral)<40&&elems>=2)  formKey='dual_powered'
+          else if(moral>=40&&elems>=2)            formKey='mercy_powered'
+          else if(moral<=-40&&elems>=2)           formKey='wrath_powered'
+          else if(Math.abs(moral)<40)             formKey='dual'
+          else if(moral>=40)                      formKey='mercy'
+          else                                    formKey='wrath'
+          const spKey='judges_sp_'+formKey
+          const alreadyClaimed=(updates.defeated_bosses||player.defeated_bosses||[]).includes(spKey)
+          if (!alreadyClaimed) {
+            const d2=markBossDefeated(spKey); updates.defeated_bosses=d2
+            updates.skill_points=(player.skill_points||0)+1
+            updates.sp_claimed=(player.sp_claimed||0)+1
+            player.skill_points=updates.skill_points; player.sp_claimed=updates.sp_claimed
+            window.showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP · +1 SP')
+          } else { window.showToast('The Judges are defeated. +'+(enemy.xp||600)+' XP') }
+        }
+        // ── ESP award on zone boss win ──
+        const WIN_ELEMENT_MAP2 = {
+          zone_fire_boss_win:'fire', zone_water_boss_win:'water', zone_lightning_boss_win:'lightning',
+          zone_arcane_boss_win:'arcane', zone_shadow_boss_win:'shadow', zone_earth_boss_win:'earth',
+          zone_wind_boss_win:'wind', zone_plant_boss_win:'plant', zone_metal_boss_win:'metal', zone_poison_boss_win:'poison',
+        }
+        if (WIN_ELEMENT_MAP2[onWin]) {
+          const elKey=WIN_ELEMENT_MAP2[onWin], espBossKey='esp_awarded_'+onWin
+          const currentDefeated=updates.defeated_bosses||player.defeated_bosses||[]
+          if (!currentDefeated.includes(espBossKey)) {
+            const merged=[...new Set([...currentDefeated,espBossKey])]
+            updates.defeated_bosses=merged; player.defeated_bosses=merged
+            const espTree=player.esp_tree||{base:[],slots:{},collected:[]}
+            if(!espTree.collected)espTree.collected=[]
+            const elNodes=['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k'].map(s=>elKey+'_'+s).filter(k=>!espTree.collected.includes(k))
+            if(elNodes.length){espTree.collected.push(...elNodes);player.esp_tree=espTree;updates.esp_tree=espTree}
+            const newEsp=(player.esp||0)+3; player.esp=newEsp; updates.esp=newEsp
+            window.showToast('⬡ +3 ESP · '+elKey+' nodes unlocked!')
+          } else {
+            const newEsp=(player.esp||0)+1; player.esp=newEsp; updates.esp=newEsp
+            window.showToast('⬡ +1 ESP')
+          }
+        }
+        const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
+        await save(updates)
+        const nextNode=isBoss?'chapter_end_ch2':onWin
+        const acts=$('combat-actions'); if(acts) acts.style.display='none'
+        $('combat-over').style.display='block'
+
+        // ── Humanoid enemies → Spare/Execute prompt (combat-driven reputation) ──
+        // Constructs/drones go straight to the Continue button; humans deserve
+        // a moral beat. Sparing nudges moral_score up and logs a spare; executing
+        // nudges it down, increments pvp_kills, and (if the node defines it)
+        // awards extra loot. Either choice still proceeds to `nextNode`, unless
+        // the node defines onSpare/onExecute as explicit override destinations.
+        const node = NODES[nodeId]
+        if (enemy.humanoid && !isBoss) {
+          $('combat-over').innerHTML = `
+            <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:var(--ink);margin:0 0 10px 0">
+              They're down — bleeding, conscious, looking at you. The System is watching.
+            </p>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button class="choice" data-spare>
+                <span class="choice-arrow">✦</span>
+                <span class="choice-body">Spare them<span class="choice-sub">Moral +5 · the System notes mercy</span></span>
+              </button>
+              <button class="choice danger" data-execute>
+                <span class="choice-arrow">✖</span>
+                <span class="choice-body">Execute<span class="choice-sub">Moral -5 · the System notes the kill</span></span>
+              </button>
+            </div>`
+          // Shared helper: apply moral delta + recompute badge + show feedback.
+          // Used by both spare and execute branches so the post-combat moral
+          // beats behave the same as choice-driven moral shifts elsewhere.
+          const applyMoralWithFeedback = (delta, extraUpdates = {}) => {
+            const oldMoral = player.moral_score || 0
+            const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
+            const nm = Math.max(-100, Math.min(100, oldMoral + delta))
+            const newPvp = extraUpdates.pvp_kills ?? player.pvp_kills
+            const nb = calcBadge(nm, newPvp, player.helps_given)
+            const updates = { moral_score: nm, badge: nb, reputation: nb, ...extraUpdates }
+            player.moral_score = nm; player.badge = nb
+            const sign = delta > 0 ? '+' : ''
+            const ntot = nm > 0 ? '+'+nm : String(nm)
+            window.showToast(`Moral ${sign}${delta} · now ${ntot}`, delta < 0)
+            if (nb !== oldBadge) {
+              const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
+              const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
+              window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+            }
+            return updates
+          }
+          const handleSpare = async () => {
+            const log = [...(player.alliance_log||[]), 'spared_humanoid']
+            const upd = applyMoralWithFeedback(5, { alliance_log: log })
+            player.alliance_log = log
+            await save(upd)
+            goTo(node?.onSpare || nextNode)
+          }
+          const handleExecute = async () => {
+            const log = [...(player.alliance_log||[]), 'executed_humanoid']
+            const newPvp = (player.pvp_kills||0) + 1
+            const upd = applyMoralWithFeedback(-5, { alliance_log: log, pvp_kills: newPvp })
+            player.alliance_log = log; player.pvp_kills = newPvp
+            await save(upd)
+            // Optional extra loot for executing — node author opts in via `executeLoot`
+            if (enemy.executeLoot) for (const l of enemy.executeLoot) await addItem(l.itemKey, l.qty)
+            goTo(node?.onExecute || nextNode)
+          }
+          $('combat-over').querySelector('[data-spare]')?.addEventListener('click', handleSpare)
+          $('combat-over').querySelector('[data-execute]')?.addEventListener('click', handleExecute)
+        } else {
+          $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+          $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+        }
+      } else if (result==='escape') {
+        await save({hp:currentHp})
+        const acts=$('combat-actions'); if(acts) acts.style.display='none'
+        $('combat-over').style.display='block'
+        $('combat-over').innerHTML=`<button class="choice" data-next-node="${onEscape||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
+        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+      } else {
+        currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
+        const acts=$('combat-actions'); if(acts) acts.style.display='none'
+        $('combat-over').style.display='block'
+        $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" data-next-node="${onLose||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
+        $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+      }
+    }
+
+    // ── Main turn function ────────────────────────────────────────────────────
+    window['doAction_'+cid]=async function(action){
+      if(over)return
+      if(action==='escape'){log('You disengage and retreat.');await endCombat('escape');return}
+      await doTurn(action,null)
+    }
+
+    async function doTurn(playerAction, skillKey=null) {
+      if(over)return
+      setButtons(false)
+      defending=false
+      const luckBonus=Math.floor(eqLuck/2)
+
+      // Tick cooldowns and status
+      if(statusEffects.enemyStunTurns>0) statusEffects.enemyStunTurns--
+      if(statusEffects.rootTrapTurns>0)  statusEffects.rootTrapTurns--
+      Object.keys(statusEffects.skillCooldowns).forEach(k=>{if(statusEffects.skillCooldowns[k]>0)statusEffects.skillCooldowns[k]--})
+
+      const pSPD=playerSPD()+(statusEffects.playerSPDBonus||0), eSPD=enemySPD()
+      const razorTempo=statusEffects.razorTempo&&playerAction==='strike'
+      const dashStrike=skillKey==='wind_skill_dash_strike'
+      const pEffSPD=pSPD+(playerAction==='heavy'?-3:0)+Math.floor(Math.random()*3)
+      const eEffSPD=eSPD+Math.floor(Math.random()*3)
+      let playerFirst=dashStrike||razorTempo||(playerAction==='defend')?true:pEffSPD>eEffSPD||(pEffSPD===eEffSPD&&Math.random()<0.5)
+
+      let messages=[]
+
+      function resolvePlayerAction() {
+        if(playerAction==='strike') {
+          const roll=Math.floor(Math.random()*(6+luckBonus))+1
+          const baseATK=playerATK()+(statusEffects.playerATKBonus||0)
+          const ignoreDEF=statusEffects.ignoreEnemyDEF; statusEffects.ignoreEnemyDEF=false
+          const flickerMult=statusEffects.flickerReady?2:1; if(statusEffects.flickerReady)statusEffects.flickerReady=false
+          const dmg=Math.max(1,Math.round((baseATK+roll)*flickerMult))
+          enemyHp=Math.max(0,enemyHp-dmg)
+          messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
+          if(unlocked.includes('fire_passive_burn')){const lv=_skillLv('fire_passive_burn');statusEffects.burnTurns=Math.round(2+(lv-1)*(2/9));statusEffects.burnDmg=Math.round(3+(lv-1)*(3/9));messages.push('🔥 Burn applied!')}
+          if(unlocked.includes('lightning_passive_chain_damage')){const lv=_skillLv('lightning_passive_chain_damage');if(Math.random()<0.20+(lv-1)*(0.20/9)){const cd=Math.max(1,Math.floor(dmg*(0.50+(lv-1)*(0.40/9))));enemyHp=Math.max(0,enemyHp-cd);messages.push('⚡ Chain hit <strong>'+cd+'</strong>!')}}
+          if(statusEffects.venomFang&&Math.random()<0.15){statusEffects.burnTurns=Math.max(statusEffects.burnTurns,2);messages.push('☠ Venom Fang — poison!')}
+          if(statusEffects.ricochet&&Math.random()<0.20){const bd=Math.max(1,Math.floor(dmg*0.4));enemyHp=Math.max(0,enemyHp-bd);messages.push('🎯 Ricochet +<strong>'+bd+'</strong>!')}
+          if(statusEffects.nextCrit){statusEffects.nextCrit=false;const cb=Math.floor(dmg*0.75);enemyHp=Math.max(0,enemyHp-cb);messages.push('🎯 Crit +<strong>'+cb+'</strong>!')}
+        } else if(playerAction==='heavy') {
+          const roll=Math.floor(Math.random()*(10+luckBonus))+3
+          const dmg=Math.max(1,Math.round(playerATK()*1.6)+roll)
+          enemyHp=Math.max(0,enemyHp-dmg)
+          messages.push('Heavy strike <strong>'+dmg+'</strong>!')
+        } else if(playerAction==='defend') {
+          defending=true; messages.push('You brace — defense doubled.')
+          if(statusEffects.absorptionHeal){const h=statusEffects.absorptionHeal;currentHp=Math.min(maxPlayerHp,currentHp+h);statusEffects.absorptionHeal=0;messages.push('🛡 Absorption +<strong>'+h+'</strong> HP!')}
+        } else if(playerAction==='skill'&&skillKey) {
+          const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
+          statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
+          const sc=skillScale(skillKey),lv=_skillLv(skillKey)
+          // Skill effects
+          if(sk.fn==='shadowStep'){statusEffects.ignoreEnemyDEF=true;messages.push('🌑 Shadow Step — next attack ignores DEF!')}
+          else if(sk.fn==='rockArmor'){const b=Math.round(20*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;statusEffects.rockArmorTurns=2;messages.push('🪨 Rock Armor +'+b+' DEF!')}
+          else if(sk.fn==='earthquake'){const d=Math.max(5,Math.round(playerATK()*2*sc));enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌍 Earthquake <strong>'+d+'</strong> — stunned!')}
+          else if(sk.fn==='fireBlast'){const d=Math.max(1,Math.round((25*sc+playerATK())-Math.floor((enemy.def||0)*0.5)));enemyHp=Math.max(0,enemyHp-d);messages.push('🔥 Fire Blast <strong>'+d+'</strong>!')}
+          else if(sk.fn==='infernoZone'){statusEffects.infernoTurns=3;statusEffects.infernoDmg=Math.round(40*sc);messages.push('🔥 Inferno Zone — '+statusEffects.infernoDmg+' dmg/turn!')}
+          else if(sk.fn==='healPulse'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('✨ Heal Pulse +<strong>'+h+'</strong> HP!')}
+          else if(sk.fn==='divineBarrier'){statusEffects.invulnerable=true;statusEffects.divineBarrierReflect=true;messages.push('✨ Divine Barrier — invulnerable this turn!')}
+          else if(sk.fn==='lightningStrike'){const d=Math.round((30+playerATK()*0.5)*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('⚡ Lightning Strike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='thunderstorm'){let tot=0;for(let i=0;i<5;i++){const b=Math.round(10*sc)+Math.floor(Math.random()*Math.round(10*sc));tot+=b;enemyHp=Math.max(0,enemyHp-b)};messages.push('⚡ Thunderstorm <strong>'+tot+'</strong>!')}
+          else if(sk.fn==='bladeForm'){const ab=Math.round(20*sc),sb=Math.round(5*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+sb;messages.push('⚙ Blade Form ATK+'+ab+' SPD+'+sb+'!')}
+          else if(sk.fn==='ironDomain'){const ab=Math.round(playerATK()*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('⚙ Iron Domain ATK+'+ab+'!')}
+          else if(sk.fn==='rootTrap'){statusEffects.rootTrapTurns=1;messages.push('🌿 Root Trap — enemy rooted!')}
+          else if(sk.fn==='overgrowth'){const h=Math.round(40*sc),d=Math.round(30*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);enemyHp=Math.max(0,enemyHp-d);messages.push('🌿 Overgrowth +'+h+' HP & <strong>'+d+'</strong> dmg!')}
+          else if(sk.fn==='waterShield'){const s=Math.round(30*sc);statusEffects.waterShield=(statusEffects.waterShield||0)+s;messages.push('💧 Water Shield absorbs '+s+' dmg!')}
+          else if(sk.fn==='tsunami'){const d=Math.round((50+playerATK()*0.4)*sc);enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌊 Tsunami <strong>'+d+'</strong> — stunned!')}
+          else if(sk.fn==='dashStrike'){const d=Math.max(1,Math.round((playerATK()*2+Math.floor(Math.random()*8))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('💨 Dash Strike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='tornadoField'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+pSPD;messages.push('💨 Tornado Field — enemy ATK -'+Math.round(sc*30)+'%!')}
+          else if(sk.fn==='voidZone'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);messages.push('🌑 Void Zone — enemy ATK -'+Math.round(sc*30)+'%!')}
+          else if(sk.fn==='warbound'){statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(playerATK()*0.15);messages.push('✦ Warbound — ATK +15% this turn!')}
+          else if(sk.fn==='embersEnd'){const eb=enemyHp/maxEnemyHp<0.3?0.25:0;const d=Math.max(1,Math.round(playerATK()*(1+eb)*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('✦ Executioner <strong>'+d+'</strong>!'+(eb>0?' [execute bonus]':''))}
+          else if(sk.fn==='venomLance'){statusEffects.venomLanceTurns=3;messages.push('☠ Venom Lance — next Heavy poisons!')}
+          else if(sk.fn==='predator'){const ab=Math.round(20*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('✦ Predator ATK+'+ab+'!')}
+          else if(sk.fn==='foresight'){statusEffects.foresightThisTurn=true;messages.push('🔮 Hex Weave — incoming dmg -90% this turn!')}
+          else if(sk.fn==='preciseStrike'){statusEffects.nextCrit=true;messages.push('🎯 Mind Pierce — next attack crits ×1.75!')}
+          else if(sk.fn==='heavyGround'){statusEffects.enemySPDDebuff=(statusEffects.enemySPDDebuff||0)+6;messages.push('🌀 Lockdown — enemy SPD -6!')}
+          else if(sk.fn==='phantomStep'){statusEffects.phantomStep=true;statusEffects.nextCrit=true;messages.push('👻 Phantom Step — untargetable + guaranteed crit!')}
+          else if(sk.fn==='timeLock'){statusEffects.enemyStunTurns=1;statusEffects.nextCrit=true;messages.push('⏱ Time Lock — enemy frozen, next attack ×2!')}
+          else if(sk.fn==='earthSpike'){const d=Math.max(1,Math.round((20-Math.floor((enemy.def||0)*0.3))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('🪨 Ground Spike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='nightshroud'){statusEffects.nightshroud=true;messages.push('🌑 Nightshroud — first dodge is free!')}
+          else if(sk.fn==='thornwall'){statusEffects.thornwall=true;messages.push('🌿 Thornwall — Defend reflects 15% dmg!')}
+          else if(sk.fn==='dreadPulse'){statusEffects.dreadPulseStacks=(statusEffects.dreadPulseStacks||0);messages.push('💀 Dread Pulse active — each hit -2 enemy ATK!')}
+          else if(sk.fn==='pressureWave'){const b=Math.round(20*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;messages.push('🛡 Fortress +'+b+' DEF!')}
+          else if(sk.fn==='chargedStance'){statusEffects.chargedStance=true;messages.push('🛡 Bulwark — DEF doubled next turn!')}
+          else if(sk.fn==='deepCurrent'){const b=Math.round(30*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;statusEffects.deepCurrentShield=true;messages.push('💧 Deep Current +'+b+' DEF + absorb!')}
+          else if(sk.fn==='ironMirror'){statusEffects.ironMirror=true;statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+15;messages.push('⚙ Iron Mirror — reflect 40% next hit!')}
+          else if(sk.fn==='reaperForm'){statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(playerATK()*0.5*sc);statusEffects.ignoreEnemyDEF=true;messages.push('☠ Reaper Form — ATK ×1.5, ignore DEF!')}
+          else if(sk.fn==='bloodthirst'){messages.push('🩸 Bloodthirst ready — triggers on kill!')}
+          else if(sk.fn==='spellSurge'){statusEffects.spellSurge=true;messages.push('✨ Spell Surge — next skill ×1.5!')}
+          else if(sk.fn==='sixthSense'){statusEffects.sixthSense=true;messages.push('👁 Sixth Sense — predicting enemy move!')}
+          else if(sk.fn==='chaosEngine'){const effects=['fire','stun','heal','buff'];const ef=effects[Math.floor(Math.random()*effects.length)];if(ef==='fire'){const d=Math.round(30*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('🌀 Chaos — blast for <strong>'+d+'</strong>!')}else if(ef==='stun'){statusEffects.enemyStunTurns=1;messages.push('🌀 Chaos — enemy stunned!')}else if(ef==='heal'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('🌀 Chaos — healed <strong>'+h+'</strong>!')}else{statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(15*sc);messages.push('🌀 Chaos — ATK buffed!')}}
+          else if(sk.fn==='ancientRoot'){statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2*sc);messages.push('🌿 Ancient Root — shield activated!')}
+        }
+      }
+
+      function resolveEnemyAction() {
+        if(statusEffects.enemyStunTurns>0||statusEffects.rootTrapTurns>0){messages.push(enemy.name+' is <em>immobilized</em> this turn!');return}
+        if(statusEffects.phantomStep){statusEffects.phantomStep=false;messages.push(enemy.name+' attacks — but you phase out!');return}
+        let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
+        eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
+        // Cowardice modifier (#20): Twin Judges hit harder while player is
+        // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
+        if (extraCtx.judgesForm?.cowardice && currentHp > 0 && currentHp <= maxPlayerHp * 0.5) {
+          eDmg = Math.round(eDmg * 1.2)
+        }
+        if(statusEffects.invulnerable){messages.push(enemy.name+' strikes — you are <em>invulnerable</em>!');if(statusEffects.divineBarrierReflect){const r=Math.round(eDmg*0.5);enemyHp=Math.max(0,enemyHp-r);messages.push('✨ Reflected <strong>'+r+'</strong> damage!')};statusEffects.invulnerable=false;statusEffects.divineBarrierReflect=false;return}
+        if(statusEffects.foresightThisTurn){eDmg=Math.round(eDmg*0.1);statusEffects.foresightThisTurn=false;messages.push('🔮 Hex Weave absorbed most damage!')}
+        if(statusEffects.waterShield>0){const abs=Math.min(statusEffects.waterShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.waterShield=Math.max(0,statusEffects.waterShield-abs);if(abs>0)messages.push('💧 Shield absorbed <strong>'+abs+'</strong>!')}
+        if(statusEffects.ancientRootShield>0){const abs=Math.min(statusEffects.ancientRootShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.ancientRootShield=Math.max(0,statusEffects.ancientRootShield-abs);if(abs>0)messages.push('🌿 Root Shield absorbed <strong>'+abs+'</strong>!')}
+        if(eDmg>0){currentHp=Math.max(0,currentHp-eDmg);messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')}
+        if(statusEffects.metalReflect&&eDmg>0){const ref=Math.round(eDmg*0.15);enemyHp=Math.max(0,enemyHp-ref);messages.push('⚙ Reflect <strong>'+ref+'</strong> back!')}
+        if(statusEffects.liveWire&&Math.random()<0.20){statusEffects.enemyStunTurns=1;messages.push('⚡ Thorns — enemy stunned!')}
+        if(statusEffects.ironMirror){const ref=Math.round(eDmg*0.4);enemyHp=Math.max(0,enemyHp-ref);statusEffects.ironMirror=false;messages.push('⚙ Iron Mirror reflected <strong>'+ref+'</strong>!')}
+        // Ghost step dodge on counterattack
+        if(statusEffects.ghostStep&&Math.random()<0.15){const cd=Math.round(playerATK()*0.5);enemyHp=Math.max(0,enemyHp-cd);messages.push('👻 Ghost Step counter <strong>'+cd+'</strong>!')}
+        // Umbral Veil
+        if(statusEffects.umbralVeil&&Math.random()<0.15){const cd=Math.round(playerATK()*0.5);enemyHp=Math.max(0,enemyHp-cd);messages.push('🌑 Umbral Veil counter <strong>'+cd+'</strong>!')}
+      }
+
+      // Turn order
+      if(skillKey) recordSkillUse(skillKey)
+      if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
+      else{resolveEnemyAction();if(currentHp>0)resolvePlayerAction()}
+
+      // DoT effects
+      if(statusEffects.burnTurns>0){const bd=statusEffects.burnDmg;enemyHp=Math.max(0,enemyHp-bd);statusEffects.burnTurns--;messages.push('🔥 Burn — <strong>'+bd+'</strong> dmg ('+statusEffects.burnTurns+' left)')}
+      if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
+      if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
+
+      syncBars()
+      log(messages.join('<br>'))
+
+      if(enemyHp<=0){await endCombat('win');return}
+      if(currentHp<=0){await endCombat('lose');return}
+
+      setButtons(true)
+      renderSkillSlots()
+    }
+  }
+
+  function renderEnd(panel,node) {
+    const moral=player.moral_score||0
+    const morality=moral>=60?'hero':moral>=20?'good':moral>=-20?'neutral':moral>=-60?'ruthless':'villain'
+    const mColor=moral>=60?'#1e5a8a':moral>=20?'#2f7a2f':moral>=-20?'#8b6a20':moral>=-60?'#a04a18':'#a02020'
+
+    const verdicts = {
+      hero:     'Mercy steps back. The record speaks for itself. You built more than you took — not because the System asked you to, but because you decided that mattered. Wrath watches, satisfied at the precision even in cooperation. Both Judges acknowledge you with the same gesture: a slow opening of the hand. Whatever you are, you are consistent. The System calls it: complete.',
+      good:     'Mercy weighs the record and finds it positive. More construction than demolition. More alliance than betrayal. Wrath notes the decisive moments where you acted without hesitation. Both Judges accept the accounting. Neither is surprised. You move into Chapter 3 with both evaluations behind you.',
+      neutral:  'The Judges stand close together and consult in a language you cannot hear. The record is balanced — cooperation and betrayal, construction and taking, alliance and independence. Both Judges look at you simultaneously. Whatever they conclude, they keep to themselves. The System records: inconclusive, and moves you forward.',
+      ruthless: 'Wrath steps forward and nods once. The record is decisive if not generous. You took more than you built. Mercy observes this without condemnation — just notation. You are what you are, and you were consistent about it. The System records this accurately and advances you.',
+      villain:  'Wrath records everything with the expression of someone finding exactly what they expected. Mercy stands back — not in judgment, but in documentation. You were deliberate. The System respects deliberate choices. It advances you with full knowledge of what you are.',
+    }
+
+    const END_BEATS = [
+      {
+        title: 'The Record',
+        text: verdicts[morality],
+      },
+      {
+        title: 'What Remains',
+        text: `The plaza empties quickly after the Judges withdraw.
+
+  Sera finds you before you leave. She looks tired in the specific way of someone who has been responsible for other people for too long. She hands you something — a small pin, simple, the kind of thing that used to mark volunteers at community events.
+
+  "For what it's worth," she says. "You were useful." She doesn't qualify it. She means it exactly as stated.
+
+  Voss is already gone. But there's a message in your interface from a sender ID you don't recognize — you suspect it's them:
+
+  "Good run. The Shadow zone opened easier because of you. Don't ask why. Just know the district remembers who passed through it."
+
+  Rue leaves the map on the fountain's edge. You pick it up. It's not System-compatible — no upload, no sync. Just paper. You fold it and put it in your pack anyway.
+
+  The district is clearing. Other players moving toward the boundary. Some of them look at you and nod. Some of them don't. Both feel right.`,
+      },
+      {
+        title: 'Chapter 3 Awaits',
+        text: `Your interface updates as you reach the district boundary.
+
+  CHAPTER 2 COMPLETE.
+  ALLIANCES RECORDED.
+  ELEMENTAL RESONANCE: Locked in.
+  JUDGES: Evaluated.
+
+  Below that, a new entry:
+
+  CHAPTER 3 — UNLOCKED.
+
+  The road ahead is unfamiliar. The System's next chapter sits beyond a horizon you can't see yet. Whatever is there, it knows about Kessler District. It knows what you did here. It knows what you chose.
+
+  You get back in your vehicle.
+
+  The engine turns over first try. Some things still work the way they should.
+
+  Chapter 3 is waiting.`,
+      },
+    ]
+
+    let beatIdx=0
+    function showBeat() {
+      const b=END_BEATS[beatIdx], isLast=beatIdx===END_BEATS.length-1
+      const ob=document.getElementById('outcome-box'); ob.style.display='none'
+      document.getElementById('story-text').textContent=b.text
+      panel.innerHTML=`
+        <div class="end-box">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx+1} / ${END_BEATS.length}</p>
+          <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${b.title}</p>
+          <button class="end-btn" id="beat-btn" style="display:block;width:100%">${isLast?'→ Chapter 3':'Continue ›'}</button>
+        </div>`
+      document.getElementById('beat-btn').addEventListener('click',()=>{
+        if (isLast) window.bookNavigate('book.html')
+        else { beatIdx++; showBeat() }
+      })
+    }
+
+    document.getElementById('story-text').textContent=''
+    panel.innerHTML=`
+      <div class="end-box">
+        <p class="end-title">Chapter 2 Complete</p>
+        <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:2px">EVALUATION COMPLETE</p>
+          <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${morality.toUpperCase()}</p>
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);margin-top:2px">Moral score: ${moral>0?'+':''}${moral}</p>
+        </div>
+        <p class="end-sub" style="margin-bottom:.75rem">The Twin Judges have rendered their verdict.<br>Chapter 3 awaits.</p>
+        <button class="end-btn" id="continue-ch2" style="display:block;width:100%;margin-bottom:.75rem">Continue ›</button>
+      </div>`
+    document.getElementById('continue-ch2').addEventListener('click',()=>showBeat())
+  }
+
+  // Level up
+  async function checkLevelUp(oldXp,newXp,oldLevel) {
+    let level=oldLevel,xp=newXp,leveled=false,levelsGained=0
+    while(xp>=xpForLevel(level)){xp-=xpForLevel(level);level++;leveled=true;levelsGained++}
+    if(!leveled)return null
+    const newMaxHp=(player.max_hp||100)+levelsGained*5,newHp=newMaxHp
+    const spGained=levelsGained,newSP=(player.skill_points||0)+spGained
+    player.skill_points=newSP;player.sp_claimed=(player.sp_claimed||0)+spGained
+    const sg=levelsGained
+    const us={atk:(player.atk||1)+sg,def:(player.def||0)+sg,power:(player.power||0)+sg,guard:(player.guard||0)+sg,speed:(player.speed||0)+sg,insight:(player.insight||0)+sg,luck:(player.luck||0)+sg,control:(player.control||0)+sg}
+    Object.assign(player,us);currentHp=newHp;player.max_hp=newMaxHp;player.level=level;player.xp=newXp
+    window.showToast('LEVEL UP! Lvl '+level+' — +5 HP · +1 all stats · +'+spGained+' SP!')
+    renderHUD()
+    return{level,max_hp:newMaxHp,hp:newHp,xp:newXp,skill_points:newSP,sp_claimed:player.sp_claimed,...us}
+  }
+
+  function getEquippedBonus(stat) {
+    return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
+  }
+  function calcATK() {
+    return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')))
+  }
+  function calcDEF() {
+    return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus'))
+  }
+  function calcSPD() {
+    return Math.round((player.speed||0)+(player.insight||0)*0.1+getEquippedBonus('speed_bonus'))
+  }
+
+  window.openStatWindow = function() {
+    document.getElementById('stat-window')?.remove()
+    const eqItems=window._equippedItems||[]
+    const STATS=[
+      {label:'Power',  val:player.power||0,  color:'#ff5500',desc:'Scales ATK damage',         derived:'ATK +'+Math.round((player.power||0)*0.6)},
+      {label:'Control',val:player.control||0,color:'#0088ff',desc:'Scales DEF & retry chance',  derived:'DEF +'+Math.round((player.control||0)*0.2)},
+      {label:'Guard',  val:player.guard||0,  color:'#8b5e3c',desc:'Scales DEF & damage block',  derived:'DEF +'+Math.round((player.guard||0)*0.6)},
+      {label:'Speed',  val:player.speed||0,  color:'#a8d8ea',desc:'Scales ATK & turn order',    derived:'ATK +'+Math.round((player.speed||0)*0.2)},
+      {label:'Insight',val:player.insight||0,color:'#ffd700',desc:'Scales SPD & luck effects',  derived:'SPD +'+Math.round((player.insight||0)*0.1)},
+      {label:'Luck',   val:player.luck||0,   color:'#b06eff',desc:'Improves crit & loot chance',derived:'Loot +'+Math.round((player.luck||0)*5)+'%'},
+    ]
+    const modal=document.createElement('div')
+    modal.id='stat-window'
+    modal.style.cssText='position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
+    modal.innerHTML=`
+      <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
+          <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
+          <button id="stat-window-close" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
+        </div>
+        <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+            ${[['ATK',calcATK(),'#e05555'],['DEF',calcDEF(),'#5ec45e'],['SPD',calcSPD(),'#a8d8ea'],
+               ['HP',player.max_hp||100,'#5eaee0'],['LVL',player.level||1,'#c8b96e'],['GOLD',player.gold||0,'#c8b96e']
+            ].map(([k,v,c])=>'<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
+          </div>
+        </div>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:var(--ink-dim)">· Unlocked via Skill Tree</span></p>
+        ${STATS.map(s=>`<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
+          <div style="flex:1">
+            <div style="display:flex;align-items:baseline;gap:4px">
+              <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);font-weight:600">${s.label}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink)">${s.val}</span>
+              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin-left:auto">${s.derived}</span>
+            </div>
+            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:var(--ink-dim);margin:0">${s.desc}</p>
+          </div></div>`).join('')}
+        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
+          <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${eqItems.map(i=>i.name).join(', ')||'None'}</p>
+        </div>
+        ${(player.skill_points||0)>0?`<button id="stat-window-skills" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">⬡ Spend ${player.skill_points} Skill Points → Skills Page</button>`:''}
+      </div>`
+    modal.addEventListener('click',e=>{if(e.target===modal)modal.remove()})
+    document.body.appendChild(modal)
+    document.getElementById('stat-window-close')?.addEventListener('click', () => modal.remove())
+    document.getElementById('stat-window-skills')?.addEventListener('click', () => {
+      modal.remove()
+      window.bookNavigate('skills.html')
+    })
+  }
+
   function renderHUD() {
-    const hp  = currentHp
-    const mhp = player.max_hp || 100
-    const xp  = player.xp || 0
-    const lvl = player.level || 1
-    const BC  = { neutral:'#8b6a20', red:'#a02020', green:'#2f7a2f', elite:'#5f3aa0', unknown:'#5c4638' }
-    const BS  = { neutral:'🟡', red:'🔴', green:'🟢', elite:'🟣', unknown:'⚫' }
-    const bc  = BC[player.badge] || '#8b6a20'
-    const bs  = BS[player.badge] || '🟡'
-    const hpPct  = Math.max(0, Math.round(hp / mhp * 100))
-    const hpCol  = hpPct > 60 ? '#5ec45e' : hpPct > 30 ? '#c8b96e' : '#e05555'
-    const xpNext = xpForLevel(lvl)
-    const xpIntoLevel = Math.max(0, Math.min(xp, xpNext - 1))
-    const xpPct = Math.min(100, Math.round(xpIntoLevel / xpNext * 100))
+    const hp=currentHp, mhp=player.max_hp||100, xp=player.xp||0, lvl=player.level||1
+    const BC={neutral:'#8b6a20',red:'#a02020',green:'#2f7a2f',elite:'#5f3aa0'}
+    const BS={neutral:'🟡',red:'🔴',green:'🟢',elite:'🟣'}
+    const bc=BC[player.badge]||'#8b6a20', bs=BS[player.badge]||'🟡'
+    const hpPct=Math.max(0,Math.round(hp/mhp*100))
+    const hpCol=hpPct>60?'#5ec45e':hpPct>30?'#c8b96e':'#e05555'
+    const xpNext=xpForLevel(lvl)
+    const xpIntoLevel=Math.max(0,Math.min(xp,xpNext-1))
+    const xpPct=Math.min(100,Math.round(xpIntoLevel/xpNext*100))
+    const moral=player.moral_score||0
+    const moralPct=Math.round((moral+100)/2)
+    const moralCol=moral>=60?'#1e5a8a':moral>=20?'#2f7a2f':moral>=-20?'#8b6a20':moral>=-60?'#a04a18':'#a02020'
+    const moralLabel=moral>=70?'HERO':moral>=30?'GOOD':moral>=-10?'NEUTRAL':moral>=-40?'RUTHLESS':moral>=-70?'CORRUPT':'VILLAIN'
+    const dotLeft=Math.max(2,Math.min(94,moralPct))
 
-    // ── Fable-style moral alignment ───────────────────
-    const moral = player.moral_score || 0
-    // −100 = pure evil (red), 0 = neutral (gold), +100 = pure good (blue-white)
-    const moralPct  = Math.round((moral + 100) / 2) // 0-100 left-to-right
-    const moralCol  = moral >= 60 ? '#1e5a8a'
-      : moral >= 20  ? '#2f7a2f'
-      : moral >= -20 ? '#8b6a20'
-      : moral >= -60 ? '#a04a18'
-      :                '#a02020'
-    const moralLabel = moral >= 70  ? 'HERO'
-      : moral >= 30   ? 'GOOD'
-      : moral >= -10  ? 'NEUTRAL'
-      : moral >= -40  ? 'RUTHLESS'
-      : moral >= -70  ? 'CORRUPT'
-      :                 'VILLAIN'
-    // Indicator dot position: 0% = far left (evil), 100% = far right (good)
-    const dotLeft = Math.max(2, Math.min(94, moralPct))
-
-    document.getElementById('hud').innerHTML = `
+    document.getElementById('hud').innerHTML=`
       <div class="hud-badge-row">
         <span class="hud-seal">${bs}</span>
         <div>
           <p class="hud-seal-label" style="color:${bc}">${(player.badge||'neutral')[0].toUpperCase()+(player.badge||'neutral').slice(1)}</p>
-          <p class="hud-chapter">Chapter ${player.current_chapter||1} · Lvl ${lvl}</p>
+          <p class="hud-chapter">Chapter 2 · Lvl ${lvl}</p>
         </div>
       </div>
       <div class="stat-row">
         <span class="stat-key">HP</span>
         <div class="stat-bar-wrap"><div class="stat-bar" id="hp-bar" style="width:${hpPct}%;background:${hpCol};transition:width .4s,background .4s"></div></div>
-        <span class="stat-val" id="hp-val">${hp}/${mhp}</span>
+        <span class="stat-val" id="hp-val">${Math.round(hp)}/${mhp}</span>
       </div>
       <div class="stat-row">
         <span class="stat-key">XP</span>
@@ -160,2933 +2993,53 @@ export async function mountChapter1(__mountOptions = {}) {
           <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
         </div>
       </div>
-      ${(player.skill_points||0)>0?`<div onclick="window.bookNavigate('skills.html')" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+      ${(player.skill_points||0)>0?`<div id="hud-skill-points-link" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
       <div class="stat-grid">
         <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${calcATK()}</span></div>
         <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${calcDEF()}</span></div>
         <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val">${player.gold||0}</span></div>
       </div>
       <div style="display:flex;gap:4px;margin-top:6px">
-        <button onclick="openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
-        <button onclick="window.bookNavigate('skills.html')" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
-      </div>
-      ${getDefeatedBosses().length>0?`<button onclick="goTo('district_hub')" style="width:100%;margin-top:4px;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(94,174,224,.15);border:.5px solid rgba(94,174,224,.35);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⚔ FARM ZONES</button>`:''}
-    `
+        <button id="hud-open-stats" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+        <button id="hud-open-skills" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
+      </div>`
+    document.getElementById('hud-skill-points-link')?.addEventListener('click', () => window.bookNavigate('skills.html'))
+    document.getElementById('hud-open-stats')?.addEventListener('click', () => openStatWindow())
+    document.getElementById('hud-open-skills')?.addEventListener('click', () => window.bookNavigate('skills.html'))
   }
 
   function updateHpBar(hp) {
-    currentHp = hp
-    const mhp = player.max_hp || 100
-    const pct = Math.max(0, Math.round(hp / mhp * 100))
-    const col = pct > 60 ? '#5ec45e' : pct > 30 ? '#c8b96e' : '#e05555'
-    const bar = document.getElementById('hp-bar')
-    const val = document.getElementById('hp-val')
-    if (bar) { bar.style.width = pct+'%'; bar.style.background = col }
-    if (val) val.textContent = hp+'/' + ''+(player.max_hp||100)
+    currentHp=hp
+    const mhp=player.max_hp||100, pct=Math.max(0,Math.round(hp/mhp*100))
+    const col=pct>60?'#5ec45e':pct>30?'#c8b96e':'#e05555'
+    const bar=document.getElementById('hp-bar'), val=document.getElementById('hp-val')
+    if(bar){bar.style.width=pct+'%';bar.style.background=col}
+    if(val)val.textContent=Math.round(hp)+'/'+mhp
   }
 
-  // ── Save ─────────────────────────────────────────
-  async function save(updates) {
-    // Preserve defeated_bosses across the merge in case DB returns it empty.
-    const prevDefeated = updates.defeated_bosses || player.defeated_bosses || []
-    const { data } = await supabase
-      .from('players').update({ ...updates, last_seen_at: new Date().toISOString() })
-      .eq('id', player.id).select().single()
-    if (data) {
-      // Merge DB-returned fields into the existing player object instead of
-      // rebinding the variable to a new object. This preserves reference
-      // identity across every module that already holds the player (book.html's
-      // currentPlayer, every previously-mounted module, etc.) so post-save
-      // mutations don't get orphaned on the old reference. Without this, the
-      // HUD would read fresh state from the rebound local while sibling pages
-      // (skills, inventory, ...) would read stale state from the original
-      // object that book.html cached at first load.
-      Object.assign(player, data)
-      currentHp = data.hp
-      if (!player.defeated_bosses || !player.defeated_bosses.length) {
-        player.defeated_bosses = prevDefeated
-      }
+  // ── Init ──────────────────────────────────────────
+  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
+  if (!player) throw new Error('no player')
+
+  let currentHp = player.hp || 100
+  let nodeId = (player.current_node||'').startsWith('ch2_')
+    ? player.current_node.replace('ch2_','')
+    : 'opening'
+  let outcome = null
+
+  ;(async()=>{
+    if(!window._equippedItems){
+      const {data}=await supabase.from('inventory').select('*').eq('player_id',player.id).not('equipped_slot','is',null)
+      window._equippedItems=data||[]
     }
-    renderHUD()
-  }
+  })()
 
-  // ── Defeated bosses helpers ───────────────────────
-  function getDefeatedBosses() {
-    return player.defeated_bosses || []
-  }
+  if (!NODES[nodeId]) nodeId='opening'
 
-  function markBossDefeated(bossKey) {
-    const defeated = [...getDefeatedBosses()]
-    if (!defeated.includes(bossKey)) defeated.push(bossKey)
-    player.defeated_bosses = defeated
-    return defeated
-  }
-
-  // ── Add item ─────────────────────────────────────
-  // ── Loot drop queue — collect drops then show summary window ──
-  let _lootQueue = []
-  let _lootTimerId = null
-  let _lootSuppressed = false  // suppress mid-sequence flashes
-
-  function queueLoot(name, qty, img) {
-    _lootQueue.push({ name, qty, img })
-    clearTimeout(_lootTimerId)
-    _lootTimerId = setTimeout(showLootWindow, 800)
-  }
-
-  function suppressLoot() { _lootSuppressed = true }
-  function unsuppressLoot() { _lootSuppressed = false }
-
-  function showLootWindow() {
-    if (_lootSuppressed || !_lootQueue.length) return
-    const drops = [..._lootQueue]
-    _lootQueue = []
-
-    // Remove existing loot window if any
-    document.getElementById('loot-window')?.remove()
-
-    const win = document.createElement('div')
-    win.id = 'loot-window'
-    win.style.cssText = `
-      position:fixed;bottom:80px;right:20px;z-index:500;
-      background:#0f0d08;border:1px solid rgba(200,184,128,.5);
-      border-radius:6px;padding:0;min-width:220px;max-width:280px;
-      box-shadow:0 8px 40px rgba(0,0,0,.8);animation:fadeIn .3s ease;
-      font-family:'Share Tech Mono',monospace;
-    `
-    win.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(200,184,128,.2)">
-        <span style="font-size:.62rem;letter-spacing:.1em;color:#c8b880">ITEMS OBTAINED</span>
-        <button onclick="document.getElementById('loot-window').remove()" style="background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px">✕</button>
-      </div>
-      <div style="padding:6px 0;max-height:280px;overflow-y:auto">
-        ${drops.map(d => `
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:.5px solid rgba(200,184,128,.1)">
-            ${d.img ? `<img src="${d.img}" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">` : `<span style="font-size:1.1rem;flex-shrink:0">📦</span>`}
-            <span style="font-size:.68rem;color:#e8d8a8;flex:1">${d.name}</span>
-            ${d.qty > 1 ? `<span style="font-size:.58rem;color:var(--ink-dim)">×${d.qty}</span>` : ''}
-            <button onclick="declineDrop('${d.name}',this)" style="background:none;border:.5px solid rgba(224,85,85,.3);color:#e05555;cursor:pointer;font-size:.55rem;padding:1px 5px;border-radius:2px;font-family:'Share Tech Mono',monospace">skip</button>
-          </div>
-        `).join('')}
-      </div>
-      <div style="padding:8px 12px;display:flex;justify-content:flex-end">
-        <button onclick="document.getElementById('loot-window').remove()" style="font-family:'Cinzel',serif;font-size:.68rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);padding:4px 14px;border-radius:2px;cursor:pointer">Keep All</button>
-      </div>
-    `
-    document.body.appendChild(win)
-
-    // Auto-dismiss after 8 seconds
-    setTimeout(() => win.remove?.(), 8000)
-  }
-
-  window.declineDrop = async function(itemName, btn) {
-    // Find item in inventory by name and delete it
-    const { data } = await supabase.from('inventory').select('id').eq('player_id', player.id).eq('name', itemName).order('obtained_at',{ascending:false}).limit(1)
-    if (data?.[0]) await supabase.from('inventory').delete().eq('id', data[0].id)
-    btn.closest('div[style]').remove()
-  }
-
-
-
-  function getItemImg(k) { return ITEM_IMAGES[k] || null }
-
-  async function addItem(itemKey, qty = 1) {
-    const { data: m } = await supabase.from('items').select('*').eq('item_key', itemKey).single()
-    if (!m) return
-    const stackable = ['consumable','material','key']
-    if (stackable.includes(m.item_type)) {
-      // Always check for existing stack first — never rely on DB unique constraint
-      const { data: ex, error: exErr } = await supabase
-        .from('inventory').select('id,quantity')
-        .eq('player_id', player.id).eq('item_key', itemKey)
-        .maybeSingle()
-
-      if (exErr) console.warn('addItem stack check error:', exErr.message)
-
-      if (ex) {
-        // Stack exists — increment quantity
-        const { error: upErr } = await supabase.from('inventory')
-          .update({ quantity: (ex.quantity || 1) + qty })
-          .eq('id', ex.id)
-        if (upErr) console.warn('addItem stack update error:', upErr.message)
-      } else {
-        // No existing stack — plain INSERT (no upsert, no constraint needed)
-        const { error: insErr } = await supabase.from('inventory').insert({
-          player_id:player.id, item_key:m.item_key, name:m.name, item_type:m.item_type,
-          subtype:m.subtype, rarity:m.rarity, atk_bonus:m.atk_bonus||0, def_bonus:m.def_bonus||0,
-          hp_restore:m.hp_restore||0, two_handed:m.two_handed||false, icon:m.icon, quantity:qty,
-          element:m.element||'none', power_bonus:m.power_bonus||0, control_bonus:m.control_bonus||0,
-          guard_bonus:m.guard_bonus||0, speed_bonus:m.speed_bonus||0,
-          insight_bonus:m.insight_bonus||0, luck_bonus:m.luck_bonus||0,
-          agility_bonus:m.agility_bonus||0, max_hp_bonus:m.max_hp_bonus||0,
-          special_effect:m.special_effect||null, sockets_total:0, sockets_used:0, socketed_runes:[]
-        })
-        if (insErr) {
-          console.warn('addItem insert error:', insErr.message)
-          // If insert failed due to race condition, try updating the now-existing row
-          const { data: retry } = await supabase.from('inventory').select('id,quantity')
-            .eq('player_id', player.id).eq('item_key', itemKey).maybeSingle()
-          if (retry) {
-            await supabase.from('inventory')
-              .update({ quantity: (retry.quantity || 1) + qty }).eq('id', retry.id)
-          }
-        }
-      }
-      queueLoot(m.name, qty, getItemImg(m.item_key))
-      return
-    }
-    const socketsRolled = rollSockets(m.rarity, m.item_type)
-    await supabase.from('inventory').insert({
-      player_id:player.id, item_key:m.item_key, name:m.name, item_type:m.item_type,
-      subtype:m.subtype, rarity:m.rarity, atk_bonus:m.atk_bonus||0, def_bonus:m.def_bonus||0,
-      hp_restore:m.hp_restore||0, two_handed:m.two_handed||false, icon:m.icon, quantity:1,
-      element:m.element||'none', power_bonus:m.power_bonus||0, control_bonus:m.control_bonus||0,
-      guard_bonus:m.guard_bonus||0, speed_bonus:m.speed_bonus||0,
-      insight_bonus:m.insight_bonus||0, luck_bonus:m.luck_bonus||0,
-      agility_bonus:m.agility_bonus||0, max_hp_bonus:m.max_hp_bonus||0,
-      special_effect:m.special_effect||null,
-      sockets_total:socketsRolled, sockets_used:0, socketed_runes:[]
-    })
-    queueLoot(m.name + (socketsRolled > 0 ? ` [${socketsRolled} socket${socketsRolled>1?'s':''}!]` : ''), 1, getItemImg(m.item_key))
-  }
-
-  // ── Navigate ─────────────────────────────────────
-  // ── Watcher Eye Random Encounter ─────────────────────
-  // After level 3: 15% chance per story node transition to trigger Eye ambush
-  // After level 7: 10% chance for Eye Swarm (harder) instead
-  const EYE_EXEMPT_NODES = new Set([
-    'opening','watcher_eye_ambush','eye_escape_attempt','fight_watcher_eye',
-    'eye_defeated','eye_survived','watcher_eye_swarm','fight_eye_swarm',
-    'swarm_defeated','swarm_survived','watcher_sees','watcher_sees_final',
-    'pre_boss_team','pre_boss_solo','pre_boss_betray','pre_boss_check',
-    'boss','chapter_end','plaza_allies','district_hub',
-    'plaza_talk','street_midpoint','plaza_grind','plaza_grind_done',
-    'fight_rat_1','fight_rats_2','fight_hounds','fight_crawlers',
-    'fight_plaza_spawn','fight_drone_1','fight_sentry','fight_with_kai',
-    'fight_watcher_eye','fight_eye_swarm',
-  ])
-  // ── Forced Eye Encounter Overlay ─────────────────────
-  // Shows a full-screen interruption with forced combat — no player choice.
-  // After win or loss, dismisses itself and resumes the original navigation.
-  function triggerForcedEyeEncounter(encounterType, resumeNextId) {
-    const isSwarm   = encounterType === 'watcher_eye_swarm'
-    const enemyData = isSwarm
-      ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
-      : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
-
-    const alertLines = isSwarm ? [
-      "The sky fractures in seven places at once.",
-      "Seven eyes descend. Each the size of a fist. Each fixed on you.",
-      "They orbit each other slowly — a single mind, distributed.",
-      "⚠ WATCHER'S EYE SWARM — FORCED ENGAGEMENT.",
-      "There is nowhere to run. They are already everywhere."
-    ] : [
-      "The sky splits without warning.",
-      "A pale eye drops from the crack like a stone from a height.",
-      "It finds you in less than a second.",
-      "⚠ WATCHER'S EYE — SPOTTED. ENGAGING.",
-      "It does not wait. It does not circle. It comes."
-    ]
-
-    // White flash
-    const flash = document.createElement('div')
-    flash.style.cssText = 'position:fixed;inset:0;z-index:9998;background:white;opacity:0;pointer-events:none;transition:opacity 0.12s ease'
-    document.body.appendChild(flash)
-    requestAnimationFrame(() => {
-      flash.style.opacity = '0.92'
-      setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 250) }, 180)
-    })
-
-    // Build overlay
-    const overlay = document.createElement('div')
-    overlay.id = 'eye-encounter-overlay'
-    overlay.style.cssText = `
-      position:fixed;inset:0;z-index:9000;
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      background:rgba(8,6,3,0.97);
-      animation:eyeOverlayIn 0.4s ease;
-      font-family:'Share Tech Mono',monospace;
-    `
-
-    overlay.innerHTML = `
-      <style>
-        @keyframes eyeOverlayIn { from{opacity:0;transform:scale(1.04)} to{opacity:1;transform:scale(1)} }
-        @keyframes eyePulse { 0%,100%{box-shadow:0 0 30px 8px rgba(255,255,255,0.15)} 50%{box-shadow:0 0 60px 20px rgba(255,255,255,0.35)} }
-        @keyframes eyeTextIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        #eye-alert-lines p { opacity:0; animation:eyeTextIn 0.35s ease forwards; }
-        #eye-alert-lines p:nth-child(1){animation-delay:0.1s}
-        #eye-alert-lines p:nth-child(2){animation-delay:0.3s}
-        #eye-alert-lines p:nth-child(3){animation-delay:0.55s}
-        #eye-alert-lines p:nth-child(4){animation-delay:0.8s;color:#e05555;font-weight:bold;letter-spacing:.1em}
-        #eye-alert-lines p:nth-child(5){animation-delay:1.1s;color:#a08858}
-        .eye-combat-panel { width:100%;max-width:440px;padding:0 1rem; }
-
-        /* ── Override dark-on-parchment combat styles for the dark overlay ── */
-        #eye-encounter-overlay .combat-panel {
-          background: rgba(255,255,255,0.04);
-          border: .5px solid rgba(200,184,128,.2);
-          border-radius: 6px;
-          padding: .75rem;
-        }
-        #eye-encounter-overlay .combat-enemy-row {
-          display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
-        }
-        #eye-encounter-overlay .combat-enemy-name {
-          color: #e8d8a8 !important;
-        }
-        #eye-encounter-overlay .combat-log {
-          color: #c8b96e !important;
-          background: rgba(0,0,0,.3) !important;
-          border-color: rgba(200,184,128,.15) !important;
-          font-family: 'IM Fell English', serif;
-          font-style: italic;
-          min-height: 2.5rem;
-        }
-        #eye-encounter-overlay .combat-log em {
-          color: #8fd8f0 !important;
-        }
-        #eye-encounter-overlay .combat-log strong {
-          color: #e05555 !important;
-        }
-        #eye-encounter-overlay .stat-key {
-          color: #a08858 !important;
-        }
-        #eye-encounter-overlay .stat-val {
-          color: #e8d8a8 !important;
-        }
-        #eye-encounter-overlay .stat-bar-wrap {
-          background: rgba(255,255,255,.08) !important;
-        }
-        #eye-encounter-overlay p[style*="color:var(--ink)"],
-        #eye-encounter-overlay span[style*="color:var(--ink)"] {
-          color: #c8b96e !important;
-        }
-        #eye-encounter-overlay .combat-btn {
-          color: #c8b96e !important;
-          background: rgba(200,184,128,.08) !important;
-          border-color: rgba(200,184,128,.25) !important;
-        }
-        #eye-encounter-overlay .combat-btn:hover:not(:disabled) {
-          background: rgba(200,184,128,.18) !important;
-          border-color: rgba(200,184,128,.5) !important;
-        }
-        #eye-encounter-overlay .combat-btn:disabled {
-          color: rgba(200,184,128,.3) !important;
-          border-color: rgba(200,184,128,.1) !important;
-        }
-        #eye-encounter-overlay #skill-slots-row p,
-        #eye-encounter-overlay #skill-slots-row span {
-          color: #c8b96e !important;
-        }
-        #eye-encounter-overlay #items-panel {
-          background: rgba(15,12,8,.95) !important;
-          border-color: rgba(200,184,128,.3) !important;
-        }
-        #eye-encounter-overlay #items-panel p,
-        #eye-encounter-overlay #items-panel span {
-          color: #c8b96e !important;
-        }
-        #eye-encounter-overlay #combat-over {
-          color: #c8b96e !important;
-        }
-        #eye-encounter-overlay #combat-over button {
-          color: #1a1208 !important;
-          background: rgba(200,184,128,.45) !important;
-          border-color: rgba(139,106,32,.6) !important;
-        }
-        /* FORCED ENGAGEMENT label */
-        #eye-combat-phase > p {
-          color: #c8b96e !important;
-        }
-      </style>
-
-      <!-- Alert phase -->
-      <div id="eye-alert-phase" style="text-align:center;max-width:400px;padding:2rem 1.5rem">
-        <img src="${enemyData.img}" alt="${enemyData.name}"
-          style="width:${isSwarm?'120px':'88px'};height:${isSwarm?'120px':'88px'};object-fit:contain;margin:0 auto 1.5rem;display:block;animation:eyePulse 2s infinite;filter:drop-shadow(0 0 20px rgba(255,255,255,0.4))"
-          onerror="this.style.fontSize='4rem';this.textContent='👁';this.style.background='none'">
-        <div id="eye-alert-lines" style="margin-bottom:1.5rem">
-          ${alertLines.map(l => `<p style="font-size:.72rem;color:#c8b96e;margin:.4rem 0;line-height:1.6">${l}</p>`).join('')}
-        </div>
-        <div id="eye-engage-btn-wrap" style="opacity:0;transition:opacity 0.4s">
-          <button id="eye-engage-btn"
-            style="font-family:'Cinzel',serif;font-size:.9rem;color:#0d0b08;background:#c8b96e;border:none;border-radius:3px;padding:.6rem 2rem;cursor:pointer;letter-spacing:.08em;box-shadow:0 0 20px rgba(200,185,110,0.4)">
-            ⚔ ENGAGE
-          </button>
-          <p style="font-size:.5rem;color:#a08858;margin-top:.5rem;letter-spacing:.06em">You have no choice.</p>
-        </div>
-      </div>
-
-      <!-- Combat phase (hidden until engaged) -->
-      <div id="eye-combat-phase" style="display:none;width:100%;max-width:460px;padding:1rem;max-height:90vh;overflow-y:auto">
-        <p style="font-size:.58rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.75rem;text-align:center">
-          ${isSwarm ? '👁 WATCHER\'S EYE SWARM' : '👁 WATCHER\'S EYE'} — FORCED ENGAGEMENT
-        </p>
-        <div id="eye-combat-inner"></div>
-      </div>
-    `
-    document.body.appendChild(overlay)
-
-    // Show engage button after lines have animated in
-    setTimeout(() => {
-      const btn = document.getElementById('eye-engage-btn-wrap')
-      if (btn) btn.style.opacity = '1'
-    }, 1600)
-
-    // Engage button — swap to combat panel
-    document.getElementById('eye-engage-btn').addEventListener('click', () => {
-      document.getElementById('eye-alert-phase').style.display  = 'none'
-      document.getElementById('eye-combat-phase').style.display = 'block'
-
-      const panel = document.getElementById('eye-combat-inner')
-
-      // Inline onWin/onLose handlers that dismiss overlay and resume navigation
-      const onEncounterEnd = async (result) => {
-        // Brief pause so player can read the result
-        await new Promise(r => setTimeout(r, 1400))
-
-        // Dismiss overlay
-        overlay.style.transition = 'opacity 0.5s'
-        overlay.style.opacity = '0'
-        setTimeout(() => {
-          overlay.remove()
-          // Resume the navigation that was interrupted
-          const flipEl2 = document.querySelector('.page-flip-decorator')
-          if (flipEl2) {
-            flipEl2.classList.remove('playing')
-            void flipEl2.offsetWidth
-            flipEl2.classList.add('playing')
-            flipEl2.addEventListener('animationend', () => flipEl2.classList.remove('playing'), { once: true })
-          }
-          const lp = document.getElementById('left-page')
-          lp.style.transition = 'opacity .3s,transform .3s'
-          lp.style.opacity    = '0'
-          lp.style.transform  = 'translateX(-8px)'
-          setTimeout(() => {
-            nodeId = resumeNextId
-            render()
-            lp.style.opacity   = '1'
-            lp.style.transform = 'translateX(0)'
-            window.scrollTo({ top:0, behavior:'smooth' })
-          }, 320)
-        }, 500)
-      }
-
-      // Patch buildCombatUI for this encounter — use special sentinels
-      // that call onEncounterEnd instead of goTo
-      window._eyeEncounterCallback = onEncounterEnd
-      buildEyeCombat(panel, enemyData)
-    })
-  }
-
-  // ── Eye combat builder (self-contained, calls _eyeEncounterCallback on end) ─
-  function buildEyeCombat(panel, enemy) {
-    window._inEyeEncounter = true
-    buildCombatUI(panel, enemy, '__eye_win__', '__eye_lose__', '__eye_lose__', false, null)
-
-    // After build — patch all dark inline colors to light ones for the black overlay
-    requestAnimationFrame(() => {
-      const overlay = document.getElementById('eye-encounter-overlay')
-      if (!overlay) return
-      // Walk all elements inside overlay and flip #1a1208 / #3a2008 to light colors
-      overlay.querySelectorAll('[style]').forEach(el => {
-        el.style.cssText = el.style.cssText
-          .replace(/color\s*:\s*#1a1208/gi,  'color:#e8d8a8')
-          .replace(/color\s*:\s*#3a2008/gi,  'color:#a08858')
-          .replace(/color\s*:\s*#7a6435/gi,  'color:#a08858')
-          .replace(/background\s*:\s*rgba\(200,184,128,[^)]+\)/gi, 'background:rgba(200,184,128,.12)')
-      })
-    })
-  }
-
-  function rollWatcherEncounter(nextId) {
-    const lvl = player.level || 1
-    if (lvl < 3) return null
-    if (EYE_EXEMPT_NODES.has(nextId)) return null
-    const nd = NODES[nextId]
-    if (!nd || nd.type === 'combat' || nd.type === 'boss' || nd.type === 'end') return null
-    const roll = Math.random()
-    if (lvl >= 7 && roll < 0.10) return 'watcher_eye_swarm'
-    if (roll < 0.15) return 'watcher_eye_ambush'
-    return null
-  }
-
-  window.returnToBoss = function() {
-    document.getElementById('loot-window')?.remove()
-    const p = document.getElementById('right-panel')
-    if (p) goTo('pre_boss_check')
-  }
-  window.returnToZone = function() {
-    document.getElementById('loot-window')?.remove()
-    const p   = document.getElementById('right-panel')
-    const loc = window._currentFarmLoc
-    if (loc && p) renderFarmZone(p, loc)
-    else if (p) renderLocationHub(p, NODES['farming_hub'])
-  }
-  window.returnToZoneHub = function() {
-    document.getElementById('loot-window')?.remove()
-    const p = document.getElementById('right-panel')
-    if (p) renderLocationHub(p, NODES['farming_hub'])
-  }
-  window.returnToStory = function() {
-    document.getElementById('loot-window')?.remove()
-    goTo('district_hub')
-  }
-
-  // ── Derived stat calculations ────────────────────────────────
-  function calcATK() {
-    const pwr = player.power   || 0
-    const spd = player.speed   || 0
-    const eqA = getEquippedBonus('atk_bonus')
-    return Math.max(1, Math.round((player.atk||1) + pwr*0.6 + spd*0.2 + eqA))
-  }
-  function calcDEF() {
-    const grd = player.guard   || 0
-    const ctr = player.control || 0
-    const eqD = getEquippedBonus('def_bonus')
-    return Math.round((player.def||0) + grd*0.6 + ctr*0.2 + eqD)
-  }
-  function calcSPD() {
-    const spd = player.speed   || 0
-    const ins = player.insight || 0
-    return Math.round(spd + ins*0.1 + getEquippedBonus('speed_bonus'))
-  }
-  function getEquippedBonus(stat) {
-    // Sum bonus from all equipped items — pulled from window._equipped cache
-    return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
-  }
-
-  // ── Full Stat Window ─────────────────────────────────────────
-  // (Stat allocation modal removed — stats are now managed via the Skill Tree on the Skills page)
-  window.openStatWindow = function() {
-    document.getElementById('stat-window')?.remove()
-
-    const eqItems  = window._equippedItems || []
-
-    const pwr = player.power   || 0
-    const ctr = player.control || 0
-    const grd = player.guard   || 0
-    const spd = player.speed   || 0
-    const ins = player.insight || 0
-    const lck = player.luck    || 0
-
-    const finalATK = calcATK()
-    const finalDEF = calcDEF()
-    const finalSPD = calcSPD()
-
-    const STATS = [
-      { key:'power',   label:'Power',   val:pwr, color:'#ff5500', desc:'Scales ATK damage',          derived:'ATK +' + Math.round(pwr*0.6) },
-      { key:'control', label:'Control', val:ctr, color:'#0088ff', desc:'Scales DEF & retry chance',   derived:'DEF +' + Math.round(ctr*0.2) },
-      { key:'guard',   label:'Guard',   val:grd, color:'#8b5e3c', desc:'Scales DEF & damage block',   derived:'DEF +' + Math.round(grd*0.6) },
-      { key:'speed',   label:'Speed',   val:spd, color:'#a8d8ea', desc:'Scales ATK & turn order',     derived:'ATK +' + Math.round(spd*0.2) + ', SPD +' + spd },
-      { key:'insight', label:'Insight', val:ins, color:'#ffd700', desc:'Scales SPD & luck effects',   derived:'SPD +' + Math.round(ins*0.1) },
-      { key:'luck',    label:'Luck',    val:lck, color:'#b06eff', desc:'Improves crit & loot chance', derived:'Loot +' + Math.round(lck*5) + '%' },
-    ]
-
-    const equippedNames = eqItems.map(i => i.name).join(', ') || 'None'
-
-    const modal = document.createElement('div')
-    modal.id = 'stat-window'
-    modal.style.cssText = 'position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.75)'
-    modal.innerHTML = `
-      <div style="background:#b8a568;border:1px solid #8b6a20;border-radius:6px;padding:1.25rem;min-width:320px;max-width:400px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.8)">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem">
-          <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:var(--ink)">Character Stats</p>
-          <button onclick="document.getElementById('stat-window').remove()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--ink)">✕</button>
-        </div>
-
-        <div style="background:rgba(0,0,0,.08);border-radius:4px;padding:.6rem .75rem;margin-bottom:.75rem">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:4px">DERIVED STATS</p>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
-            ${[['ATK', finalATK, '#e05555'],['DEF', finalDEF, '#5ec45e'],['SPD', finalSPD, '#a8d8ea'],
-               ['HP', (player.max_hp||100), '#5eaee0'],['LVL', (player.level||1), '#c8b96e'],['GOLD', (player.gold||0), '#c8b96e']
-            ].map(([k,v,c]) => '<div style="text-align:center;background:rgba(0,0,0,.1);border-radius:3px;padding:4px 2px"><span style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);display:block">'+k+'</span><span style="font-family:\'Cinzel\',serif;font-size:.95rem;font-weight:600;color:'+c+'">'+v+'</span></div>').join('')}
-          </div>
-        </div>
-
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
-        ${STATS.map(s => `
-          <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
-            <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
-            <div style="flex:1">
-              <div style="display:flex;align-items:baseline;gap:4px">
-                <span style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);font-weight:600">${s.label}</span>
-                <span style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink)">${s.val}</span>
-                <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);margin-left:auto">${s.derived}</span>
-              </div>
-              <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.62rem;color:var(--ink-dim);margin:0">${s.desc}</p>
-            </div>
-          </div>
-        `).join('')}
-
-        <div style="margin-top:.75rem;padding:.6rem .75rem;background:rgba(0,0,0,.08);border-radius:4px">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:3px">EQUIPPED</p>
-          <p style="font-family:'IM Fell English',serif;font-size:.72rem;color:var(--ink);margin:0">${equippedNames}</p>
-        </div>
-
-        ${(player.skill_points||0)>0?`
-          <button onclick="document.getElementById('stat-window').remove();window.bookNavigate('skills.html')" style="width:100%;margin-top:.75rem;font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);background:rgba(160,125,224,.35);border:1px solid rgba(160,125,224,.6);border-radius:3px;padding:.45rem;cursor:pointer">
-            ⬡ Spend ${player.skill_points} Skill Points → Skills Page
-          </button>
-        `:''}
-      </div>
-    `
-    modal.addEventListener('click', e => { if (e.target===modal) modal.remove() })
-    document.body.appendChild(modal)
-  }
-
-  // ── Badge/Reputation calculator ──────────────────────────
-  // Badge is DERIVED from moral_score + pvp_kills + helps_given
-  // Never permanent — recalculates every time moral changes
-  function calcBadge(moral, pvpKills, helpsGiven, backstabs) {
-    const m  = moral      || 0
-    const pk = pvpKills   || 0
-    const hg = helpsGiven || 0
-
-    // Elite: high moral, boosted by helping others
-    if (m >= 60 && (hg >= 3 || pk === 0)) return 'elite'
-
-    // Green: positive moral score — helping actions reinforce it, but moral alone is enough
-    if (m >= 20) return 'green'
-
-    // Red: negative moral OR heavily pvp-focused
-    if (m <= -20 || (pk >= 5 && pk > hg * 3)) return 'red'
-
-    // Neutral: everything else (-19 to +19)
-    return 'neutral'
-  }
-
-  window.goTo = async function goTo(nextId, choice = {}) {
-    // Resolve eye encounter return node
-    if (nextId === '__eye_return__') {
-      nextId = window._eyeReturnNode || 'street_midpoint'
-      window._eyeReturnNode = null
-    }
-    if (!NODES[nextId]) return
-
-    // Track whether player defeated Dorian before the Sentinel fight
-    // (suppresses dorianLurking in garage_b4_sentinel_fight)
-    if (nodeId === 'garage_b4_dorian_won' && nextId === 'garage_b4_sentinel_fight') {
-      window._dorianDefeated = true
-    }
-    // Reset when leaving the garage arc entirely
-    if (nextId === 'garage_b4_clear' || nextId === 'garage_b5_summit') {
-      window._dorianDefeated = false
-    }
-
-    const cur = NODES[nodeId]
-    const oldXp  = player.xp || 0
-    const oldLvl = player.level || 1
-
-    const updates = { current_node: 'ch1_' + nextId }
-    if (cur?.xp)     { updates.xp = oldXp + cur.xp; player.xp = updates.xp }
-    if (cur?.hpLoss) { currentHp = Math.max(1, currentHp - cur.hpLoss); updates.hp = currentHp }
-
-    if (choice.outcome === 'attack') {
-      updates.moral_score = Math.max(-100, (player.moral_score || 0) - 20)
-      player.moral_score = updates.moral_score
-    }
-    // Moral score shifts from story choices
-    if (choice.moral) {
-      const newMoral = Math.max(-100, Math.min(100, (player.moral_score || 0) + choice.moral))
-      updates.moral_score = newMoral
-      player.moral_score  = newMoral
-    }
-    // Recalculate badge whenever moral changes
-    if (updates.moral_score !== undefined) {
-      const newBadge = calcBadge(updates.moral_score, player.pvp_kills, player.helps_given, player.backstabs)
-      updates.badge      = newBadge
-      updates.reputation = newBadge
-      player.badge       = newBadge
-    }
-
-    if (choice.bossMode) bossMode = choice.bossMode
-    if (choice.outcome)  outcome  = choice.outcome
-    if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey, r.qty)
-
-    // Check for level up before saving
-    if (updates.xp) {
-      const lvlUpdates = await checkLevelUp(oldXp, updates.xp, oldLvl)
-      if (lvlUpdates) Object.assign(updates, lvlUpdates)
-    }
-
-    await save(updates)
-
-    // ── Random Watcher Eye encounter check ───────────
-    const eyeEncounter = rollWatcherEncounter(nextId)
-    if (eyeEncounter) {
-      // Intercept navigation — show forced combat overlay, do NOT change nodeId
-      triggerForcedEyeEncounter(eyeEncounter, nextId)
-      return  // abort normal navigation — overlay handles it
-    }
-
-    // ── Page-flip animation on navigation ──
-    const flipEl = document.querySelector('.page-flip-decorator')
-    if (flipEl) {
-      flipEl.classList.remove('playing')
-      void flipEl.offsetWidth // force reflow to restart animation
-      flipEl.classList.add('playing')
-      flipEl.addEventListener('animationend', () => flipEl.classList.remove('playing'), { once: true })
-    }
-
-    const lp = document.getElementById('left-page')
-    lp.style.transition = 'opacity .3s,transform .3s'
-    lp.style.opacity    = '0'
-    lp.style.transform  = 'translateX(-8px)'
-    setTimeout(() => {
-      nodeId = nextId
-      render()
-      lp.style.opacity   = '1'
-      lp.style.transform = 'translateX(0)'
-      window.scrollTo({ top:0, behavior:'smooth' })
-    }, 320)
-  }
-
-  // ── Render ───────────────────────────────────────
-  function render() {
-    const node = NODES[nodeId]
-    if (!node) {
-      document.getElementById('story-text').textContent = 'Error: node "' + nodeId + '" not found.'
-      return
-    }
-    if (node.sysMsg) window.showSysOverlay(node.sysMsg)
-
-    const stEl = document.getElementById('story-text')
-    stEl.textContent = node.text || ''
-    stEl.className   = nodeId === 'opening' ? 'story-text drop-cap' : 'story-text'
-
-    // Watcher image — teaser on pre_boss nodes, full on boss node
-    const watcherNodes = ['pre_boss_team','pre_boss_solo','pre_boss_betray','pre_boss_check','boss']
-    const watcherImg   = document.getElementById('watcher-img')
-    if (watcherNodes.includes(nodeId)) {
-      if (!watcherImg) {
-        const img = document.createElement('img')
-        img.id    = 'watcher-img'
-        img.src   = '../assets/boss/the_watcher.png'
-        img.alt   = 'The Watcher'
-        img.style.cssText = 'width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:' + (nodeId==='boss'?'none':'brightness(.7) saturate(0.6)')
-        document.getElementById('story-text').insertAdjacentElement('afterend', img)
-        setTimeout(() => img.style.opacity = '1', 100)
-      } else {
-        watcherImg.style.filter = nodeId==='boss' ? 'none' : 'brightness(.7) saturate(0.6)'
-        watcherImg.style.opacity = '1'
-      }
-    } else {
-      if (watcherImg) watcherImg.remove()
-    }
-
-    const ob = document.getElementById('outcome-box')
-    if (outcome && nodeId === 'search_deeper') {
-      ob.style.display = 'block'
-      ob.textContent   = outcome==='team'   ? 'You made a choice to be human first.'
-        : outcome==='attack' ? 'The System recorded it. Reputation: Red.'
-        : 'You watched. You learned. You moved on.'
-    } else { ob.style.display = 'none' }
-
-    const panel = document.getElementById('right-panel')
-    if      (node.type === 'boss')         renderBoss(panel, node)
-    else if (node.type === 'combat')       renderCombat(panel, node)
-    else if (node.type === 'end')          renderEnd(panel, node)
-    else if (node.type === 'location_hub') renderLocationHub(panel, node)
-    else if (nodeId === 'district_hub')    renderDistrictHub(panel)
-    else                                   renderChoices(panel, node)
-  }
-
-  // ── District hub — checks guardian progress, routes to plaza when all 3 done ──
-  function renderDistrictHub(panel) {
-    const defeated  = getDefeatedBosses()
-    const sentinel  = defeated.includes('sentinel')
-    const surveyor  = defeated.includes('surveyor')
-    const unseen    = defeated.includes('unseen')
-    const allDone   = sentinel && surveyor && unseen
-    const ch1Done   = (player.chapters_unlocked||[]).includes(2)
-
-    const stEl = document.getElementById('story-text')
-
-    // Always show zone cards — farming is always available for cleared zones
-    if (stEl) stEl.textContent = allDone
-      ? `The district is clear. All three guardians defeated.
-
-  The zones remain accessible for farming — enemies respawn, loot cycles continue. Your interface marks each cleared zone as open.
-
-  ${ch1Done ? 'Chapter 1 is complete. You can replay the Watcher from the plaza, or farm here.' : 'The Watcher awaits in the plaza. Clear the zones or go face it.'}`
-      : `You return to the plaza center.
-
-  The barrier is still up. You can feel where it gives — and where it doesn't.
-
-  Your interface shows the district status. Not all zones are clear.
-
-  The Watcher won't show itself until every guardian is defeated.`
-
-    const zones = [
-      { id: 'loc_garage', bossKey: 'sentinel', introNode: 'garage_approach', name: 'Parking Garage',  guardian: 'Sentinel of the First Eye', icon: '🅿️', color: '#5ec45e', done: sentinel },
-      { id: 'loc_market', bossKey: 'surveyor', introNode: 'market_approach', name: 'Frozen Market',   guardian: 'The Surveyor',               icon: '🏪', color: '#c8b96e', done: surveyor },
-      { id: 'loc_tower',  bossKey: 'unseen',   introNode: 'tower_approach',  name: 'Glass Tower',     guardian: 'The Unseen',                 icon: '🏢', color: '#e05555', done: unseen  },
-    ]
-
-    panel.innerHTML = `
-      <p class="choices-label">District Zones</p>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
-        ${zones.map(z => z.done ? `
-          <div onclick="enterZoneFromHub('${z.id}')" style="border:.5px solid ${z.color}50;border-radius:5px;padding:.65rem .75rem;background:${z.color}10;cursor:pointer;transition:all .2s"
-            onmouseover="this.style.background='${z.color}20'" onmouseout="this.style.background='${z.color}10'">
-            <div style="display:flex;align-items:center;gap:.5rem">
-              <span style="font-size:1rem">${z.icon}</span>
-              <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${z.name}</span>
-              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:${z.color};margin-left:auto">✓ FARM</span>
-            </div>
-            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:var(--ink-dim);margin:3px 0 0">${z.guardian} — defeated. Tap to farm.</p>
-          </div>
-        ` : `
-          <div onclick="goTo('${z.introNode}')" style="border:.5px solid rgba(224,85,85,.4);border-radius:5px;padding:.65rem .75rem;background:rgba(80,20,20,.08);cursor:pointer;transition:all .2s"
-            onmouseover="this.style.background='rgba(80,20,20,.15)'" onmouseout="this.style.background='rgba(80,20,20,.08)'">
-            <div style="display:flex;align-items:center;gap:.5rem">
-              <span style="font-size:1rem">${z.icon}</span>
-              <span style="font-family:'Cinzel',serif;font-size:.82rem;color:#7a4040">${z.name}</span>
-              <span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#e07070;border:.5px solid rgba(224,85,85,.3);padding:1px 6px;border-radius:12px;margin-left:auto">🔒 GUARDIAN ACTIVE</span>
-            </div>
-            <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.72rem;color:#8a5050;margin:3px 0 0">${z.guardian} — must be defeated to proceed.</p>
-          </div>
-        `).join('')}
-      </div>
-      ${allDone ? `
-        <div style="border-top:.5px solid rgba(139,106,32,.2);padding-top:.75rem">
-          <button class="choice" onclick="goTo('plaza_allies')" style="width:100%">
-            <span class="choice-arrow">→</span>
-            <span class="choice-body">Move to the plaza
-              <span class="choice-sub">${ch1Done ? 'Replay the Watcher encounter' : 'Face the Watcher — Chapter 1 finale'}</span>
-            </span>
-          </button>
-        </div>` : ''}
-    `
-  }
-
-  // ── Zone guardian mapping ─────────────────────────
-
-  function isZoneUnlocked(locId) {
-    const g = ZONE_GUARDIANS[locId]
-    if (!g) return true
-    const defeated = getDefeatedBosses()
-    return defeated.includes(g.bossKey)
-  }
-
-  // ── Enter a cleared zone directly from the district hub ──
-  window.enterZoneFromHub = function(locId) {
-    // Set up farming context using the farming_hub node locations
-    const farmNode = NODES['farming_hub']
-    if (!farmNode) return
-    window._farmingLocations  = farmNode.locations
-    window._farmingReturnNode = 'district_hub'
-    const loc = farmNode.locations.find(l => l.id === locId)
-    if (!loc) return
-    window._currentFarmLoc = loc
-    renderFarmZone(document.getElementById('right-panel'), loc)
-  }
-
-  // ── Location hub ─────────────────────────────────
-  function renderLocationHub(panel, node) {
-    window._farmingLocations = node.locations
-    window._farmingReturnNode = node.returnNode
-
-    panel.innerHTML = `
-      <p class="choices-label">Choose a Zone</p>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
-        ${node.locations.map(loc => {
-          const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.png','loc_market':'../assets/zones/zone_frozen_market.png','loc_tower':'../assets/zones/zone_glass_tower.png'}
-          const zImg = zMap[loc.id]
-          const unlocked = isZoneUnlocked(loc.id)
-          const guardian = ZONE_GUARDIANS[loc.id]
-          if (unlocked) {
-            return `
-            <div onclick="enterLocation('${loc.id}')"
-              style="border:.5px solid ${loc.color}50;border-radius:5px;overflow:hidden;cursor:pointer;transition:all .2s;background:${loc.color}10">
-              ${zImg ? `<div style="width:100%;height:80px;background:url('${zImg}') center/cover;opacity:.8"></div>` : ''}
-              <div style="padding:.65rem .75rem">
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:3px">
-                  <span style="font-size:1rem">${loc.icon}</span>
-                  <span style="font-family:'Cinzel',serif;font-size:.85rem;color:var(--ink);font-weight:500">${loc.name}</span>
-                  <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:${loc.color};border:.5px solid ${loc.color}50;padding:1px 6px;border-radius:12px;margin-left:auto">${loc.level}</span>
-                </div>
-                <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin:0">${loc.desc}</p>
-              </div>
-            </div>`
-          } else {
-            return `
-            <div onclick="goTo('${guardian.introNode}')"
-              style="border:.5px solid rgba(160,80,80,.4);border-radius:5px;overflow:hidden;cursor:pointer;transition:all .2s;background:rgba(80,20,20,.08);position:relative">
-              ${zImg ? `<div style="width:100%;height:80px;background:url('${zImg}') center/cover;opacity:.35;filter:grayscale(1)"></div>` : ''}
-              <div style="position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(10,5,5,.45)">
-                <div style="text-align:center">
-                  <div style="font-size:1.4rem;margin-bottom:2px">${guardian.icon}</div>
-                  <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#e07070;letter-spacing:.08em">ZONE LOCKED</p>
-                  <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#c09090;margin-top:2px">${guardian.name}</p>
-                </div>
-              </div>
-              <div style="padding:.65rem .75rem">
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:3px">
-                  <span style="font-size:1rem;opacity:.4">${loc.icon}</span>
-                  <span style="font-family:'Cinzel',serif;font-size:.85rem;color:#7a5555;font-weight:500">${loc.name}</span>
-                  <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a06060;border:.5px solid rgba(160,80,80,.3);padding:1px 6px;border-radius:12px;margin-left:auto">🔒 ${loc.level}</span>
-                </div>
-                <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:#8a6060;margin:0">Defeat the guardian to unlock this zone.</p>
-              </div>
-            </div>`
-          }
-        }).join('')}
-      </div>
-      <button class="choice" onclick="goTo('district_hub')" style="width:100%;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
-        <span class="choice-arrow">→</span>
-        <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:1rem;color:#3a2e15">Return to main story</span>
-      </button>
-    `
-  }
-
-  window.enterLocation = function(locId) {
-    if (!isZoneUnlocked(locId)) {
-      const g = ZONE_GUARDIANS[locId]
-      if (g) goTo(g.introNode)
-      return
-    }
-    const loc = (window._farmingLocations||[]).find(l => l.id === locId)
-    if (!loc) return
-    window._currentFarmLoc = loc
-    renderFarmZone(document.getElementById('right-panel'), loc)
-  }
-
-  function renderFarmZone(panel, loc) {
-    const zoneImgs = {
-      'loc_garage': '../assets/zones/zone_parking_garage.png',
-      'loc_market': '../assets/zones/zone_frozen_market.png',
-      'loc_tower':  '../assets/zones/zone_glass_tower.png',
-    }
-    const zoneImg = zoneImgs[loc.id]
-
-    panel.innerHTML = `
-      ${zoneImg ? `<div style="width:100%;height:110px;background:url('${zoneImg}') center/cover;border-radius:6px;margin-bottom:.75rem;opacity:.85;border:.5px solid rgba(139,106,32,.3)"></div>` : ''}
-      <p class="choices-label">${loc.icon} ${loc.name} — <span style="color:${loc.color}">${loc.level}</span></p>
-      <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.75rem">
-        Enemies respawn indefinitely. Fight as many times as you need.
-      </p>
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1rem">
-        ${loc.enemies.map((e,i) => {
-          const drops = e.loot.map(l => {
-            const pct = Math.round(l.chance * 100)
-            const label = l.itemKey.replace('rune_','').replace(/_/g,' ')
-            return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">${label} ${pct}%</span>`
-          }).join(' · ')
-          const eImgs = {
-            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
-            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
-            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
-            'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
-            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
-            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
-            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
-            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
-            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
-            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
-            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
-            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
-            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
-            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
-            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
-            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
-            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
-            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
-            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
-            'Dorian':                 '../assets/npc/dorian_normal.png',
-            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
-            "Watcher's Eye":          '../assets/boss/watcher_eye.png',
-            "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.png',
-            'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.png',
-            'The Surveyor':           '../assets/boss/the_surveyor.png',
-            'The Unseen':             '../assets/boss/the_unseen.png',
-          }
-          const eImg = eImgs[e.name]
-          return `<div onclick="fightFarmEnemy(${i})"
-            style="border:.5px solid rgba(139,106,32,.25);border-radius:4px;padding:.6rem .75rem;cursor:pointer;transition:all .15s;background:rgba(0,0,0,.04)"
-            onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background='rgba(0,0,0,.04)'">
-            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:3px">
-              ${eImg ? `<img src="${eImg}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0;filter:drop-shadow(0 0 4px rgba(0,0,0,.5))">` : `<span style="font-size:1.1rem">${e.icon}</span>`}
-              <span style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink)">${e.name}</span>
-              <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin-left:auto">HP ${e.hp} · ATK ${e.atk} · ${e.xp} XP</span>
-            </div>
-            <div style="display:flex;gap:4px;flex-wrap:wrap">${drops}</div>
-          </div>`
-        }).join('')}
-      </div>
-      <div style="display:flex;gap:6px">
-        <button class="choice" onclick="returnToZoneHub()" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
-          <span class="choice-arrow">←</span>
-          <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Back to zones</span>
-        </button>
-        <button class="choice" onclick="goTo('district_hub')" style="flex:1;text-align:left;border:none;background:none;cursor:pointer;padding:.5rem 0">
-          <span class="choice-arrow">→</span>
-          <span class="choice-body" style="font-family:'IM Fell English',serif;font-size:.9rem;color:var(--ink)">Return to story</span>
-        </button>
-      </div>
-    `
-  }
-
-  window.fightFarmEnemy = function(enemyIndex) {
-    const loc   = window._currentFarmLoc
-    if (!loc) return
-    const enemy = { ...loc.enemies[enemyIndex] }
-    const panel = document.getElementById('right-panel')
-    buildCombatUI(panel, enemy, '__farm_win__', '__farm_zone__', '__farm_zone__', false, null, loc, enemyIndex)
-  }
-
-  // ── Choices ──────────────────────────────────────
-  function renderChoices(panel, node) {
-    const insight = player.insight || 0
-    // Filter choices: show hidden ones only if player has enough Insight
-    const visibleChoices = (node.choices||[]).filter(c => !c.insightRequired || insight >= c.insightRequired)
-    const hiddenChoices  = (node.choices||[]).filter(c => c.insightRequired && insight < c.insightRequired)
-
-    panel.innerHTML = `
-      <p class="choices-label">What do you do?</p>
-      <div class="choices">
-        ${visibleChoices.map(c => `
-          <button class="choice ${c.variant||''}"
-            data-next="${c.next}"
-            data-outcome="${c.outcome||''}"
-            data-bossmode="${c.bossMode||''}"
-            data-moral="${c.moral||0}">
-            <span class="choice-arrow">→</span>
-            <span class="choice-body">
-              ${c.label}
-              ${c.sub ? '<span class="choice-sub">'+c.sub+'</span>' : ''}
-            </span>
-          </button>
-        `).join('')}
-        ${hiddenChoices.map(c => `
-          <div class="choice locked" title="Requires Insight ${c.insightRequired}">
-            <span class="choice-arrow" style="color:#555">→</span>
-            <span class="choice-body" style="color:#888">
-              [INSIGHT ${c.insightRequired} REQUIRED]
-              <span class="choice-sub">Equip items with Insight to unlock hidden paths</span>
-            </span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#ffd700">⚡ INS</span>
-          </div>
-        `).join('')}
-      </div>
-    `
-    panel.querySelectorAll('.choice').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const moralVal = parseFloat(btn.dataset.moral) || 0
-        goTo(btn.dataset.next, { outcome: btn.dataset.outcome||null, bossMode: btn.dataset.bossmode||null, moral: moralVal || null })
-      })
-    })
-  }
-
-  // ── End screen ───────────────────────────────────
-  function renderEnd(panel, node) {
-    const moral   = player.moral_score || 0
-    const badge   = player.badge || 'neutral'
-    const defeated = getDefeatedBosses()
-
-    // ── Dynamic ending text based on moral score ─────
-    const morality = moral >= 60 ? 'hero'
-      : moral >= 20 ? 'good'
-      : moral >= -20 ? 'neutral'
-      : moral >= -60 ? 'ruthless'
-      : 'villain'
-
-    const watcherVerdict = {
-      hero:     `THE WATCHER SEES ALL.\n\nAnd what it sees — it did not expect.\n\nA player who helped. Who stayed. Who chose the harder thing when the easier thing was right there.\n\nThe System was designed to test. It was not designed to be moved. But something in the Watcher's dissolution carries the weight of acknowledgment.`,
-      good:     `THE WATCHER SEES ALL.\n\nIt looked through every choice you made in this city. Found more light than shadow.\n\nNot perfect. But honest. And in a game built to reveal what people become under pressure — honest is rarer than it sounds.`,
-      neutral:  `THE WATCHER SEES ALL.\n\nIt saw both. The moments you chose to help and the moments you didn't. The lines you held and the ones you let slide.\n\nIt registers this as: inconclusive. The most human verdict it could give.`,
-      ruthless: `THE WATCHER SEES ALL.\n\nIt saw the pattern before you did. The way efficiency became the excuse. The way pragmatism slowly stopped needing justification.\n\nIt does not condemn. It records. That might be worse.`,
-      villain:  `THE WATCHER SEES ALL.\n\nAnd what it sees does not surprise it. The System was designed to find out what players do when no one is watching.\n\nSomething was watching. Something always was.`,
-    }[morality]
-
-    const allyScatter = `The plaza is still.
-
-  Then, slowly, the frozen world begins to move again. One car. One pedestrian. A pigeon completes its flight. The wind returns.
-
-  People stumble, confused. They don't know what happened. To them, no time passed.
-
-  The people who stood with you in the plaza — they feel it first. The moment the game releases them.
-
-  Marcus looks at his hands. Then at you. Then he turns and walks north, toward whatever the unfrozen city holds. His badge: steady. NEUTRAL. Chosen, not assigned.
-
-  Lena is already organizing. The market will need restocking. People will be hungry and confused. She has a list started before the first person on the street has taken their second step.
-
-  Kai closes their interface notes. Looks at the sky where the crack was. "I'll need to write all of this down," they say, to no one in particular. Then they're gone.
-
-  Rhen disappears last. Or you think they do. There's a moment where they're there — NEUTRAL badge, clear eyes — and then the crowd fills in around them and they're just gone. Like they were always just passing through.
-
-  Gio stands at the edge of the plaza the longest. He's looking at the market district. Something in his expression that might be a decision forming.
-
-  Yara finds you in the crowd.
-
-  "Well," she says.
-
-  "Well," you say.
-
-  She looks at the city opening back up around you — the noise returning, the motion, the smell of coffee from a shop that's already resuming where it left off.
-
-  "Chapter 2," she says.
-
-  Not a question.`
-
-    const systemText = `Your interface pulses once. A message appears in letters that feel less like text and more like something carved:
-
-  CHAPTER 1 COMPLETE.
-  REPUTATION RECORDED: ${morality.toUpperCase()}.
-
-  Below that, quieter, almost intimate:
-
-  Your evolution is being calculated.
-
-  You look at your hands. Same hands. Different player.
-
-  Chapter 2 is waiting.`
-
-    const fullText = `The Watcher shatters.
-
-  Not with violence — with silence. Like a mirror falling in a dream, breaking without sound. The eye closes. The crack in the sky seals itself with threads of pale light.
-
-  ${watcherVerdict}
-
-  ${allyScatter}
-
-  ${systemText}`
-
-    document.getElementById('story-text').textContent = fullText
-
-    // ── Moral verdict color ────────────────────────
-    const mColor = moral >= 60 ? '#1e5a8a'
-      : moral >= 20 ? '#2f7a2f'
-      : moral >= -20 ? '#8b6a20'
-      : moral >= -60 ? '#a04a18'
-      : '#a02020'
-    const mLabel = morality.toUpperCase()
-
-    panel.innerHTML = `
-      <div class="end-box">
-        <p class="end-title">Chapter 1 Complete</p>
-        <div style="margin:.5rem 0 .75rem;padding:.5rem .75rem;background:rgba(0,0,0,.08);border-radius:4px;border-left:3px solid ${mColor}">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:2px">REPUTATION RECORDED</p>
-          <p style="font-family:'Cinzel',serif;font-size:1rem;font-weight:600;color:${mColor};margin:0">${mLabel}</p>
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:var(--ink-dim);margin-top:2px">Moral score: ${moral > 0 ? '+' : ''}${moral}</p>
-        </div>
-        <p class="end-sub" style="margin-bottom:.75rem">The Watcher has been defeated.<br>The Eyes have scattered across every road out of the city.</p>
-        <button class="end-btn" id="continue-btn" style="display:block;margin-bottom:.75rem;width:100%">Continue ›</button>
-        <button class="end-btn" id="restart-btn" style="font-size:.8rem;opacity:.7">↺ Replay Chapter 1</button>
-      </div>
-    `
-
-    // ── Post-Watcher garage story beats ────────────────
-    const GARAGE_BEATS = [
-      {
-        title: 'The Eyes Scatter',
-        text: `The moment the Watcher's eye closes for the last time, something happens across the city that you feel before you see it.
-
-  A sound — not quite a sound — like a signal cut. A frequency you didn't know you were hearing until it stops.
-
-  Then the sky cracks open in twenty places at once.
-
-  Not darkness. Light. Pale, pupil-shaped, wrong-colored light. And out of each crack — Eyes. Hundreds of them. Small ones, large ones, the slow-drifting kind and the kind that move like thrown knives.
-
-  The Watcher is gone. Its fragments are still here.
-
-  They disperse in every direction. Into the roads. Into the tunnels. Into the arteries of every route out of this city.
-
-  Your interface updates with a warning you didn't ask for:
-
-  WATCHER FRAGMENTS DETECTED ON ALL OUTBOUND ROUTES.
-  TRAVEL ON FOOT: NOT RECOMMENDED.`
-      },
-      {
-        title: 'The Garage',
-        text: `Yara finds you before you've finished reading the warning.
-
-  "I know what you're looking at," she says. She's already walking. "Come on."
-
-  She leads you north — back through the plaza, past the fountain where the Watcher's light still lingers in the stone, down a maintenance corridor you didn't notice before. A door at the end. Heavy. Industrial. Painted over three times.
-
-  She opens it.
-
-  Inside: three vehicles. A motorcycle. A car. A van. Each one modified — armor plating, weapon mounts, components you don't recognize but can feel the purpose of.
-
-  "The System flagged these as abandoned assets when the city froze," Yara says. "Technically they belong to the city now. Which means they belong to whoever the city decides needs them."
-
-  She looks at you.
-
-  "The city has decided."
-
-  Your interface processes the transfer. The registration flickers. The vehicles' ownership data rewrites itself — three times, one after another.
-
-  They're yours now. Permanently.`
-      },
-      {
-        title: 'The Road Ahead',
-        text: `"The Eyes are thickest on the roads between here and Chapter 2," Yara says, running her hand along the van's modified hood. "But they're not organized anymore. No Watcher to coordinate them. They're fragments — dangerous, but aimless."
-
-  She hands you a set of three keys.
-
-  "Pick your vehicle. Upgrade it with whatever you've got. The scrap metal, the flashlights, the parts you've been carrying — they're exactly what these machines need."
-
-  She looks at the door behind you.
-
-  "The other chapters are out there. Other parts of the System. Other players who never made it past their own Watchers — or who serve the ones still standing."
-
-  A pause.
-
-  "Get to Chapter 2. Whatever you find there — you'll be better prepared than you think."
-
-  She leaves without ceremony. That's Yara's style.
-
-  Your interface shows three vehicle profiles waiting for configuration.
-
-  The garage is yours.`
-      },
-    ]
-
-    let beatIdx = 0
-
-    function showGarageBeat() {
-      const beat = GARAGE_BEATS[beatIdx]
-      const isLast = beatIdx === GARAGE_BEATS.length - 1
-      panel.innerHTML = `
-        <div class="end-box">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
-          <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
-          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#c8b96e;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
-          <button class="end-btn" id="beat-btn" style="display:block;width:100%">
-            ${isLast ? '🔧 Enter Garage ›' : 'Continue ›'}
-          </button>
-        </div>`
-      document.getElementById('beat-btn').addEventListener('click', () => {
-        if (isLast) {
-          window.bookNavigate('garage.html?dest=2')
-        } else {
-          beatIdx++
-          showGarageBeat()
-        }
-      })
-    }
-
-    document.getElementById('continue-btn').addEventListener('click', () => {
-      showGarageBeat()
-    })
-
-    document.getElementById('restart-btn').addEventListener('click', async () => {
-      await supabase.from('players').update({ current_node:'ch1_opening' }).eq('id', player.id)
-      player.current_node = 'ch1_opening'
-      currentHp = player.hp
-      outcome   = null
-      bossMode  = 'solo'
-      nodeId    = 'opening'
-      render()
-      window.scrollTo({ top:0, behavior:'smooth' })
-    })
-  }
-
-  // ── Generic combat (for story encounters) ────────
-  function renderCombat(panel, node) {
-    // dorianLurking: true means Dorian backstabs player every 2 turns from the shadows.
-    // Suppressed if player already defeated Dorian (window._dorianDefeated set on that path).
-    const opts = {
-      dorianLurking: node.dorianLurking && !window._dorianDefeated,
-      sentinelAoe:   node.sentinelAoe   && !window._dorianDefeated,
-    }
-    if (node.video) {
-      playCombatCinematic(node.video, () => buildCombatUI(panel, node.enemy, node.onWin, node.onLose, node.onEscape, false, null, null, null, opts))
-    } else {
-      buildCombatUI(panel, node.enemy, node.onWin, node.onLose, node.onEscape, false, null, null, null, opts)
-    }
-  }
-
-  // ── Boss cinematic video overlay ──────────────────
-  function playCombatCinematic(src, onDone) {
-    document.getElementById('cinematic-overlay')?.remove()
-
-    const overlay = document.createElement('div')
-    overlay.id = 'cinematic-overlay'
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .6s;'
-    overlay.innerHTML = `
-      <div style="position:relative;width:min(860px,92vw);max-height:80vh;aspect-ratio:16/9;background:#000">
-        <video id="cinematic-video"
-          src="${src}"
-          autoplay playsinline muted
-          style="width:100%;height:100%;object-fit:contain;display:block;">
-        </video>
-        <div id="cinematic-skip" style="
-          position:absolute;bottom:1rem;right:1rem;z-index:1;
-          font-family:'JetBrains Mono',monospace;font-size:.55rem;
-          color:rgba(200,184,128,.7);letter-spacing:.08em;cursor:pointer;
-          padding:4px 10px;border:.5px solid rgba(200,184,128,.3);
-          background:rgba(0,0,0,.5);
-        ">skip ›</div>
-      </div>
-    `
-    document.body.appendChild(overlay)
-
-    requestAnimationFrame(() => requestAnimationFrame(() => overlay.style.opacity = '1'))
-
-    function endCinematic() {
-      overlay.style.opacity = '0'
-      setTimeout(() => { overlay.remove(); onDone() }, 650)
-    }
-
-    const video = overlay.querySelector('#cinematic-video')
-    video.addEventListener('ended', endCinematic)
-    video.addEventListener('error', endCinematic)
-    overlay.querySelector('#cinematic-skip').addEventListener('click', endCinematic)
-  }
-
-  // ── Boss combat ───────────────────────────────────
-  function renderBoss(panel, node) {
-    // Scale Watcher to player level — always a real challenge
-    const lvl    = player.level || 1
-    const enemy  = { ...node.enemy }
-    if (bossMode === 'solo')   enemy.hp = 200 + lvl * 25
-    if (bossMode === 'team')   enemy.hp = 260 + lvl * 25
-    if (bossMode === 'betray') enemy.hp = 280 + lvl * 30
-    enemy.atk = node.enemy.atk + Math.floor(lvl * 1.2)
-
-    // Yara joins as NPC ally in team mode
-    const yara = bossMode === 'team' ? {
-      name: 'Yara',
-      hp: 80 + lvl * 10,
-      maxHp: 80 + lvl * 10,
-      atk: 6 + Math.floor(lvl * 0.8),
-      def: 4 + Math.floor(lvl * 0.5),
-      alive: true
-    } : null
-
-    const doBuild = () => buildCombatUI(panel, enemy, 'chapter_end', 'pre_boss_check', 'pre_boss_check', true, yara)
-
-    if (node.video) {
-      playCombatCinematic(node.video, doBuild)
-    } else {
-      doBuild()
-    }
-  }
-
-  // ── Shared combat UI builder ──────────────────────
-  function buildCombatUI(panel, enemy, onWin, onLose, onEscape, isBoss, yara = null, farmLoc = null, farmIdx = null, opts = {}) {
-    // Unique namespace so multiple combat instances never share DOM IDs
-    const cid = 'cb' + Math.random().toString(36).slice(2, 7)
-    const $ = id => panel.querySelector('#' + cid + '-' + id)
-
-    // ── Dorian lurk + Sentinel AoE options ───────────────────
-    const dorianLurking  = opts.dorianLurking || false   // Dorian backstabs every 2 turns
-    const sentinelAoe    = opts.sentinelAoe   || false   // Void Sentinel hits both every 4 turns
-    let   dorianLurkHp   = 40   // Dorian's shadow HP — Sentinel AoE chips him down too
-    let   dorianLurkTurn = 0    // tracks turns for backstab cadence
-
-    let enemyHp      = enemy.hp
-    const maxEnemyHp  = enemy.hp
-    const maxPlayerHp = player.max_hp || 100
-    let over = false
-
-    // Cache equipped items for derived stat calculations
-    ;(async () => {
-      const { data } = await supabase.from('inventory').select('*')
-        .eq('player_id', player.id).not('equipped_slot', 'is', null)
-      window._equippedItems = data || []
-    })()
-
-    panel.innerHTML = `
-      <div class="combat-panel" id="${cid}-combat-wrap">
-        <div class="combat-enemy-row">
-          ${(()=>{
-            const EIMGS = {
-              'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
-              'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
-              'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
-              'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
-              'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
-              'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
-              'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
-              'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
-              "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
-              'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
-              'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
-              'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
-              'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
-              'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
-              'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
-              'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
-              'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
-              'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
-              'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
-              'Dorian':                 '../assets/npc/dorian_normal.png',
-              'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
-              "Watcher's Eye":              '../assets/boss/watcher_eye.png',
-              "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.png',
-              'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.png',
-              'The Surveyor':               '../assets/boss/the_surveyor.png',
-              'The Unseen':                 '../assets/boss/the_unseen.png',
-            }
-            if (isBoss) return '<img src=\'../assets/boss/the_watcher.png\' alt=\'The Watcher\' style=\'width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
-            const src = EIMGS[enemy.name]
-            if (src) return `<img src="${src}" alt="${enemy.name}" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
-            return `<span class="combat-enemy-icon">${enemy.icon}</span>`
-          })()}
-          <div style="flex:1">
-            <p class="combat-enemy-name">${enemy.name}</p>
-            <div class="stat-bar-wrap">
-              <div class="stat-bar" id="${cid}-e-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div>
-            </div>
-            <p id="${cid}-e-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">${enemyHp} / ${maxEnemyHp} HP</p>
-          </div>
-        </div>
-        <div class="combat-log" id="${cid}-combat-log">${isBoss ? 'The eye opens. It sees everything.' : 'The encounter begins.'}</div>
-        <div class="stat-row" style="margin-bottom:.4rem">
-          <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>
-          <div class="stat-bar-wrap">
-            <div class="stat-bar" id="${cid}-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div>
-          </div>
-          <span id="${cid}-c-player-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">${currentHp}/${maxPlayerHp}</span>
-        </div>
-        ${yara ? `
-        <div class="stat-row" style="margin-bottom:${dorianLurking ? '.3rem' : '1rem'}">
-          <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5ec45e">YARA</span>
-          <div class="stat-bar-wrap">
-            <div class="stat-bar" id="${cid}-c-yara-bar" style="background:#5eaee0;width:100%;transition:width .4s,background .4s"></div>
-          </div>
-          <span id="${cid}-c-yara-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5eaee0;min-width:50px;text-align:right">${yara.hp}/${yara.maxHp}</span>
-        </div>` : (dorianLurking ? '' : '<div style="margin-bottom:1rem"></div>')}
-        ${dorianLurking ? `
-        <div class="stat-row" style="margin-bottom:1rem">
-          <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e05555">DORIAN</span>
-          <div class="stat-bar-wrap">
-            <div class="stat-bar" id="${cid}-c-dorian-bar" style="background:#e05555;width:100%;transition:width .4s,background .4s"></div>
-          </div>
-          <span id="${cid}-c-dorian-hp" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#e05555;min-width:50px;text-align:right">?? / 40</span>
-        </div>` : ''}
-        <div id="${cid}-combat-actions">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>
-
-          <!-- Basic actions always visible -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">
-            <button class="combat-btn" id="${cid}-btn-strike"
-              style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
-              title="Fast attack. Always goes first.">
-              <span style="font-size:1.1rem;line-height:1">⚔</span>
-              <span>Strike</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">FAST · FIRST</span>
-            </button>
-            <button class="combat-btn" id="${cid}-btn-heavy"
-              style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
-              title="Heavy blow. High damage but slower.">
-              <span style="font-size:1.1rem;line-height:1">💥</span>
-              <span>Heavy</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">HIGH DMG · SLOW</span>
-            </button>
-            <button class="combat-btn" id="${cid}-btn-defend"
-              style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
-              title="Halve incoming damage this turn. Always acts first.">
-              <span style="font-size:1.1rem;line-height:1">🛡</span>
-              <span>Defend</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">BLOCK · FIRST</span>
-            </button>
-          </div>
-
-          <!-- Skills — rendered dynamically, same visual weight as basic actions -->
-          <div id="${cid}-skill-slots-row" style="margin-bottom:4px"></div>
-
-          <!-- Utility row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
-            <button class="combat-btn" id="${cid}-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>
-            <button class="combat-btn" id="${cid}-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>
-          </div>
-        </div>
-        <div id="${cid}-items-panel" style="display:none;margin-top:.5rem;border:.5px solid rgba(94,174,224,.3);border-radius:4px;padding:.6rem;background:rgba(0,0,0,.05);animation:fadeIn .2s ease">
-          <p style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#5eaee0;letter-spacing:.06em;margin-bottom:.4rem">⚡ USE ITEM</p>
-          <div id="${cid}-items-list"></div>
-          <button onclick="document.getElementById('${cid}-items-panel').style.display='none'" style="font-family:'IM Fell English',serif;font-size:.78rem;color:var(--ink-dim);background:none;border:none;cursor:pointer;margin-top:.4rem;padding:0">✕ Close</button>
-        </div>
-        <div id="${cid}-combat-over" style="display:none;text-align:center;padding:.5rem"></div>
-      </div>
-    `
-
-    function syncBars() {
-      const ePct = Math.max(0, Math.round(enemyHp  / maxEnemyHp  * 100))
-      const pPct = Math.max(0, Math.round(currentHp / maxPlayerHp * 100))
-      const eBar = $('e-bar')
-      const eHp  = $('e-hp')
-      const pBar = $('c-player-bar')
-      const pHp  = $('c-player-hp')
-      if (eBar) { eBar.style.width = ePct+'%'; eBar.style.background = ePct>50?'#e05555':'#c8b96e' }
-      if (eHp)  eHp.textContent = enemyHp+' / '+maxEnemyHp+' HP'
-      if (pBar) { pBar.style.width = pPct+'%'; pBar.style.background = pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555' }
-      if (pHp)  pHp.textContent = currentHp+'/'+maxPlayerHp
-      updateHpBar(currentHp)
-      if (yara) {
-        const yPct  = Math.max(0, Math.round(yara.hp / yara.maxHp * 100))
-        const yBar  = $('c-yara-bar')
-        const yHpEl = $('c-yara-hp')
-        if (yBar)  { yBar.style.width = yPct+'%'; yBar.style.background = yPct>50?'#5eaee0':'#c8b96e' }
-        if (yHpEl) yHpEl.textContent = yara.hp+'/'+yara.maxHp
-      }
-      if (dorianLurking) {
-        const dPct  = Math.max(0, Math.round(dorianLurkHp / 40 * 100))
-        const dBar  = $('c-dorian-bar')
-        const dHpEl = $('c-dorian-hp')
-        if (dBar)  { dBar.style.width = dPct+'%'; dBar.style.background = dPct > 30 ? '#e05555' : '#7a3030' }
-        if (dHpEl) dHpEl.textContent = dorianLurkHp > 0 ? '?? / 40' : 'DOWN'
-      }
-    }
-
-    function log(msg, turnInfo) {
-      const el = $('combat-log')
-      if (el) el.innerHTML = (turnInfo
-        ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:#a08858;letter-spacing:.06em;display:block;margin-bottom:2px">' + turnInfo + '</span>'
-        : '') + msg
-    }
-
-    function shake() {
-      const w = $('combat-wrap')
-      if(!w) return
-      w.classList.add('animate-shake')
-      setTimeout(()=>w.classList.remove('animate-shake'),400)
-    }
-
-    async function endCombat(result) {
-      if (over) return
-      over = true
-      const actions = $('combat-actions')
-      const overEl  = $('combat-over')
-      if (actions) actions.style.display = 'none'
-
-      // ── Record passive battle counts on any win ───────────
-      if (result === 'win') {
-        const unlocked = player.skills_unlocked || []
-        const inBattle = player.battle_skills   || []
-
-        // Elemental passives
-        const EL_PASSIVES = [
-          'darkness_passive_backstab','fire_passive_burn','lightning_passive_chain_damage',
-          'wind_passive_dodge','earth_passive_damage_reduction','water_passive_regen','metal_passive_reflect',
-        ]
-        // Notable passives — both old and new key variants
-        const NOTABLE_PASSIVES = [
-          'ofn2','ofn3','dfn1','dfn2','dfn3','dfn5','fln1','fln2','fln4','fln5',
-          'arn1','arn3','arn4','arn5','dcn2','dcn4','dcn5','dc_ks2',
-          'an2','an3','dn1','dn2','dn3','dn5','gn1','gn2','gn4','gn5',
-          'mn1','mn3','mn4','mn5','dkn1','pln2','dkn2',
-        ]
-        const T = [0,10,25,50,90,150,240,380,590,900]
-        const sl = player.skill_levels || {}
-        let leveledUp = []
-
-        const tickSkill = k => {
-          if (!sl[k]) sl[k] = { uses: 0 }
-          const prevLv = getSkillLevel(k)
-          sl[k].uses++
-          let newLv = 1
-          for (let i = 1; i < T.length; i++) { if (sl[k].uses >= T[i]) newLv = i+1; else break }
-          newLv = Math.min(10, newLv)
-          if (newLv > prevLv) leveledUp.push({ k, lv: newLv })
-        }
-
-        // Tick elemental passives if unlocked
-        EL_PASSIVES.filter(k => unlocked.includes(k)).forEach(tickSkill)
-        // Tick notable passives if in battle slots
-        NOTABLE_PASSIVES.filter(k => inBattle.includes(k)).forEach(tickSkill)
-
-        player.skill_levels = sl
-        await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
-        for (const { k, lv } of leveledUp) {
-          const sk = BATTLE_SKILLS[k] || NOTABLE_SKILLS[k]
-          window.showToast('✦ ' + (sk?.label || k) + ' passive reached Lv ' + lv + '!')
-        }
-
-        // Increment helps_given if this was an ally-assist fight
-        if (window._fightIsHelp) {
-          window._fightIsHelp = false
-          const newHelps = (player.helps_given || 0) + 1
-          player.helps_given = newHelps
-          const newBadge = calcBadge(player.moral_score, player.pvp_kills, newHelps, player.backstabs)
-          player.badge = newBadge
-          await supabase.from('players').update({ helps_given: newHelps, badge: newBadge, reputation: newBadge }).eq('id', player.id)
-        }
-      }
-
-      const isFarm   = onWin === '__farm_win__'
-      const isEyeFight = onWin === '__eye_win__'
-
-      // ── Eye encounter: call callback and show minimal result, then let overlay handle dismiss
-      if (isEyeFight && window._eyeEncounterCallback) {
-        const cb = window._eyeEncounterCallback
-        window._eyeEncounterCallback = null
-        window._inEyeEncounter = false
-        const resultLabel = result==='win' ? '✦ Eye Defeated ✦' : '✦ The Eye Retreats ✦'
-        const resultColor = result==='win' ? '#c8b96e' : '#e05555'
-        const resultMsg   = result==='win'
-          ? 'It dissolves in pale light. Somewhere above the clouds, something blinks. It will send more.'
-          : 'The eye rises back toward the crack in the sky, iris closing slowly. It was a test. You are still standing.'
-        if (overEl) {
-          overEl.style.display = 'block'
-          overEl.innerHTML = '<p style="font-family:Cinzel,serif;font-size:1rem;font-weight:600;color:'+resultColor+';letter-spacing:.1em;margin-bottom:.5rem">'+resultLabel+'</p>'
-            + '<p style="font-family:&quot;IM Fell English&quot;,serif;font-style:italic;font-size:.82rem;color:#c8b96e;line-height:1.55;margin-bottom:.6rem">'+resultMsg+'</p>'
-            + '<p style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.08em">Returning to your story\u2026</p>'
-        }
-        // Award XP for eye fight
-        const eyeXp  = result==='win' ? (enemy.xp || 80) : Math.floor((enemy.xp || 80) * 0.2)
-        const eyeXpOld = player.xp || 0
-        const eyeXpNew = eyeXpOld + eyeXp
-        const eyeOldLvl = player.level || 1
-        player.xp = eyeXpNew
-        const eyeLvlUp = await checkLevelUp(eyeXpOld, eyeXpNew, eyeOldLvl)
-        const eyeUpdates = { xp: eyeXpNew, hp: currentHp, ...(eyeLvlUp||{}) }
-        if (result==='win' && enemy.loot) for (const l of enemy.loot) await addItem(l.itemKey, l.qty)
-        await save(eyeUpdates)
-        cb(result)
-        return
-      }
-
-      if (overEl) {
-        overEl.style.display = 'block'
-        const resultLabel = result==='win' ? '✦ Victory ✦' : result==='escape' ? '✦ Escaped ✦' : '✦ Defeated ✦'
-
-        if (isFarm) {
-          const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
-          overEl.innerHTML =
-            '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
-            '<div style="display:flex;flex-direction:column;gap:4px">' +
-            '<button onclick="returnToZone()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Fight Again (same zone)</button>' +
-            '<button onclick="returnToZoneHub()" style="' + btnStyle + ';background:rgba(200,184,128,.25)">← Pick a Different Zone</button>' +
-            '<button onclick="returnToStory()" style="' + btnStyle + ';background:rgba(200,184,128,.12)">↩ Return to Story</button>' +
-            '</div>'
-        } else {
-          // Boss or story fight — show navigation buttons
-          const btnStyle = "font-family:'Cinzel',serif;font-size:.8rem;color:var(--ink);border-radius:3px;padding:.45rem 1rem;cursor:pointer;width:100%;border:1px solid rgba(139,106,32,.5);margin-bottom:4px"
-          overEl.innerHTML =
-            '<p style="font-family:Cinzel,serif;font-size:1.1rem;font-weight:600;color:var(--ink);letter-spacing:.1em;margin-bottom:.6rem">' + resultLabel + '</p>' +
-            '<div style="display:flex;flex-direction:column;gap:4px">' +
-            (result === 'win' ? '' :
-              '<button onclick="returnToBoss()" style="' + btnStyle + ';background:rgba(200,184,128,.45)">⚔ Try Again</button>' +
-              '<button onclick="returnToZoneHub()" style="' + btnStyle + ';background:rgba(200,184,128,.25)">⚔ Go Farm XP</button>'
-            ) +
-            '<button onclick="returnToStory()" style="' + btnStyle + ';background:rgba(200,184,128,.12)">↩ Return to Story</button>' +
-            '</div>'
-        }
-      }
-
-      const oldXp  = player.xp || 0
-      const oldLvl = player.level || 1
-
-      if (result === 'win') {
-        const RUNE_POOL_COMMON = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
-        const RUNE_POOL_RARE   = ['rune_ignis','rune_aqua','rune_terra','rune_aero']
-        const isHardEnemy      = (enemy.hp||0) > 60
-        const runeChance       = isBoss ? 1.0 : isHardEnemy ? 0.35 : 0.20
-        const runePool         = (isBoss || isHardEnemy) ? RUNE_POOL_RARE : RUNE_POOL_COMMON
-        const runeKey          = Math.random() < runeChance ? runePool[Math.floor(Math.random()*runePool.length)] : null
-
-        if (isFarm) {
-          // Farm: fire all DB saves in background — buttons already visible
-          const newXp = oldXp + (enemy.xp || 50)
-          player.xp = newXp
-          // Gold drop: 0-100 gold scaled by enemy difficulty
-          const goldMin  = Math.floor((enemy.hp || 20) * 0.1)
-          const goldMax  = Math.floor((enemy.hp || 20) * 0.8)
-          const goldDrop = Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin
-          const newGold  = (player.gold || 0) + goldDrop
-          player.gold = newGold
-          checkLevelUp(oldXp, newXp, oldLvl).then(lvlUp => {
-            save({ xp: newXp, hp: currentHp, gold: newGold, ...(lvlUp||{}) })
-          })
-          if (goldDrop > 0) queueLoot('◈ ' + goldDrop + ' Gold', 1, null)
-          if (enemy.loot) for (const l of enemy.loot) addItem(l.itemKey, l.qty)
-          if (runeKey) addItem(runeKey, 1)
-          if (farmLoc && farmLoc.enemies[farmIdx]) {
-            for (const drop of farmLoc.enemies[farmIdx].loot) {
-              if (Math.random() < drop.chance) addItem(drop.itemKey, 1)
-            }
-          }
-        } else {
-          // Story/boss: await saves then navigate
-          const newXp   = oldXp + (enemy.xp || 50)
-          const updates = { xp: newXp, hp: currentHp }
-          const lvlUp   = await checkLevelUp(oldXp, newXp, oldLvl)
-          if (lvlUp) Object.assign(updates, lvlUp)
-
-          // Zone guardian boss key — mark as defeated
-          const curNode = NODES[nodeId]
-          if (curNode && curNode.bossKey) {
-            const defeated = markBossDefeated(curNode.bossKey)
-            updates.defeated_bosses = defeated
-          }
-
-          if (isBoss) {
-            const unlocked = player.chapters_unlocked || [1]
-            if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
-            // ── 1 SP for boss kill — only once ever ──
-            const spKey = 'watcher_sp_claimed'
-            const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
-            const alreadyClaimed = currentDefeated.includes(spKey)
-            if (!alreadyClaimed) {
-              const merged = [...new Set([...currentDefeated, spKey])]
-              updates.defeated_bosses = merged
-              player.defeated_bosses  = merged
-              const ch1Bonus = 1
-              updates.skill_points = (player.skill_points || 0) + ch1Bonus
-              updates.sp_claimed   = (player.sp_claimed  || 0) + ch1Bonus
-              player.skill_points  = updates.skill_points
-              player.sp_claimed    = updates.sp_claimed
-              window.showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP  +' + ch1Bonus + ' Bonus SP!')
-            } else {
-              window.showToast('Chapter 1 Complete — +' + (enemy.xp||300) + ' XP')
-            }
-            // ── Watcher Item Set — rare drop (35% per piece) ──
-            await dropWatcherSet()
-          } else {
-            window.showToast('Victory! +' + (enemy.xp||50) + ' XP gained!')
-            // ── Zone guardian Watcher piece drops ──
-            const curBossKey = NODES[nodeId]?.bossKey
-            if (curBossKey === 'sentinel') {
-              if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_crown')
-            } else if (curBossKey === 'surveyor') {
-              if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_eye_ring')
-            } else if (curBossKey === 'unseen') {
-              if (Math.random() < 0.05) await dropSingleWatcherPiece('watcher_cloak')
-            }
-          }
-          // Gold drop for story fights (boss drops more)
-          const sGoldDrop = isBoss ? (Math.floor(Math.random() * 80) + 60) : (Math.floor(Math.random() * 40) + 5)
-          updates.gold = (player.gold || 0) + sGoldDrop
-          player.gold = updates.gold
-          if (updates.xp) player.xp = updates.xp
-          await save(updates)
-          if (sGoldDrop > 0) queueLoot('◈ ' + sGoldDrop + ' Gold', 1, null)
-          // Award guaranteed loot from boss node definition
-          if (enemy.loot) {
-            for (const l of enemy.loot) {
-              const result = await addItem(l.itemKey, l.qty)
-              // If core_fragment fails (not in items table), award a rune instead
-            }
-          }
-          if (runeKey) await addItem(runeKey, 1)
-          // Watcher death cinematic before navigating to end
-          if (isBoss) {
-            playCombatCinematic('../assets/video/the_watcher_dead.mp4', () => goTo(onWin))
-          } else {
-            setTimeout(() => goTo(onWin), 1200)
-          }
-        }
-      } else {
-        if (isBoss) {
-          // On boss defeat: fully restore HP and reset node so player isn't stuck
-          const fullHp = player.max_hp || 100
-          currentHp = fullHp
-          await save({ hp: fullHp, current_node: 'ch1_pre_boss_check' })
-          player.current_node = 'ch1_pre_boss_check'
-          renderHUD()
-          return
-        }
-        await save({ hp: Math.max(1, currentHp) })
-        setTimeout(() => {
-          const dest = result==='escape' ? onEscape : onLose
-          if (dest === '__farm_zone__') {
-            const p = document.getElementById('right-panel')
-            if (farmLoc && p) renderFarmZone(p, farmLoc)
-            else renderLocationHub(p, NODES['farming_hub'])
-          } else {
-            goTo(dest)
-          }
-        }, 1200)
-      }
-    }
-
-    // Get equipped stat bonuses (loaded from player object which we keep in sync)
-    const eqPower  = player.power   || 0
-    const eqGuard  = player.guard   || 0
-    const eqSpeed  = player.speed   || 0
-    const eqInsight= player.insight || 0
-    const eqLuck   = player.luck    || 0
-
-    // Speed bonus: if speed >= 3, player always goes first (already do by acting on click)
-    // Luck: adds to random range
-    // ── Turn-based combat engine ─────────────────────────────
-    let defending = false
-
-    function playerATK()  { return calcATK() }
-    function playerDEF()  { return calcDEF() }
-    function playerSPD()  { return calcSPD() }
-    function enemySPD()   { return enemy.spd || Math.floor((enemy.atk||5) * 0.6) }
-
-    // ── Global skill level getter (also used by renderSkillSlots outside doTurn) ─
-    function _skillLvGlobal(key) {
-      const T = [0,10,25,50,90,150,240,380,590,900]
-      const sl = (player.skill_levels || {})[key]
-      if (!sl) return 1
-      let lv = 1
-      for (let i = 1; i < T.length; i++) { if (sl.uses >= T[i]) lv = i+1; else break }
-      return Math.min(10, lv)
-    }
-
-    // ── Battle skills from player ────────────────────────────
-    const battleSkillKeys = player.battle_skills || []
-
-    // Inline skill definitions (mirrored from skills.html)
-    const BATTLE_SKILLS = {
-      darkness_passive_backstab:      { label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff' },
-      darkness_skill_shadow_step:     { label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores enemy DEF', fn:'shadowStep' },
-      darkness_ultimate_void_zone:    { label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',    fn:'voidZone' },
-      earth_passive_damage_reduction: { label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c' },
-      earth_skill_rock_armor:         { label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',           fn:'rockArmor' },
-      earth_ultimate_earthquake:      { label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',   fn:'earthquake' },
-      fire_passive_burn:              { label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500' },
-      fire_skill_fire_blast:          { label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',  fn:'fireBlast' },
-      fire_ultimate_inferno_zone:     { label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',       fn:'infernoZone' },
-      light_passive_boost_allies:     { label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700' },
-      light_skill_heal_pulse:         { label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                 fn:'healPulse' },
-      light_ultimate_divine_barrier:  { label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',  fn:'divineBarrier' },
-      lightning_passive_chain_damage: { label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff' },
-      lightning_skill_lightning_strike:{ label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',       fn:'lightningStrike' },
-      lightning_ultimate_thunderstorm:{ label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',           fn:'thunderstorm' },
-      metal_passive_reflect:          { label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0' },
-      metal_skill_blade_form:         { label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK +20, SPD +5 for 2 turns',   fn:'bladeForm' },
-      metal_ultimate_iron_domain:     { label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',       fn:'ironDomain' },
-      plant_passive_heal_still:       { label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e' },
-      plant_skill_root_trap:          { label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',       fn:'rootTrap' },
-      plant_ultimate_nature_overgrowth:{ label:'Overgrowth',   type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',           fn:'overgrowth' },
-      water_passive_regen:            { label:'Flow',           type:'passive',  el:'water',     color:'#0088ff' },
-      water_skill_water_shield:       { label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',         fn:'waterShield' },
-      water_ultimate_tsunami:         { label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',    fn:'tsunami' },
-      wind_passive_dodge:             { label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea' },
-      wind_skill_dash_strike:         { label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',     fn:'dashStrike' },
-      wind_ultimate_tornado_field:    { label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, your SPD ×2',    fn:'tornadoField' },
-    }
-
-    // ── Skill-tree notable nodes usable as battle skills ────────────
-    // Keys match the node IDs stored in player.battle_skills
-    // type: 'active' = usable each turn (2-turn cooldown)
-    //       'passive' = always-on effect applied at battle start / on hit
-    // ── NOTABLE_SKILLS keyed by NEW skill-tree node IDs ──────
-    // These match what skills.html saves into player.battle_skills
-    const NOTABLE_SKILLS = {
-      // ── OFFENSE branch ──
-      ofn1: { label:'Warbound',      type:'active',  branch:'offense', color:'#e05555',
-              desc:'Your attacks deal +15% ATK as bonus damage this turn.', fn:'warbound' },
-      ofn2: { label:'Amplifier',     type:'passive', branch:'offense', color:'#992222',
-              desc:'Power contributes an extra ×0.4 to ATK.' },
-      ofn3: { label:'Spellblade',    type:'passive', branch:'offense', color:'#e05555',
-              desc:'Strike has 15% chance to poison (3 dmg/turn, 2 turns).' },
-      ofn4: { label:'Executioner',   type:'active',  branch:'offense', color:'#e05555',
-              desc:'Deal +25% damage to enemies below 30% HP.', fn:'embersEnd' },
-      ofn5: { label:'Hex Cannon',    type:'active',  branch:'offense', color:'#992222',
-              desc:'Heavy Strike poisons enemy: 5 dmg/turn for 3 turns.', fn:'venomLance' },
-      ofn6: { label:'Predator',      type:'active',  branch:'offense', color:'#e05555',
-              desc:'Gain +20 ATK for 2 turns.', fn:'predator' },
-      of_ks1:{ label:'Bloodthirst',  type:'active',  branch:'offense', color:'#c8512a',
-              desc:'On kill: restore 20% max HP and gain +10 ATK for 2 turns.', fn:'bloodthirst' },
-      of_ks2:{ label:'Spell Surge',  type:'active',  branch:'offense', color:'#b06eff',
-              desc:'Next skill used deals ×1.5 damage and ignores 50% DEF.', fn:'spellSurge' },
-      // ── DEFENSE branch ──
-      dfn1: { label:'Iron Tide',     type:'passive', branch:'defense', color:'#5ec45e',
-              desc:'First time below 50% HP: gain +20 DEF for 2 turns.' },
-      dfn2: { label:'Absorption',    type:'passive', branch:'defense', color:'#3db89a',
-              desc:'Every 3 hits taken: next Defend heals 15 HP.' },
-      dfn3: { label:'Thorns',        type:'passive', branch:'defense', color:'#5ec45e',
-              desc:'When hit: 20% chance to stun enemy 1 turn.' },
-      dfn4: { label:'Fortress',      type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'Below 30% HP: gain +20 DEF and deal +15 damage this turn.', fn:'pressureWave' },
-      dfn5: { label:'Retaliation',   type:'passive', branch:'defense', color:'#3db89a',
-              desc:'After 3 hits in a row: auto strike back for 50% ATK.' },
-      dfn6: { label:'Bulwark',       type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'After 2 consecutive hits: DEF doubled next turn.', fn:'chargedStance' },
-      df_ks1:{ label:'Deep Current', type:'active',  branch:'defense', color:'#3db89a',
-              desc:'Gain +30 DEF for 2 turns. Absorb next hit entirely.', fn:'deepCurrent' },
-      df_ks2:{ label:'Iron Mirror',  type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'Reflect 40% of next hit back. +15 DEF for 1 turn.', fn:'ironMirror' },
-      // ── FLOW branch ──
-      fln1: { label:'Razor Tempo',   type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'Strike always goes first regardless of enemy speed.' },
-      fln2: { label:'Ghost Step',    type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'15% chance to dodge. On dodge, deal a free counter hit.' },
-      fln3: { label:'Lockdown',      type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Reduce enemy SPD by 6 for this battle.', fn:'heavyGround' },
-      fln4: { label:'Flicker',       type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'After dodging: next Strike deals double damage.' },
-      fln5: { label:'Stagger',       type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'20% chance each turn to stagger enemy (they miss their attack).' },
-      fln6: { label:'Momentum',      type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Launch ground spike: 20 damage, ignores 30% DEF.', fn:'earthSpike' },
-      fl_ks1:{ label:'Phantom Step', type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Become untargetable for 1 turn. Follow up with a guaranteed crit.', fn:'phantomStep' },
-      fl_ks2:{ label:'Time Lock',    type:'active',  branch:'flow',    color:'#88ccff',
-              desc:'Freeze enemy for 1 turn. Your next attack deals ×2 damage.', fn:'timeLock' },
-      // ── ARCANE branch ──
-      arn1: { label:'Sharp Mind',    type:'passive', branch:'arcane',  color:'#b06eff',
-              desc:'Insight grants +1 ATK per 3 Insight points.' },
-      arn2: { label:'Hex Weave',     type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Predict next attack — reduce incoming damage by 90% this turn.', fn:'foresight' },
-      arn3: { label:'Wild Proc',     type:'passive', branch:'arcane',  color:'#d4a843',
-              desc:'Each Luck point increases crit damage by 0.5%.' },
-      arn4: { label:'Prescience',    type:'passive', branch:'arcane',  color:'#b06eff',
-              desc:'Insight reduces enemy crit chance by 2% per point.' },
-      arn5: { label:'Ricochet',      type:'passive', branch:'arcane',  color:'#d4a843',
-              desc:'20% chance attacks bounce — hit twice, second at 40% ATK.' },
-      arn6: { label:'Mind Pierce',   type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Next attack crits for ×1.75 damage.', fn:'preciseStrike' },
-      ar_ks1:{ label:'Sixth Sense',  type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Read enemy — know their next move. Reduce damage by 80% if correct.', fn:'sixthSense' },
-      ar_ks2:{ label:'Chaos Engine', type:'active',  branch:'arcane',  color:'#d4a843',
-              desc:'Unleash chaos: random powerful effect each use.', fn:'chaosEngine' },
-      // ── DECAY branch ──
-      dcn1: { label:'Nightshroud',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'First turn: free dodge. On dodge, counter for 50% ATK.', fn:'nightshroud' },
-      dcn2: { label:'Umbral Veil',   type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'15% dodge chance. On dodge, counter for 50% ATK.' },
-      dcn3: { label:'Thornwall',     type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Defend reflects 15% of absorbed damage back as thorns.', fn:'thornwall' },
-      dcn4: { label:'Shade Walk',    type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'+5 SPD, +4 Power. On kill: +15 SPD for 2 turns.' },
-      dcn5: { label:'Enduring Root', type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'Cannot be stunned or rooted by enemy skills.' },
-      dcn6: { label:'Dread Pulse',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Each hit reduces enemy ATK by 2 (stacks up to 3×).', fn:'dreadPulse' },
-      dc_ks1:{ label:'Soul Sever',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Sever enemy soul: they lose 15% max HP permanently this battle.', fn:'soulSever' },
-      dc_ks2:{ label:'Ancient Root', type:'passive', branch:'decay',   color:'#5ec45e',
-              desc:'Cannot be stunned. At battle start: gain shield = 20% max HP.' },
-    }
-    // Backward compat — old keys still work if any saved data uses them
-    const OLD_KEY_MAP = { an1:'ofn1',an2:'ofn2',an3:'ofn3',an4:'ofn4',an5:'ofn5',an6:'ofn6',
-      dn1:'dfn1',dn2:'dfn2',dn3:'dfn3',dn4:'dfn4',dn5:'dfn5',dn6:'dfn6',
-      gn1:'fln1',gn2:'fln2',gn3:'fln3',gn4:'fln4',gn5:'fln5',gn6:'fln6',
-      mn1:'arn1',mn2:'arn2',mn3:'arn3',mn4:'arn4',mn5:'arn5',mn6:'arn6',
-      dpn1:'dcn1',dkn1:'dcn2',pln1:'dcn3',dkn2:'dcn4',pln2:'dcn5',dpn2:'dcn6' }
-    Object.entries(OLD_KEY_MAP).forEach(([old,nw]) => { if (NOTABLE_SKILLS[nw]) NOTABLE_SKILLS[old] = NOTABLE_SKILLS[nw] })
-
-    // Merge NOTABLE_SKILLS into BATTLE_SKILLS so the rest of the engine is unified
-    Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
-
-    // ── Combat status effects ────────────────────────────────
-    let statusEffects = {
-      playerATKBonus:  0,
-      playerDEFBonus:  0,
-      playerSPDBonus:  0,
-      ignoreEnemyDEF:  false,
-      invulnerable:    false,
-      waterShield:     0,   // HP absorbed
-      enemyATKMult:    1.0,
-      enemyStunTurns:  0,
-      burnTurns:       0,
-      burnDmg:         3,   // scaled by fire_passive_burn level
-      infernoTurns:    0,
-      regenTurns:      0,
-      rootTrapTurns:   0,
-      skillCooldowns:  {},  // key → turns remaining
-    }
-
-    // Apply passive skills at battle start
-    function applyPassives() {
-      const unlocked = player.skills_unlocked || []
-      const inBattle = player.battle_skills   || []
-      // Elemental passives — scaled by level
-      if (unlocked.includes('water_passive_regen'))            statusEffects.regenTurns    = 999
-      if (unlocked.includes('earth_passive_damage_reduction')) {
-        const lv = _skillLvGlobal('earth_passive_damage_reduction')
-        statusEffects.playerDEFBonus += Math.round(5 + (lv - 1))
-      }
-      if (unlocked.includes('metal_passive_reflect'))          statusEffects.metalReflect  = true
-      // Notable passives — new IDs (ofn2, dfn1 etc.) plus old IDs for backward compat
-      const has = k => inBattle.includes(k) || inBattle.includes(OLD_KEY_MAP[k] || k)
-      if (has('ofn2')||has('an2')) statusEffects.flameFist    = true
-      if (has('ofn3')||has('an3')) statusEffects.venomFang    = true
-      if (has('dfn1')||has('dn1')) statusEffects.tidalResolve = true
-      if (has('dfn2')||has('dn2')) statusEffects.absorption   = true
-      if (has('dfn3')||has('dn3')) statusEffects.liveWire     = true
-      if (has('dfn5')||has('dn5')) statusEffects.arcReflex    = true
-      if (has('fln1')||has('gn1')) statusEffects.razorTempo   = true
-      if (has('fln2')||has('gn2')) statusEffects.ghostStep    = true
-      if (has('fln4')||has('gn4')) statusEffects.flicker      = true
-      if (has('fln5')||has('gn5')) statusEffects.tremorStep   = true
-      if (has('arn1')||has('mn1')) statusEffects.sharpMind    = true
-      if (has('arn3')||has('mn3')) statusEffects.razorLuck    = true
-      if (has('arn4')||has('mn4')) statusEffects.prescience   = true
-      if (has('arn5')||has('mn5')) statusEffects.ricochet     = true
-      if (has('dcn2')||has('dkn1'))statusEffects.umbralVeil   = true
-      if (has('dcn4')||has('dkn2'))statusEffects.shadeWalk    = true
-      if (has('dcn5')||has('pln2'))statusEffects.enduringRoot = true
-      if (has('dcn6')||has('dpn2'))statusEffects.dreadPulse   = true
-      // Keystones
-      if (has('dc_ks2')) {
-        // Ancient Root: shield at battle start
-        statusEffects.ancientRootShield = Math.round(maxPlayerHp * 0.2)
-      }
-    }
-    applyPassives()
-
-    // ── Render battle skill slots ─────────────────────────────
-    function renderSkillSlots() {
-      const row = $('skill-slots-row')
-      if (!row) return
-
-      const activeSkills = battleSkillKeys.filter(k => {
-        const s = BATTLE_SKILLS[k]
-        return s && s.type !== 'passive'
-      })
-      const passiveSkills = battleSkillKeys.filter(k => {
-        const s = BATTLE_SKILLS[k]
-        return s && s.type === 'passive'
-      })
-
-      // Build passive indicator strip (always-on effects shown as small tags)
-      const passiveStrip = passiveSkills.length
-        ? '<div style="display:flex;gap:3px;flex-wrap:wrap;margin-bottom:4px">'
-          + passiveSkills.map(k => {
-              const sk = BATTLE_SKILLS[k]
-              return `<span style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:${sk.color};
-                border:.5px solid ${sk.color}50;border-radius:12px;padding:1px 6px;background:${sk.color}12;
-                letter-spacing:.04em">⚡ ${sk.label} (passive)</span>`
-            }).join('')
-          + '</div>'
-        : ''
-
-      if (!activeSkills.length) {
-        row.innerHTML = passiveStrip +
-          '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">' +
-          'No active skills assigned — visit Skills page</p>'
-        return
-      }
-
-      // Skills header
-      let html = passiveStrip
-      html += '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:var(--ink);letter-spacing:.09em;margin-bottom:4px">— SKILLS —</p>'
-
-      // Skills grid — same 3-column layout as basic actions
-      html += '<div style="display:grid;grid-template-columns:' +
-        (activeSkills.length === 1 ? '1fr' : activeSkills.length === 2 ? '1fr 1fr' : '1fr 1fr 1fr') +
-        ';gap:4px">'
-
-      html += activeSkills.map(k => {
-        const sk     = BATTLE_SKILLS[k]
-        const cd     = statusEffects.skillCooldowns[k] || 0
-        const isUlt  = sk.type === 'ultimate'
-        const lv     = _skillLvGlobal(k)
-        const lvColor = lv >= 10 ? '#ffd700' : lv >= 7 ? '#c8b96e' : lv >= 4 ? '#a0c080' : '#9a8858'
-        const pct    = Math.round((0.5 + (lv - 1) * (0.5 / 9)) * 100)
-
-        // Skill icon — try image, fall back to element emoji
-        const EL_ICON = { fire:'🔥', water:'💧', earth:'🪨', wind:'💨', dark:'🌑', light:'✨', lightning:'⚡', metal:'⚙', plant:'🌿' }
-        const elIcon = EL_ICON[sk.el] || '✦'
-
-        const cdLabel = cd > 0 ? cd + ' turn' + (cd > 1 ? 's' : '') : null
-        const border  = isUlt ? `border-color:${sk.color}70` : `border-color:${sk.color}40`
-
-        // Build skill button safely — avoid nested template literals and quote hell
-        const cdOverlay = cd > 0
-          ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px">'
-            + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">' + cdLabel + '</span>'
-            + '</div>'
-          : ''
-        const iconFilter = cd > 0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
-        const btnColor   = cd > 0 ? 'rgba(200,160,60,.35)' : sk.color
-        const imgTag = '<img src="../assets/skills/' + k + '.webp"'
-          + ' style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto"'
-          + ' onerror="this.remove()">'
-
-        return '<button class="combat-btn" id="' + cid + '-btn-skill-' + k + '"'
-          + ' onclick="useSkill_' + cid + '(\'' + k + '\')"'
-          + (cd > 0 ? ' disabled' : '')
-          + ' title="' + (sk.desc || sk.label) + ' (Lv' + lv + ' · ' + pct + '% power)"'
-          + ' style="flex-direction:column;gap:2px;padding:.45rem .25rem;' + border + ';'
-          + 'color:' + btnColor + ';position:relative;overflow:hidden">'
-          + cdOverlay
-          + '<span style="font-size:1rem;line-height:1;filter:' + iconFilter + '">' + imgTag
-          + '<span style="font-size:1rem;margin:0 auto;display:none" class="sk-fallback-' + k + '">' + elIcon + '</span>'
-          + '</span>'
-          + '<span style="font-size:.58rem;font-weight:600;letter-spacing:.02em">' + (isUlt ? '★ ' : '') + sk.label + '</span>'
-          + '<span style="font-size:.42rem;color:' + lvColor + ';letter-spacing:.04em">Lv' + lv + ' · ' + pct + '%</span>'
-          + '</button>'
-      }).join('')
-
-      html += '</div>'
-      row.innerHTML = html
-    }
-
-    function setButtons(enabled) {
-      ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id => {
-        const b = $(id)
-        if (b) b.disabled = !enabled
-      })
-      // Also update skill buttons
-      battleSkillKeys.forEach(k => {
-        const b = $('btn-skill-'+k)
-        if (b && enabled) {
-          const cd = statusEffects.skillCooldowns[k] || 0
-          b.disabled = cd > 0
-        } else if (b) {
-          b.disabled = true
-        }
-      })
-    }
-
-    // ── Skill use handler — scoped to this combat instance ───
-    const useSkillLocal = function(key) {
-      if (over) return
-      const sk = BATTLE_SKILLS[key]
-      if (!sk) return
-      const cd = statusEffects.skillCooldowns[key] || 0
-      if (cd > 0) { log('Skill on cooldown (' + cd + ' turns)'); return }
-      doTurn('skill', key)
-    }
-    // Expose globally so inline onclick attrs can reach it, keyed by cid
-    window['useSkill_' + cid] = useSkillLocal
-
-
-    // ── Skill leveling system ───────────────────────────────
-    // Tracks use-count for each skill: slow XP curve, max level 10.
-    // Stored in player.skill_levels as { skillKey: { uses, level } }
-    // Gains: every 10 uses grants +1 level, cost doubles each tier.
-    // Required uses: lv1→2: 10, lv2→3: 25, lv3→4: 50, lv4→5: 90, lv5→6: 150,
-    //               lv6→7: 240, lv7→8: 380, lv8→9: 590, lv9→10: 900 cumulative
-    const SKILL_LVL_THRESHOLDS = [0,10,25,50,90,150,240,380,590,900]
-    function getSkillLevel(key) {
-      const sl = (player.skill_levels || {})[key]
-      if (!sl) return 1
-      let lv = 1
-      for (let i = 1; i < SKILL_LVL_THRESHOLDS.length; i++) {
-        if (sl.uses >= SKILL_LVL_THRESHOLDS[i]) lv = i + 1
-        else break
-      }
-      return Math.min(10, lv)
-    }
-    function skillScale(key) {
-      // Returns a multiplier 0.5–1.0 based on skill level (lv1=50%, lv10=100%)
-      return 0.5 + (getSkillLevel(key) - 1) * (0.5 / 9)
-    }
-    async function recordSkillUse(key) {
-      const sl  = player.skill_levels || {}
-      if (!sl[key]) sl[key] = { uses: 0 }
-      const prevLv = getSkillLevel(key)
-      sl[key].uses++
-      player.skill_levels = sl
-      // Detect level-up
-      const newLv = getSkillLevel(key)
-      if (newLv > prevLv) {
-        const sk = BATTLE_SKILLS[key]
-        window.showToast('✦ ' + (sk?.label || key) + ' reached Lv ' + newLv + '!')
-      }
-      // Awaited save so failures surface in console
-      const { error } = await supabase.from('players').update({ skill_levels: sl }).eq('id', player.id)
-      if (error) console.error('[skill_levels save]', error.message)
-    }
-
-    async function doTurn(playerAction, skillKey = null) {
-      if (over) return
-      setButtons(false)
-      defending = false
-      const luckBonus  = Math.floor(eqLuck / 2)
-      const unlocked   = player.skills_unlocked || []
-
-      // Tick down status effects
-      if (statusEffects.enemyStunTurns > 0)  statusEffects.enemyStunTurns--
-      if (statusEffects.rootTrapTurns  > 0)  statusEffects.rootTrapTurns--
-      Object.keys(statusEffects.skillCooldowns).forEach(k => {
-        if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
-      })
-
-      // ── FF-Style Turn Order ───────────────────────────────────
-      // Base speed comparison with jitter. Faster player goes first.
-      // Ties broken randomly (spice!) unless one side has a speed-override skill.
-      const pSPD = playerSPD() + (statusEffects.playerSPDBonus || 0)
-      const eSPD = enemySPD()
-
-      // Skill-specific overrides
-      const dashStrikeActive = (skillKey === 'wind_skill_dash_strike') // always first
-      const razorTempoActive = statusEffects.razorTempo && playerAction === 'strike' // always first
-      const heavySlowsPenalty = (playerAction === 'heavy') ? -3 : 0    // heavy is slower
-      const defenseGoesFirst  = (playerAction === 'defend')             // defend always first
-
-      // Effective speeds with jitter (±1–2) for variety
-      const pEffSPD = pSPD + heavySlowsPenalty + Math.floor(Math.random() * 3)
-      const eEffSPD = eSPD + Math.floor(Math.random() * 3)
-
-      let playerFirst
-      if (dashStrikeActive || defenseGoesFirst || razorTempoActive) {
-        playerFirst = true  // speed override skills
-      } else if (pEffSPD === eEffSPD) {
-        playerFirst = Math.random() < 0.5  // dead tie → coin flip
-      } else {
-        playerFirst = pEffSPD > eEffSPD
-      }
-
-      // ── Dodge calculation ─────────────────────────────────────
-      // Base dodge chance = 3% + (speed difference × 1.5%), capped 0–40%
-      // Wind passive "Gust" adds flat 20% dodge
-      function calcPlayerDodge() {
-        const speedAdv = Math.max(0, pSPD - eSPD)
-        const base = 0.03 + speedAdv * 0.015
-        // Wind dodge: Lv1 +20%, Lv10 +35%
-        const windLv = unlocked.includes('wind_passive_dodge') ? _skillLvGlobal('wind_passive_dodge') : 0
-        const windBonus = windLv > 0 ? 0.20 + (windLv - 1) * (0.15 / 9) : 0
-        return Math.min(0.55, base + windBonus)
-      }
-      function calcEnemyDodge() {
-        const speedAdv = Math.max(0, eSPD - pSPD)
-        return Math.min(0.25, 0.02 + speedAdv * 0.012)
-      }
-
-      let messages = []
-      const turnLabel = playerFirst
-        ? '⚡ You act first (SPD ' + pEffSPD + ' vs ' + eEffSPD + ')'
-        : '⏳ ' + enemy.name + ' acts first (SPD ' + eEffSPD + ' vs ' + pEffSPD + ')'
-
-      // ── Player action ─────────────────────────────────────
-      function resolvePlayerAction() {
-        // Enemy dodge check (applies to attack actions only)
-        const enemyDodged = (playerAction === 'strike' || playerAction === 'heavy') && Math.random() < calcEnemyDodge()
-        if (enemyDodged) {
-          messages.push(enemy.name + ' <em>dodges</em> your attack!')
-          return
-        }
-
-        if (playerAction === 'strike') {
-          // Backstab passive: Lv1 15% chance 2× dmg → Lv10 35% chance 3× dmg
-          const bsLv      = unlocked.includes('darkness_passive_backstab') ? _skillLvGlobal('darkness_passive_backstab') : 0
-          const bsChance  = bsLv > 0 ? 0.15 + (bsLv - 1) * (0.20 / 9) : 0
-          const bsMult    = bsLv > 0 ? 2 + (bsLv - 1) * (1 / 9) : 1
-          const backstab  = bsLv > 0 && Math.random() < bsChance
-          const roll       = window._forceMaxHit ? (6+luckBonus) : Math.floor(Math.random()*(6+luckBonus))+1
-          window._forceMaxHit = false
-          const baseATK    = playerATK() + (statusEffects.playerATKBonus||0)
-          const ignoreDEF  = statusEffects.ignoreEnemyDEF
-          statusEffects.ignoreEnemyDEF = false
-          const flickerMult = statusEffects.flickerReady ? 2 : 1
-          if (statusEffects.flickerReady) { statusEffects.flickerReady = false }
-          const dmg        = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult))
-          enemyHp          = Math.max(0, enemyHp - dmg)
-          messages.push(backstab
-            ? '⚡ Backstab Lv' + bsLv + '! You strike for <strong>' + dmg + '</strong> (' + Math.round(bsMult*10)/10 + '× dmg)!'
-            : 'You strike for <strong>' + dmg + '</strong>.' + (ignoreDEF ? ' (DEF ignored)' : ''))
-          // Burn passive: Lv1 3dmg × 2 turns → Lv10 6dmg × 4 turns
-          if (unlocked.includes('fire_passive_burn')) {
-            const burnLv  = _skillLvGlobal('fire_passive_burn')
-            const burnDmg = Math.round(3 + (burnLv - 1) * (3 / 9))
-            const burnDur = Math.round(2 + (burnLv - 1) * (2 / 9))
-            statusEffects.burnTurns = burnDur
-            statusEffects.burnDmg   = burnDmg
-            messages.push('🔥 Burn Lv' + burnLv + ' applied — ' + burnDmg + ' dmg/turn × ' + burnDur + ' turns.')
-          }
-          // Chain passive: Lv1 20% chance 50% dmg → Lv10 40% chance 90% dmg
-          if (unlocked.includes('lightning_passive_chain_damage')) {
-            const chainLv     = _skillLvGlobal('lightning_passive_chain_damage')
-            const chainChance = 0.20 + (chainLv - 1) * (0.20 / 9)
-            const chainPct    = 0.50 + (chainLv - 1) * (0.40 / 9)
-            if (Math.random() < chainChance) {
-              const chainDmg = Math.max(1, Math.floor(dmg * chainPct))
-              enemyHp = Math.max(0, enemyHp - chainDmg)
-              messages.push('⚡ Chain Lv' + chainLv + ' hit for <strong>' + chainDmg + '</strong>!')
-            }
-          }
-          // Venom Fang passive: 15% poison on strike
-          if (statusEffects.venomFang && Math.random() < 0.15) {
-            statusEffects.burnTurns = Math.max(statusEffects.burnTurns, 2)
-            messages.push('☠ Venom Fang — poison applied! (3 dmg/turn × 2 turns)')
-          }
-          // Ricochet passive: 20% double hit
-          if (statusEffects.ricochet && Math.random() < 0.20) {
-            const bounceDmg = Math.max(1, Math.floor(dmg * 0.4))
-            enemyHp = Math.max(0, enemyHp - bounceDmg)
-            messages.push('🎯 Ricochet! Bounce hit for <strong>' + bounceDmg + '</strong>!')
-          }
-          // Flicker: post-dodge double damage flag (applied in dodge handler below)
-          // Precise Strike: crit override
-          if (statusEffects.nextCrit) {
-            statusEffects.nextCrit = false
-            const critBonus = Math.floor(dmg * 0.75)
-            enemyHp = Math.max(0, enemyHp - critBonus)
-            messages.push('🎯 Critical hit! +<strong>' + critBonus + '</strong> bonus damage!')
-          }
-          // Dread Pulse on-hit stack (passive version)
-          if (statusEffects.dreadPulse && !statusEffects.dreadPulseStacks) {
-            statusEffects.dreadPulseStacks = 0
-          }
-        } else if (playerAction === 'heavy') {
-          const roll    = window._forceMaxHit ? (10+luckBonus) : Math.floor(Math.random()*(10+luckBonus))+3
-          window._forceMaxHit = false
-          const baseATK = playerATK() + (statusEffects.playerATKBonus||0)
-          const dmg     = Math.max(1, Math.round(baseATK * 1.6) + roll)
-          enemyHp       = Math.max(0, enemyHp - dmg)
-          messages.push('Heavy strike for <strong>' + dmg + '</strong>!')
-          // Venom Lance: apply poison after Heavy Strike
-          if (statusEffects.venomLanceTurns > 0) {
-            messages.push('☠ Venom Lance — venom coats the wound!')
-          }
-        } else if (playerAction === 'defend') {
-          defending = true
-          messages.push('You brace — defense doubled this turn.')
-          // Absorption: heal 15 HP if charged
-          if (statusEffects.absorptionHeal) {
-            const healAmt = statusEffects.absorptionHeal
-            currentHp = Math.min(maxPlayerHp, currentHp + healAmt)
-            statusEffects.absorptionHeal = 0
-            messages.push('🛡 Absorption — healed <strong>' + healAmt + '</strong> HP!')
-          }
-        } else if (playerAction === 'skill' && skillKey) {
-          const sk = BATTLE_SKILLS[skillKey]
-          if (!sk) return
-          statusEffects.skillCooldowns[skillKey] = sk.type === 'ultimate' ? 4 : 2
-          recordSkillUse(skillKey)
-          const sc = skillScale(skillKey)
-          const skLv = getSkillLevel(skillKey)
-          if (skLv < 10) messages.push('Skill Lv ' + skLv + ' — power ' + Math.round(sc*100) + '%')
-
-          if (sk.fn === 'shadowStep') {
-            statusEffects.ignoreEnemyDEF = true
-            messages.push('🌑 Shadow Step Lv' + skLv + ' — next attack ignores DEF!')
-          } else if (sk.fn === 'rockArmor') {
-            const defBonus = Math.round(20 * sc)
-            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
-            statusEffects.rockArmorTurns = 2
-            messages.push('🪨 Rock Armor Lv' + skLv + ' — +' + defBonus + ' DEF for 2 turns!')
-          } else if (sk.fn === 'earthquake') {
-            const dmg = Math.max(5, Math.round(playerATK() * 2 * sc))
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            statusEffects.enemyStunTurns = 1
-            messages.push('🌍 Earthquake Lv' + skLv + '! <strong>' + dmg + '</strong> dmg — stunned!')
-          } else if (sk.fn === 'fireBlast') {
-            const def = Math.floor((enemy.def||0) * 0.5)
-            const dmg = Math.max(1, Math.round((25 * sc + playerATK()) - def))
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            messages.push('🔥 Fire Blast Lv' + skLv + ' — <strong>' + dmg + '</strong> (50% DEF ignored)!')
-          } else if (sk.fn === 'infernoZone') {
-            statusEffects.infernoTurns = 3
-            statusEffects.infernoDmg   = Math.round(40 * sc)
-            messages.push('🔥 Inferno Zone Lv' + skLv + ' — ' + statusEffects.infernoDmg + ' dmg/turn × 3 turns!')
-          } else if (sk.fn === 'healPulse') {
-            const base = Math.round(25 * sc)
-            const heal = Math.min(player.max_hp||100, currentHp + base) - currentHp
-            currentHp  = Math.min(player.max_hp||100, currentHp + base)
-            messages.push('✨ Heal Pulse Lv' + skLv + ' — restored <strong>' + heal + '</strong> HP!')
-          } else if (sk.fn === 'divineBarrier') {
-            statusEffects.invulnerable = true
-            statusEffects.divineBarrierReflect = true
-            messages.push('✨ Divine Barrier Lv' + skLv + ' — invulnerable this turn! Damage reflected.')
-          } else if (sk.fn === 'lightningStrike') {
-            const dmg = Math.round((30 + playerATK() * 0.5) * sc)
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            messages.push('⚡ Lightning Strike Lv' + skLv + ' — <strong>' + dmg + '</strong> (ignores shields)!')
-          } else if (sk.fn === 'thunderstorm') {
-            let total = 0
-            const boltBase = Math.round(10 * sc)
-            for (let b = 0; b < 5; b++) {
-              const bolt = boltBase + Math.floor(Math.random() * Math.round(10 * sc))
-              total += bolt; enemyHp = Math.max(0, enemyHp - bolt)
-            }
-            messages.push('⚡ Thunderstorm Lv' + skLv + ' — 5 bolts, <strong>' + total + '</strong> total!')
-          } else if (sk.fn === 'bladeForm') {
-            const atkBon = Math.round(20 * sc), spdBon = Math.round(5 * sc)
-            statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + atkBon
-            statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + spdBon
-            statusEffects.bladeFormTurns = 2
-            messages.push('⚙ Blade Form Lv' + skLv + ' — ATK +' + atkBon + ', SPD +' + spdBon + ' (2 turns)!')
-          } else if (sk.fn === 'ironDomain') {
-            const atkBon = Math.round(playerATK() * sc)
-            statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + atkBon
-            statusEffects.ironDomainTurns = 3
-            messages.push('⚙ Iron Domain Lv' + skLv + ' — ATK +' + atkBon + ' for 3 turns!')
-          } else if (sk.fn === 'rootTrap') {
-            statusEffects.rootTrapTurns = 1
-            messages.push('🌿 Root Trap Lv' + skLv + ' — enemy rooted, skips next attack!')
-          } else if (sk.fn === 'overgrowth') {
-            const healAmt = Math.round(40 * sc), dmg = Math.round(30 * sc)
-            const heal = Math.min(player.max_hp||100, currentHp + healAmt) - currentHp
-            currentHp  = Math.min(player.max_hp||100, currentHp + healAmt)
-            enemyHp    = Math.max(0, enemyHp - dmg)
-            messages.push('🌿 Overgrowth Lv' + skLv + ' — +' + heal + ' HP & <strong>' + dmg + '</strong> dmg!')
-          } else if (sk.fn === 'waterShield') {
-            const shAmt = Math.round(30 * sc)
-            statusEffects.waterShield = (statusEffects.waterShield||0) + shAmt
-            messages.push('💧 Water Shield Lv' + skLv + ' — absorbs up to ' + shAmt + ' damage!')
-          } else if (sk.fn === 'tsunami') {
-            const dmg = Math.round((50 + playerATK() * 0.4) * sc)
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            statusEffects.enemyStunTurns = 1
-            messages.push('🌊 Tsunami Lv' + skLv + ' — <strong>' + dmg + '</strong> dmg, enemy stunned!')
-          } else if (sk.fn === 'dashStrike') {
-            const dmg = Math.max(1, Math.round((playerATK() * 2 + Math.floor(Math.random()*8)) * sc))
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            const spdBon = Math.round(10 * sc)
-            statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + spdBon
-            messages.push('💨 Dash Strike Lv' + skLv + ' — <strong>' + dmg + '</strong>, SPD +' + spdBon + '!')
-          } else if (sk.fn === 'tornadoField') {
-            const reduct = 1 - Math.round(sc * 30) / 100
-            statusEffects.enemyATKMult  = Math.min(statusEffects.enemyATKMult||1.0, reduct)
-            statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus||0) + pSPD
-            statusEffects.tornadoTurns   = 3
-            messages.push('💨 Tornado Field Lv' + skLv + ' — enemy ATK -' + Math.round(sc*30) + '%, SPD doubled!')
-          } else if (sk.fn === 'voidZone') {
-            const reduct = 1 - Math.round(sc * 30) / 100
-            statusEffects.enemyATKMult  = Math.min(statusEffects.enemyATKMult||1.0, reduct)
-            statusEffects.voidZoneTurns = 3
-            messages.push('🌑 Void Zone Lv' + skLv + ' — enemy ATK -' + Math.round(sc*30) + '% for 3 turns!')
-
-          // ── NOTABLE SKILL EFFECTS ─────────────────────────────
-          } else if (sk.fn === 'warbound') {
-            const bonus = Math.round(playerATK() * 0.15 * sc)
-            statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + bonus
-            statusEffects.warboundTurns  = 1
-            messages.push('⚔ Warbound — +' + bonus + ' ATK this turn!')
-
-          } else if (sk.fn === 'embersEnd') {
-            const mult = enemyHp / maxEnemyHp < 0.30 ? 1.25 : 1.0
-            const dmg  = Math.max(1, Math.round(playerATK() * mult * sc))
-            enemyHp    = Math.max(0, enemyHp - dmg)
-            messages.push("🔥 Ember's End — " + dmg + ' damage' + (mult > 1 ? ' (+25% finishing blow)!' : '!'))
-
-          } else if (sk.fn === 'venomLance') {
-            statusEffects.venomLanceTurns = 3
-            statusEffects.venomLanceDmg   = Math.round(5 * sc)
-            messages.push('☠ Venom Lance — Heavy Strike venom: ' + statusEffects.venomLanceDmg + ' dmg/turn × 3 turns!')
-
-          } else if (sk.fn === 'predator') {
-            const bonus = Math.round(20 * sc)
-            statusEffects.playerATKBonus  = (statusEffects.playerATKBonus||0) + bonus
-            statusEffects.predatorTurns   = 2
-            messages.push('🐺 Predator — +' + bonus + ' ATK for 2 turns!')
-
-          } else if (sk.fn === 'pressureWave') {
-            const lowHp = currentHp / maxPlayerHp < 0.30
-            const defBonus = lowHp ? 20 : 0
-            const dmgBonus = lowHp ? 15 : 0
-            if (lowHp) {
-              statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
-              enemyHp = Math.max(0, enemyHp - dmgBonus)
-              messages.push('🌊 Pressure Wave — below 30% HP: +' + defBonus + ' DEF & ' + dmgBonus + ' damage!')
-            } else {
-              messages.push('🌊 Pressure Wave — full power needs low HP (>30% remaining).')
-            }
-
-          } else if (sk.fn === 'chargedStance') {
-            statusEffects.chargedStance = true
-            messages.push('⚡ Charged Stance — DEF doubled next turn if you take 2 hits!')
-
-          } else if (sk.fn === 'heavyGround') {
-            statusEffects.enemySPDReduction = (statusEffects.enemySPDReduction||0) + 6
-            messages.push('🪨 Heavy Ground — enemy SPD -6 for this battle!')
-
-          } else if (sk.fn === 'earthSpike') {
-            const dmg = Math.round((20 + playerATK() * 0.3) * sc)
-            enemyHp   = Math.max(0, enemyHp - dmg)
-            messages.push('🪨 Earth Spike — ' + dmg + ' damage (ignores 30% DEF)!')
-
-          } else if (sk.fn === 'foresight') {
-            statusEffects.foresight = true
-            messages.push('🔮 Foresight — next incoming attack reduced by 90%!')
-
-          } else if (sk.fn === 'preciseStrike') {
-            statusEffects.nextCrit = true
-            messages.push('🎯 Precise Strike — next attack will critical hit (×1.75)!')
-
-          } else if (sk.fn === 'nightshroud') {
-            statusEffects.nightshroud = true
-            messages.push('🌑 Nightshroud — free dodge active! Counter on dodge.')
-
-          } else if (sk.fn === 'thornwall') {
-            statusEffects.thornwall = true
-            messages.push('🌿 Thornwall — next Defend reflects 15% damage as thorns!')
-
-          } else if (sk.fn === 'dreadPulse') {
-            const stacks = Math.min(3, (statusEffects.dreadPulseStacks||0) + 1)
-            statusEffects.dreadPulseStacks = stacks
-            statusEffects.enemyATKMult = Math.max(0.1, (statusEffects.enemyATKMult||1.0) - 0.08)
-            messages.push('💀 Dread Pulse — enemy ATK -' + (stacks * 8) + '% total (' + stacks + ' stacks)!')
-
-          } else if (sk.fn === 'bloodthirst') {
-            // On-use: restore 20% max HP, gain ATK bonus
-            const heal = Math.round(maxPlayerHp * 0.2 * sc)
-            currentHp = Math.min(maxPlayerHp, currentHp + heal)
-            statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(10 * sc)
-            statusEffects.bloodthirstTurns = 2
-            messages.push('🩸 Bloodthirst — +'+ heal +' HP restored, +' + Math.round(10*sc) + ' ATK for 2 turns!')
-
-          } else if (sk.fn === 'spellSurge') {
-            statusEffects.spellSurge = true
-            messages.push('✨ Spell Surge — next skill hits ×1.5 and ignores 50% DEF!')
-
-          } else if (sk.fn === 'deepCurrent') {
-            const defBonus = Math.round(30 * sc)
-            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + defBonus
-            statusEffects.deepCurrentTurns = 2
-            statusEffects.absorbNextHit = true
-            messages.push('🌊 Deep Current — +' + defBonus + ' DEF for 2 turns, next hit absorbed!')
-
-          } else if (sk.fn === 'ironMirror') {
-            statusEffects.ironMirror = true
-            statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 15
-            messages.push('🛡 Iron Mirror — reflect 40% next hit + +15 DEF!')
-
-          } else if (sk.fn === 'phantomStep') {
-            statusEffects.phantomStep = true
-            statusEffects.nextCrit = true
-            messages.push('👻 Phantom Step — untargetable 1 turn, next hit crits!')
-
-          } else if (sk.fn === 'timeLock') {
-            statusEffects.enemyStunTurns = (statusEffects.enemyStunTurns||0) + 1
-            statusEffects.timeLockCrit = true
-            messages.push('⏱ Time Lock — enemy frozen 1 turn, next attack ×2 damage!')
-
-          } else if (sk.fn === 'sixthSense') {
-            statusEffects.sixthSense = true
-            messages.push('🔮 Sixth Sense — reading enemy pattern. 80% damage reduction if correct!')
-
-          } else if (sk.fn === 'chaosEngine') {
-            const chaos = Math.floor(Math.random() * 5)
-            if (chaos === 0) {
-              const dmg = Math.round(playerATK() * 2 * sc)
-              enemyHp = Math.max(0, enemyHp - dmg)
-              messages.push('🌀 Chaos Engine — CHAOS STRIKE: ' + dmg + ' dmg!')
-            } else if (chaos === 1) {
-              const heal = Math.round(maxPlayerHp * 0.3 * sc)
-              currentHp = Math.min(maxPlayerHp, currentHp + heal)
-              messages.push('🌀 Chaos Engine — CHAOS HEAL: +' + heal + ' HP!')
-            } else if (chaos === 2) {
-              statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(25 * sc)
-              messages.push('🌀 Chaos Engine — CHAOS SURGE: +' + Math.round(25*sc) + ' ATK!')
-            } else if (chaos === 3) {
-              statusEffects.enemyStunTurns = (statusEffects.enemyStunTurns||0) + 2
-              messages.push('🌀 Chaos Engine — CHAOS FREEZE: enemy stunned 2 turns!')
-            } else {
-              statusEffects.invulnerable = true
-              messages.push('🌀 Chaos Engine — CHAOS SHIELD: invulnerable 1 turn!')
-            }
-
-          } else if (sk.fn === 'soulSever') {
-            const sevPct  = Math.round(15 * sc)
-            const sevDmg  = Math.round(maxEnemyHp * sevPct / 100)
-            maxEnemyHp    = Math.max(1, maxEnemyHp - sevDmg)
-            enemyHp       = Math.min(enemyHp, maxEnemyHp)
-            messages.push('💜 Soul Sever — enemy max HP -' + sevPct + '% (' + sevDmg + ' severed)!')
-          }
-        }
-      }
-
-      // ── Enemy action ──────────────────────────────────────
-      function resolveEnemyAction() {
-        if (enemyHp <= 0) return
-        // Stun / root check
-        if (statusEffects.enemyStunTurns > 0 || statusEffects.rootTrapTurns > 0) {
-          messages.push(enemy.name + ' is stunned — cannot attack!')
-          return
-        }
-        if (statusEffects.invulnerable) {
-          const reflectDmg = Math.floor(enemy.atk * 0.5)
-          enemyHp          = Math.max(0, enemyHp - reflectDmg)
-          statusEffects.invulnerable = false
-          messages.push('✨ Divine Barrier absorbs! Reflected ' + reflectDmg + ' back.')
-          return
-        }
-        // Player dodge check — includes Nightshroud first-turn, Ghost Step, Umbral Veil
-        let dodgeChance = calcPlayerDodge()
-        if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
-        if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
-
-        if (Math.random() < dodgeChance) {
-          messages.push('You <em>dodge</em> the attack!')
-          // Flicker: next strike doubles
-          if (statusEffects.flicker) { statusEffects.flickerReady = true }
-          // Ghost Step / Umbral Veil: counter on dodge
-          if (statusEffects.ghostStep || statusEffects.umbralVeil) {
-            const counterDmg = Math.max(1, Math.floor(playerATK() * 0.5))
-            enemyHp = Math.max(0, enemyHp - counterDmg)
-            messages.push('↩ Counter hit for <strong>' + counterDmg + '</strong>!')
-          }
-          // Increment consecutive-hit counter on dodge (reset it)
-          statusEffects.consecutiveHits = 0
-          return
-        }
-        // Foresight active: reduce damage 90%
-        let foresightMult = 1.0
-        if (statusEffects.foresight) { foresightMult = 0.10; statusEffects.foresight = false; messages.push('🔮 Foresight absorbs the blow!') }
-        // Endurig Root: immune to stun
-        if (statusEffects.enduringRoot) { statusEffects.enemyStunTurns = 0; statusEffects.rootTrapTurns = 0 }
-        const defMult  = defending ? 0.25 : 1
-        const eATKMult = (statusEffects.enemyATKMult || 1.0) * (foresightMult || 1.0)
-        // Apply enemy SPD reduction from heavyGround
-        const eSPDReduced = (statusEffects.enemySPDReduction || 0)
-        const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
-        let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
-
-        // Water shield absorbs
-        if (statusEffects.waterShield > 0 && eDmg > 0) {
-          const absorbed = Math.min(statusEffects.waterShield, eDmg)
-          eDmg -= absorbed
-          statusEffects.waterShield -= absorbed
-          if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + ' damage.')
-        }
-
-        currentHp = Math.max(0, currentHp - eDmg)
-
-        // Metal reflect passive: Lv1 10% → Lv10 28% reflected
-        if (statusEffects.metalReflect && eDmg > 0) {
-          const refLv  = _skillLvGlobal('metal_passive_reflect')
-          const refPct = 0.10 + (refLv - 1) * (0.18 / 9)
-          const refDmg = Math.max(1, Math.floor(eDmg * refPct))
-          enemyHp      = Math.max(0, enemyHp - refDmg)
-          messages.push('⚙ Metal Reflect Lv' + refLv + ' — ' + refDmg + ' damage reflected!')
-        }
-        // Thornwall: reflect 15% of Defend absorption
-        if (statusEffects.thornwall && defending && eDmg > 0) {
-          const thornDmg = Math.max(1, Math.floor(eDmg * 0.15))
-          enemyHp = Math.max(0, enemyHp - thornDmg)
-          statusEffects.thornwall = false
-          messages.push('🌿 Thornwall — ' + thornDmg + ' thorn damage reflected!')
-        }
-        // Live Wire: 20% stun on being hit
-        if (statusEffects.liveWire && eDmg > 0 && Math.random() < 0.20) {
-          statusEffects.enemyStunTurns = 1
-          messages.push('⚡ Live Wire — shock! Enemy stunned next turn.')
-        }
-        // Tidal Resolve: first time below 50% HP, gain +20 DEF for 2 turns
-        if (statusEffects.tidalResolve && !statusEffects.tidalResolveFired &&
-            currentHp / maxPlayerHp < 0.50 && eDmg > 0) {
-          statusEffects.tidalResolveFired = true
-          statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus||0) + 20
-          statusEffects.rockArmorTurns = (statusEffects.rockArmorTurns||0) + 2
-          messages.push('🌊 Tidal Resolve — below 50% HP: +20 DEF for 2 turns!')
-        }
-        // Absorption: hit counter — every 3 hits, next Defend heals 15
-        if (statusEffects.absorption && eDmg > 0) {
-          statusEffects.absorptionCount = (statusEffects.absorptionCount||0) + 1
-          if (statusEffects.absorptionCount >= 3) {
-            statusEffects.absorptionCount = 0
-            statusEffects.absorptionHeal  = 15
-            messages.push('🛡 Absorption charged — next Defend heals 15 HP!')
-          }
-        }
-        // Arc Reflex: 3 consecutive hits → auto counter
-        if (statusEffects.arcReflex && eDmg > 0) {
-          statusEffects.consecutiveHits = (statusEffects.consecutiveHits||0) + 1
-          if (statusEffects.consecutiveHits >= 3) {
-            statusEffects.consecutiveHits = 0
-            const arcDmg = Math.max(1, Math.floor(playerATK() * 0.5))
-            enemyHp = Math.max(0, enemyHp - arcDmg)
-            messages.push('⚡ Arc Reflex — counter strike for <strong>' + arcDmg + '</strong>!')
-          }
-        }
-        // Tremor Step: 20% chance to stagger enemy (they skip attack next turn)
-        if (statusEffects.tremorStep && Math.random() < 0.20) {
-          statusEffects.enemyStunTurns = 1
-          messages.push('🌍 Tremor Step — ground shakes! Enemy staggered.')
-        }
-
-        if (defending && eDmg === 0) {
-          messages.push(enemy.name + ' attacks — completely blocked!')
-        } else if (defending) {
-          messages.push(enemy.name + ' attacks for <strong>' + eDmg + '</strong> (reduced by defense).')
-        } else {
-          messages.push(enemy.name + ' retaliates for <strong>' + eDmg + '</strong>.')
-        }
-      }
-
-      if (playerFirst) {
-        resolvePlayerAction()
-        resolveEnemyAction()
-      } else {
-        resolveEnemyAction()
-        resolvePlayerAction()
-      }
-
-      // ── DoT & ongoing effects ─────────────────────────────
-      if (statusEffects.burnTurns > 0 && enemyHp > 0) {
-        const bd = statusEffects.burnDmg || 3
-        enemyHp = Math.max(0, enemyHp - bd)
-        statusEffects.burnTurns--
-        messages.push('🔥 Burn: ' + bd + ' dmg. (' + statusEffects.burnTurns + ' left)')
-      }
-      if (statusEffects.infernoTurns > 0 && enemyHp > 0) {
-        const iDmg = statusEffects.infernoDmg || 40
-        enemyHp = Math.max(0, enemyHp - iDmg)
-        statusEffects.infernoTurns--
-        messages.push('🔥 Inferno: ' + iDmg + ' dmg! (' + statusEffects.infernoTurns + ' left)')
-      }
-      if (statusEffects.regenTurns > 0 && currentHp > 0) {
-        const regenLv  = _skillLvGlobal('water_passive_regen')
-        const regenAmt = Math.round(5 + (regenLv - 1))
-        const heal = Math.min(player.max_hp||100, currentHp + regenAmt) - currentHp
-        currentHp += heal
-        if (heal > 0) messages.push('💧 Flow Lv' + regenLv + ': +' + heal + ' HP regen.')
-      }
-      // Tick temp buffs
-      if (statusEffects.rockArmorTurns > 0) {
-        statusEffects.rockArmorTurns--
-        if (statusEffects.rockArmorTurns === 0) { statusEffects.playerDEFBonus = Math.max(0, (statusEffects.playerDEFBonus||0)-20); messages.push('🪨 Rock Armor faded.') }
-      }
-      if (statusEffects.bladeFormTurns > 0) {
-        statusEffects.bladeFormTurns--
-        if (statusEffects.bladeFormTurns === 0) { statusEffects.playerATKBonus=Math.max(0,(statusEffects.playerATKBonus||0)-20); statusEffects.playerSPDBonus=Math.max(0,(statusEffects.playerSPDBonus||0)-5); messages.push('⚙ Blade Form faded.') }
-      }
-      if (statusEffects.voidZoneTurns > 0) { statusEffects.voidZoneTurns--; if(statusEffects.voidZoneTurns===0){statusEffects.enemyATKMult=1.0; messages.push('🌑 Void Zone faded.')} }
-      if (statusEffects.tornadoTurns  > 0) { statusEffects.tornadoTurns--;  if(statusEffects.tornadoTurns===0){statusEffects.enemyATKMult=1.0; messages.push('💨 Tornado Field faded.')} }
-
-      // ── Yara attacks (team mode) ────────────────────────
-      if (yara && yara.alive && enemyHp > 0) {
-        const yaraDmg = Math.max(1, yara.atk + Math.floor(Math.random()*4))
-        enemyHp = Math.max(0, enemyHp - yaraDmg)
-        if (Math.random() < 0.4) {
-          const yaraHit = Math.max(0, Math.floor(enemy.atk * 0.5) - yara.def)
-          yara.hp = Math.max(0, yara.hp - yaraHit)
-          if (yara.hp <= 0) { yara.alive = false; messages.push('Yara strikes for ' + yaraDmg + ' — then takes ' + yaraHit + ' and falls!') }
-          else               { messages.push('Yara strikes for ' + yaraDmg + ' (takes ' + yaraHit + ' retaliation, ' + yara.hp + ' HP left).') }
-        } else {
-          messages.push('Yara strikes for ' + yaraDmg + '.')
-        }
-      }
-
-      // ── Dorian lurks — backstabs every 2 turns ──────────────────
-      if (dorianLurking && enemyHp > 0 && currentHp > 0) {
-        dorianLurkTurn++
-        if (dorianLurkTurn % 2 === 0) {
-          // Even turn: backstab — ignores all DEF
-          const dorianDmg = Math.max(2, 11 + Math.floor(Math.random() * 6))
-          currentHp = Math.max(0, currentHp - dorianDmg)
-          messages.push('🔴 <strong>DORIAN BACKSTABS from the shadows — ' + dorianDmg + ' damage!</strong> He was never going to hold the deal.')
-        } else {
-          // Odd turn: repositioning taunt
-          const taunts = [
-            '🔴 Dorian shifts in the dark. <em>"Force of habit,"</em> he mutters.',
-            '🔴 You hear movement behind you. Dorian is repositioning.',
-            '🔴 <em>"Every person I betrayed, I told myself it was the game."</em> Dorian watches from the shadows.',
-            '🔴 A shadow peels away from the wall. Dorian is circling.',
-          ]
-          messages.push(taunts[Math.floor(Math.random() * taunts.length)])
-        }
-      }
-
-      // ── Void Sentinel AoE — hits BOTH player AND Dorian every 4 turns ──
-      // Only triggers in the garage_b4_sentinel_fight when Dorian is lurking.
-      if (sentinelAoe && dorianLurking && enemyHp > 0 && dorianLurkHp > 0) {
-        const turnNum = dorianLurkTurn  // reuse the same counter
-        if (turnNum > 0 && turnNum % 4 === 0) {
-          // AoE pulse — hits player for moderate dmg (partially mitigated), Dorian for more
-          const aoePlyDmg = Math.max(1, Math.round(enemy.atk * 0.55) - Math.floor((calcDEF() + (statusEffects.playerDEFBonus||0)) * 0.4))
-          const aoeDorDmg = Math.max(3, Math.round(enemy.atk * 0.8))
-          currentHp    = Math.max(0, currentHp    - aoePlyDmg)
-          dorianLurkHp = Math.max(0, dorianLurkHp - aoeDorDmg)
-          const dorianStatus = dorianLurkHp <= 0
-            ? '🔴 Dorian is caught in the blast — he collapses in the shadows. <em>He won\'t backstab again.</em>'
-            : '🔴 Dorian takes ' + aoeDorDmg + ' from the pulse too. (' + dorianLurkHp + ' HP left in the dark.)'
-          messages.push('⚫ <strong>VOID SENTINEL GEOMETRY PULSE</strong> — reality warps in all directions. You take <strong>' + aoePlyDmg + '</strong>. ' + dorianStatus)
-        }
-      }
-
-      shake()
-      log(messages.join(' '), turnLabel)
-      syncBars()
-      renderSkillSlots()
-
-      if (enemyHp <= 0) { log(enemy.name + ' has fallen.'); endCombat('win'); return }
-      if (currentHp <= 0) {
-        if (window._hasRevive) {
-          window._hasRevive = false; currentHp = 20; syncBars()
-          await supabase.from('players').update({ hp: 20 }).eq('id', player.id)
-          player.hp = 20
-          log('Phoenix Feather activates — you rise at 20 HP!')
-          setButtons(true)
-        } else { log('You collapse…'); endCombat('defeat') }
-        return
-      }
-      setButtons(true)
-    }
-
-
-    $('btn-strike').addEventListener('click', () => doTurn('strike'))
-    $('btn-heavy').addEventListener('click',  () => doTurn('heavy'))
-    $('btn-defend').addEventListener('click', () => doTurn('defend'))
-
-    $('btn-escape').addEventListener('click', async () => {
-      if (over) return
-      const escChance = 0.3 + (playerSPD() - enemySPD()) * 0.05
-      if (Math.random() < Math.max(0.1, Math.min(0.8, escChance))) {
-        log('You slip away…')
-        endCombat('escape')
-      } else {
-        const dmg = Math.max(0, enemy.atk - playerDEF())
-        currentHp = Math.max(0, currentHp - dmg)
-        log('Failed to flee — took ' + dmg + ' damage.')
-        syncBars()
-        if (currentHp <= 0) endCombat('defeat')
-      }
-    })
-
-    // ── Items button ─────────────────────────────
-    $('btn-items').addEventListener('click', async () => {
-      if (over) return
-      const itemsPanel = $('items-panel')
-      const list       = $('items-list')
-
-      // Toggle panel
-      if (itemsPanel.style.display !== 'none') {
-        itemsPanel.style.display = 'none'
-        return
-      }
-      itemsPanel.style.display = 'block'
-      list.innerHTML = '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.6rem;color:var(--ink-dim)">Loading...</p>'
-
-      // Fetch consumables and usable keys from inventory
-      const { data } = await supabase
-        .from('inventory').select('*')
-        .eq('player_id', player.id)
-        .in('item_type', ['consumable','key'])
-        .gt('quantity', 0)
-        .order('item_type')
-
-      const usable = (data||[]).filter(i => i.hp_restore > 0 || ['Phoenix Feather','Explosion Scroll','Lava Bomb','Water Potion','Medkit','Energy Drink','Fire Potion','Light Potion','Healing Rain'].includes(i.name))
-
-      if (!usable.length) {
-        list.innerHTML = '<p style="font-family:\'IM Fell English\',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim)">No usable items in bag.</p>'
-        return
-      }
-
-      const RC = {common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
-
-      list.innerHTML = usable.map(item => `
-        <div onclick="combatUseItem_${cid}('${item.id}','${item.name}',${item.hp_restore||0},${item.quantity||1},'${item.special_effect||''}')"
-          style="display:flex;align-items:center;gap:.5rem;padding:.45rem .25rem;border-bottom:.5px solid rgba(139,106,32,.12);cursor:pointer;transition:background .15s;border-radius:2px"
-          onmouseover="this.style.background='rgba(200,184,128,.1)'" onmouseout="this.style.background=''">
-          ${(()=>{const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">'):(item.icon||'📦')})()}
-          <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.75rem;color:${RC[item.rarity]||'#888'};margin:0 0 1px">${item.name}</p>
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);margin:0">
-              ${item.hp_restore>0 ? `+${item.hp_restore} HP` : item.special_effect || 'Special effect'}
-            </p>
-          </div>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);flex-shrink:0">×${item.quantity||1}</span>
-        </div>
-      `).join('')
-    })
-
-    window['combatUseItem_' + cid] = async function(itemId, itemName, hpRestore, qty, specialEffect) {
-      const maxHp = player.max_hp || 100
-
-      // ── Healing items ─────────────────────────
-      if (hpRestore > 0) {
-        const healed  = Math.min(maxHp, currentHp + hpRestore) - currentHp
-        currentHp     = Math.min(maxHp, currentHp + hpRestore)
-        syncBars()
-        await supabase.from('players').update({ hp: currentHp }).eq('id', player.id)
-        player.hp = currentHp
-        log('Used ' + itemName + ' — restored ' + healed + ' HP. (' + currentHp + '/' + maxHp + ')')
-      }
-      // ── Phoenix Feather — auto-revive ─────────
-      else if (itemName === 'Phoenix Feather') {
-        window._hasRevive = true
-        log('Phoenix Feather equipped — will auto-revive at 20 HP if you fall.')
-      }
-      // ── Explosion Scroll — max next attack ────
-      else if (itemName === 'Explosion Scroll') {
-        window._forceMaxHit = true
-        log('Explosion Scroll loaded — next attack will deal maximum damage.')
-      }
-      // ── Lava Bomb — skip fight ─────────────────
-      else if (itemName === 'Lava Bomb') {
-        enemyHp = 0
-        syncBars()
-        log('Lava Bomb detonated — enemy destroyed instantly.')
-        $('items-panel').style.display = 'none'
-        await consumeItem(itemId, qty)
-        endCombat('win')
-        return
-      }
-      else {
-        log('Cannot use ' + itemName + ' here.')
-        return
-      }
-
-      $('items-panel').style.display = 'none'
-      await consumeItem(itemId, qty)
-    }
-
-    // Helper — remove 1 from stack or delete if last
-    async function consumeItem(itemId, qty) {
-      if (qty <= 1) {
-        await supabase.from('inventory').delete().eq('id', itemId)
-      } else {
-        await supabase.from('inventory').update({ quantity: qty - 1 }).eq('id', itemId)
-      }
-    }
-
-
-    // ── Watcher Item Set Drop ─────────────────────────────────
-    // Guaranteed 1 piece on first kill. Each additional piece: 40% chance.
-    // Stats roll 1-6 randomly per stat slot.
-    async function dropSingleWatcherPiece(itemKey) {
-      const piece = WATCHER_PIECES.find(p => p.item_key === itemKey)
-      if (!piece) return
-      const statRolls = {}
-      for (const stat of piece.stats) statRolls[stat] = Math.floor(Math.random() * 6) + 1
-      const row = {
-        player_id: player.id, item_key: piece.item_key, name: piece.name,
-        item_type: piece.item_type, rarity: piece.rarity, icon: piece.icon,
-        quantity: 1, equipped_slot: null,
-        ...statRolls,
-        special_effect: piece.special_effect,
-        sockets_total: 2, sockets_used: 0, socketed_runes: [],
-      }
-      const { error } = await supabase.from('inventory').insert(row)
-      if (!error) {
-        window.showToast(`★ ${piece.name} dropped!`)
-        queueLoot(piece.name, 1, piece.img)
-      }
-    }
-
-    async function dropWatcherSet() {
-      const WATCHER_KEYS = {
-        watcher_cloak:    { chance: 0.05 },
-        watcher_eye_ring: { chance: 0.05 },
-        watcher_crown:    { chance: 0.05 },
-        watcher_band:     { chance: 0.10 },
-      }
-      for (const piece of WATCHER_PIECES) {
-        const rule = WATCHER_KEYS[piece.item_key]
-        if (!rule) continue
-        if (Math.random() > rule.chance) continue
-        await dropSingleWatcherPiece(piece.item_key)
-      }
-    }
-
-    const WATCHER_PIECES = [
-      {
-        item_key: 'watcher_eye_ring', name: "Watcher's Multi-Eye Ring", rarity: 'rare',
-        item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_eye_ring.png',
-        stats: ['insight_bonus','luck_bonus','atk_bonus'],
-        special_effect: "Observer's Sight: First attack on an unseen enemy deals +25% damage. Reveals hidden enemies nearby.",
-      },
-      {
-        item_key: 'watcher_band', name: "Watcher's Band", rarity: 'rare',
-        item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_band.png',
-        stats: ['control_bonus','speed_bonus','atk_bonus'],
-        special_effect: "Pattern Recognition: Consecutive hits on the same enemy stack +2% damage (max 20%).",
-      },
-      {
-        item_key: 'watcher_cloak', name: "Watcher's Cloak", rarity: 'rare',
-        item_type: 'armor', icon: '🧥',
-        img: '../assets/sets/watcher_cloak.png',
-        stats: ['speed_bonus','insight_bonus','def_bonus','luck_bonus'],
-        special_effect: "Phantom Step: After dodging, your next attack cannot be dodged. 15% chance to phase (50% dmg reduction).",
-      },
-      {
-        item_key: 'watcher_crown', name: "Watcher's Crown", rarity: 'rare',
-        item_type: 'armor', icon: '👑',
-        img: '../assets/sets/watcher_crown.png',
-        stats: ['insight_bonus','guard_bonus','def_bonus'],
-        special_effect: "Observed: Enemies you hit take -10% ATK and +10% damage from you.",
-      },
-    ]
-
-    renderSkillSlots()
-    syncBars()
-  }
-
-  // ── Init ─────────────────────────────────────────
   renderHUD()
   render()
 
   return { player, cleanup() {} }
 }
 
-export default mountChapter1
+export default mountChapter2
