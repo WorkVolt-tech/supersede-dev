@@ -1,4 +1,12 @@
 import { supabase } from '../supabase.js'
+import {
+  CLASSES,
+  shouldShowClassTab,
+  getRevealedClasses,
+  isClassNodeUnlocked,
+  isClassNodeAvailable,
+  unlockClassNode,
+} from '../classes.js'
 
 const MODULE_STYLE_ID = 'book-module-style-skills'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Character</p>\n        <h1 class=\"page-title\">Skill Tree</h1>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">SKILL POINTS</p>\n            <p id=\"sp-display\" style=\"font-family:'Cinzel',serif;font-size:1.4rem;font-weight:600;color:#c8b96e;margin:0\">0</p>\n          </div>\n          <div style=\"display:flex;flex-direction:column;gap:5px;align-items:flex-end\">\n            <button onclick=\"openTree()\" style=\"font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink);background:rgba(200,184,128,.5);border:1px solid rgba(139,106,32,.6);border-radius:3px;padding:.45rem 1rem;cursor:pointer\">\u2b21 Open Skill Tree</button>\n            <button onclick=\"openResetConfirm()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040;background:rgba(192,64,64,.08);border:.5px solid rgba(192,64,64,.3);border-radius:3px;padding:.3rem .75rem;cursor:pointer\">\u21ba Reset Skills</button>\n          </div>\n        </div>\n        <hr class=\"ink-divider\">\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.78rem;color:var(--ink-dim);margin-bottom:.4rem\">Unlocked nodes</p>\n        <div id=\"unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:28px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem\">\n          <div>\n            <p style=\"font-family:'Share Tech Mono',monospace;font-size:.58rem;color:var(--ink-dim);margin:0\">ELEMENTAL SP</p>\n            <p id=\"esp-display\" style=\"font-family:'Cinzel',serif;font-size:1.2rem;font-weight:600;color:#b06eff;margin:0\">0</p>\n          </div>\n          <button onclick=\"openESP()\" style=\"font-family:'Cinzel',serif;font-size:.75rem;color:#e8e3d6;background:rgba(176,110,255,.15);border:1px solid rgba(176,110,255,.4);border-radius:3px;padding:.4rem .9rem;cursor:pointer\">\u2b21 Elemental Tree</button>\n        </div>\n        <div id=\"esp-unlocked-summary\" style=\"display:flex;flex-wrap:wrap;gap:4px;min-height:24px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n\n      </div>\n    </div>\n\n    \n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Battle Setup</p>\n        <h2 class=\"page-title\">Combat Skills</h2>\n        <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:var(--ink-dim);margin-bottom:.5rem\">\n          Assign unlocked skills to battle slots. Max 4 active skills in combat.\n        </p>\n        <hr class=\"ink-divider\">\n        <div id=\"battle-slots-page\" style=\"display:flex;flex-direction:column;gap:6px;margin-bottom:.75rem\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"skill-detail-page\" style=\"min-height:60px\"></div>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- Fullscreen overlay -->\n<div id=\"tree-overlay\">\n  <div id=\"tree-topbar\">\n    <h2>\u2b21 Skill Tree</h2>\n    <span class=\"sp-badge\" id=\"sp-badge\">0 SP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <span style=\"font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#a08858\">Scroll to zoom \u00b7 Drag to pan</span>\n      <button class=\"tree-reset-btn\" onclick=\"openResetConfirm()\">\u21ba Reset</button>\n      <button class=\"tree-slots-btn\" onclick=\"toggleSlotsBar()\">\u2694 Battle Slots</button>\n      <button class=\"tree-close-btn\" onclick=\"closeTree()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"tree-canvas-wrap\">\n    <svg id=\"tree-svg\"></svg>\n    <div id=\"tree-canvas\"></div>\n  </div>\n  <canvas id=\"minimap\" width=\"130\" height=\"100\"></canvas>\n</div>\n\n<!-- Slots sidebar -->\n<div id=\"slots-bar\">\n  <p style=\"font-family:'Cinzel',serif;font-size:.85rem;color:#c8b96e;margin:0 0 .5rem\">\u2694 Battle Slots</p>\n  <p style=\"font-family:'Share Tech Mono',monospace;font-size:.5rem;color:#a08858;margin:0 0 .6rem\">Max 4 active skills in combat</p>\n  <div id=\"slots-list\"></div>\n</div>\n\n<!-- Node detail panel -->\n<div id=\"node-detail\">\n  <button id=\"detail-close\" onclick=\"closeDetail()\">\u2715</button>\n  <div id=\"detail-inner\"></div>\n</div>\n\n<!-- ESP Overlay -->\n<div id=\"esp-overlay\">\n  <div id=\"esp-topbar\">\n    <h2>\u2b21 Elemental Skill Tree</h2>\n    <span class=\"esp-badge\" id=\"esp-badge\">0 ESP</span>\n    <div style=\"display:flex;gap:.5rem;align-items:center;flex-wrap:wrap\">\n      <button class=\"esp-close-btn\" onclick=\"openCollectedPanel()\" style=\"color:#b06eff;border-color:rgba(176,110,255,.4)\">\u2b21 Collected</button>\n      <button class=\"esp-close-btn\" onclick=\"closeESP()\">\u2715 Close</button>\n    </div>\n  </div>\n  <div id=\"esp-body\">\n    <div id=\"esp-sidebar\">\n      <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#f4c45a;margin-bottom:4px\">Elements</p>\n      <div id=\"esp-el-tabs\"></div>\n    </div>\n    <div id=\"esp-main-panel\">\n      <div style=\"display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:.5rem;opacity:.35\">\n        <div style=\"font-size:2rem\">\u2b21</div>\n        <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#a89e80\">Select an element</p>\n      </div>\n    </div>\n  </div>\n</div>\n\n<!-- ESP Slot Chooser -->\n<div id=\"esp-slot-chooser\">\n  <div class=\"esp-chooser-inner\">\n    <p style=\"font-family:'Share Tech Mono',monospace;font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#f4c45a;margin-bottom:.75rem\">Choose a node to place</p>\n    <div id=\"esp-chooser-list\"></div>\n    <button onclick=\"closeESPChooser()\" style=\"font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#a89e80;background:none;border:.5px solid #26232f;padding:5px 14px;margin-top:.75rem;width:100%;cursor:pointer\">Cancel</button>\n  </div>\n</div>"
@@ -327,6 +335,20 @@ export async function mountSkills(__mountOptions = {}) {
   let pendingBattleSkills = []
   let slotsDirty = false
 
+  // ── Class tree state (#hidden classes layer) ──
+  // treeMode: 'elements' (default) or a class key when the user has switched
+  // tabs. The class tab is only rendered when shouldShowClassTab(player) is
+  // true, so for players who haven't unlocked any class this branch is
+  // entirely invisible.
+  let treeMode = 'elements'
+  // Returns the current node array depending on mode. The render code reads
+  // this instead of NODES directly when in class mode.
+  function activeNodes() {
+    if (treeMode === 'elements') return NODES
+    const cls = CLASSES[treeMode]
+    return cls ? cls.nodes : NODES
+  }
+
   // ── Init ─────────────────────────────────────────────
   const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
   if (!player) throw new Error('no player')
@@ -358,6 +380,20 @@ export async function mountSkills(__mountOptions = {}) {
   window.openTree = () => {
     document.getElementById('tree-overlay').classList.add('open')
     document.body.style.overflow = 'hidden'
+    // Inject the class-tab host into the topbar on first open. Sits between
+    // the SP badge and the right-side controls. Only rendered visually if
+    // the player has at least one class revealed — otherwise it's an empty
+    // div, invisible.
+    let tabHost = document.getElementById('tree-tabs')
+    if (!tabHost) {
+      tabHost = document.createElement('div')
+      tabHost.id = 'tree-tabs'
+      tabHost.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap'
+      const topbar = document.getElementById('tree-topbar')
+      const spBadge = document.getElementById('sp-badge')
+      if (topbar && spBadge) topbar.insertBefore(tabHost, spBadge.nextSibling)
+    }
+    renderClassTabs()
     buildTree()
     centerView()
   }
@@ -405,13 +441,20 @@ export async function mountSkills(__mountOptions = {}) {
     // node and trace the prerequisite path from that node back to root.
     refreshLines()
 
-    // Nodes
-    NODES.forEach(nd => {
+    // Nodes — iterate activeNodes() so the same render path serves both the
+    // elemental tree and class trees. Class nodes use buildClassNodeClass /
+    // buildClassNodeHTML, which respect level-gating instead of SP.
+    const nodes = activeNodes()
+    nodes.forEach(nd => {
       const el = document.createElement('div')
-      el.className = buildNodeClass(nd)
+      el.className = (treeMode === 'elements')
+        ? buildNodeClass(nd)
+        : buildClassNodeClass(nd)
       el.id = 'sn-' + nd.id
       el.style.cssText = `left:${nd.x}px;top:${nd.y}px;transform:translate(-50%,-50%)`
-      el.innerHTML = buildNodeHTML(nd)
+      el.innerHTML = (treeMode === 'elements')
+        ? buildNodeHTML(nd)
+        : buildClassNodeHTML(nd)
       el.addEventListener('click', () => onNodeClick(nd))
       canvas.appendChild(el)
     })
@@ -427,13 +470,23 @@ export async function mountSkills(__mountOptions = {}) {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
+    const nodes = activeNodes()
+    // In class mode, "unlocked" means the node is in class_nodes_unlocked
+    // (or it's the start node). In element mode, it's the regular check.
+    const isNodeUnlocked = (id) => {
+      if (treeMode === 'elements') return skillsUnlocked.includes(id)
+      const nd = nodes.find(n => n.id === id)
+      if (nd && nd.type === 'start') return true
+      return isClassNodeUnlocked(player, treeMode, id)
+    }
+
     // Walk back from a node through `requires` to root, recording every edge.
     const litEdges = new Set()
     const visited = new Set()
     const walk = (id) => {
       if (visited.has(id)) return
       visited.add(id)
-      const nd = NODES.find(n => n.id === id)
+      const nd = nodes.find(n => n.id === id)
       if (!nd || !nd.requires) return
       for (const req of nd.requires) {
         litEdges.add(req + '\x00' + id)
@@ -442,18 +495,21 @@ export async function mountSkills(__mountOptions = {}) {
     }
 
     // Light up paths for all permanently unlocked nodes
-    for (const id of skillsUnlocked) walk(id)
+    for (const nd of nodes) if (isNodeUnlocked(nd.id)) walk(nd.id)
     // Also preview the path to a selected node that isn't unlocked yet
-    if (selectedNode && !skillsUnlocked.includes(selectedNode)) walk(selectedNode)
+    if (selectedNode && !isNodeUnlocked(selectedNode)) walk(selectedNode)
 
     let lines = ''
-    NODES.forEach(nd => {
+    nodes.forEach(nd => {
       nd.requires.forEach(req => {
-        const par = NODES.find(n => n.id === req)
+        const par = nodes.find(n => n.id === req)
         if (!par) return
         const lit = litEdges.has(req + '\x00' + nd.id)
+        const fallbackCol = treeMode === 'elements'
+          ? (BRANCH_COLOR[nd.branch] || '#c8b96e')
+          : (CLASSES[treeMode]?.color || '#d4af37')
         const col = lit
-          ? (nd.color || BRANCH_COLOR[nd.branch] || '#c8b96e')
+          ? (nd.color || fallbackCol)
           : 'rgba(180,140,60,.35)'
         const sw  = lit ? 2.5 : 1.2
         lines += `<line x1="${par.x}" y1="${par.y}" x2="${nd.x}" y2="${nd.y}" stroke="${col}" stroke-width="${sw}" stroke-linecap="round"/>`
@@ -576,11 +632,160 @@ export async function mountSkills(__mountOptions = {}) {
   }
 
   // ── Node click ───────────────────────────────────────
+  // ── Class tree node renderers ─────────────────────────────────────────
+  // Mirror buildNodeClass / buildNodeHTML but use level-gating + class-node
+  // state. A class node is:
+  //   "unlocked"  → player.class_nodes_unlocked includes "classKey:nodeId"
+  //   "available" → not unlocked, level requirement met, prereq unlocked
+  //   "locked"    → level requirement not met OR prereq not satisfied
+  function buildClassNodeClass(nd) {
+    const classKey = treeMode
+    const sz  = nd.type === 'start' ? 'lg' : 'md'
+    const unl = nd.type === 'start' || isClassNodeUnlocked(player, classKey, nd.id)
+    const avl = !unl && isClassNodeAvailable(player, classKey, nd.id)
+    const sel = selectedNode === nd.id
+    return `sn sn-${sz}${unl?' unlocked':''}${avl?' available':''}${sel?' selected':''}`
+  }
+
+  function buildClassNodeHTML(nd) {
+    const classKey = treeMode
+    const cls      = CLASSES[classKey]
+    const col      = nd.color || (cls && cls.color) || '#d4af37'
+    const unlocked = nd.type === 'start' || isClassNodeUnlocked(player, classKey, nd.id)
+    const available = !unlocked && isClassNodeAvailable(player, classKey, nd.id)
+    const locked = !unlocked && !available && nd.type !== 'start'
+
+    let inner = ''
+    if (nd.type === 'start') {
+      inner = `<span style="font-size:1.4rem;color:${col};line-height:1">⚖</span>`
+    } else {
+      const sigil = nd.type === 'active' ? '◆' : '○'
+      const opacity = locked ? '0.30' : available ? '0.70' : '1'
+      inner = `<span style="font-family:'Cinzel',serif;font-size:.9rem;color:${col};opacity:${opacity};font-weight:700">${sigil}</span>`
+    }
+
+    const lvlBadge = nd.levelRequired > 1 && !unlocked
+      ? `<span style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:.5rem;color:${available?col:'#7a6938'};letter-spacing:.06em;white-space:nowrap">Lv ${nd.levelRequired}</span>`
+      : ''
+    const labelHTML = nd.label
+      ? `<span class="sn-label" style="color:${locked?'rgba(212,175,55,.35)':col}">${nd.label}</span>`
+      : ''
+
+    return `<div class="sn-ring" style="position:relative">${inner}${lvlBadge}</div>${labelHTML}`
+  }
+
+  // ── Class node detail panel ──────────────────────────────────────────
+  // Shown when a class node is selected. Renders skill description, level
+  // requirement, and an Unlock button if the node is available.
+  function showClassNodeDetail(nd) {
+    const classKey = treeMode
+    const cls      = CLASSES[classKey]
+    const col      = nd.color || (cls && cls.color) || '#d4af37'
+    const unlocked = nd.type === 'start' || isClassNodeUnlocked(player, classKey, nd.id)
+    const available = !unlocked && isClassNodeAvailable(player, classKey, nd.id)
+    const lvl      = player.level || 1
+    const lvlOk    = lvl >= (nd.levelRequired || 1)
+
+    let body = ''
+    if (nd.type === 'start') {
+      body = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.95rem;color:${col};margin:0 0 6px">${cls.tagline}</p>
+              <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink-dim);margin:0;letter-spacing:.05em">${cls.judgeOf.toUpperCase()}</p>`
+    } else {
+      body = `
+        <p style="font-family:'Cinzel',serif;font-size:1rem;color:${col};margin:0 0 4px;font-weight:600">${nd.label}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:var(--ink);margin:0 0 8px">${nd.sub || ''}</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:${lvlOk?'var(--ink-dim)':'#a04040'};margin:0 0 6px;letter-spacing:.05em">
+          REQUIRES LEVEL ${nd.levelRequired || 1}${lvlOk?'':' — you are level '+lvl}
+        </p>
+        ${unlocked
+          ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#5ec45e;margin:0;letter-spacing:.08em">◆ UNLOCKED</p>`
+          : available
+            ? `<button id="class-unlock-btn" style="font-family:'Cinzel',serif;font-size:.85rem;padding:.45rem .9rem;background:${col};color:#0d0b08;border:none;cursor:pointer;border-radius:3px;font-weight:600;letter-spacing:.1em">Unlock</button>`
+            : `<p style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#a04040;margin:0;letter-spacing:.05em">○ LOCKED — ${lvlOk?'prerequisite not met':'level too low'}</p>`
+        }
+      `
+    }
+
+    const detail = document.getElementById('node-detail')
+    if (detail) {
+      detail.innerHTML = body
+      detail.style.display = 'block'
+    }
+    const btn = document.getElementById('class-unlock-btn')
+    if (btn) btn.addEventListener('click', () => unlockClassNodeUI(nd))
+  }
+
+  async function unlockClassNodeUI(nd) {
+    const classKey = treeMode
+    if (!isClassNodeAvailable(player, classKey, nd.id)) return
+    const upd = unlockClassNode(player, classKey, nd.id)
+    const { data, error } = await supabase
+      .from('players')
+      .update(upd)
+      .eq('id', player.id)
+      .select()
+      .single()
+    if (error) {
+      console.error('[classes] unlock failed', error)
+      window.showToast?.('Failed to unlock — check connection', true)
+      return
+    }
+    Object.assign(player, data)
+    window.showToast?.(`✦ ${nd.label} unlocked`)
+    buildTree()
+    showClassNodeDetail(nd)
+  }
+
+  // ── Class tab toggle UI ──────────────────────────────────────────────
+  // Renders a small button row above the tree IF the player has at least
+  // one class revealed. Otherwise renders nothing — the class system is
+  // invisible to players who haven't unlocked anything. Switches treeMode
+  // and rebuilds the tree.
+  function renderClassTabs() {
+    const host = document.getElementById('tree-tabs')
+    if (!host) return
+    if (!shouldShowClassTab(player)) { host.innerHTML = ''; return }
+
+    const revealed = getRevealedClasses(player)
+    const tabs = [
+      { key: 'elements', label: 'Elements', sigil: '⬡', color: '#c8b96e' },
+      ...revealed.map(c => ({ key: c.key, label: c.name, sigil: '⚖', color: c.color })),
+    ]
+    host.innerHTML = tabs.map(t => {
+      const active = treeMode === t.key
+      return `<button data-mode="${t.key}" style="
+          font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.12em;
+          padding:.3rem .8rem;cursor:pointer;border-radius:2px;margin-right:6px;
+          background:${active ? t.color + '33' : 'transparent'};
+          border:1px solid ${active ? t.color : 'rgba(200,184,128,.25)'};
+          color:${active ? t.color : 'var(--ink-dim)'};font-weight:600">
+          <span style="margin-right:4px">${t.sigil}</span>${t.label}
+        </button>`
+    }).join('')
+    host.querySelectorAll('[data-mode]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newMode = btn.dataset.mode
+        if (newMode === treeMode) return
+        treeMode = newMode
+        selectedNode = null
+        renderClassTabs()
+        buildTree()
+        // Hide any open detail panel between mode switches
+        const d = document.getElementById('node-detail')
+        if (d) d.style.display = 'none'
+      })
+    })
+  }
+
   function onNodeClick(nd) {
     selectedNode = nd.id
     refreshSelected()
     refreshLines()
-    showNodeDetail(nd)
+    if (treeMode === 'elements') {
+      showNodeDetail(nd)
+    } else {
+      showClassNodeDetail(nd)
+    }
   }
 
   function showNodeDetail(nd) {
