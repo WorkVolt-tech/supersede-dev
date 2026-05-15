@@ -1526,6 +1526,23 @@ The Judges are already there.`,
     return baseText
   }
 
+  // Zone aftermath lines (#24). Prepended to zone entry nodes only.
+  // Fires when the player enters a new zone after having cleared others —
+  // the world acknowledges the trail of clearings behind them. Doesn't
+  // mention specific elements; cumulative tone only. Pure: no state mutation.
+  // Only triggers on nodes that are exactly 'zone_<element>' (no suffix).
+  function prependZoneAftermath(baseText, nid, p) {
+    if (!/^zone_(fire|water|lightning|arcane|shadow|earth|wind|plant|metal|poison)$/.test(nid)) return baseText
+    const cleared = (p.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+    let line = ''
+    if      (cleared === 0) return baseText  // first zone — nothing to acknowledge yet
+    else if (cleared <= 2)  line = 'The district feels slightly different than it did the last time you crossed it. The plaza is quieter. Pell is unloading something into the back of the shop. You see them notice you pass.'
+    else if (cleared <= 4)  line = 'You\'ve been moving through the district for a while now. Builder runners have started nodding at you in passing. Voss watches you for a beat longer than they used to before going back to whatever they were doing.'
+    else if (cleared <= 6)  line = 'There is a quality of attention in the district now. People step back from doorways when you enter rooms. Not afraid — measuring. The System is not the only thing keeping a record.'
+    else                    line = 'The district has settled into something cold around you. Most of the regulars have stopped speaking to you outright. Even Rue, when you pass them at the fountain, only nods. Whatever you are now, the people who live here recognize it.'
+    return line + '\n\n' + baseText
+  }
+
   function buildJudgesVerdict(p) {
     const moral       = p.moral_score || 0
     const helps       = p.helps_given || 0
@@ -1658,7 +1675,7 @@ The Judges are already there.`,
     // nodes get a faction-tinted closing paragraph appended (Sera for Builders,
     // Voss for Hunter-aligned, nothing for neutral). The base text stays intact.
     const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
-    stEl.textContent = appendFactionOutro(baseText, nodeId, player)
+    stEl.textContent = appendFactionOutro(prependZoneAftermath(baseText, nodeId, player), nodeId, player)
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
     // Judge image near boss (and on the verdict scene)
@@ -1926,6 +1943,30 @@ The Judges are already there.`,
     // applied during combat (see buildCombatUI), not at composition time —
     // we just surface the modifier here so the player sees the warning.
     if (cowardice) modifiers.push("Cowardice noted — Wrath strikes harder while you're below half HP.")
+
+    // Elemental purity (#15) — count distinct elements the player has put
+    // skill points into this chapter. The chapter's stated thesis is that
+    // the System rewards commitment and notes greed. We translate that into
+    // a stat shift on the Judges fight:
+    //   1 element  → Resonant buff: enemy ATK -10%, Mercy notes the focus
+    //   2 elements → no effect (default mixed allowance)
+    //   3+         → Greed Mark debuff: enemy ATK +12%, Wrath notes the spread
+    const ELEMENT_PREFIXES = ['ignis_', 'aqua_', 'volt_', 'arcane_', 'umbra_', 'terra_', 'aero_', 'flora_', 'ferro_', 'venin_']
+    const skills = p.skills_unlocked || []
+    const elementsInvested = new Set()
+    for (const s of skills) {
+      for (const prefix of ELEMENT_PREFIXES) {
+        if (s.startsWith(prefix)) { elementsInvested.add(prefix.replace('_', '')); break }
+      }
+    }
+    const elementCount = elementsInvested.size
+    if (elementCount === 1) {
+      atk = Math.round(atk * 0.90)
+      modifiers.push(`Resonant focus (1 element): Mercy notes the commitment — Judges' ATK -10%.`)
+    } else if (elementCount >= 3) {
+      atk = Math.round(atk * 1.12)
+      modifiers.push(`Greed Mark (${elementCount} elements): Wrath notes the spread — Judges' ATK +12%.`)
+    }
 
     const label = form === 'mercy' ? 'MERCY LEADS'
                 : form === 'wrath' ? 'WRATH LEADS'
