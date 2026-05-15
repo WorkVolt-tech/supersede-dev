@@ -51,8 +51,15 @@ export async function mountTrader(__mountOptions = {}) {
     let traderSellMode = false
     let traderSellSelected = new Set()
 
-    // ── NPC definitions — add new NPCs here ──────────
-    const NPCS = [
+    // ── NPC definitions ──────────────────────────────
+    // Pell is gated on the player having met them in Chapter 2 — the
+    // alliance_log flag 'pell_met' is set when the player first visits
+    // Ch2 trader_intro. Pell's stock tiers respond to alignment flags
+    // from the chapter (Builder-aligned and Hunter-aligned), and they
+    // also offer info bounties — gold-priced hints surfaced via the
+    // bounty tab. The base NPCS list is static and built before player
+    // is loaded; Pell is spliced in below once we have alliance_log.
+    const baseNPCS = [
       {
         key:'black_market', name:'The Trader', title:'Black Market Vendor', icon:'🧥',
         dialogue:'"I don\'t ask questions. I just sell."',
@@ -85,6 +92,70 @@ export async function mountTrader(__mountOptions = {}) {
 
     const player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
     if (!player) throw new Error('no player')
+
+    // Build Pell entry from alliance_log alignment flags.
+    const allianceLog     = player.alliance_log || []
+    const pellMet         = allianceLog.includes('pell_met')
+    const builderAligned  = allianceLog.includes('builders_helped') || allianceLog.includes('sweep_builders')
+    const hunterAligned   = allianceLog.includes('voss_aligned')   || allianceLog.includes('sweep_hunters')
+    const pellBaseStock = [
+      { itemKey:'medkit',         chapterUnlock:2 },
+      { itemKey:'energy_drink',   chapterUnlock:2 },
+      { itemKey:'leather_gloves', chapterUnlock:2 },
+      { itemKey:'worn_boots',     chapterUnlock:2 },
+    ]
+    const pellBuilderStock = [
+      { itemKey:'iron_helm',      chapterUnlock:2 },
+      { itemKey:'iron_shield',    chapterUnlock:2 },
+      { itemKey:'riot_vest',      chapterUnlock:2 },
+    ]
+    const pellHunterStock = [
+      { itemKey:'knife',          chapterUnlock:2 },
+      { itemKey:'iron_sword',     chapterUnlock:2 },
+      { itemKey:'iron_ring',      chapterUnlock:2 },
+    ]
+    const pellStock = [
+      ...pellBaseStock,
+      ...(builderAligned ? pellBuilderStock : []),
+      ...(hunterAligned  ? pellHunterStock  : []),
+    ]
+    const pellTier = builderAligned ? "Allied supplies — vouched for by the Builders' inventory."
+                   : hunterAligned  ? "Voss's favorites — gear that moves quickly."
+                   : "Standard stock — nothing fancy, all tested."
+    const pellBounties = [
+      {
+        key: 'wounded_player',
+        label: 'Hint: the wounded NPC in the Fire zone',
+        hint: '"That wounded player you found? Slip them a med pack and they\'ll keep half of it for themselves. Pretty sure. Not a moral judgment — just a recurring data point."',
+        goldCost: 60,
+      },
+      {
+        key: 'cache_runner',
+        label: "Hint: Voss's runner offer",
+        hint: "\"The runner Voss tells you about? Bandaged hand. Kid. They've been useful to the Builders. If you intercept them, you're hurting a kid Sera is trying to raise. If that matters to you. Pell doesn't make recommendations — just maps.\"",
+        goldCost: 80,
+      },
+      {
+        key: 'judges_form',
+        label: 'Hint: what the Judges actually weigh',
+        hint: '"Two axes. Mercy reads what you helped build. Wrath reads what you took. You don\'t need to be either — but if you spread across both with no commitment, the Judges arrive together, and the fight is heaviest."',
+        goldCost: 120,
+      },
+    ]
+    const pellNPC = pellMet ? {
+      key:'pell', name:'Pell', title:'Phone Kiosk · After Hours', icon:'🧦',
+      dialogue: `"${pellTier}"`,
+      type:'trader_with_bounties',
+      unlockChapter:2,
+      stock: pellStock,
+      bounties: pellBounties,
+    } : null
+
+    // Final NPCS list: insert Pell between the Black Market and Doc Mira
+    // so the narrative trader (Pell) takes visual precedence in Chapter 2.
+    const NPCS = pellNPC
+      ? [baseNPCS[0], pellNPC, baseNPCS[1]]
+      : baseNPCS
 
     const chapter = player.current_chapter || 1
     const npcs = NPCS.filter(n=>n.unlockChapter<=chapter)
@@ -121,7 +192,7 @@ export async function mountTrader(__mountOptions = {}) {
       if (!n) return
       const panel = document.getElementById('npc-panel')
 
-      if (n.type==='trader') {
+      if (n.type==='trader' || n.type==='trader_with_bounties') {
         const rows = n.stock.filter(s=>s.chapterUnlock<=chapter).map(s=>{
           const item = itemMasters[s.itemKey]
           if (!item) return ''
@@ -144,6 +215,37 @@ export async function mountTrader(__mountOptions = {}) {
           `
         }).join('')
 
+        // Bounty tab — Pell only. Each bounty fires once. Already-purchased
+        // hints display the hint text inline so the player can re-read.
+        const hasBounties = n.type === 'trader_with_bounties' && Array.isArray(n.bounties)
+        const bountyRows = hasBounties ? n.bounties.map(b => {
+          const purchased = (player.alliance_log||[]).includes('bounty_'+b.key)
+          const canAfford = (player.gold||0) >= b.goldCost
+          if (purchased) {
+            return `
+              <div style="padding:.7rem 0;border-bottom:.5px solid rgba(139,106,32,.15)">
+                <p style="font-family:'Cinzel',serif;font-size:.78rem;color:var(--ink-dim);margin:0 0 4px">✓ ${b.label}</p>
+                <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:var(--ink);margin:0;line-height:1.5">${b.hint}</p>
+              </div>`
+          }
+          return `
+            <div style="display:flex;align-items:center;gap:.6rem;padding:.75rem 0;border-bottom:.5px solid rgba(139,106,32,.15);flex-wrap:wrap">
+              <div style="flex:1;min-width:0">
+                <p style="font-family:'Cinzel',serif;font-size:.82rem;color:var(--ink);margin:0 0 1px">${b.label}</p>
+                <p style="font-family:'Share Tech Mono',monospace;font-size:.56rem;color:var(--ink-dim);margin:0">One-time purchase · unlocks a hint about Chapter 2</p>
+              </div>
+              <span style="font-family:'Cinzel',serif;font-size:.88rem;font-weight:600;color:${canAfford?'var(--gold)':'#c04040'}">◈${b.goldCost}</span>
+              <button onclick="buyBounty('${b.key}','${b.goldCost}')" ${canAfford?'':'disabled'} style="font-family:'Cinzel',serif;font-size:.7rem;color:var(--ink);background:rgba(200,184,128,.4);border:1px solid rgba(139,106,32,.5);padding:.3rem .75rem;cursor:pointer;border-radius:2px;opacity:${canAfford?1:.4}">Buy</button>
+            </div>`
+        }).join('') : ''
+
+        const bountyTab = hasBounties
+          ? `<button id="tab-bounty" onclick="switchTab('bounty', '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:var(--ink)">INTEL</button>`
+          : ''
+        const bountyContent = hasBounties
+          ? `<div id="tab-content-bounty" style="display:none">${bountyRows}</div>`
+          : ''
+
         panel.innerHTML = `
           <p class="chapter-label">${n.title}</p>
           <h2 class="page-title">${n.name}</h2>
@@ -152,9 +254,11 @@ export async function mountTrader(__mountOptions = {}) {
           <div style="display:flex;gap:6px;margin-bottom:.75rem">
             <button id="tab-buy"  onclick="switchTab('buy',  '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:rgba(139,106,32,.2);border:.5px solid rgba(139,106,32,.5);color:var(--ink)">BUY</button>
             <button id="tab-sell" onclick="switchTab('sell', '${n.key}')" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.07em;padding:3px 14px;border-radius:20px;cursor:pointer;background:none;border:.5px solid rgba(139,106,32,.2);color:var(--ink)">SELL</button>
+            ${bountyTab}
           </div>
           <div id="tab-content-buy">${rows}</div>
           <div id="tab-content-sell" style="display:none"></div>
+          ${bountyContent}
         `
       } else if (n.type==='runesmith') {
         const rows = n.services.map(s=>{
@@ -208,30 +312,54 @@ export async function mountTrader(__mountOptions = {}) {
     }
 
     window.switchTab = async (tab, npcKey) => {
-      const buyBtn  = document.getElementById('tab-buy')
-      const sellBtn = document.getElementById('tab-sell')
-      const buyDiv  = document.getElementById('tab-content-buy')
-      const sellDiv = document.getElementById('tab-content-sell')
+      const buyBtn    = document.getElementById('tab-buy')
+      const sellBtn   = document.getElementById('tab-sell')
+      const bountyBtn = document.getElementById('tab-bounty')
+      const buyDiv    = document.getElementById('tab-content-buy')
+      const sellDiv   = document.getElementById('tab-content-sell')
+      const bountyDiv = document.getElementById('tab-content-bounty')
       if (!buyBtn) return
 
+      // Reset all tab visuals to inactive
+      const setInactive = (b) => { if (!b) return; b.style.background = 'none'; b.style.borderColor = 'rgba(139,106,32,.2)' }
+      const setActive   = (b) => { if (!b) return; b.style.background = 'rgba(139,106,32,.2)'; b.style.borderColor = 'rgba(139,106,32,.5)' }
+      setInactive(buyBtn); setInactive(sellBtn); setInactive(bountyBtn)
+      if (buyDiv)    buyDiv.style.display = 'none'
+      if (sellDiv)   sellDiv.style.display = 'none'
+      if (bountyDiv) bountyDiv.style.display = 'none'
+
       if (tab === 'buy') {
-        buyBtn.style.background  = 'rgba(139,106,32,.2)'
-        buyBtn.style.borderColor = 'rgba(139,106,32,.5)'
-        sellBtn.style.background = 'none'
-        sellBtn.style.borderColor= 'rgba(139,106,32,.2)'
-        buyDiv.style.display  = 'block'
-        sellDiv.style.display = 'none'
+        setActive(buyBtn)
+        if (buyDiv) buyDiv.style.display = 'block'
         traderSellMode = false
         traderSellSelected.clear()
-      } else {
-        sellBtn.style.background  = 'rgba(139,106,32,.2)'
-        sellBtn.style.borderColor = 'rgba(139,106,32,.5)'
-        buyBtn.style.background   = 'none'
-        buyBtn.style.borderColor  = 'rgba(139,106,32,.2)'
-        buyDiv.style.display  = 'none'
-        sellDiv.style.display = 'block'
-        await renderSellTab(sellDiv)
+      } else if (tab === 'sell') {
+        setActive(sellBtn)
+        if (sellDiv) { sellDiv.style.display = 'block'; await renderSellTab(sellDiv) }
+      } else if (tab === 'bounty') {
+        setActive(bountyBtn)
+        if (bountyDiv) bountyDiv.style.display = 'block'
       }
+    }
+
+    // ── Info bounty purchase (Pell) ────────────────────────────────────────
+    // Deducts gold, adds a 'bounty_<key>' flag to alliance_log, re-renders
+    // the NPC panel so the purchased hint is shown inline. The hint text
+    // itself lives in the bounty definition — pulled out on the next render.
+    window.buyBounty = async (bountyKey, goldCost) => {
+      const cost = parseInt(goldCost, 10) || 0
+      if ((player.gold||0) < cost) { window.showToast('Not enough gold', true); return }
+      const log = [...(player.alliance_log||[]), 'bounty_'+bountyKey]
+      const newGold = player.gold - cost
+      await supabase.from('players').update({ gold: newGold, alliance_log: log }).eq('id', player.id)
+      player.gold = newGold
+      player.alliance_log = log
+      document.getElementById('gold-display').textContent = '◈ ' + newGold
+      window.showToast('Intel received from Pell.')
+      // Re-render the panel so the hint text appears in the bounty tab
+      renderNPCPanel()
+      // Snap to the bounty tab automatically so the player can read the hint
+      setTimeout(() => window.switchTab('bounty', activeNPC?.key || ''), 50)
     }
 
     async function renderSellTab(sellDiv) {
