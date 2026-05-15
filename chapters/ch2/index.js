@@ -414,6 +414,138 @@ export async function mountChapter2(__mountOptions = {}) {
     },
 
     // ═══════════════════════════════
+    // NPC CHECK-INS (#1 / #2 / #3)
+    // Triggered by interrupt in _goToCore when player heads to district_hub.
+    // Each fires once; the marker (sera_met / voss_met / rue_met) is set
+    // when the player exits the node via any choice, so the encounter cannot
+    // re-fire if reloaded mid-conversation.
+    // ═══════════════════════════════
+    sera_checkin: {
+      id: 'sera_checkin', type: 'story',
+      text: `Sera intercepts you near the east edge of the plaza. Same composed posture, same precise way of moving — but she's covered in concrete dust and there's blood drying on one cuff.
+
+"You helped one of our teams. I owed you a conversation." She doesn't smile but her voice softens by a measured degree. "I'm short on field hands. The medical station two blocks over needs a resupply — two medical packs, anything you can spare. The team running it is good, but they're cut off until we can clear the lower corridor."
+
+She watches you, patient.
+
+"Take this as the favor it is. Not an obligation. The Builders don't trade in obligations."`,
+      choices: [
+        { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +10 · Builder credit', next: 'sera_gave', moral: 10, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
+        { label: '"I don\'t have any to spare."', sub: 'Honest — no penalty', next: 'sera_declined', allianceTag: 'sera_met' },
+        { label: 'Walk past her without speaking', sub: 'Moral -5 · the System notes the silence', next: 'sera_ignored', moral: -5, allianceTag: 'sera_met' },
+      ],
+    },
+    sera_gave: {
+      id: 'sera_gave', type: 'story',
+      text: `Sera takes the packs without ceremony. "Logged. Tam will know." She looks at you a beat longer than she needs to. "Some of us are keeping count of who shows up. I wanted you to know that's a thing."
+
+She turns back toward the corridor. Just before she rounds the corner: "Stay alive."`,
+      // Mechanically: 1 rare_component as a small thank-you. The "Builder's
+      // Mark" concept (#20 Judge scaling hook) is tracked via alliance_log
+      // flags, not a literal inventory item.
+      cost: [{ itemKey: 'medical_pack', qty: 2 }],
+      rewards: [{ itemKey: 'rare_component', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'builders_helped' }],
+    },
+    sera_declined: {
+      id: 'sera_declined', type: 'story',
+      text: `Sera nods once — the nod of someone whose first instinct was to be insulted and whose second instinct caught the first. "Understood. Stay alive out there." She turns and goes.
+
+You hear her start running before she's even out of sight.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+    sera_ignored: {
+      id: 'sera_ignored', type: 'story',
+      text: `You keep walking. Sera watches you pass. She doesn't follow. She doesn't say anything.
+
+Behind you, after a long pause, her boots scuff and head the other direction.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    voss_offer: {
+      id: 'voss_offer', type: 'story',
+      text: `Voss is leaning on a derelict ATM near the north corridor when you come back. They don't pretend to be doing anything else.
+
+"You're making good time. I noticed." They tilt their head. "There's a Builder runner due through the underpass in maybe ten minutes. Carrying salvage. Decent salvage — Sera's people inventory carefully. If they don't make it back, the salvage is yours and nobody on Sera's side knows for certain what happened."
+
+A small pause. Voss doesn't smile.
+
+"I'm not asking you to pull a trigger. I'm telling you there's an option. Information has value. You don't even have to act on it."`,
+      choices: [
+        { label: '"Tell me where." (intercept the runner)', sub: 'Moral -15 · gear loot · Voss credit', next: 'voss_intercept', moral: -15, allianceTag: 'voss_met' },
+        { label: '"Tell me where." (warn the runner)', sub: 'Moral +10 · Builder credit', next: 'voss_warned', moral: 10, allianceTag: 'voss_met' },
+        { label: '"Not interested."', sub: 'No change', next: 'voss_declined', allianceTag: 'voss_met' },
+      ],
+    },
+    voss_intercept: {
+      id: 'voss_intercept', type: 'story',
+      text: `You take Voss's directions. The underpass is dim, narrow, perfect for the work. The runner doesn't see you coming.
+
+It's the kid. The one with the bandaged hand, from the alliance scene. They look up at the last second. Their hand goes for a tool, not a weapon. They're not even sure how to do this part.
+
+You take what you came for. You don't look at the face for long.
+
+Voss is gone when you get back to the corridor. There's a single rune left on the wall where they were leaning. Bonus. Acknowledgment.`,
+      rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'rune_umbra', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'voss_aligned' }],
+    },
+    voss_warned: {
+      id: 'voss_warned', type: 'story',
+      text: `You take Voss's directions — and use them the other way. You catch the runner before the underpass, point out where the ambush would be, watch the kid's eyes get very wide.
+
+They press a small foil packet into your hand without breaking eye contact. "Sera will know." They take the long way back.
+
+When you return to the corridor, Voss is still leaning on the ATM. They've watched the whole thing on a salvaged security feed. They don't look angry. They look curious.
+
+"Interesting choice." That's all they say.`,
+      rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'builders_helped' }],
+    },
+    voss_declined: {
+      id: 'voss_declined', type: 'story',
+      text: `Voss watches you go without comment. They're still leaning on the ATM when you glance back over your shoulder.
+
+A few minutes later you hear the runner pass through the underpass uneventfully. Voss never moved.
+
+Information has value. Sometimes the value is knowing it was offered, and noting who offered.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    rue_intel: {
+      id: 'rue_intel', type: 'story',
+      text: `Rue is sitting cross-legged on a planter near the fountain, marking up their physical map with a pen that's about to die. They look up when you approach.
+
+"You've cleared two. The pattern's showing." They tap the map. "Hunter scouts have been moving on the zones you haven't hit yet. Voss is testing them. Testing you too, probably."
+
+They turn the map toward you.
+
+"Two of the remaining zones have a Hunter pair set up at the entry. I can tell you which ones. Walk in knowing where they are and you can avoid them clean, or hit them from an angle they're not expecting. Or — your choice — ignore this entirely."
+
+Rue waits. They have all the time in the world.`,
+      choices: [
+        { label: '"Tell me." (Hunter positions marked on your map)', sub: 'Future zones — clean approach available', next: 'rue_shared', allianceTag: 'rue_met' },
+        { label: '"I\'ll figure it out myself."', sub: 'No change', next: 'rue_declined', allianceTag: 'rue_met' },
+      ],
+    },
+    rue_shared: {
+      id: 'rue_shared', type: 'story',
+      text: `Rue marks two of the remaining zones with a small dot. "Hunters in the entry rooms. You'll see them before they see you if you remember." They roll the map up.
+
+"For what it's worth — they don't all take Voss's offers. Some of them just need the salvage. Up to you what you do when you meet them."
+
+They go back to their pen.`,
+      rewards: [{ itemKey: 'district_map', qty: 1 }],
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'rue_aligned' }],
+    },
+    rue_declined: {
+      id: 'rue_declined', type: 'story',
+      text: `Rue shrugs — a small, neutral motion. "Suit yourself. I'm not going anywhere." They go back to the map.
+
+You leave them to it.`,
+      choices: [{ label: 'Continue', next: 'district_hub' }],
+    },
+
+    // ═══════════════════════════════
     // NPC TRADER
     // ═══════════════════════════════
     trader_intro: {
@@ -890,6 +1022,25 @@ export async function mountChapter2(__mountOptions = {}) {
     if (error) console.error('[ch2 addItem]', itemKey, error.message)
   }
 
+  // Deduct `qty` of `itemKey` from the player's inventory. Decrements the
+  // existing row; deletes the row if quantity hits zero. Silent no-op if the
+  // player doesn't have the item — callers should pre-check inventory if the
+  // outcome depends on a successful deduction. Used by `cur.cost` arrays.
+  async function removeItem(itemKey, qty) {
+    const { data:ex } = await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    if (!ex) return
+    const remaining = ex.quantity - qty
+    if (remaining <= 0) await supabase.from('inventory').delete().eq('id', ex.id)
+    else await supabase.from('inventory').update({ quantity: remaining }).eq('id', ex.id)
+  }
+
+  // Check whether the player has `qty` of `itemKey` available. Used to gate
+  // choices behind inventory costs (e.g. Sera asking for medical packs).
+  async function hasItem(itemKey, qty) {
+    const { data:ex } = await supabase.from('inventory').select('quantity').eq('player_id',player.id).eq('item_key',itemKey).maybeSingle()
+    return !!ex && ex.quantity >= qty
+  }
+
   async function save(updates) {
     Object.assign(player, updates)
     const { data, error } = await supabase.from('players').update(updates).eq('id', player.id).select().single()
@@ -984,6 +1135,33 @@ export async function mountChapter2(__mountOptions = {}) {
 
   async function _goToCore(nextId, choice={}) {
     if (!NODES[nextId]) return
+
+    // ── NPC interrupt: Sera / Voss / Rue mid-zone check-ins (#1 #2 #3) ──
+    // When the player heads to district_hub, decide whether to redirect them
+    // through an NPC encounter first. Each NPC fires at most once per run,
+    // tracked by entries in alliance_log (sera_met / voss_met / rue_met).
+    // The NPC nodes themselves loop back to district_hub when done.
+    if (nextId === 'district_hub') {
+      const log = player.alliance_log || []
+      const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+      const helpedRescue = log.includes('builders_helped')
+      const moral = player.moral_score || 0
+      const executedHumanoid = log.includes('executed_humanoid')
+
+      // Sera (#1): builder-flavour, fires after first rescue + first zone clear
+      if (!log.includes('sera_met') && helpedRescue && defeated >= 1) {
+        nextId = 'sera_checkin'
+      }
+      // Voss (#2): villain-flavour, fires for clearly villain players
+      else if (!log.includes('voss_met') && (moral <= -20 || executedHumanoid) && defeated >= 1) {
+        nextId = 'voss_offer'
+      }
+      // Rue (#3): cadence, fires after the second cleared zone
+      else if (!log.includes('rue_met') && defeated >= 2) {
+        nextId = 'rue_intel'
+      }
+    }
+
     const cur = NODES[nodeId]
     const oldXp=player.xp||0, oldLvl=player.level||1
     const updates = { current_node:'ch2_'+nextId }
@@ -1003,7 +1181,11 @@ export async function mountChapter2(__mountOptions = {}) {
       updates.alliance_log = log; player.alliance_log = log
     }
     if (choice.outcome) outcome=choice.outcome
-    if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey,r.qty)
+    // Apply cost (item deductions) then rewards (item additions) for the
+    // current node we're leaving. cost runs first so the player sees the
+    // expected net change.
+    if (cur?.cost)    for (const c of cur.cost)    await removeItem(c.itemKey, c.qty)
+    if (cur?.rewards) for (const r of cur.rewards) await addItem(r.itemKey, r.qty)
     if (updates.xp) { const lu=await checkLevelUp(oldXp,updates.xp,oldLvl); if(lu) Object.assign(updates,lu) }
 
     // ── Set chapter resonance on first zone boss kill ─────────────────────────
@@ -1169,10 +1351,26 @@ export async function mountChapter2(__mountOptions = {}) {
     ].join('\n')
   }
 
-  function render() {
+  async function render() {
     const node=NODES[nodeId]
     if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
     if (node.sysMsg) window.showSysOverlay(node.sysMsg)
+
+    // Pre-resolve choice.requires gating (used by Sera giving 2 medical packs,
+    // any future inventory-gated choice). Adds a transient `_unmetRequires`
+    // flag on the choice that renderChoices below reads to disable the button.
+    if (Array.isArray(node.choices)) {
+      for (const c of node.choices) {
+        if (Array.isArray(c.requires) && c.requires.length) {
+          let ok = true
+          for (const r of c.requires) if (!(await hasItem(r.itemKey, r.qty))) { ok = false; break }
+          c._unmetRequires = !ok
+        } else {
+          c._unmetRequires = false
+        }
+      }
+    }
+
     const stEl=document.getElementById('story-text')
     // judges_verdict composes its text from live player state — every other
     // node uses its authored node.text as-is, with one exception: zone boss-win
@@ -1222,7 +1420,12 @@ export async function mountChapter2(__mountOptions = {}) {
       choices.map((c,index)=>{
         const variant=c.variant?' choice-'+c.variant:''
         const sub=c.sub?'<span class="choice-sub">'+escapeHtml(c.sub)+'</span>':''
-        return '<button class="choice'+variant+'" data-choice-index="'+index+'">'+
+        // Optional `requires` on a choice: [{itemKey,qty}] — choice is hidden
+        // (disabled visually + no click handler) if any requirement isn't met.
+        // Resolved synchronously against the cached check below.
+        const disabled = c._unmetRequires ? ' disabled' : ''
+        const style = c._unmetRequires ? ' style="opacity:.35;cursor:not-allowed"' : ''
+        return '<button class="choice'+variant+'" data-choice-index="'+index+'"'+disabled+style+'>'+
           '<span class="choice-arrow">→</span>'+
           '<span class="choice-body">'+escapeHtml(c.label)+sub+'</span>'+
           '</button>'
@@ -1230,9 +1433,11 @@ export async function mountChapter2(__mountOptions = {}) {
     panel.querySelectorAll('[data-choice-index]').forEach(btn => {
       btn.addEventListener('click', () => {
         const choice = choices[Number(btn.dataset.choiceIndex)] || {}
+        if (choice._unmetRequires) return  // gated; no-op
         goTo(choice.next || '', {
-          moral: choice.moral || 0,
-          outcome: choice.outcome || '',
+          moral:        choice.moral        || 0,
+          outcome:      choice.outcome      || '',
+          allianceTag:  choice.allianceTag  || null,
         })
       })
     })
