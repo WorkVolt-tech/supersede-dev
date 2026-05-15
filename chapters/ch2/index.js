@@ -1,5 +1,6 @@
 import { supabase } from '../../supabase.js'
 // renderNav, showSysOverlay, showToast are exposed as window globals by book.html
+import { checkForNewlyUnlockedClasses, CLASSES } from '../../classes.js'
 import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
@@ -1493,10 +1494,28 @@ The Judges are already there.`,
     if (cur?.xp)     { updates.xp=oldXp+cur.xp; player.xp=updates.xp }
     if (cur?.hpLoss) { currentHp=Math.max(1,currentHp-cur.hpLoss); updates.hp=currentHp }
     if (choice.moral) {
-      const nm=Math.max(-100,Math.min(100,(player.moral_score||0)+choice.moral))
+      const oldMoral = player.moral_score||0
+      const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
+      const nm=Math.max(-100,Math.min(100,oldMoral+choice.moral))
       updates.moral_score=nm; player.moral_score=nm
       const nb=calcBadge(nm,player.pvp_kills,player.helps_given)
       updates.badge=nb; updates.reputation=nb; player.badge=nb
+
+      // ── Visible feedback on moral changes ────────────────────────────────
+      // Toast the delta with the new total so the player sees the swing
+      // even when it doesn't cross a reputation band. If the band DID change
+      // (Neutral → Green, Green → Elite, Neutral → Red, etc.) escalate to a
+      // sysOverlay since that's a more meaningful event.
+      const sign = choice.moral > 0 ? '+' : ''
+      const ntot = nm > 0 ? '+'+nm : String(nm)
+      const isErr = choice.moral < 0
+      window.showToast(`Moral ${sign}${choice.moral} · now ${ntot}`, isErr)
+
+      if (nb !== oldBadge) {
+        const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
+        const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
+        window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+      }
     }
     // Optional allianceTag on the chosen option — pushes a flag onto the
     // player's alliance_log array so later content can react to it. Used by
@@ -2531,6 +2550,29 @@ The Judges are already there.`,
           }
         }
         const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
+
+        // ── Hidden class unlock check ─────────────────────────────────────
+        // Runs after defeated_bosses / moral_score are settled on the updates
+        // object. Stages the player record with pending values so the class
+        // unlock predicates see the post-fight state. If any class qualifies,
+        // append it to classes_unlocked + fire a system overlay per class.
+        const stagedPlayer = { ...player, ...updates }
+        const newlyClasses = checkForNewlyUnlockedClasses(stagedPlayer)
+        if (newlyClasses.length) {
+          const currentRevealed = updates.classes_unlocked || player.classes_unlocked || []
+          const merged = [...new Set([...currentRevealed, ...newlyClasses])]
+          updates.classes_unlocked = merged
+          player.classes_unlocked = merged
+          // Fire the System overlay for each newly unlocked class. Sequential
+          // overlays (one per class) preserve the "anomaly detected" tone
+          // rather than collapsing into a single message.
+          newlyClasses.forEach((key, i) => {
+            const cls = CLASSES[key]
+            if (!cls) return
+            setTimeout(() => window.showSysOverlay(cls.unlockNarrative, 'warn'), 1400 + i * 2200)
+          })
+        }
+
         await save(updates)
         const nextNode=isBoss?'chapter_end_ch2':onWin
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
@@ -2558,16 +2600,39 @@ The Judges are already there.`,
                 <span class="choice-body">Execute<span class="choice-sub">Moral -5 · the System notes the kill</span></span>
               </button>
             </div>`
+          // Shared helper: apply moral delta + recompute badge + show feedback.
+          // Used by both spare and execute branches so the post-combat moral
+          // beats behave the same as choice-driven moral shifts elsewhere.
+          const applyMoralWithFeedback = (delta, extraUpdates = {}) => {
+            const oldMoral = player.moral_score || 0
+            const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
+            const nm = Math.max(-100, Math.min(100, oldMoral + delta))
+            const newPvp = extraUpdates.pvp_kills ?? player.pvp_kills
+            const nb = calcBadge(nm, newPvp, player.helps_given)
+            const updates = { moral_score: nm, badge: nb, reputation: nb, ...extraUpdates }
+            player.moral_score = nm; player.badge = nb
+            const sign = delta > 0 ? '+' : ''
+            const ntot = nm > 0 ? '+'+nm : String(nm)
+            window.showToast(`Moral ${sign}${delta} · now ${ntot}`, delta < 0)
+            if (nb !== oldBadge) {
+              const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
+              const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
+              window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+            }
+            return updates
+          }
           const handleSpare = async () => {
-            const m = Math.max(-100, Math.min(100, (player.moral_score||0)+5))
             const log = [...(player.alliance_log||[]), 'spared_humanoid']
-            await save({ moral_score: m, alliance_log: log })
+            const upd = applyMoralWithFeedback(5, { alliance_log: log })
+            player.alliance_log = log
+            await save(upd)
             goTo(node?.onSpare || nextNode)
           }
           const handleExecute = async () => {
-            const m = Math.max(-100, Math.min(100, (player.moral_score||0)-5))
             const log = [...(player.alliance_log||[]), 'executed_humanoid']
-            const upd = { moral_score: m, alliance_log: log, pvp_kills: (player.pvp_kills||0)+1 }
+            const newPvp = (player.pvp_kills||0) + 1
+            const upd = applyMoralWithFeedback(-5, { alliance_log: log, pvp_kills: newPvp })
+            player.alliance_log = log; player.pvp_kills = newPvp
             await save(upd)
             // Optional extra loot for executing — node author opts in via `executeLoot`
             if (enemy.executeLoot) for (const l of enemy.executeLoot) await addItem(l.itemKey, l.qty)
