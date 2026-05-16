@@ -1442,10 +1442,15 @@ export async function mountChapter1(__mountOptions = {}) {
     // Scale Watcher to player level — always a real challenge
     const lvl    = player.level || 1
     const enemy  = { ...node.enemy }
-    if (bossMode === 'solo')   enemy.hp = 200 + lvl * 25
-    if (bossMode === 'team')   enemy.hp = 260 + lvl * 25
-    if (bossMode === 'betray') enemy.hp = 280 + lvl * 30
-    enemy.atk = node.enemy.atk + Math.floor(lvl * 1.2)
+    // HP bases bumped (+60 each) and per-level scaling slightly increased so
+    // the fight lasts a few more turns at mid-level. Base DEF (15) carries
+    // through to give the player meaningful resistance to chew through.
+    if (bossMode === 'solo')   enemy.hp = 260 + lvl * 26
+    if (bossMode === 'team')   enemy.hp = 320 + lvl * 26
+    if (bossMode === 'betray') enemy.hp = 340 + lvl * 30
+    // ATK scaling raised from *1.2 → *1.5 so its hits actually land hard
+    // against a mid-level player's DEF (e.g. lv 11 + DEF 36 → ~14-20 dmg/turn).
+    enemy.atk = node.enemy.atk + Math.floor(lvl * 1.5)
 
     // Yara joins as NPC ally in team mode
     const yara = bossMode === 'team' ? {
