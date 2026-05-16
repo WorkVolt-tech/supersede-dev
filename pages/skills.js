@@ -5,6 +5,7 @@ import {
   getRevealedClasses,
   isClassNodeUnlocked,
   isClassNodeAvailable,
+  isTierAlreadyPicked,
   unlockClassNode,
 } from '../classes.js'
 
@@ -416,8 +417,12 @@ export async function mountSkills(__mountOptions = {}) {
 
   function centerView() {
     const wrap = document.getElementById('tree-canvas-wrap')
-    panX = wrap.clientWidth  / 2 - CX * scale
-    panY = wrap.clientHeight / 2 - CY * scale
+    // Class-tree grid is centered around x=940, y=1000 (6 columns wide,
+    // 3 rows tall). Elemental tree uses the original CX/CY (900, 900).
+    const cx = treeMode === 'elements' ? CX : 940
+    const cy = treeMode === 'elements' ? CY : 1000
+    panX = wrap.clientWidth  / 2 - cx * scale
+    panY = wrap.clientHeight / 2 - cy * scale
     applyTransform()
   }
 
@@ -683,26 +688,46 @@ export async function mountSkills(__mountOptions = {}) {
     const col      = nd.color || (cls && cls.color) || '#d4af37'
     const unlocked = nd.type === 'start' || isClassNodeUnlocked(player, classKey, nd.id)
     const available = !unlocked && isClassNodeAvailable(player, classKey, nd.id)
+    const tierLocked = !unlocked && nd.tier && isTierAlreadyPicked(player, classKey, nd.id)
     const lvl      = player.level || 1
     const lvlOk    = lvl >= (nd.levelRequired || 1)
+
+    // If tier-locked, find the sibling that was picked so we can show its name.
+    let pickedSibling = null
+    if (tierLocked) {
+      const ulist = player.class_nodes_unlocked || []
+      pickedSibling = cls.nodes.find(n =>
+        n.tier === nd.tier && n.id !== nd.id && ulist.includes(classKey + ':' + n.id)
+      )
+    }
 
     let body = ''
     if (nd.type === 'start') {
       body = `<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.95rem;color:${col};margin:0 0 6px">${cls.tagline}</p>
               <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink-dim);margin:0;letter-spacing:.05em">${cls.judgeOf.toUpperCase()}</p>`
     } else {
+      const tierBadge = nd.tier
+        ? `<span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.08em;margin-right:8px">TIER ${nd.tier}</span>`
+        : ''
+      let status
+      if (unlocked) {
+        status = `<p style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#5ec45e;margin:0;letter-spacing:.08em">◆ UNLOCKED</p>`
+      } else if (tierLocked && pickedSibling) {
+        status = `<p style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#a04040;margin:0;letter-spacing:.05em">○ LOCKED — you committed to <em>${pickedSibling.label}</em> at this tier. The choice was final.</p>`
+      } else if (available) {
+        status = `
+          <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c04040;margin:0 0 8px;letter-spacing:.08em">⚠ Picking this slot is FINAL. Other tier ${nd.tier} choices will be permanently locked.</p>
+          <button id="class-unlock-btn" style="font-family:'Cinzel',serif;font-size:.85rem;padding:.45rem .9rem;background:${col};color:#0d0b08;border:none;cursor:pointer;border-radius:3px;font-weight:600;letter-spacing:.1em">Commit to ${nd.label}</button>`
+      } else {
+        status = `<p style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#a04040;margin:0;letter-spacing:.05em">○ LOCKED — ${lvlOk?'prerequisite not met':'level too low'}</p>`
+      }
       body = `
-        <p style="font-family:'Cinzel',serif;font-size:1rem;color:${col};margin:0 0 4px;font-weight:600">${nd.label}</p>
+        <p style="margin:0 0 4px">${tierBadge}<span style="font-family:'Cinzel',serif;font-size:1rem;color:${col};font-weight:600">${nd.label}</span></p>
         <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:var(--ink);margin:0 0 8px">${nd.sub || ''}</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:${lvlOk?'var(--ink-dim)':'#a04040'};margin:0 0 6px;letter-spacing:.05em">
           REQUIRES LEVEL ${nd.levelRequired || 1}${lvlOk?'':' — you are level '+lvl}
         </p>
-        ${unlocked
-          ? `<p style="font-family:'Share Tech Mono',monospace;font-size:.7rem;color:#5ec45e;margin:0;letter-spacing:.08em">◆ UNLOCKED</p>`
-          : available
-            ? `<button id="class-unlock-btn" style="font-family:'Cinzel',serif;font-size:.85rem;padding:.45rem .9rem;background:${col};color:#0d0b08;border:none;cursor:pointer;border-radius:3px;font-weight:600;letter-spacing:.1em">Unlock</button>`
-            : `<p style="font-family:'Share Tech Mono',monospace;font-size:.65rem;color:#a04040;margin:0;letter-spacing:.05em">○ LOCKED — ${lvlOk?'prerequisite not met':'level too low'}</p>`
-        }
+        ${status}
       `
     }
 
@@ -770,6 +795,7 @@ export async function mountSkills(__mountOptions = {}) {
         selectedNode = null
         renderClassTabs()
         buildTree()
+        centerView()  // re-center on the new tree's coordinate space
         // Hide any open detail panel between mode switches
         const d = document.getElementById('node-detail')
         if (d) d.style.display = 'none'
