@@ -1,6 +1,12 @@
 import { supabase } from '../../supabase.js'
 // renderNav, showSysOverlay, showToast are exposed as window globals by book.html
-import { checkForNewlyUnlockedClasses, CLASSES } from '../../classes.js'
+import {
+  CLASSES,
+  getClassChoicesForFormKey,
+  hasPickedClass,
+  isClassEligible,
+  pickClass,
+} from '../../classes.js'
 import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
@@ -1332,6 +1338,96 @@ The Judges are already there.`,
     renderHUD()
   }
 
+  // ── Hidden class picker — post Twin Judges victory ────────────────────
+  // Renders the class-choice cards into the given combat-over container.
+  // `choices` is an array of class keys from CLASS_CHOICES. The choice is
+  // final: once a card is clicked, pickClass() runs, save() persists, and
+  // the player proceeds to the chapter end node. There is no skip and no
+  // "decide later" — the dramatic moment is the whole point.
+  //
+  // Visual: a small stack of cards, one per class. Each shows name, the
+  // judge axis, the tagline, and a faint hint of what's inside (first two
+  // skill names). Selection is permanent — no confirmation step. The card
+  // gets a brief glow on click, then the page advances.
+  function renderClassPicker(host, choices, formKey, nextNode) {
+    const heading = formKey === 'verdict'
+      ? 'ANOMALY CASCADE — three paths recognized. Choose one. The others will not be offered again.'
+      : 'ANOMALY DETECTED — the System offers a designation. Choose one. The choice is final.'
+
+    const cards = choices.map(key => {
+      const cls = CLASSES[key]
+      if (!cls) return ''
+      const peek = cls.skills.slice(0, 2).map(s => `<li style="margin:0;padding:0;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--ink-dim);line-height:1.35">▸ ${s[0]}</li>`).join('')
+      return `
+        <button class="cls-card" data-class="${cls.key}" style="
+            text-align:left;cursor:pointer;
+            background:rgba(244,234,215,.55);
+            border:1px solid ${cls.color}66;
+            padding:14px 16px;
+            font-family:inherit;color:inherit;
+            display:flex;flex-direction:column;gap:8px;
+            transition:border-color .15s, background .15s, transform .15s;
+        ">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-family:'Cinzel',serif;font-size:1.05rem;color:${cls.color};font-weight:700;letter-spacing:.06em">${cls.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em">${cls.judgeOf.toUpperCase()}</span>
+          </div>
+          <p style="margin:0;font-family:'IM Fell English',serif;font-style:italic;font-size:14px;color:var(--ink);line-height:1.4">${cls.tagline}</p>
+          <ul style="margin:0;padding:0;list-style:none">${peek}</ul>
+        </button>`
+    }).join('')
+
+    host.innerHTML = `
+      <div style="margin-bottom:10px;padding:8px 10px;border:1px solid rgba(155,109,255,.45);background:rgba(155,109,255,.08);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--ink)">
+        ⚠ ${heading}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">${cards}</div>
+    `
+
+    host.querySelectorAll('.cls-card').forEach(btn => {
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(244,234,215,.85)'
+        btn.style.transform = 'translateY(-1px)'
+      })
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'rgba(244,234,215,.55)'
+        btn.style.transform = 'none'
+      })
+      btn.addEventListener('click', async () => {
+        const classKey = btn.dataset.class
+        const cls = CLASSES[classKey]
+        if (!cls) return
+        // Visual lock: dim other cards, highlight this one, disable clicks.
+        host.querySelectorAll('.cls-card').forEach(other => {
+          other.style.pointerEvents = 'none'
+          if (other !== btn) other.style.opacity = '0.3'
+        })
+        btn.style.borderColor = cls.color
+        btn.style.background = cls.color + '22'
+
+        // Commit the pick: classes.js builds the updates, we apply + save.
+        try {
+          const upd = pickClass(player, classKey)
+          await save(upd)
+        } catch (err) {
+          console.error('[class pick] failed', err)
+          window.showToast?.('Failed to save class — try again', true)
+          return
+        }
+
+        // Show the unlock narrative as a system overlay, then advance.
+        window.showSysOverlay(cls.unlockNarrative, 'warn')
+        setTimeout(() => {
+          host.innerHTML = `<button class="choice" data-next-node="${nextNode}">
+            <span class="choice-arrow">→</span>
+            <span class="choice-body">You are <em style="color:${cls.color}">${cls.name}</em>. Continue.</span>
+          </button>`
+          host.querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
+        }, 1800)
+      })
+    })
+  }
+
   function calcBadge(moral, pvpKills, helpsGiven) {
     const m=moral||0, pk=pvpKills||0, hg=helpsGiven||0
     if (m>=60&&(hg>=3||pk===0)) return 'elite'
@@ -2516,6 +2612,9 @@ The Judges are already there.`,
           else if(Math.abs(moral)<40)             formKey='dual'
           else if(moral>=40)                      formKey='mercy'
           else                                    formKey='wrath'
+          // Stash on updates so the post-save class picker can read it.
+          // Not persisted to DB — used only for the in-memory handoff.
+          extraCtx._formKey = formKey
           const spKey='judges_sp_'+formKey
           const alreadyClaimed=(updates.defeated_bosses||player.defeated_bosses||[]).includes(spKey)
           if (!alreadyClaimed) {
@@ -2550,28 +2649,6 @@ The Judges are already there.`,
           }
         }
         const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
-
-        // ── Hidden class unlock check ─────────────────────────────────────
-        // Runs after defeated_bosses / moral_score are settled on the updates
-        // object. Stages the player record with pending values so the class
-        // unlock predicates see the post-fight state. If any class qualifies,
-        // append it to classes_unlocked + fire a system overlay per class.
-        const stagedPlayer = { ...player, ...updates }
-        const newlyClasses = checkForNewlyUnlockedClasses(stagedPlayer)
-        if (newlyClasses.length) {
-          const currentRevealed = updates.classes_unlocked || player.classes_unlocked || []
-          const merged = [...new Set([...currentRevealed, ...newlyClasses])]
-          updates.classes_unlocked = merged
-          player.classes_unlocked = merged
-          // Fire the System overlay for each newly unlocked class. Sequential
-          // overlays (one per class) preserve the "anomaly detected" tone
-          // rather than collapsing into a single message.
-          newlyClasses.forEach((key, i) => {
-            const cls = CLASSES[key]
-            if (!cls) return
-            setTimeout(() => window.showSysOverlay(cls.unlockNarrative, 'warn'), 1400 + i * 2200)
-          })
-        }
 
         await save(updates)
         const nextNode=isBoss?'chapter_end_ch2':onWin
@@ -2641,8 +2718,24 @@ The Judges are already there.`,
           $('combat-over').querySelector('[data-spare]')?.addEventListener('click', handleSpare)
           $('combat-over').querySelector('[data-execute]')?.addEventListener('click', handleExecute)
         } else {
-          $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
-          $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+          // ── Twin Judges: hidden class picker ─────────────────────────────
+          // If this is the Twin Judges win AND the player is class-eligible
+          // (no SP in elementals) AND hasn't already picked a class on any
+          // prior run, render a picker showing the 3–4 class choices that
+          // map to the formKey we computed earlier. Choice is final.
+          // Otherwise (zone bosses, picked-already, ineligible): the normal
+          // Continue button.
+          const formKey = extraCtx._formKey
+          const choices = (isBoss && formKey && isClassEligible(player) && !hasPickedClass(player))
+            ? getClassChoicesForFormKey(formKey)
+            : []
+
+          if (choices.length) {
+            renderClassPicker($('combat-over'), choices, formKey, nextNode)
+          } else {
+            $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
+            $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
+          }
         }
       } else if (result==='escape') {
         await save({hp:currentHp})
