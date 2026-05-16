@@ -691,7 +691,7 @@ The air vibrates at a frequency just below hearing. The frozen people around the
 It looks at you.
 
 It already knows everything.`,
-    enemy: { name:'The Watcher', icon:'👁', hp:200, atk:22, xp:300, loot:[{itemKey:'core_fragment',qty:1},{itemKey:'rune_ignis',qty:1}] },
+    enemy: { name:'The Watcher', icon:'👁', hp:200, atk:32, def:15, spd:32, xp:300, loot:[{itemKey:'core_fragment',qty:1},{itemKey:'rune_ignis',qty:1}] },
   },
 
   // ═══════════════════════════════════════
