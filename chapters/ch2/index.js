@@ -2489,22 +2489,32 @@ You walk back out.`
                  : 'The Twin Judges'
       judgesForm = composed
     } else {
-      // Standard zone-boss scaling
-      // HP scales gently to keep fights challenging but not endless.
-      // At lvl 13: base 580 + 13*10 = 710 (was 840). Player at full DPS
-      // (Heavy + skills) clears in ~7-9 turns instead of 11+.
+      // Standard zone-boss scaling — level-based first, then per-kill escalation.
       enemy.hp  = node.enemy.hp  + lvl * 10
       enemy.atk = node.enemy.atk + Math.floor(lvl * 0.8)
-      // SPD scaling: keep the boss's defined SPD if it has one, otherwise
-      // give bosses a moderate SPD based on their archetype.
-      // Heavy tanks (ATK ≤ 36) → SPD 20-22 (slow but heavy hitters).
-      // Balanced (ATK 37-42) → SPD 25-28.
-      // Fast types (ATK ≥ 44) → SPD 30-32.
+      // ── Per-kill escalation ────────────────────────────────────────────
+      // Each zone boss already defeated buffs the remaining zone bosses
+      // by +0.5× additive. So 1 cleared = ×1.5, 2 = ×2.0, 3 = ×2.5, etc.
+      // Capped at ×3.5 (~5 zones cleared) so end-game zones don't become
+      // mathematically impossible. Adjust the cap to taste.
+      const defeated = player.defeated_bosses || []
+      const zonesAlreadyCleared = defeated.filter(b =>
+        b.startsWith('zone_boss_') && b !== node.bossKey
+      ).length
+      const escalation = Math.min(3.5, 1.0 + zonesAlreadyCleared * 0.5)
+      enemy.hp  = Math.round(enemy.hp  * escalation)
+      enemy.atk = Math.round(enemy.atk * escalation)
+      enemy.def = Math.round((enemy.def || 0) * escalation)
+      // SPD scales gentler so initiative doesn't become a wall — half the
+      // escalation magnitude. Means later bosses are still beatable for
+      // mid-SPD players, just slightly faster.
+      const spdEscalation = Math.min(2.0, 1.0 + zonesAlreadyCleared * 0.25)
       if (!enemy.spd) {
         if (enemy.atk <= 36)      enemy.spd = 22
         else if (enemy.atk <= 42) enemy.spd = 27
         else                       enemy.spd = 31
       }
+      enemy.spd = Math.round(enemy.spd * spdEscalation)
     }
 
     // Zone bosses use their own onLose/onEscape (back to approach node)
