@@ -2490,8 +2490,21 @@ You walk back out.`
       judgesForm = composed
     } else {
       // Standard zone-boss scaling
-      enemy.hp  = node.enemy.hp  + lvl * 20
-      enemy.atk = node.enemy.atk + Math.floor(lvl * 1.5)
+      // HP scales gently to keep fights challenging but not endless.
+      // At lvl 13: base 580 + 13*10 = 710 (was 840). Player at full DPS
+      // (Heavy + skills) clears in ~7-9 turns instead of 11+.
+      enemy.hp  = node.enemy.hp  + lvl * 10
+      enemy.atk = node.enemy.atk + Math.floor(lvl * 0.8)
+      // SPD scaling: keep the boss's defined SPD if it has one, otherwise
+      // give bosses a moderate SPD based on their archetype.
+      // Heavy tanks (ATK ≤ 36) → SPD 20-22 (slow but heavy hitters).
+      // Balanced (ATK 37-42) → SPD 25-28.
+      // Fast types (ATK ≥ 44) → SPD 30-32.
+      if (!enemy.spd) {
+        if (enemy.atk <= 36)      enemy.spd = 22
+        else if (enemy.atk <= 42) enemy.spd = 27
+        else                       enemy.spd = 31
+      }
     }
 
     // Zone bosses use their own onLose/onEscape (back to approach node)
@@ -2790,7 +2803,7 @@ You walk back out.`
           : ''
         const iconFilter = cd>0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px '+sk.color+'88)'
         const btnColor   = cd>0 ? 'rgba(200,160,60,.35)' : sk.color
-        const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto">'
+        const imgTag = '<img src="../assets/skills/'+k+'.webp" style="width:24px;height:24px;object-fit:contain;border-radius:3px;display:block;margin:0 auto" onerror="this.style.display=\'none\'">'
 
         return '<button class="combat-btn" id="'+cid+'-btn-skill-'+k+'"'
           + ' data-skill-key="'+k+'"'
