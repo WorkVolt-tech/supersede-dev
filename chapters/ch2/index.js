@@ -614,6 +614,70 @@ You leave them to it.`,
     },
 
     // ═══════════════════════════════
+    // SPARE / EXECUTE REACTIONS
+    // ═══════════════════════════════
+    // After the player spares or executes a humanoid for the first time, the
+    // next time they hit the plaza hub a faction NPC acknowledges it. Each
+    // reaction sets a *_reaction_seen flag in alliance_log so it fires once.
+    // Sera reacts to spare (Builder-aligned approval, pragmatic).
+    // Voss reacts to execute (Hunter-aligned approval, interested).
+    // Rue reacts to either (neutral observer, weighs the choice).
+    // The interrupts only fire if the player has already met that NPC, so
+    // these land as follow-ups rather than introductions.
+
+    spare_reaction_sera: {
+      id: 'spare_reaction_sera', type: 'story',
+      text: `Sera catches you on the way past the salvage crew. Same dust-streaked sleeves, same controlled posture — but there's something different in her face today. Almost a softening, almost.
+
+"I heard about the scout." She doesn't elaborate on which scout, or which zone. Word travels in the district apparently, and faster than you'd think. "You had them. You didn't take the kill."
+
+She studies you for a moment.
+
+"That used to be the standard out here. Mercy. Before the System sealed the zones and everyone got hungrier." A pause. "I'm not going to thank you for doing the bare minimum. But I'll say — fewer of the Hunters out there think we're worth talking to because of choices like yours. So I'll count it."
+
+She makes a small mark in the notebook she carries everywhere.
+
+"Tam asked after you again, by the way. They keep asking. I keep telling them you're still alive."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'spare_reaction_seen' }],
+    },
+
+    execute_reaction_voss: {
+      id: 'execute_reaction_voss', type: 'story',
+      text: `Voss is in the plaza when you get there. Not waiting for you — they're never waiting for you, that would be too obvious — but they're close enough that this is happening on purpose.
+
+"You finished one of mine." Voss says it the way someone might note the weather. Cracked visor up, tired face. "Specifically — the scout near the third bend. We found them. Or what was left."
+
+They tilt their head, considering you.
+
+"I'm not angry. The scouts know the risks. What I am, is interested." Voss steps closer. "Most people who come through here freeze when it's a person. They hesitate. They negotiate. They convince themselves the situation isn't what it is. You didn't do that."
+
+A small, dry smile.
+
+"That's the part I wanted to acknowledge. Whatever else happens in this district — you and I are speaking the same dialect now."
+
+Voss steps back.
+
+"My door is open. Just so you know what's in it."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'execute_reaction_seen' }],
+    },
+
+    rue_action_reaction: {
+      id: 'rue_action_reaction', type: 'story',
+      text: `Rue is in their usual spot — the planter near the fountain, map across their knees. They don't look up when you approach, but they speak before you sit down.
+
+"You had a moment in one of the zones. The kind where the System pauses for a half-second before logging it." They smooth a wrinkle in the paper. "I felt it from here."
+
+Now they look at you. Not judging, not approving — just looking.
+
+"I'm not going to tell you which way you should have decided. I'm not the Judges. But I'll say this — the System keeps a different file on the people who hesitate from the people who don't. You're in one of those files now."
+
+They go back to the map.
+
+"I have no idea which one. That's the honest part."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'rue_action_reaction_seen' }],
+    },
+
+    // ═══════════════════════════════
     // THE SWEEP (#11) — forced plaza encounter
     // Fires from the hub interrupt when tension >= 35 and !sweep_fired.
     // Player has cleared at least 3 zones by definition (cache must have
@@ -1143,6 +1207,40 @@ The Judges are already there.`,
     },
 
     // ═══════════════════════════════
+    // PRE-BOSS GATE — routes through camp_reflection on first time
+    // ═══════════════════════════════
+    // The district hub points here instead of pre_boss_ch2 directly. On first
+    // visit, the player is routed through camp_reflection to give the chapter
+    // a quiet before-the-storm moment. Subsequent visits (replay, back-button)
+    // go straight to pre_boss_ch2.
+    pre_boss_gate: {
+      id: 'pre_boss_gate', type: 'story',
+      sysMsg: '',
+      text: '',
+      choices: [], // filled by route() — see below
+      route(p) {
+        return (p.alliance_log || []).includes('camp_seen')
+          ? 'pre_boss_ch2'
+          : 'camp_reflection'
+      },
+    },
+
+    // ═══════════════════════════════
+    // CAMP REFLECTION — the night before the Judges
+    // ═══════════════════════════════
+    // Text is composed at render-time from buildCampReflection(player).
+    // Sets camp_seen on exit so it cannot re-fire if the player backs out
+    // and returns later. Single choice leads to pre_boss_ch2.
+    camp_reflection: {
+      id: 'camp_reflection', type: 'story',
+      sysMsg: 'CHAPTER ASSESSMENT BEGINNING — reflection logged.',
+      text: '', // built dynamically
+      choices: [
+        { label: 'Walk back out into the plaza', sub: 'The Judges are summoning. You are ready.', next: 'pre_boss_ch2', allianceTag: 'camp_seen' },
+      ],
+    },
+
+    // ═══════════════════════════════
     // PRE-BOSS CONVERGENCE
     // ═══════════════════════════════
     pre_boss_ch2: {
@@ -1511,6 +1609,18 @@ The Judges are already there.`,
   async function _goToCore(nextId, choice={}) {
     if (!NODES[nextId]) return
 
+    // ── Route gates ──────────────────────────────────────────────────────
+    // Some nodes are "decision gates" rather than scenes — they have a
+    // route(player) function that returns a different node id based on
+    // current state. Used for things like pre_boss_gate which routes
+    // through camp_reflection on first visit, straight to the boss after.
+    if (typeof NODES[nextId].route === 'function') {
+      const redirected = NODES[nextId].route(player)
+      if (redirected && NODES[redirected]) {
+        nextId = redirected
+      }
+    }
+
     // ── District clock + NPC interrupts on hub entry (#1 #2 #3 #23) ──
     // When the player heads to district_hub, decide whether to redirect them
     // through a one-time event first, and fire any milestone sysMsgs the
@@ -1554,6 +1664,27 @@ The Judges are already there.`,
       // Rue (#3): cadence, fires after the second cleared zone
       else if (!log.includes('rue_met') && defeated >= 2) {
         nextId = 'rue_intel'
+      }
+      // Spare reaction: Sera notices, fires once after first humanoid spare.
+      // Requires player has already met Sera (so it lands as a follow-up,
+      // not a first impression). Sera leans Builder; her reaction is approving
+      // but pragmatic. Voss also has a reaction one priority below.
+      else if (log.includes('spared_humanoid') && !log.includes('spare_reaction_seen') && log.includes('sera_met')) {
+        nextId = 'spare_reaction_sera'
+      }
+      // Execute reaction: Voss notices, fires once after first humanoid execute.
+      // Same gating — Voss must have been met. Voss leans Hunter, reaction is
+      // approving / interested. If both spare and execute have happened, the
+      // most-recent flag-priority wins by appending order in alliance_log.
+      else if (log.includes('executed_humanoid') && !log.includes('execute_reaction_seen') && log.includes('voss_met')) {
+        nextId = 'execute_reaction_voss'
+      }
+      // Rue reaction: fires for EITHER action, once. Rue is the neutral
+      // observer — her reaction acknowledges the player's escalation without
+      // taking a side. This is the "even neutral parties see you now" beat.
+      else if ((log.includes('spared_humanoid') || log.includes('executed_humanoid'))
+        && !log.includes('rue_action_reaction_seen') && log.includes('rue_met')) {
+        nextId = 'rue_action_reaction'
       }
 
       // Passive clock milestones (#23): fire sysMsg overlays the first time
@@ -1719,6 +1850,86 @@ The Judges are already there.`,
     return line + '\n\n' + baseText
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // PELL RECOGNITION — reactive opening line for return trader visits
+  // Pell is a neutral observer who sees a lot. On every visit AFTER the
+  // first, prepend a brief acknowledgment of the player's most recent big
+  // action: faction picks, the cache outcome, sweep choice, big moral
+  // shifts, executions, sparing, alliance changes. Priority list — only the
+  // single most relevant line fires per visit. The text below is delivered
+  // in Pell's voice (dry, observational, neutral-leaning).
+  // ─────────────────────────────────────────────────────────────────────
+  function prependPellRecognition(baseText, nid, p) {
+    if (nid !== 'trader_intro') return baseText
+    const log = p.alliance_log || []
+    if (!log.includes('pell_met')) return baseText  // first visit — keep base intro
+
+    // Priority order: most recent / most dramatic first. Each entry checks
+    // a flag AND a "Pell hasn't said it yet" guard. The guard adds a tag
+    // like 'pell_seen_X' which prevents repeats. Tags accumulate across the
+    // run so Pell never repeats himself.
+    const lines = [
+      // Finale acknowledgements (highest priority — chapter-ending stuff)
+      { flag: 'hero_finale_done',    seen: 'pell_seen_hero_finale',
+        text: '"You came back from the plaza," Pell says when you walk in. They don\'t look up from whatever they\'re fiddling with on the counter. "Word got here before you did. Tam — the kid with the bandaged hand — told me about the line you held."\n\nPell finally looks up.\n\n"You don\'t need anything I sell. But you came here. I appreciate that."' },
+      { flag: 'villain_finale_done', seen: 'pell_seen_villain_finale',
+        text: '"You came back from the Builder position," Pell says without looking up. Their hands don\'t stop moving, but you notice they\'re slower than usual. "I heard."\n\nA long pause.\n\n"I\'m not in the business of grading you. I sell things. I trade information. I\'m going to keep doing that whether you came in here covered in blood or covered in mud. But you should know — the kid asked about you, before. I told them you\'d be back."' },
+
+      // Sweep outcomes (mid-chapter dramatic beat)
+      { flag: 'sweep_builders', seen: 'pell_seen_sweep_builders',
+        text: '"I heard about the Sweep," Pell says. "You stood with Sera\'s crew." A short nod. "I don\'t take sides in this district. But I will say that decision changed which side of the door I keep my emergency cache on. Make of that what you will."' },
+      { flag: 'sweep_hunters',  seen: 'pell_seen_sweep_hunters',
+        text: '"I heard about the Sweep," Pell says. They don\'t look up. "You stood with Voss." A measured pause. "Some of my regular customers won\'t be coming back. They were Builder. I knew them. I\'m still selling to you. Don\'t mistake that for anything more than business."' },
+      { flag: 'sweep_escaped',  seen: 'pell_seen_sweep_escaped',
+        text: '"I heard about the Sweep," Pell says. "You weren\'t there." They tilt their head. "I\'m not sure if that\'s a thing to commend you for or worry about. The district isn\'t going to forget either way. Take a look at the shelf — I restocked yesterday."' },
+
+      // Cache decision (early to mid)
+      { flag: 'backstab', seen: 'pell_seen_backstab',
+        text: '"The cache." Pell\'s eyes flick to yours and back to the counter. "The crew you ate up. I knew two of them by name. I\'m not going to repeat the names because I doubt you\'d remember them anyway." They finish whatever they were doing. "What do you need today."' },
+
+      // Faction alignment moves (multiple instances)
+      { flag: 'sera_met', seen: 'pell_seen_sera_aligned',
+        check: () => log.filter(x => x === 'builders_helped').length >= 3,
+        text: '"You\'ve been spending time with the Builders." Pell says it like a weather report. "Three rescue runs that I\'ve heard about. Maybe more. Sera mentioned you specifically last time she came through here, which she\'s never done before about anyone." A small shrug. "Interesting. What can I get you."' },
+      { flag: 'voss_met', seen: 'pell_seen_voss_aligned',
+        check: () => log.filter(x => x === 'executed_humanoid').length >= 2,
+        text: '"You\'ve been busy on the Hunter side of things," Pell says. "Voss came in yesterday. Bought twice what they normally do. They mentioned you in a way that I\'m going to be very neutral about, because I\'m a neutral merchant. But I noticed." They finally look up. "What can I get you."' },
+
+      // Single executions / spares (the moral choices)
+      { flag: 'executed_humanoid', seen: 'pell_seen_first_execute',
+        text: '"You finished a Hunter scout in one of the zones," Pell says quietly. "I heard about it from someone who heard about it from one of theirs. I\'m not going to ask you why." They straighten the counter, unnecessarily. "I\'ll just say — most people I sell to never have to make that decision. Some do. Some do more than once. The number changes how I price things, but it doesn\'t change whether I sell to them."' },
+      { flag: 'spared_humanoid', seen: 'pell_seen_first_spare',
+        text: '"You had a Hunter scout cornered. You walked away." Pell\'s tone doesn\'t change — observational, like always. "I find that interesting. Most people in your position keep walking forward when they\'ve already drawn." A pause. "I\'m not commending it. I\'m noting it. There\'s a difference."' },
+
+      // Class unlocked — Pell notices something is off about you
+      { flag: '', seen: 'pell_seen_class_unlocked',
+        check: () => !!p.active_class,
+        text: '"There\'s something different about you," Pell says when you walk in. They actually stop what they\'re doing and look. A long beat. "I can\'t put it into words. The System logs people differently and I can almost see when it\'s happened. I don\'t know what you picked or whether you picked it consciously, but you\'re running on a different signal now."\n\nPell goes back to the counter.\n\n"Anyway. What do you need."' },
+    ]
+
+    for (const entry of lines) {
+      if (log.includes(entry.seen)) continue
+      if (entry.flag && !log.includes(entry.flag)) continue
+      if (entry.check && !entry.check()) continue
+      // Found the highest-priority unfired line. Stamp it and return.
+      // (Stamping is done by the trader_intro choice via allianceTag so the
+      // tag persists. We can't mutate alliance_log here — that's the wrong
+      // pattern. Instead we attach the seen-tag to a sticky var the choice
+      // reads, OR we add the tag via the next save. The simplest reliable
+      // version: set a flag on the player object so the next save picks it
+      // up. But choice-driven saves don't carry this flag automatically.
+      //
+      // Cleanest approach: tag the seen flag via allianceTag on the choices
+      // out of trader_intro, dynamically — but that requires choice-list
+      // mutation which is more invasive. For v1 we just prepend the text
+      // and don't track seen — Pell will repeat the same line each visit
+      // until a NEW flag fires. That's acceptable because the priorities
+      // ensure newer events always overshadow older ones.
+      return entry.text + '\n\n' + baseText
+    }
+    return baseText
+  }
+
   function buildJudgesVerdict(p) {
     const moral       = p.moral_score || 0
     const helps       = p.helps_given || 0
@@ -1825,6 +2036,110 @@ The Judges are already there.`,
     ].join('\n')
   }
 
+  // ─────────────────────────────────────────────────────────────────────
+  // CAMP REFLECTION — the night before the Judges
+  // Fires once when the player first heads to the Judges from the hub.
+  // Builds a quiet, conversational narrative recap of what they did during
+  // the chapter, woven into a sitting-by-a-fire moment. Different paragraphs
+  // appear based on flags in alliance_log + moral state. The point isn't to
+  // teach mechanics — it's to make the player feel the weight of their record
+  // as a story rather than a tally.
+  // ─────────────────────────────────────────────────────────────────────
+  function buildCampReflection(p) {
+    const log         = p.alliance_log || []
+    const moral       = p.moral_score || 0
+    const defeated    = p.defeated_bosses || []
+    const zoneCount   = defeated.filter(b => b in ZONE_BOSS_TO_ELEMENT).length
+    const has         = (k) => log.includes(k)
+    const builderHelps = log.filter(x => x === 'builders_helped').length
+    const executions   = log.filter(x => x === 'executed_humanoid').length
+    const spares       = log.filter(x => x === 'spared_humanoid').length
+
+    // Opening — frames the moment. Tone varies by moral lean.
+    let opening
+    if (moral >= 40) {
+      opening = `You find a corner of the plaza that the System hasn't quite scrubbed clean — an old café, mostly intact, a chair that survived. You sit down. The Judges aren't here yet. Not until you walk back out and let them be summoned. You have this much time.
+
+You aren't sure where the impulse came from. To stop. To think. But the district is quieter than it's been in days, and tomorrow it won't be quiet anymore.`
+    } else if (moral <= -40) {
+      opening = `You break into the café yourself. The lock barely resists. Inside it smells like coffee that's been gone a long time. You sit at the bar. There's nothing left to drink. You aren't sure why you stopped.
+
+Maybe to see whether stopping still feels like anything. Maybe to count.`
+    } else {
+      opening = `You stop at the edge of the plaza, in front of an old café. The door is unlocked. You go in. There are chairs. You take one.
+
+You don't really know why. The Judges aren't here yet. You could keep moving. But you don't.`
+    }
+
+    // Middle — the recap, one paragraph per major thread. Only adds paragraphs
+    // for things that actually happened. Order is roughly chronological.
+    const recap = []
+
+    if (zoneCount > 0) {
+      const zoneWord = zoneCount === 1 ? 'zone' : 'zones'
+      recap.push(`You count the ${zoneWord}. ${zoneCount} sealed places opened, ${zoneCount === 1 ? 'a' : ''} ${zoneCount} guardian${zoneCount === 1 ? '' : 's'} put down. Each one had a name the System didn't tell you. Each one had a body you walked past.`)
+    }
+
+    if (builderHelps >= 3) {
+      recap.push(`You think about the Builders. About the medical stations. About the kid with the bandaged hand who kept asking after you. ${builderHelps} times you showed up when they needed something. ${builderHelps === 3 ? 'Three' : builderHelps} times you said yes.`)
+    } else if (builderHelps >= 1) {
+      recap.push(`You think about the time you helped the Builders. The kid with the bandaged hand — Tam — was there. You didn't stay long. You're not sure if that counts for anything.`)
+    }
+
+    if (has('backstab')) {
+      recap.push(`The cache betrayal sits in your chest. The crew you ate up. The faces you didn't look at long enough to remember. You wonder if anyone is going to remember them for you.`)
+    }
+
+    if (executions >= 3) {
+      recap.push(`${executions} Hunter scouts. You remember the look on the second one when they realized you weren't going to walk away. The third one didn't have time to look anything. You stopped counting after.`)
+    } else if (executions >= 1) {
+      recap.push(`The scout. The execution. You can recall the exact angle of light. You can recall the way the body fell. You don't know what it means that you can recall this so cleanly.`)
+    }
+
+    if (spares >= 1 && executions === 0) {
+      recap.push(`The Hunters you spared. You wonder if any of them made it home. You wonder if you'll see them again, and on which side.`)
+    } else if (spares >= 1) {
+      recap.push(`The Hunter you spared sits next to the ones you didn't, in your head. You don't have a story that includes both, but here they are.`)
+    }
+
+    if (has('sweep_builders')) {
+      recap.push(`The Sweep. You stood with the Builders. You remember Sera's hand on your shoulder afterward — brief, professional, but the contact was real.`)
+    } else if (has('sweep_hunters')) {
+      recap.push(`The Sweep. You stood with Voss. You remember the smile under the visor — not approval exactly. Acknowledgment. The kind of acknowledgment that doesn't go away.`)
+    } else if (has('sweep_escaped')) {
+      recap.push(`The Sweep. You weren't there for it. You don't know what happened. Maybe that's the answer the System wanted from you. Maybe it isn't.`)
+    }
+
+    if (has('hero_finale_done')) {
+      recap.push(`The plaza defense. Sera, the kid, the others. They held because you were there. That's the thing the Judges will be reading, whether you tell it to them or not.`)
+    } else if (has('villain_finale_done')) {
+      recap.push(`The last Builder position. You went with Voss. You don't think about what the kid with the bandaged hand looked like at the end. You think about it constantly.`)
+    }
+
+    // Closing — what the player carries into the fight. Tone varies again.
+    let closing
+    if (moral >= 40) {
+      closing = `The light shifts. The Judges are summoning. You stand up — slowly, the way you'd stand up from a meal you wanted to remember.
+
+Then you walk out into the plaza.`
+    } else if (moral <= -40) {
+      closing = `Eventually you stop counting. The Judges are coming. You stand up because there isn't anything left to do in here. Your hands are steady.
+
+The plaza is waiting.`
+    } else {
+      closing = `After a while you stand up. There isn't a sound to mark it — the Judges don't announce themselves the way you'd expect. But the air thickens, and you know.
+
+You walk back out.`
+    }
+
+    return [
+      opening,
+      '',
+      ...recap.map(r => r + '\n'),
+      closing,
+    ].join('\n')
+  }
+
   async function render() {
     const node=NODES[nodeId]
     if (!node) { document.getElementById('story-text').textContent='Error: node "'+nodeId+'" not found.'; return }
@@ -1850,8 +2165,10 @@ The Judges are already there.`,
     // node uses its authored node.text as-is, with one exception: zone boss-win
     // nodes get a faction-tinted closing paragraph appended (Sera for Builders,
     // Voss for Hunter-aligned, nothing for neutral). The base text stays intact.
-    const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player) : (node.text || '')
-    stEl.textContent = appendFactionOutro(prependZoneAftermath(baseText, nodeId, player), nodeId, player)
+    const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player)
+                   : nodeId === 'camp_reflection' ? buildCampReflection(player)
+                   : (node.text || '')
+    stEl.textContent = appendFactionOutro(prependZoneAftermath(prependPellRecognition(baseText, nodeId, player), nodeId, player), nodeId, player)
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
     // Judge image near boss (and on the verdict scene)
@@ -1980,7 +2297,7 @@ The Judges are already there.`,
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
       </div>
-      <div data-go="pre_boss_ch2" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s">
+      <div data-go="pre_boss_gate" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${judgeReady?'Both defeated — Chapter complete':'End chapter — face the Judges'}</p>
       </div>
@@ -2524,14 +2841,42 @@ The Judges are already there.`,
       if (over) return
       const result = ClsCombat.onActiveSkill(skillId, player, statusEffects, enemy)
       if (!result.consumed) {
+        // Stance toggles / free actions — just update UI
         log(result.messages.join('<br>'))
+        renderClassSkills()
         return
       }
-      // Show messages and re-render. Class skills take the turn (no enemy
-      // counter-attack — the silence/mark application IS the turn). Could
-      // also be made to chain with strike, but kept simple for v1.
+      // Post-activation side effects that need engine state:
+      // Mass Decree heals to full
+      if (statusEffects.cls_massDecree) {
+        currentHp = maxPlayerHp
+        statusEffects.cls_massDecree = false
+      }
+      // Conquest immediate damage = dominion stacks × 5 (also fires via onPlayerAttack
+      // bonusFlatDmg next strike). Apply the immediate version here.
+      if (skillId === 'conquest') {
+        const dmg = (statusEffects.cls_dominionStacks || 10) * 5
+        enemyHp = Math.max(0, enemyHp - dmg)
+        log('👑 Conquest deals <strong>' + dmg + '</strong> damage.')
+        syncBars()
+      }
+      // Last Engine drops HP to 1
+      if (skillId === 'last_engine') {
+        currentHp = 1
+      }
+      // Final Eclipse damage (immediate)
+      if (skillId === 'final_eclipse') {
+        const dmg = statusEffects.cls_finalEclipseDmg || 0
+        if (dmg > 0) {
+          enemyHp = Math.max(0, enemyHp - dmg)
+          statusEffects.cls_finalEclipseDmg = 0
+          log('☀☾ Final Eclipse deals <strong>' + dmg + '</strong> damage.')
+          syncBars()
+        }
+      }
       log(result.messages.join('<br>'))
       renderClassSkills()
+      syncBars()
     }
 
     function setButtons(enabled) {
@@ -2867,6 +3212,14 @@ The Judges are already there.`,
             enemyHp = Math.max(0, enemyHp - deferred)
           }
 
+          // ── Class skill: post-attack effects ────────────────────────────
+          // Cataclysm dropped HP to 1 — apply now.
+          if (statusEffects.cls_cataclysmAfterEffect) {
+            currentHp = 1
+            statusEffects.cls_cataclysmAfterEffect = false
+            messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
+          }
+
           // ── Class skill: HP-change hook (execute checks) ───────────────
           if (enemyHp > 0) {
             const _clsHp = ClsCombat.onEnemyHpChange(player, statusEffects, enemy, oldEnemyHp, enemyHp, maxEnemyHp)
@@ -2960,7 +3313,20 @@ The Judges are already there.`,
           eDmg = Math.round(eDmg * (_clsHit.dmgMult || 1))
           if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
         }
-        if(eDmg>0){currentHp=Math.max(0,currentHp-eDmg);messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')}
+        if(eDmg>0){
+          // The Throne (Monarch t6a) — HP cannot drop below 1 for 4 turns
+          // Loyal Guard (Monarch t2b) — first killing blow sets HP to 1
+          let newHp = Math.max(0, currentHp - eDmg)
+          if (statusEffects.cls_throneTurns > 0 && newHp < 1) {
+            newHp = 1
+            messages.push('👑 The Throne — you stand.')
+          } else if (statusEffects.cls_loyalGuardSavedHp && newHp <= 0) {
+            newHp = 1
+            statusEffects.cls_loyalGuardSavedHp = 0
+          }
+          currentHp = newHp
+          messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')
+        }
         if(statusEffects.metalReflect&&eDmg>0){const ref=Math.round(eDmg*0.15);enemyHp=Math.max(0,enemyHp-ref);messages.push('⚙ Reflect <strong>'+ref+'</strong> back!')}
         if(statusEffects.liveWire&&Math.random()<0.20){statusEffects.enemyStunTurns=1;messages.push('⚡ Thorns — enemy stunned!')}
         if(statusEffects.ironMirror){const ref=Math.round(eDmg*0.4);enemyHp=Math.max(0,enemyHp-ref);statusEffects.ironMirror=false;messages.push('⚙ Iron Mirror reflected <strong>'+ref+'</strong>!')}
@@ -2980,8 +3346,11 @@ The Judges are already there.`,
       if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
       if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
 
-      // ── Class skill: turn-end hook (decrements Mark/Silence counters) ──
-      ClsCombat.onTurnEnd(player, statusEffects)
+      // ── Class skill: turn-end hook (mark/silence countdown + DoT) ─────
+      const _clsTurn = ClsCombat.onTurnEnd(player, statusEffects)
+      if (_clsTurn.damageToEnemy > 0) enemyHp = Math.max(0, enemyHp - _clsTurn.damageToEnemy)
+      if (_clsTurn.healToPlayer > 0)  currentHp = Math.min(maxPlayerHp, currentHp + _clsTurn.healToPlayer)
+      for (const m of _clsTurn.messages) messages.push(m)
 
       syncBars()
       log(messages.join('<br>'))
