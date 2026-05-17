@@ -3,6 +3,7 @@ import { supabase } from '../../supabase.js'
 import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
+import * as ClsCombat from '../../data/class_combat.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-1'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 1 \u2014 System Initialization</p>\n        <p class=\"chapter-sub\">The world stops. The game begins.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -1595,6 +1596,9 @@ export async function mountChapter1(__mountOptions = {}) {
           <!-- Skills — rendered dynamically, same visual weight as basic actions -->
           <div id="${cid}-skill-slots-row" style="margin-bottom:4px"></div>
 
+          <!-- Class skills — only renders if player has unlocked active-type skills -->
+          <div id="${cid}-class-skills-row" style="margin-bottom:4px"></div>
+
           <!-- Utility row -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
             <button class="combat-btn" id="${cid}-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>
@@ -2122,6 +2126,11 @@ export async function mountChapter1(__mountOptions = {}) {
     }
     applyPassives()
 
+    // ── Class skill combat hooks: initialize ─────────────────────────────
+    // Mirrors Ch2 — populates per-combat counters and grants Equal Sky bonus SP.
+    const _clsStart = ClsCombat.onCombatStart(player, statusEffects)
+    // (any "Equal Sky" message will appear in the first combat-log push)
+
     // ── Render battle skill slots ─────────────────────────────
     function renderSkillSlots() {
       const row = $('skill-slots-row')
@@ -2208,6 +2217,37 @@ export async function mountChapter1(__mountOptions = {}) {
 
       html += '</div>'
       row.innerHTML = html
+    }
+
+    // ── Class skill action buttons (Ch1 mirror of Ch2 renderClassSkills) ──
+    // Renders a row of active class skills under the regular skill row.
+    // Hidden if the player has no active class or no active-type skills.
+    function renderClassSkills() {
+      const row = $('class-skills-row')
+      if (!row) return
+      const skills = ClsCombat.getActiveClassSkills(player, statusEffects)
+      if (!skills.length) { row.innerHTML = ''; return }
+      row.innerHTML = '<div style="display:flex;gap:3px;flex-wrap:wrap">'
+        + skills.map(s => {
+            const dim = s.available ? '' : 'opacity:.35;cursor:not-allowed;'
+            return '<button class="combat-btn" data-class-skill="'+s.id+'" '+(s.available?'':'disabled ')
+              + 'style="font-size:.6rem;border-color:'+s.classColor+'88;color:'+s.classColor+';'+dim+'" '
+              + 'title="'+s.sub+'">⚖ '+s.label+'</button>'
+          }).join('')
+        + '</div>'
+      row.querySelectorAll('[data-class-skill]').forEach(btn => {
+        btn.addEventListener('click', () => useClassSkillLocal(btn.dataset.classSkill))
+      })
+    }
+
+    async function useClassSkillLocal(skillId) {
+      const result = ClsCombat.onActiveSkill(skillId, player, statusEffects, enemy)
+      if (!result.consumed) {
+        log(result.messages.join(' '))
+        return
+      }
+      log(result.messages.join(' '))
+      renderClassSkills()
     }
 
     function setButtons(enabled) {
@@ -2360,11 +2400,45 @@ export async function mountChapter1(__mountOptions = {}) {
           statusEffects.ignoreEnemyDEF = false
           const flickerMult = statusEffects.flickerReady ? 2 : 1
           if (statusEffects.flickerReady) { statusEffects.flickerReady = false }
-          const dmg        = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult))
+
+          // ── Class skill: pre-attack hook ──────────────────────────────
+          // Equal Measure / Scales of Truth / Witness Stand / Crime Tally /
+          // Executioner's Eye all modify damage or set up crit chance here.
+          statusEffects._enginePlayerHpPct = currentHp / Math.max(1, maxPlayerHp)
+          statusEffects._engineEnemyHpPct  = enemyHp  / Math.max(1, maxEnemyHp)
+          const _clsAtk = ClsCombat.onPlayerAttack(player, statusEffects, enemy, baseATK + roll)
+          for (const m of _clsAtk.messages) messages.push(m)
+
+          let dmg = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult * _clsAtk.dmgMult))
+          let wasCrit = false
+          if (_clsAtk.critChanceAdd > 0 && Math.random() < _clsAtk.critChanceAdd) {
+            wasCrit = true
+            dmg = Math.round(dmg * 1.5)
+            messages.push('⚖ Judgment Chain — critical strike.')
+            if (_clsAtk.defIgnoreFrac > 0 && (enemy.def || 0) > 0) {
+              const defBonus = Math.round((enemy.def || 0) * _clsAtk.defIgnoreFrac)
+              dmg += defBonus
+              messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
+            }
+          }
+          const oldEnemyHp = enemyHp
           enemyHp          = Math.max(0, enemyHp - dmg)
           messages.push(backstab
             ? '⚡ Backstab Lv' + bsLv + '! You strike for <strong>' + dmg + '</strong> (' + Math.round(bsMult*10)/10 + '× dmg)!'
             : 'You strike for <strong>' + dmg + '</strong>.' + (ignoreDEF ? ' (DEF ignored)' : ''))
+
+          // ── Class skill: post-attack hook (deferred damage, hit counters) ─
+          const _clsPost = ClsCombat.onPlayerAttackPost(player, statusEffects, enemy, dmg, wasCrit)
+          for (const m of _clsPost.messages) messages.push(m)
+          if (_clsPost.deferredDamage > 0 && enemyHp > 0) {
+            enemyHp = Math.max(0, enemyHp - _clsPost.deferredDamage)
+          }
+          // ── Class skill: HP-change hook (Verdict / Last Witness execute) ──
+          if (enemyHp > 0) {
+            const _clsHp = ClsCombat.onEnemyHpChange(player, statusEffects, enemy, oldEnemyHp, enemyHp, maxEnemyHp)
+            for (const m of _clsHp.messages) messages.push(m)
+            if (_clsHp.executeKill) enemyHp = 0
+          }
           // Burn passive: Lv1 3dmg × 2 turns → Lv10 6dmg × 4 turns
           if (unlocked.includes('fire_passive_burn')) {
             const burnLv  = _skillLvGlobal('fire_passive_burn')
@@ -2722,6 +2796,16 @@ export async function mountChapter1(__mountOptions = {}) {
           if (absorbed > 0) messages.push('💧 Water Shield absorbs ' + absorbed + ' damage.')
         }
 
+        // ── Class skill: player-hit hook ───────────────────────────────────
+        if (eDmg > 0) {
+          statusEffects._enginePlayerHpPct = currentHp / Math.max(1, maxPlayerHp)
+          statusEffects._engineEnemyHpPct  = enemyHp  / Math.max(1, maxEnemyHp)
+          const _clsHit = ClsCombat.onPlayerHit(player, statusEffects, enemy, eDmg, maxPlayerHp)
+          for (const m of _clsHit.messages) messages.push(m)
+          eDmg = Math.round(eDmg * (_clsHit.dmgMult || 1))
+          if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
+        }
+
         currentHp = Math.max(0, currentHp - eDmg)
 
         // Metal reflect passive: Lv1 10% → Lv10 28% reflected
@@ -2880,9 +2964,17 @@ export async function mountChapter1(__mountOptions = {}) {
       shake()
       log(messages.join(' '), turnLabel)
       syncBars()
+      // ── Class skill: turn-end hook (mark/silence countdown) ──────────
+      ClsCombat.onTurnEnd(player, statusEffects)
       renderSkillSlots()
+      renderClassSkills()
 
-      if (enemyHp <= 0) { log(enemy.name + ' has fallen.'); endCombat('win'); return }
+      if (enemyHp <= 0) {
+        // ── Class skill: kill hook (Final Sentence message) ────────────
+        const _clsKill = ClsCombat.onKill(player, statusEffects, enemy)
+        if (_clsKill.messages.length) log(_clsKill.messages.join(' '))
+        log(enemy.name + ' has fallen.'); endCombat('win'); return
+      }
       if (currentHp <= 0) {
         if (window._hasRevive) {
           window._hasRevive = false; currentHp = 20; syncBars()
@@ -3084,6 +3176,7 @@ export async function mountChapter1(__mountOptions = {}) {
     ]
 
     renderSkillSlots()
+    renderClassSkills()
     syncBars()
   }
 
