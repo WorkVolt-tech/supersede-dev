@@ -2244,10 +2244,35 @@ export async function mountChapter1(__mountOptions = {}) {
       const result = ClsCombat.onActiveSkill(skillId, player, statusEffects, enemy)
       if (!result.consumed) {
         log(result.messages.join(' '))
+        renderClassSkills()
         return
+      }
+      // Post-activation side effects (mirror Ch2)
+      if (statusEffects.cls_massDecree) {
+        currentHp = maxPlayerHp
+        statusEffects.cls_massDecree = false
+      }
+      if (skillId === 'conquest') {
+        const dmg = (statusEffects.cls_dominionStacks || 10) * 5
+        enemyHp = Math.max(0, enemyHp - dmg)
+        log('👑 Conquest deals ' + dmg + ' damage.')
+        syncBars()
+      }
+      if (skillId === 'last_engine') {
+        currentHp = 1
+      }
+      if (skillId === 'final_eclipse') {
+        const dmg = statusEffects.cls_finalEclipseDmg || 0
+        if (dmg > 0) {
+          enemyHp = Math.max(0, enemyHp - dmg)
+          statusEffects.cls_finalEclipseDmg = 0
+          log('☀☾ Final Eclipse deals ' + dmg + ' damage.')
+          syncBars()
+        }
       }
       log(result.messages.join(' '))
       renderClassSkills()
+      syncBars()
     }
 
     function setButtons(enabled) {
@@ -2408,15 +2433,22 @@ export async function mountChapter1(__mountOptions = {}) {
           statusEffects._engineEnemyHpPct  = enemyHp  / Math.max(1, maxEnemyHp)
           const _clsAtk = ClsCombat.onPlayerAttack(player, statusEffects, enemy, baseATK + roll)
           for (const m of _clsAtk.messages) messages.push(m)
+          // Defensive coercion — older class_combat versions may not return
+          // every field, leaving them undefined. Anything undefined gets a
+          // safe default so the strike math never produces NaN.
+          const _dmgMult       = (typeof _clsAtk.dmgMult       === 'number') ? _clsAtk.dmgMult       : 1
+          const _critChanceAdd = (typeof _clsAtk.critChanceAdd === 'number') ? _clsAtk.critChanceAdd : 0
+          const _defIgnoreFrac = (typeof _clsAtk.defIgnoreFrac === 'number') ? _clsAtk.defIgnoreFrac : 0
+          const _bonusFlatDmg  = (typeof _clsAtk.bonusFlatDmg  === 'number') ? _clsAtk.bonusFlatDmg  : 0
 
-          let dmg = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult * _clsAtk.dmgMult))
+          let dmg = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult * _dmgMult + _bonusFlatDmg))
           let wasCrit = false
-          if (_clsAtk.critChanceAdd > 0 && Math.random() < _clsAtk.critChanceAdd) {
+          if (_critChanceAdd > 0 && Math.random() < _critChanceAdd) {
             wasCrit = true
             dmg = Math.round(dmg * 1.5)
             messages.push('⚖ Judgment Chain — critical strike.')
-            if (_clsAtk.defIgnoreFrac > 0 && (enemy.def || 0) > 0) {
-              const defBonus = Math.round((enemy.def || 0) * _clsAtk.defIgnoreFrac)
+            if (_defIgnoreFrac > 0 && (enemy.def || 0) > 0) {
+              const defBonus = Math.round((enemy.def || 0) * _defIgnoreFrac)
               dmg += defBonus
               messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
             }
@@ -2432,6 +2464,12 @@ export async function mountChapter1(__mountOptions = {}) {
           for (const m of _clsPost.messages) messages.push(m)
           if (_clsPost.deferredDamage > 0 && enemyHp > 0) {
             enemyHp = Math.max(0, enemyHp - _clsPost.deferredDamage)
+          }
+          // ── Class skill: post-attack HP cost (Cataclysm) ──
+          if (statusEffects.cls_cataclysmAfterEffect) {
+            currentHp = 1
+            statusEffects.cls_cataclysmAfterEffect = false
+            messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
           }
           // ── Class skill: HP-change hook (Verdict / Last Witness execute) ──
           if (enemyHp > 0) {
@@ -2806,7 +2844,16 @@ export async function mountChapter1(__mountOptions = {}) {
           if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
         }
 
-        currentHp = Math.max(0, currentHp - eDmg)
+        // ── Class skill: HP-clamp guards (Monarch Throne / Loyal Guard) ──
+        let _newHp = Math.max(0, currentHp - eDmg)
+        if (statusEffects.cls_throneTurns > 0 && _newHp < 1) {
+          _newHp = 1
+          messages.push('👑 The Throne — you stand.')
+        } else if (statusEffects.cls_loyalGuardSavedHp && _newHp <= 0) {
+          _newHp = 1
+          statusEffects.cls_loyalGuardSavedHp = 0
+        }
+        currentHp = _newHp
 
         // Metal reflect passive: Lv1 10% → Lv10 28% reflected
         if (statusEffects.metalReflect && eDmg > 0) {
@@ -2964,8 +3011,11 @@ export async function mountChapter1(__mountOptions = {}) {
       shake()
       log(messages.join(' '), turnLabel)
       syncBars()
-      // ── Class skill: turn-end hook (mark/silence countdown) ──────────
-      ClsCombat.onTurnEnd(player, statusEffects)
+      // ── Class skill: turn-end hook (mark/silence countdown + DoT) ────
+      const _clsTurn = ClsCombat.onTurnEnd(player, statusEffects)
+      if (_clsTurn.damageToEnemy > 0) enemyHp = Math.max(0, enemyHp - _clsTurn.damageToEnemy)
+      if (_clsTurn.healToPlayer > 0)  currentHp = Math.min(maxPlayerHp, currentHp + _clsTurn.healToPlayer)
+      for (const m of _clsTurn.messages) messages.push(m)
       renderSkillSlots()
       renderClassSkills()
 
