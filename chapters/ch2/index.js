@@ -6,7 +6,8 @@ import {
   hasPickedClass,
   isClassEligible,
   pickClass,
-} from '../../classes.js'
+} from '../../data/classes.js'
+import * as ClsCombat from '../../data/class_combat.js'
 import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
@@ -2346,6 +2347,11 @@ The Judges are already there.`,
     if(has('dcn5')) statusEffects.enduringRoot=true
     if(has('dc_ks2'))statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2)
 
+    // ── Class skill combat hooks: initialize ─────────────────────────────────
+    // Equal Sky (Arbiter t5b) grants +5 SP at combat start via statusEffects.cls_bonusSP
+    const _clsStart = ClsCombat.onCombatStart(player, statusEffects)
+    // (messages will print in the first combat-log push after enemy actions)
+
     // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
     const enemyImg = enemy.img
       ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
@@ -2391,6 +2397,7 @@ The Judges are already there.`,
       + '<button class="combat-btn" id="'+cid+'-btn-defend" style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem" title="Halve incoming damage."><span style="font-size:1.1rem;line-height:1">🛡</span><span>Defend</span><span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">BLOCK · FIRST</span></button>'
       + '</div>'
       + '<div id="'+cid+'-skill-slots-row" style="margin-bottom:4px"></div>'
+      + '<div id="'+cid+'-class-skills-row" style="margin-bottom:4px"></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
       + '<button class="combat-btn" id="'+cid+'-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>'
       + (onEscape ? '<button class="combat-btn" id="'+cid+'-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>' : '<span></span>')
@@ -2489,6 +2496,44 @@ The Judges are already there.`,
       })
     }
 
+    // ── Class skill action buttons ───────────────────────────────────────
+    // Renders a row of active class skills (Sentence Mark, Final Decree, etc).
+    // Only visible if the player has an active class with active-type skills
+    // unlocked. Each button represents a once-per-combat ability.
+    function renderClassSkills() {
+      const row = $('class-skills-row')
+      if (!row) return
+      const skills = ClsCombat.getActiveClassSkills(player, statusEffects)
+      if (!skills.length) { row.innerHTML = ''; return }
+      row.innerHTML = '<div style="display:flex;gap:3px;flex-wrap:wrap">'
+        + skills.map(s => {
+            const dim = s.available ? '' : 'opacity:.35;cursor:not-allowed;'
+            return '<button class="combat-btn" data-class-skill="'+s.id+'" '+(s.available?'':'disabled ')
+              + 'style="font-size:.6rem;border-color:'+s.classColor+'88;color:'+s.classColor+';'+dim+'" '
+              + 'title="'+s.sub+'">⚖ '+s.label+'</button>'
+          }).join('')
+        + '</div>'
+      row.querySelectorAll('[data-class-skill]').forEach(btn => {
+        btn.addEventListener('click', () => useClassSkillLocal(btn.dataset.classSkill))
+      })
+    }
+
+    // Local helper — fires when player clicks a class-skill button. Applies
+    // the effect, logs feedback, advances the turn (consumes the action).
+    async function useClassSkillLocal(skillId) {
+      if (over) return
+      const result = ClsCombat.onActiveSkill(skillId, player, statusEffects, enemy)
+      if (!result.consumed) {
+        log(result.messages.join('<br>'))
+        return
+      }
+      // Show messages and re-render. Class skills take the turn (no enemy
+      // counter-attack — the silence/mark application IS the turn). Could
+      // also be made to chain with strike, but kept simple for v1.
+      log(result.messages.join('<br>'))
+      renderClassSkills()
+    }
+
     function setButtons(enabled) {
       ['btn-strike','btn-heavy','btn-defend','btn-items','btn-escape'].forEach(id=>{
         const b=$(id); if(b) b.disabled=!enabled
@@ -2568,6 +2613,7 @@ The Judges are already there.`,
     }
 
     renderSkillSlots()
+    renderClassSkills()
     syncBars()
 
     // ── Button event listeners ─────────────────────────────────────────────────
@@ -2782,12 +2828,51 @@ The Judges are already there.`,
       function resolvePlayerAction() {
         if(playerAction==='strike') {
           const roll=Math.floor(Math.random()*(6+luckBonus))+1
-          const baseATK=playerATK()+(statusEffects.playerATKBonus||0)
+          let baseATK=playerATK()+(statusEffects.playerATKBonus||0)
           const ignoreDEF=statusEffects.ignoreEnemyDEF; statusEffects.ignoreEnemyDEF=false
           const flickerMult=statusEffects.flickerReady?2:1; if(statusEffects.flickerReady)statusEffects.flickerReady=false
-          const dmg=Math.max(1,Math.round((baseATK+roll)*flickerMult))
+
+          // ── Class skill: pre-attack hook ──────────────────────────────
+          // Populate HP-pct hints so hooks like Equal Measure can read them.
+          statusEffects._enginePlayerHpPct = currentHp / Math.max(1, maxPlayerHp)
+          statusEffects._engineEnemyHpPct  = enemyHp / Math.max(1, maxEnemyHp)
+          const _clsAtk = ClsCombat.onPlayerAttack(player, statusEffects, enemy, baseATK + roll)
+          for (const m of _clsAtk.messages) messages.push(m)
+
+          let dmg=Math.max(1,Math.round(((baseATK+roll)*flickerMult+_clsAtk.bonusFlatDmg)*_clsAtk.dmgMult))
+          // Crit chance from Judgment Chain or other sources — roll it.
+          let wasCrit = false
+          if (_clsAtk.critChanceAdd > 0 && Math.random() < _clsAtk.critChanceAdd) {
+            wasCrit = true
+            dmg = Math.round(dmg * 1.5)
+            messages.push('⚖ Judgment Chain — critical strike.')
+            // Executioner's Eye: crits ignore 50% enemy DEF
+            if (_clsAtk.defIgnoreFrac > 0 && (enemy.def||0) > 0) {
+              const defBonus = Math.round((enemy.def||0) * _clsAtk.defIgnoreFrac)
+              dmg += defBonus
+              messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
+            }
+          }
+          const oldEnemyHp = enemyHp
           enemyHp=Math.max(0,enemyHp-dmg)
           messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
+
+          // ── Class skill: post-attack hook ──────────────────────────────
+          // Computes deferred damage from Delayed Verdict, increments hit counters.
+          const _clsPost = ClsCombat.onPlayerAttackPost(player, statusEffects, enemy, dmg, wasCrit)
+          for (const m of _clsPost.messages) messages.push(m)
+          if (_clsPost.deferredDamage > 0 && enemyHp > 0) {
+            // Apply deferred damage immediately at the end of player action.
+            const deferred = _clsPost.deferredDamage
+            enemyHp = Math.max(0, enemyHp - deferred)
+          }
+
+          // ── Class skill: HP-change hook (execute checks) ───────────────
+          if (enemyHp > 0) {
+            const _clsHp = ClsCombat.onEnemyHpChange(player, statusEffects, enemy, oldEnemyHp, enemyHp, maxEnemyHp)
+            for (const m of _clsHp.messages) messages.push(m)
+            if (_clsHp.executeKill) enemyHp = 0
+          }
           if(unlocked.includes('fire_passive_burn')){const lv=_skillLv('fire_passive_burn');statusEffects.burnTurns=Math.round(2+(lv-1)*(2/9));statusEffects.burnDmg=Math.round(3+(lv-1)*(3/9));messages.push('🔥 Burn applied!')}
           if(unlocked.includes('lightning_passive_chain_damage')){const lv=_skillLv('lightning_passive_chain_damage');if(Math.random()<0.20+(lv-1)*(0.20/9)){const cd=Math.max(1,Math.floor(dmg*(0.50+(lv-1)*(0.40/9))));enemyHp=Math.max(0,enemyHp-cd);messages.push('⚡ Chain hit <strong>'+cd+'</strong>!')}}
           if(statusEffects.venomFang&&Math.random()<0.15){statusEffects.burnTurns=Math.max(statusEffects.burnTurns,2);messages.push('☠ Venom Fang — poison!')}
@@ -2864,6 +2949,17 @@ The Judges are already there.`,
         if(statusEffects.foresightThisTurn){eDmg=Math.round(eDmg*0.1);statusEffects.foresightThisTurn=false;messages.push('🔮 Hex Weave absorbed most damage!')}
         if(statusEffects.waterShield>0){const abs=Math.min(statusEffects.waterShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.waterShield=Math.max(0,statusEffects.waterShield-abs);if(abs>0)messages.push('💧 Shield absorbed <strong>'+abs+'</strong>!')}
         if(statusEffects.ancientRootShield>0){const abs=Math.min(statusEffects.ancientRootShield,eDmg);eDmg=Math.max(0,eDmg-abs);statusEffects.ancientRootShield=Math.max(0,statusEffects.ancientRootShield-abs);if(abs>0)messages.push('🌿 Root Shield absorbed <strong>'+abs+'</strong>!')}
+        // ── Class skill: player-hit hook ───────────────────────────────────
+        // Lets Equal Measure reduce damage, Witness Stand build stacks,
+        // Scales of Truth prime a vengeance strike, Law of Balance reflect.
+        if (eDmg > 0) {
+          statusEffects._enginePlayerHpPct = currentHp / Math.max(1, maxPlayerHp)
+          statusEffects._engineEnemyHpPct  = enemyHp  / Math.max(1, maxEnemyHp)
+          const _clsHit = ClsCombat.onPlayerHit(player, statusEffects, enemy, eDmg, maxPlayerHp)
+          for (const m of _clsHit.messages) messages.push(m)
+          eDmg = Math.round(eDmg * (_clsHit.dmgMult || 1))
+          if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
+        }
         if(eDmg>0){currentHp=Math.max(0,currentHp-eDmg);messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')}
         if(statusEffects.metalReflect&&eDmg>0){const ref=Math.round(eDmg*0.15);enemyHp=Math.max(0,enemyHp-ref);messages.push('⚙ Reflect <strong>'+ref+'</strong> back!')}
         if(statusEffects.liveWire&&Math.random()<0.20){statusEffects.enemyStunTurns=1;messages.push('⚡ Thorns — enemy stunned!')}
@@ -2884,14 +2980,25 @@ The Judges are already there.`,
       if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
       if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
 
+      // ── Class skill: turn-end hook (decrements Mark/Silence counters) ──
+      ClsCombat.onTurnEnd(player, statusEffects)
+
       syncBars()
       log(messages.join('<br>'))
 
-      if(enemyHp<=0){await endCombat('win');return}
+      if(enemyHp<=0){
+        // ── Class skill: kill hook (Final Sentence may refund an action) ──
+        const _clsKill = ClsCombat.onKill(player, statusEffects, enemy)
+        if (_clsKill.messages.length) log([...messages, ...(_clsKill.messages)].join('<br>'))
+        // Note: action refund could be wired in future combat by re-enabling
+        // buttons mid-resolve; for now the message itself is the feedback.
+        await endCombat('win');return
+      }
       if(currentHp<=0){await endCombat('lose');return}
 
       setButtons(true)
       renderSkillSlots()
+      renderClassSkills()
     }
   }
 
