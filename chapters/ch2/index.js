@@ -3206,17 +3206,24 @@ You walk back out.`
           statusEffects._engineEnemyHpPct  = enemyHp / Math.max(1, maxEnemyHp)
           const _clsAtk = ClsCombat.onPlayerAttack(player, statusEffects, enemy, baseATK + roll)
           for (const m of _clsAtk.messages) messages.push(m)
+          // Defensive coercion — any field undefined gets a safe default so
+          // the strike math never produces NaN. Protects against class_combat
+          // versions that might be deployed out of sync with this engine.
+          const _dmgMult       = (typeof _clsAtk.dmgMult       === 'number') ? _clsAtk.dmgMult       : 1
+          const _critChanceAdd = (typeof _clsAtk.critChanceAdd === 'number') ? _clsAtk.critChanceAdd : 0
+          const _defIgnoreFrac = (typeof _clsAtk.defIgnoreFrac === 'number') ? _clsAtk.defIgnoreFrac : 0
+          const _bonusFlatDmg  = (typeof _clsAtk.bonusFlatDmg  === 'number') ? _clsAtk.bonusFlatDmg  : 0
 
-          let dmg=Math.max(1,Math.round(((baseATK+roll)*flickerMult+_clsAtk.bonusFlatDmg)*_clsAtk.dmgMult))
+          let dmg=Math.max(1,Math.round(((baseATK+roll)*flickerMult+_bonusFlatDmg)*_dmgMult))
           // Crit chance from Judgment Chain or other sources — roll it.
           let wasCrit = false
-          if (_clsAtk.critChanceAdd > 0 && Math.random() < _clsAtk.critChanceAdd) {
+          if (_critChanceAdd > 0 && Math.random() < _critChanceAdd) {
             wasCrit = true
             dmg = Math.round(dmg * 1.5)
             messages.push('⚖ Judgment Chain — critical strike.')
             // Executioner's Eye: crits ignore 50% enemy DEF
-            if (_clsAtk.defIgnoreFrac > 0 && (enemy.def||0) > 0) {
-              const defBonus = Math.round((enemy.def||0) * _clsAtk.defIgnoreFrac)
+            if (_defIgnoreFrac > 0 && (enemy.def||0) > 0) {
+              const defBonus = Math.round((enemy.def||0) * _defIgnoreFrac)
               dmg += defBonus
               messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
             }
