@@ -124,7 +124,7 @@ function makeClassNodes(classKey, color, name, tiers) {
 const CLASS_DATA = [
   // ═══ VERDICT EXCLUSIVES (godlike — only obtainable from `verdict`) ═══
   {
-    key: 'eclipse_walker', name: 'Eclipse Walker', judgeOf: 'Final Judge',
+    key: 'eclipse_walker', name: 'Eclipse Walker', judgeOf: 'Final Judge of Humanity',
     color: '#9b6dff', tagline: 'One who walks between Wrath and Mercy.',
     narrative: 'ANOMALY DETECTED — both Judges paused. The eclipse held. CLASS REGISTERED: ECLIPSE WALKER.',
     // Three branches:
@@ -167,7 +167,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'nullborn', name: 'Nullborn', judgeOf: 'Final Judge',
+    key: 'nullborn', name: 'Nullborn', judgeOf: 'Final Judge of Humanity',
     color: '#5e5e5e', tagline: 'The System failed to assign an elemental affinity.',
     narrative: 'ANOMALY DETECTED — element registration failed. The slot is empty. CLASS REGISTERED: NULLBORN.',
     skills: [
@@ -180,7 +180,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'error', name: 'Error', judgeOf: 'Final Judge',
+    key: 'error', name: 'Error', judgeOf: 'Final Judge of Humanity',
     color: '#ff3a5e', tagline: 'A broken classification inside the System.',
     narrative: 'ANOMALY DETECTED — record corrupted. The error persists. CLASS REGISTERED: ERROR.',
     skills: [
@@ -195,7 +195,7 @@ const CLASS_DATA = [
 
   // ═══ DOUBLED CLASSES (appear under two bosses each) ═══
   {
-    key: 'arbiter', name: 'Arbiter', judgeOf: 'Judge of Truth',
+    key: 'arbiter', name: 'Arbiter', judgeOf: 'Judges of Authority',
     color: '#d4af37', tagline: 'A human acknowledged by the System as equal to the Judges.',
     narrative: 'ANOMALY DETECTED — a path you did not choose has chosen you. CLASS REGISTERED: ARBITER.',
     // Three vertical paths:
@@ -236,7 +236,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'monarch', name: 'Monarch', judgeOf: 'Judge of Mercy',
+    key: 'monarch', name: 'Monarch', judgeOf: 'Judge of Purity',
     color: '#e8c34a', tagline: 'A ruler recognized by survivors and the System.',
     narrative: 'ANOMALY DETECTED — the survivors acknowledge a throne. CLASS REGISTERED: MONARCH.',
     // Three branches:
@@ -279,7 +279,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'wrathborn', name: 'Wrathborn', judgeOf: 'Judge of Wrath',
+    key: 'wrathborn', name: 'Wrathborn', judgeOf: 'Judge of Desolation',
     color: '#c0392b', tagline: 'Rage evolved into power.',
     narrative: 'ANOMALY DETECTED — the rage stabilized into form. CLASS REGISTERED: WRATHBORN.',
     // Three branches:
@@ -320,7 +320,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'chimera', name: 'Chimera', judgeOf: 'Judge of Hunger',
+    key: 'chimera', name: 'Chimera', judgeOf: 'Judge of Desolation',
     color: '#8b4a8c', tagline: 'A body constantly mutating from battle.',
     narrative: 'ANOMALY DETECTED — phenotype unstable, but holding. CLASS REGISTERED: CHIMERA.',
     skills: [
@@ -333,7 +333,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'unwritten', name: 'Unwritten', judgeOf: 'Judge of Silence',
+    key: 'unwritten', name: 'Unwritten', judgeOf: 'Judges of Authority',
     color: '#404a5a', tagline: 'Removed from System records.',
     narrative: 'ANOMALY DETECTED — record absent, presence persists. CLASS REGISTERED: UNWRITTEN.',
     skills: [
@@ -346,7 +346,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'oathbreaker', name: 'Oathbreaker', judgeOf: 'Judge of Truth',
+    key: 'oathbreaker', name: 'Oathbreaker', judgeOf: 'Judges of Authority',
     color: '#7a6938', tagline: 'One who refused every path offered.',
     narrative: 'ANOMALY DETECTED — every alliance offered was refused. CLASS REGISTERED: OATHBREAKER.',
     skills: [
@@ -361,7 +361,7 @@ const CLASS_DATA = [
 
   // ═══ SINGLES (appear under one boss each) ═══
   {
-    key: 'prime', name: 'Prime', judgeOf: 'Judge of Truth',
+    key: 'prime', name: 'Prime', judgeOf: 'Judges of Authority',
     color: '#e0a040', tagline: 'Humanity before elemental evolution.',
     narrative: 'ANOMALY DETECTED — pre-evolution baseline holds. CLASS REGISTERED: PRIME.',
     skills: [
@@ -374,7 +374,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'bastion', name: 'Bastion', judgeOf: 'Judge of Mercy',
+    key: 'bastion', name: 'Bastion', judgeOf: 'Judge of Purity',
     color: '#5e8aa0', tagline: 'An immovable shield over those who chose to stay.',
     narrative: 'ANOMALY DETECTED — the line held. CLASS REGISTERED: BASTION.',
     skills: [
@@ -387,7 +387,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'dawnbringer', name: 'Dawnbringer', judgeOf: 'Judge of Mercy',
+    key: 'dawnbringer', name: 'Dawnbringer', judgeOf: 'Judge of Purity',
     color: '#f4d96a', tagline: 'The first light after a long siege.',
     narrative: 'ANOMALY DETECTED — light recognized. CLASS REGISTERED: DAWNBRINGER.',
     skills: [
@@ -400,7 +400,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'ravager', name: 'Ravager', judgeOf: 'Judge of Wrath',
+    key: 'ravager', name: 'Ravager', judgeOf: 'Judge of Desolation',
     color: '#a02822', tagline: 'A killer who never paused to consider mercy.',
     narrative: 'ANOMALY DETECTED — kill count tolerable. CLASS REGISTERED: RAVAGER.',
     // Three branches:
@@ -442,7 +442,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'dreadnought', name: 'Dreadnought', judgeOf: 'Judge of Wrath',
+    key: 'dreadnought', name: 'Dreadnought', judgeOf: 'Judge of Desolation',
     color: '#6e7a8c', tagline: 'An unstoppable wall of force.',
     narrative: 'ANOMALY DETECTED — kinetic threshold exceeded. CLASS REGISTERED: DREADNOUGHT.',
     skills: [
@@ -455,7 +455,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'ghostblade', name: 'Ghostblade', judgeOf: 'Judge of Silence',
+    key: 'ghostblade', name: 'Ghostblade', judgeOf: 'Judges of Balance',
     color: '#3a8a8c', tagline: 'A killer that exists between moments.',
     narrative: 'ANOMALY DETECTED — temporal signature flickers. CLASS REGISTERED: GHOSTBLADE.',
     skills: [
@@ -505,7 +505,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'silent_judge', name: 'Silent Judge', judgeOf: 'Judge of Silence',
+    key: 'silent_judge', name: 'Silent Judge', judgeOf: 'Judges of Balance',
     color: '#604a78', tagline: 'The hidden execution arm of the System.',
     narrative: 'ANOMALY DETECTED — the System has its hand. CLASS REGISTERED: SILENT JUDGE.',
     skills: [
@@ -518,7 +518,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'devourer', name: 'Devourer', judgeOf: 'Judge of Hunger',
+    key: 'devourer', name: 'Devourer', judgeOf: 'Judge of Salvation',
     color: '#7a4848', tagline: 'A hunger that takes more than it needs.',
     narrative: 'ANOMALY DETECTED — intake exceeds output. CLASS REGISTERED: DEVOURER.',
     skills: [
@@ -531,7 +531,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'mourning_king', name: 'Mourning King', judgeOf: 'Judge of Hunger',
+    key: 'mourning_king', name: 'Mourning King', judgeOf: 'Judge of Salvation',
     color: '#4a4a5e', tagline: 'The dead follow your grief.',
     narrative: 'ANOMALY DETECTED — the dead recognize their procession. CLASS REGISTERED: MOURNING KING.',
     skills: [
@@ -544,7 +544,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'vessel', name: 'Vessel', judgeOf: 'Judge of Despair',
+    key: 'vessel', name: 'Vessel', judgeOf: 'Judge of Ruin',
     color: '#5e3a78', tagline: 'Something ancient lives inside you.',
     narrative: 'ANOMALY DETECTED — second signature inside the body. CLASS REGISTERED: VESSEL.',
     // Three branches:
@@ -587,7 +587,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'hollow', name: 'Hollow', judgeOf: 'Judge of Despair',
+    key: 'hollow', name: 'Hollow', judgeOf: 'Judge of Ruin',
     color: '#3a3a4a', tagline: 'What remains when grief has finished.',
     narrative: 'ANOMALY DETECTED — interior signal lost. CLASS REGISTERED: HOLLOW.',
     skills: [
@@ -600,7 +600,7 @@ const CLASS_DATA = [
     ],
   },
   {
-    key: 'abyss_walker', name: 'Abyss Walker', judgeOf: 'Judge of Despair',
+    key: 'abyss_walker', name: 'Abyss Walker', judgeOf: 'Judge of Ruin',
     color: '#1c2840', tagline: 'A path downward, walked anyway.',
     narrative: 'ANOMALY DETECTED — descent pattern stable. CLASS REGISTERED: ABYSS WALKER.',
     skills: [
@@ -649,21 +649,30 @@ for (const c of CLASS_DATA) {
 // CLASS CHOICES — formKey → array of class keys offered at the post-Judges
 // pick screen.
 //
+// Form key convention matches the Judge forms from the world canon:
+//   verdict      — Verdict (Final Judge of Humanity) — godlike exclusives
+//   dominion     — Dominion (Judges of Authority) — buffed Mercy + Wrath together
+//   absolution   — Absolution (Judge of Purity) — buffed Mercy alone
+//   ruin         — Ruin (Judge of Desolation) — buffed Wrath alone
+//   equilibrium  — Equilibrium (Judges of Balance) — Mercy + Wrath together
+//   mercy        — Mercy (Judge of Salvation) — base form
+//   wrath        — Wrath (Judge of Ruin) — base form
+//
 // Rules from design discussion:
 //   • verdict has 3 GODLIKE classes that appear nowhere else.
-//   • Each of the other 6 bosses has 4 class choices.
-//   • Across the 6 non-verdict bosses (24 slots, 18 classes), 6 classes
+//   • Each of the other 6 forms has 4 class choices.
+//   • Across the 6 non-verdict forms (24 slots, 18 classes), 6 classes
 //     appear twice (always on thematically-adjacent axes) and 12 appear once.
 //   • No class appears three or more times.
 // ─────────────────────────────────────────────────────────────────────────
 export const CLASS_CHOICES = {
-  verdict:        ['eclipse_walker', 'nullborn', 'error'],
-  dual_powered:   ['prime', 'arbiter', 'oathbreaker', 'unwritten'],
-  mercy_powered:  ['monarch', 'bastion', 'dawnbringer', 'arbiter'],
-  wrath_powered:  ['wrathborn', 'dreadnought', 'ravager', 'chimera'],
-  dual:           ['ghostblade', 'unwritten', 'silent_judge', 'oathbreaker'],
-  mercy:          ['chimera', 'devourer', 'mourning_king', 'monarch'],
-  wrath:          ['vessel', 'hollow', 'abyss_walker', 'wrathborn'],
+  verdict:     ['eclipse_walker', 'nullborn', 'error'],
+  dominion:    ['prime', 'arbiter', 'oathbreaker', 'unwritten'],
+  absolution:  ['monarch', 'bastion', 'dawnbringer', 'arbiter'],
+  ruin:        ['wrathborn', 'dreadnought', 'ravager', 'chimera'],
+  equilibrium: ['ghostblade', 'unwritten', 'silent_judge', 'oathbreaker'],
+  mercy:       ['chimera', 'devourer', 'mourning_king', 'monarch'],
+  wrath:       ['vessel', 'hollow', 'abyss_walker', 'wrathborn'],
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
