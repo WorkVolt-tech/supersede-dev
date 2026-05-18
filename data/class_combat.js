@@ -183,6 +183,82 @@ export function getActiveClassSkills(player, statusEffects) {
         classColor: cls.color, available: !used['bleeding_cascade'] })
     }
   }
+
+  // ── Nullborn ────────────────────────────────────────────────────────
+  if (ac === 'nullborn') {
+    if (hasSkill(player, 'nullborn_t2c')) {
+      out.push({ id: 'erase_mark', label: 'Erase Mark', sub: 'Erase enemy status, deal turns×4 damage',
+        classColor: cls.color, available: !used['erase_mark'] })
+    }
+    if (hasSkill(player, 'nullborn_t5a')) {
+      out.push({ id: 'singularity', label: 'Singularity', sub: 'Collapse Null × 30 dmg, ignore DEF',
+        classColor: cls.color, available: !used['singularity'] && (statusEffects.cls_nullStacks || 0) > 0 })
+    }
+    if (hasSkill(player, 'nullborn_t5c')) {
+      out.push({ id: 'final_erasure', label: 'Final Erasure', sub: 'Erase all buffs, deal their cumulative ATK',
+        classColor: cls.color, available: !used['final_erasure'] })
+    }
+    if (hasSkill(player, 'nullborn_t6b')) {
+      out.push({ id: 'read_error', label: 'Read Error', sub: '5 turns untargetable (can still attack)',
+        classColor: cls.color, available: !used['read_error'] })
+    }
+  }
+
+  // ── Error ───────────────────────────────────────────────────────────
+  if (ac === 'error') {
+    if (hasSkill(player, 'error_t2a')) {
+      out.push({ id: 'caught_exception', label: 'Caught Exception', sub: 'Re-roll the Glitch this turn',
+        classColor: cls.color, available: !used['caught_exception'] })
+    }
+    if (hasSkill(player, 'error_t2c')) {
+      out.push({ id: 'buffer', label: 'Buffer', sub: statusEffects.cls_bufferStored ? 'RELEASE — next strike ×2' : 'Store next strike (release later for ×2)',
+        classColor: cls.color, available: !used['buffer_release'] })
+    }
+    if (hasSkill(player, 'error_t3c')) {
+      out.push({ id: 'try_catch', label: 'Try/Catch', sub: '3 turns of reflecting all damage',
+        classColor: cls.color, available: !used['try_catch'] })
+    }
+    if (hasSkill(player, 'error_t4c')) {
+      out.push({ id: 'kernel_panic', label: 'Kernel Panic', sub: 'Deal current HP as damage. Drop to 1 HP.',
+        classColor: cls.color, available: !used['kernel_panic'] })
+    }
+    if (hasSkill(player, 'error_t5b')) {
+      out.push({ id: 'bit_flip', label: 'Bit Flip', sub: 'Swap your HP with enemy HP',
+        classColor: cls.color, available: !used['bit_flip'] })
+    }
+    if (hasSkill(player, 'error_t5c')) {
+      out.push({ id: 'segfault', label: 'Segfault', sub: 'Next 3 strikes are crits +50%',
+        classColor: cls.color, available: !used['segfault'] })
+    }
+    if (hasSkill(player, 'error_t6a')) {
+      out.push({ id: 'compile_time_error', label: 'Compile-Time Error', sub: '3 turns: all stats × 3, no downgrades',
+        classColor: cls.color, available: !used['compile_time_error'] })
+    }
+    if (hasSkill(player, 'error_t6b')) {
+      out.push({ id: 'garbage_collection', label: 'Garbage Collection', sub: 'Clear all status, heal 50%, lose 10 SP',
+        classColor: cls.color, available: !used['garbage_collection'] })
+    }
+    if (hasSkill(player, 'error_t6c')) {
+      out.push({ id: 'fatal_exception', label: 'Fatal Exception', sub: 'Instant-kill <50% HP, else you die',
+        classColor: cls.color, available: !used['fatal_exception'] })
+    }
+  }
+
+  // ── Prime ───────────────────────────────────────────────────────────
+  if (ac === 'prime') {
+    if (hasSkill(player, 'prime_t6a')) {
+      out.push({ id: 'apex_sovereign', label: 'Apex Sovereign', sub: 'Damage = stacked stat bonuses',
+        classColor: cls.color, available: !used['apex_sovereign'] })
+    }
+    if (hasSkill(player, 'prime_t6b')) {
+      out.push({ id: 'final_standard', label: 'Final Standard', sub: '3 turns of doubled action effects',
+        classColor: cls.color, available: !used['final_standard'] })
+    }
+    if (hasSkill(player, 'prime_t6c')) {
+      out.push({ id: 'throne_speaks', label: 'The Throne Speaks', sub: '5 turns of enemy stun',
+        classColor: cls.color, available: !used['throne_speaks'] })
+    }
+  }
   return out
 }
 
@@ -371,6 +447,101 @@ export function onActiveSkill(skillId, player, statusEffects, enemy) {
     messages.push('🩸 Bleeding Cascade — wounds tear open. ×2 stacks for 5 turns.')
   }
 
+  // ── Nullborn actives ─────────────────────────────────────────────────
+  else if (skillId === 'erase_mark') {
+    // Find a current enemy status effect with turn count; erase + deal damage
+    // = (turn count × 4). Common status fields the engine tracks: burnTurns,
+    // poisonTurns, bleedingTurns, enemyStunTurns. We pick the first nonzero.
+    const candidates = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns', 'enemyStunTurns', 'cls_rotTurns']
+    let erased = null, turns = 0
+    for (const k of candidates) {
+      if ((statusEffects[k] || 0) > 0) { erased = k; turns = statusEffects[k]; statusEffects[k] = 0; break }
+    }
+    if (erased) {
+      statusEffects.cls_eraseMarkDamage = turns * 4
+      messages.push(`✕ Erase Mark — ${erased.replace(/Turns$/,'').replace(/^cls_/,'')} erased. +${turns * 4} damage.`)
+    } else {
+      messages.push('✕ Erase Mark — nothing to erase. The strike lands flat.')
+    }
+  } else if (skillId === 'singularity') {
+    const stacks = statusEffects.cls_nullStacks || 0
+    statusEffects.cls_singularityDamage = stacks * 30
+    statusEffects.cls_nullStacks = 0
+    messages.push(`✕ Singularity — ${stacks} Null collapse into ${stacks * 30} damage.`)
+  } else if (skillId === 'final_erasure') {
+    // Erase ALL enemy buffs/passives. We approximate by stripping common
+    // boost fields: enemyATKMult, enemy.def, etc. The damage is approximated
+    // as enemy.atk × 2 (their cumulative force).
+    statusEffects.enemyATKMult = 1.0
+    statusEffects.cls_finalErasureDamage = (enemy.atk || 20) * 2
+    messages.push(`✕ Final Erasure — all enemy buffs erased. +${statusEffects.cls_finalErasureDamage} damage.`)
+  } else if (skillId === 'read_error') {
+    statusEffects.cls_readErrorTurns = 5
+    messages.push('✕ Read Error — the System cannot find you. 5 turns untargetable.')
+  }
+
+  // ── Error actives ────────────────────────────────────────────────────
+  else if (skillId === 'caught_exception') {
+    // Re-roll the Glitch this turn — engine reads cls_glitchRerollPending
+    statusEffects.cls_glitchRerollPending = true
+    messages.push('⚠ Caught Exception — glitch re-rolling.')
+  } else if (skillId === 'buffer') {
+    if (statusEffects.cls_bufferStored) {
+      // Release: next strike gets ×2
+      statusEffects.cls_bufferRelease = true
+      statusEffects.cls_bufferStored = false
+      statusEffects.cls_used['buffer_release'] = true  // allow re-trigger of cycle
+      messages.push('⚠ Buffer released — next strike ×2.')
+    } else {
+      // Store
+      statusEffects.cls_bufferStored = true
+      statusEffects.cls_used['buffer'] = false  // allow release
+      messages.push('⚠ Buffer stored — release on a future turn.')
+      return { messages, consumed: false }  // doesn't burn the turn
+    }
+  } else if (skillId === 'try_catch') {
+    statusEffects.cls_tryCatchTurns = 3
+    messages.push('⚠ Try/Catch — 3 turns of reflection.')
+  } else if (skillId === 'kernel_panic') {
+    statusEffects.cls_kernelPanicReady = true
+    messages.push('⚠ Kernel Panic — deal current HP as damage. Brace for the cost.')
+  } else if (skillId === 'bit_flip') {
+    statusEffects.cls_bitFlipReady = true
+    messages.push('⚠ Bit Flip — HP swap incoming on next sync.')
+  } else if (skillId === 'segfault') {
+    statusEffects.cls_segfaultStrikes = 3
+    messages.push('⚠ Segfault — next 3 strikes are crits +50%.')
+  } else if (skillId === 'compile_time_error') {
+    statusEffects.cls_compileTimeErrorTurns = 3
+    messages.push('⚠ Compile-Time Error — 3 turns of all stats × 3.')
+  } else if (skillId === 'garbage_collection') {
+    // Clear all known status effects on player, heal, lose SP
+    const clearFields = ['burnTurns','poisonTurns','cls_bleedingTurns','enemyStunTurns','statusEffects'].filter(k => k in statusEffects)
+    for (const k of clearFields) statusEffects[k] = 0
+    statusEffects.cls_garbageCollectionHeal = true
+    statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) - 10
+    messages.push('⚠ Garbage Collection — status cleared, heal triggered, -10 SP.')
+  } else if (skillId === 'fatal_exception') {
+    statusEffects.cls_fatalExceptionReady = true
+    messages.push('⚠ Fatal Exception — execute or die.')
+  }
+
+  // ── Prime actives ────────────────────────────────────────────────────
+  else if (skillId === 'apex_sovereign') {
+    const total = (statusEffects.playerATKBonus || 0)
+                + (statusEffects.playerDEFBonus || 0)
+                + (statusEffects.playerSPDBonus || 0)
+    statusEffects.cls_apexSovereignDamage = total
+    messages.push(`👑 Apex Sovereign — strike with ${total} stored damage.`)
+  } else if (skillId === 'final_standard') {
+    statusEffects.cls_finalStandardTurns = 3
+    messages.push('👑 Final Standard — 3 turns of doubled actions.')
+  } else if (skillId === 'throne_speaks') {
+    statusEffects.cls_throneSpeaksTurns = 5
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 5)
+    messages.push('👑 The Throne Speaks — 5 turns. No one moves but you.')
+  }
+
   return { messages, consumed: true }
 }
 
@@ -448,6 +619,64 @@ export function onCombatStart(player, statusEffects) {
   statusEffects.cls_murderStrikeReady   = false
   statusEffects.cls_finalMassacreRReady = false
   statusEffects.cls_finalMassacreShots  = 0
+  // Nullborn
+  statusEffects.cls_nullStacks          = 0
+  statusEffects.cls_nullAbsorbedTotal   = 0  // damage absorbed (for Vacuum Strike)
+  statusEffects.cls_readErrorTurns      = 0
+  statusEffects.cls_singularityDamage   = 0
+  statusEffects.cls_finalErasureDamage  = 0
+  statusEffects.cls_eraseMarkDamage     = 0
+  statusEffects.cls_voidedRecordActive  = false  // updated each turn
+  // Error
+  statusEffects.cls_glitchAtkMult       = 1
+  statusEffects.cls_glitchDefMult       = 1
+  statusEffects.cls_glitchSpdMult       = 1
+  statusEffects.cls_glitchRerollPending = false
+  statusEffects.cls_bufferStored        = false
+  statusEffects.cls_bufferRelease       = false
+  statusEffects.cls_tryCatchTurns       = 0
+  statusEffects.cls_kernelPanicReady    = false
+  statusEffects.cls_bitFlipReady        = false
+  statusEffects.cls_segfaultStrikes     = 0
+  statusEffects.cls_compileTimeErrorTurns = 0
+  statusEffects.cls_garbageCollectionHeal = false
+  statusEffects.cls_fatalExceptionReady = false
+  statusEffects.cls_recursionCounter    = 0
+  // Prime
+  statusEffects.cls_primeTurnsAlive     = 0
+  statusEffects.cls_primeATKGain        = 0   // accumulated from Stand Tall
+  statusEffects.cls_primeDEFGain        = 0
+  statusEffects.cls_primeSPDGain        = 0
+  statusEffects.cls_primeUnyieldingPct  = 0   // Unyielding Standard
+  statusEffects.cls_authorityPulseTurn  = 0   // every-3rd-turn counter
+  statusEffects.cls_finalStandardTurns  = 0
+  statusEffects.cls_throneSpeaksTurns   = 0
+  statusEffects.cls_apexSovereignDamage = 0
+  statusEffects.cls_empyreanUsed        = false
+  // Royal Banner — Prime t1b: +10% all stats at combat start
+  if (hasSkill(player, 'prime_t1b')) {
+    statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + Math.round((player.atk || 5) * 0.10)
+    statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + Math.round((player.def || 2) * 0.10)
+    statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus || 0) + Math.round((player.speed || 5) * 0.10)
+    messages.push('👑 Royal Banner — +10% all stats.')
+  }
+  // Eternal Sovereign — Prime t5a: load persistent stat stacks from player
+  if (hasSkill(player, 'prime_t5a')) {
+    const atkStacks = player.prime_atk_stacks || 0
+    const defStacks = player.prime_def_stacks || 0
+    const spdStacks = player.prime_spd_stacks || 0
+    statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + atkStacks
+    statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + defStacks
+    statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus || 0) + spdStacks
+    if (atkStacks + defStacks + spdStacks > 0) {
+      messages.push(`👑 Eternal Sovereign — carry-over: +${atkStacks} ATK, +${defStacks} DEF, +${spdStacks} SPD.`)
+    }
+  }
+  // Nullborn — Null Form: start with 3 Null stacks
+  if (hasSkill(player, 'nullborn_t1a')) {
+    statusEffects.cls_nullStacks = 3
+    messages.push('✕ Null Form — 3 stacks ready.')
+  }
 
   // Arbiter — Equal Sky: +5 SP at combat start
   if (hasSkill(player, 'arbiter_t5b')) {
@@ -770,6 +999,113 @@ export function onPlayerAttack(player, statusEffects, enemy, baseDamage) {
       critChanceAdd += 1.0  // guaranteed crit on this hit
       statusEffects.cls_finalMassacreRReady = false
       messages.push('🩸 Final Massacre — three killing blows in one.')
+    }
+  }
+
+  // ════════ Nullborn ══════════════════════════════════════════════════
+  if (ac === 'nullborn') {
+    // Vacuum Strike — t3a: 5+ Null → next strike +absorbed damage, consume 1 Null
+    if (hasSkill(player, 'nullborn_t3a') && (statusEffects.cls_nullStacks || 0) >= 5) {
+      bonusFlatDmg += statusEffects.cls_nullAbsorbedTotal || 0
+      statusEffects.cls_nullStacks -= 1
+      statusEffects.cls_nullAbsorbedTotal = Math.round((statusEffects.cls_nullAbsorbedTotal || 0) * 0.5)
+      messages.push('✕ Vacuum Strike — absorbed energy released.')
+    }
+    // Voided Record — t5b: <50% HP → +30% damage
+    if (hasSkill(player, 'nullborn_t5b') && typeof statusEffects._enginePlayerHpPct === 'number' && statusEffects._enginePlayerHpPct < 0.50) {
+      dmgMult *= 1.30
+    }
+    // Null God — t6a: at 15+ Null, strikes deal Null × 5 bonus
+    if (hasSkill(player, 'nullborn_t6a') && (statusEffects.cls_nullStacks || 0) >= 15) {
+      bonusFlatDmg += statusEffects.cls_nullStacks * 5
+    }
+    // Stored active damages from buttons:
+    if (statusEffects.cls_singularityDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_singularityDamage
+      defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)  // ignore all DEF
+      statusEffects.cls_singularityDamage = 0
+      messages.push('✕ Singularity strikes.')
+    }
+    if (statusEffects.cls_finalErasureDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_finalErasureDamage
+      statusEffects.cls_finalErasureDamage = 0
+      messages.push('✕ Final Erasure strikes.')
+    }
+    if (statusEffects.cls_eraseMarkDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_eraseMarkDamage
+      statusEffects.cls_eraseMarkDamage = 0
+    }
+  }
+
+  // ════════ Error ═════════════════════════════════════════════════════
+  if (ac === 'error') {
+    // Glitch — t1a: stat multipliers applied to damage. ATK mult is direct,
+    // SPD mult adds to crit chance (per Speed Demon style), DEF mult is
+    // applied on incoming damage in onPlayerHit.
+    if (hasSkill(player, 'error_t1a')) {
+      const atkMult = statusEffects.cls_glitchAtkMult || 1
+      if (atkMult > 1) dmgMult *= atkMult
+      else if (atkMult < 1) dmgMult *= atkMult  // could be 1/3
+      const spdMult = statusEffects.cls_glitchSpdMult || 1
+      if (spdMult > 1) critChanceAdd += 0.20  // simplified speed→crit relation
+    }
+    // Compile-Time Error — t6a: all stats × 3
+    if (statusEffects.cls_compileTimeErrorTurns > 0) {
+      dmgMult *= 3.0
+    }
+    // Buffer release: next strike ×2
+    if (statusEffects.cls_bufferRelease) {
+      dmgMult *= 2.0
+      statusEffects.cls_bufferRelease = false
+      messages.push('⚠ Buffer fires — ×2 strike.')
+    }
+    // Segfault strikes
+    if ((statusEffects.cls_segfaultStrikes || 0) > 0) {
+      critChanceAdd += 1.0
+      dmgMult *= 1.5  // +50% crit bonus on top of normal crit ×1.5
+      statusEffects.cls_segfaultStrikes -= 1
+      messages.push(`⚠ Segfault — crit (${statusEffects.cls_segfaultStrikes} left).`)
+    }
+    // Stack Overflow — t1c: kills double next strike (flag set in onKill)
+    if (statusEffects.cls_stackOverflowReady) {
+      dmgMult *= 2.0
+      statusEffects.cls_stackOverflowReady = false
+      messages.push('⚠ Stack Overflow strikes.')
+    }
+    // Recursion — t3b: every 4th strike, auto-proc second hit at 60% (deferred)
+    if (hasSkill(player, 'error_t3b')) {
+      statusEffects.cls_recursionCounter = (statusEffects.cls_recursionCounter || 0) + 1
+      if (statusEffects.cls_recursionCounter >= 4) {
+        statusEffects.cls_recursionCounter = 0
+        statusEffects.cls_recursionPending = true
+      }
+    }
+  }
+
+  // ════════ Prime ═════════════════════════════════════════════════════
+  if (ac === 'prime') {
+    // Marshal — t2b: +5% damage per turn elapsed
+    if (hasSkill(player, 'prime_t2b')) {
+      const t = statusEffects.cls_primeTurnsAlive || 0
+      if (t > 0) dmgMult *= (1 + 0.05 * t)
+    }
+    // Throneborn — t4a: at 5+ turns elapsed, +30% damage
+    if (hasSkill(player, 'prime_t4a') && (statusEffects.cls_primeTurnsAlive || 0) >= 5) {
+      dmgMult *= 1.30
+    }
+    // Unyielding Standard — t4b: cumulative damage% gain
+    if (hasSkill(player, 'prime_t4b') && (statusEffects.cls_primeUnyieldingPct || 0) > 0) {
+      dmgMult *= (1 + (statusEffects.cls_primeUnyieldingPct || 0) / 100)
+    }
+    // Final Standard — t6b: 3 turns of doubled actions
+    if (statusEffects.cls_finalStandardTurns > 0) {
+      dmgMult *= 2.0
+    }
+    // Apex Sovereign — store damage from active
+    if (statusEffects.cls_apexSovereignDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_apexSovereignDamage
+      statusEffects.cls_apexSovereignDamage = 0
+      messages.push('👑 Apex Sovereign — all banners spent in one strike.')
     }
   }
 
@@ -1106,6 +1442,144 @@ export function onPlayerHit(player, statusEffects, enemy, incomingDamage, player
     // No direct on-hit defensive — Ravager is offense-focused
   }
 
+  // ── Nullborn ────────────────────────────────────────────────────────
+  if (ac === 'nullborn') {
+    // Read Error active: untargetable
+    if (statusEffects.cls_readErrorTurns > 0) {
+      dmgMult = 0
+      messages.push('✕ Read Error — attack does not find you.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Null Form — t1a: each Null absorbs one full attack
+    if (hasSkill(player, 'nullborn_t1a') && (statusEffects.cls_nullStacks || 0) > 0) {
+      // Null God — t6a: at 15+ Null stacks, enemy attacks add 2 Null instead
+      if (hasSkill(player, 'nullborn_t6a') && statusEffects.cls_nullStacks >= 15) {
+        const cap = (hasSkill(player, 'nullborn_t4a')) ? 20 : 10
+        statusEffects.cls_nullStacks = Math.min(cap, statusEffects.cls_nullStacks + 2)
+        dmgMult = 0
+        messages.push('✕ Null God — attack absorbed, +2 Null.')
+        return { dmgMult, reflectAmount, messages }
+      }
+      // Otherwise: each Null absorbs the full attack
+      statusEffects.cls_nullStacks -= 1
+      statusEffects.cls_nullAbsorbedTotal = (statusEffects.cls_nullAbsorbedTotal || 0) + incomingDamage
+      dmgMult = 0
+      messages.push(`✕ Null absorbs the strike (${statusEffects.cls_nullStacks} stacks remain).`)
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Empty Record — t1b: enemy crits nullified (engine sets _engineWasCrit)
+    if (hasSkill(player, 'nullborn_t1b') && statusEffects._engineWasCrit) {
+      // Cancel crit bonus by dividing back the typical 1.5x boost
+      dmgMult *= 1.0 / 1.5
+      statusEffects._engineWasCrit = false
+      messages.push('✕ Empty Record — crit nullified.')
+    }
+    // No Witness — t3b: cannot be afflicted with status (engine should
+    // honor this when applying burn/bleed/mark/silence/stun). We set a flag.
+    if (hasSkill(player, 'nullborn_t3b')) statusEffects.cls_noWitness = true
+    // Cancel — t4b: build a "would die" save (engine reads cls_cancelReady)
+    if (hasSkill(player, 'nullborn_t4b') && !statusEffects.cls_cancelUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        const heal = (statusEffects.cls_nullStacks || 0) * 5
+        statusEffects.cls_cancelUsed = true
+        statusEffects.cls_nullStacks = 0
+        statusEffects.cls_cancelHeal = heal
+        statusEffects.cls_loyalGuardSavedHp = 1  // reuse 1-HP save signal
+        dmgMult = 0
+        messages.push(`✕ Cancel — survive at 1 HP, +${heal} from Null reserves.`)
+      }
+    }
+    // Verdict Voided — t6c: on death emit Null pulse, survive at 1 HP
+    if (hasSkill(player, 'nullborn_t6c') && !statusEffects.cls_verdictVoidedUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_verdictVoidedUsed = true
+        statusEffects.cls_verdictVoidedDamage = Math.round(playerMaxHp * 0.5)
+        statusEffects.cls_loyalGuardSavedHp = 1
+        dmgMult = 0
+        messages.push(`✕ Verdict Voided — pulse releases ${Math.round(playerMaxHp * 0.5)} damage. You stand.`)
+      }
+    }
+  }
+
+  // ── Error ───────────────────────────────────────────────────────────
+  if (ac === 'error') {
+    // Try/Catch — t3c: 3 turns reflect all damage
+    if (statusEffects.cls_tryCatchTurns > 0) {
+      reflectAmount += incomingDamage
+      dmgMult = 0
+      messages.push('⚠ Try/Catch — damage reflected.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Glitch DEF mult applied to incoming
+    if (hasSkill(player, 'error_t1a')) {
+      const defMult = statusEffects.cls_glitchDefMult || 1
+      // High DEF = less damage. Inverse multiplier on incoming.
+      dmgMult *= 1.0 / defMult
+    }
+    // Compile-Time Error — t6a: +3× DEF (third of incoming)
+    if (statusEffects.cls_compileTimeErrorTurns > 0) dmgMult *= 0.33
+    // Memory Leak — t1b: +5 SP and -5 HP from taking damage
+    if (hasSkill(player, 'error_t1b')) {
+      statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + 5
+      // Format String — t4b: also heal 10 HP from the +5 SP gain
+      if (hasSkill(player, 'error_t4b')) {
+        // net effect: -5 HP from damage already taken + 10 HP heal = +5 HP net
+        statusEffects.cls_memoryLeakNetHeal = (statusEffects.cls_memoryLeakNetHeal || 0) + 10
+      }
+      // The -5 HP is implicit (regular damage stays); don't deduct separately.
+      messages.push('⚠ Memory Leak — +5 SP.')
+    }
+    // Heap Spray — t2b: 10% chance of 50 random damage (proc per damage event)
+    if (hasSkill(player, 'error_t2b') && Math.random() < 0.10) {
+      const toEnemy = Math.random() < 0.5
+      if (toEnemy) {
+        reflectAmount += 50
+        messages.push('⚠ Heap Spray — 50 damage thrown at enemy.')
+      } else {
+        // The damage to self happens via dmgMult: bump it
+        dmgMult *= 1 + (50 / Math.max(1, incomingDamage))
+        messages.push('⚠ Heap Spray — 50 damage thrown at SELF.')
+      }
+    }
+  }
+
+  // ── Prime ───────────────────────────────────────────────────────────
+  if (ac === 'prime') {
+    // Crown's Weight — t1c: basic strikes ALSO reduce enemy ATK (applied when
+    // YOU strike, not when you're hit — so no-op here)
+    // Authority Pulse — t2c: every 3rd turn, DEF doubles
+    if (hasSkill(player, 'prime_t2c') && (statusEffects.cls_authorityPulseTurn || 0) >= 2) {
+      dmgMult *= 0.5
+      messages.push('👑 Authority Pulse — doubled DEF this turn.')
+    }
+    // Throneborn — t4a: at 5+ turns alive, +30% DEF
+    if (hasSkill(player, 'prime_t4a') && (statusEffects.cls_primeTurnsAlive || 0) >= 5) {
+      dmgMult *= 0.77  // approximate the +30% DEF effect on incoming damage
+    }
+    // Unyielding Standard — t4b: +1% damage permanently on hit (cap +50%)
+    if (hasSkill(player, 'prime_t4b')) {
+      statusEffects.cls_primeUnyieldingPct = Math.min(50, (statusEffects.cls_primeUnyieldingPct || 0) + 1)
+    }
+    // Empyrean — t5c: on death, survive at 1 HP + bonus to all stacks
+    if (hasSkill(player, 'prime_t5c') && !statusEffects.cls_empyreanUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_empyreanUsed = true
+        statusEffects.cls_primeATKGain = (statusEffects.cls_primeATKGain || 0) + 50
+        statusEffects.cls_primeDEFGain = (statusEffects.cls_primeDEFGain || 0) + 50
+        statusEffects.cls_primeSPDGain = (statusEffects.cls_primeSPDGain || 0) + 50
+        statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + 50
+        statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + 50
+        statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus || 0) + 50
+        statusEffects.cls_loyalGuardSavedHp = 1
+        dmgMult = 0
+        messages.push('👑 Empyrean — the throne does not fall. +50 to all stacks.')
+      }
+    }
+  }
+
   return { dmgMult, reflectAmount, messages }
 }
 
@@ -1161,6 +1635,20 @@ export function onEnemyHpChange(player, statusEffects, enemy, oldHp, newHp, enem
       messages.push('🗡 Final Witness — execution.')
     }
     statusEffects.cls_finalWitnessReady = false  // consumed regardless
+  }
+
+  // Fatal Exception — Error t6c: instant-kill if <50% HP; else you die.
+  // The "you die" half is handled at active-skill time (engine sees the
+  // signal and applies the cost). We resolve the instant-kill here.
+  if (!executeKill && statusEffects.cls_fatalExceptionReady) {
+    if (enemyHpPct < 0.50) {
+      executeKill = true
+      messages.push('⚠ Fatal Exception — caught the bug.')
+    } else {
+      messages.push('⚠ Fatal Exception — uncaught. You die.')
+      statusEffects.cls_fatalExceptionSelfKill = true  // engine sets HP=0
+    }
+    statusEffects.cls_fatalExceptionReady = false
   }
 
   return { executeKill, messages }
@@ -1249,6 +1737,15 @@ export function onKill(player, statusEffects, enemy) {
     if (hasSkill(player, 'ravager_t6c') && (statusEffects.cls_frenzyStacks || 0) >= 3) {
       statusEffects.cls_slaughterbornChain = true
       messages.push('🩸 Slaughterborn — chain swing.')
+    }
+  }
+
+  // ── Error ───────────────────────────────────────────────────────────
+  if (ac === 'error') {
+    // Stack Overflow — t1c: kills double your next basic strike damage
+    if (hasSkill(player, 'error_t1c')) {
+      statusEffects.cls_stackOverflowReady = true
+      messages.push('⚠ Stack Overflow — next strike doubled.')
     }
   }
 
@@ -1396,9 +1893,95 @@ export function onTurnEnd(player, statusEffects) {
 
   // ── Ravager ─────────────────────────────────────────────────────────
   // (Bleeding ticks already shared via Wrathborn's cls_bleedingTurns logic)
-  // Ravager-specific bleed compounding: Hemorrhage / Predator's Wound /
-  // Bleeding Cascade modifiers are applied in onPlayerAttack and via
-  // cls_bleedingDmg directly.
+
+  // ── Nullborn ────────────────────────────────────────────────────────
+  if (ac === 'nullborn') {
+    // Mass Null — t4a: +2 Null per turn (cap raised to 20)
+    if (hasSkill(player, 'nullborn_t4a')) {
+      statusEffects.cls_nullStacks = Math.min(20, (statusEffects.cls_nullStacks || 0) + 2)
+    }
+    if (statusEffects.cls_readErrorTurns > 0) statusEffects.cls_readErrorTurns--
+  }
+
+  // ── Error ───────────────────────────────────────────────────────────
+  if (ac === 'error') {
+    // Glitch — t1a: roll new multipliers each turn. Pool: ATK, DEF, SPD.
+    // One stat gets ×3, another ×1/3. Stable Variant (t3a) makes it only ONE.
+    // Hot Patch (t4a) below 30% HP makes both rolls positive.
+    // Refactor (t5a) lets player pick the buffed stat (we just default to ATK).
+    if (hasSkill(player, 'error_t1a')) {
+      const stats = ['Atk', 'Def', 'Spd']
+      // Reset
+      statusEffects.cls_glitchAtkMult = 1
+      statusEffects.cls_glitchDefMult = 1
+      statusEffects.cls_glitchSpdMult = 1
+      const hotPatch = hasSkill(player, 'error_t4a') && (statusEffects._enginePlayerHpPct || 1) < 0.30
+      const stable = hasSkill(player, 'error_t3a')
+      const refactor = hasSkill(player, 'error_t5a')
+      // Pick buffed stat
+      const buffStat = refactor ? 'Atk' : stats[Math.floor(Math.random() * 3)]
+      statusEffects['cls_glitch' + buffStat + 'Mult'] = 3
+      // Pick downgraded stat (skip if hot patch, skip if stable variant)
+      if (!hotPatch && !stable) {
+        let pool = stats.filter(s => s !== buffStat)
+        const downStat = pool[Math.floor(Math.random() * pool.length)]
+        statusEffects['cls_glitch' + downStat + 'Mult'] = 1/3
+        messages.push(`⚠ Glitch — ${buffStat} × 3, ${downStat} ÷ 3.`)
+      } else {
+        messages.push(`⚠ Glitch — ${buffStat} × 3 (no downgrade).`)
+      }
+    }
+    if (statusEffects.cls_tryCatchTurns > 0)       statusEffects.cls_tryCatchTurns--
+    if (statusEffects.cls_compileTimeErrorTurns > 0) statusEffects.cls_compileTimeErrorTurns--
+    // Apply Memory Leak net heal
+    if ((statusEffects.cls_memoryLeakNetHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_memoryLeakNetHeal
+      statusEffects.cls_memoryLeakNetHeal = 0
+    }
+    // Apply Garbage Collection heal (50% max HP)
+    if (statusEffects.cls_garbageCollectionHeal) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      healToPlayer += Math.round(maxHp * 0.50)
+      statusEffects.cls_garbageCollectionHeal = false
+      messages.push('⚠ Garbage Collection — +50% max HP heal.')
+    }
+  }
+
+  // ── Prime ───────────────────────────────────────────────────────────
+  if (ac === 'prime') {
+    statusEffects.cls_primeTurnsAlive = (statusEffects.cls_primeTurnsAlive || 0) + 1
+    const marchForever = hasSkill(player, 'prime_t5b')
+                     && (statusEffects._enginePlayerHpPct || 1) < 0.30
+    const mult = marchForever ? 2 : 1
+    // Stand Tall — t1a: +2 ATK / turn (or +4 with March Forever)
+    if (hasSkill(player, 'prime_t1a')) {
+      const gain = 2 * mult
+      statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + gain
+      statusEffects.cls_primeATKGain = (statusEffects.cls_primeATKGain || 0) + gain
+    }
+    // Iron Resolve — t2a: +1 DEF / turn (or +2 with March Forever)
+    if (hasSkill(player, 'prime_t2a')) {
+      const gain = 1 * mult
+      statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + gain
+      statusEffects.cls_primeDEFGain = (statusEffects.cls_primeDEFGain || 0) + gain
+    }
+    // Quickening Will — t3a: +2 SPD / turn (or +4 with March Forever)
+    if (hasSkill(player, 'prime_t3a')) {
+      const gain = 2 * mult
+      statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus || 0) + gain
+      statusEffects.cls_primeSPDGain = (statusEffects.cls_primeSPDGain || 0) + gain
+    }
+    if (statusEffects.cls_finalStandardTurns > 0) statusEffects.cls_finalStandardTurns--
+    if (statusEffects.cls_throneSpeaksTurns > 0) {
+      statusEffects.cls_throneSpeaksTurns--
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, statusEffects.cls_throneSpeaksTurns)
+    }
+    // Authority Pulse — t2c: every 3rd turn counter
+    if (hasSkill(player, 'prime_t2c')) {
+      statusEffects.cls_authorityPulseTurn = (statusEffects.cls_authorityPulseTurn || 0) + 1
+      if (statusEffects.cls_authorityPulseTurn >= 3) statusEffects.cls_authorityPulseTurn = 0
+    }
+  }
 
   return { messages, damageToEnemy, healToPlayer }
 }
@@ -1411,4 +1994,34 @@ export function onAllyWouldDie(player, statusEffects, ally) {
   if (statusEffects.cls_pillarUsed) return false
   statusEffects.cls_pillarUsed = true
   return true  // engine should set ally.hp = 1 and grant a full action
+}
+
+// ── HOOK: combat end (won) ──────────────────────────────────────────────
+// Called by the engine when combat ends in victory. Returns a partial
+// update object the engine should merge into the player's DB row + memory.
+// Used for class effects that persist between combats — currently only
+// Prime's Eternal Sovereign (t5a) which carries stat stacks forward.
+// Returns: { dbUpdates: {col: value, ...}, messages: [str] }
+export function onCombatEnd(player, statusEffects, outcome) {
+  if (!player.active_class) return { dbUpdates: {}, messages: [] }
+  if (outcome !== 'win') return { dbUpdates: {}, messages: [] }
+  const messages = []
+  const dbUpdates = {}
+  const ac = player.active_class
+
+  if (ac === 'prime' && hasSkill(player, 'prime_t5a')) {
+    // Eternal Sovereign — persist stat stacks (cap 50 each, sum with existing).
+    const cap = 50
+    const newAtk = Math.min(cap, (player.prime_atk_stacks || 0) + (statusEffects.cls_primeATKGain || 0))
+    const newDef = Math.min(cap, (player.prime_def_stacks || 0) + (statusEffects.cls_primeDEFGain || 0))
+    const newSpd = Math.min(cap, (player.prime_spd_stacks || 0) + (statusEffects.cls_primeSPDGain || 0))
+    if (newAtk !== (player.prime_atk_stacks || 0)) dbUpdates.prime_atk_stacks = newAtk
+    if (newDef !== (player.prime_def_stacks || 0)) dbUpdates.prime_def_stacks = newDef
+    if (newSpd !== (player.prime_spd_stacks || 0)) dbUpdates.prime_spd_stacks = newSpd
+    if (Object.keys(dbUpdates).length > 0) {
+      messages.push(`👑 Eternal Sovereign — stacks persist: ATK ${newAtk}, DEF ${newDef}, SPD ${newSpd}.`)
+    }
+  }
+
+  return { dbUpdates, messages }
 }
