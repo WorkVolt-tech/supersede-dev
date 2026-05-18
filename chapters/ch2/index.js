@@ -3338,6 +3338,17 @@ You walk back out.`
         }
         const lu=await checkLevelUp(oldXp,newXp,oldLvl); if(lu) Object.assign(updates,lu)
 
+        // ── Class skill: combat-end hook (persistent stat updates) ──────
+        // Currently used by Prime's Eternal Sovereign (t5a) to carry stat
+        // stacks forward between combats. Returns DB column updates to merge.
+        const _clsEnd = ClsCombat.onCombatEnd(player, statusEffects, 'win')
+        if (Object.keys(_clsEnd.dbUpdates).length > 0) {
+          Object.assign(updates, _clsEnd.dbUpdates)
+          // Also update in-memory player so subsequent reads see the new values
+          for (const k of Object.keys(_clsEnd.dbUpdates)) player[k] = _clsEnd.dbUpdates[k]
+        }
+        if (_clsEnd.messages.length) window.showToast(_clsEnd.messages[0])
+
         await save(updates)
         const nextNode=isBoss?'chapter_end_ch2':onWin
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
@@ -3527,12 +3538,52 @@ You walk back out.`
             statusEffects.cls_cataclysmAfterEffect = false
             messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
           }
+          // Kernel Panic (Error t4c): deal current HP as damage, set HP to 1
+          if (statusEffects.cls_kernelPanicReady) {
+            const panicDmg = currentHp
+            enemyHp = Math.max(0, enemyHp - panicDmg)
+            currentHp = 1
+            statusEffects.cls_kernelPanicReady = false
+            messages.push(`⚠ Kernel Panic dealt <strong>${panicDmg}</strong>. You drop to 1 HP.`)
+          }
+          // Bit Flip (Error t5b): swap player HP and enemy HP
+          if (statusEffects.cls_bitFlipReady) {
+            const t = currentHp
+            currentHp = Math.min(maxPlayerHp, enemyHp)
+            enemyHp   = Math.min(maxEnemyHp, t)
+            statusEffects.cls_bitFlipReady = false
+            messages.push('⚠ Bit Flip — HP values swapped.')
+          }
+          // Verdict Voided (Nullborn t6c): pulse damage on death-save
+          if (statusEffects.cls_verdictVoidedDamage > 0) {
+            const pulseDmg = statusEffects.cls_verdictVoidedDamage
+            enemyHp = Math.max(0, enemyHp - pulseDmg)
+            statusEffects.cls_verdictVoidedDamage = 0
+            messages.push(`✕ Null pulse strikes for <strong>${pulseDmg}</strong>.`)
+          }
+          // Cancel (Nullborn t4b): Null-reserve heal after surviving
+          if (statusEffects.cls_cancelHeal > 0) {
+            currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_cancelHeal)
+            statusEffects.cls_cancelHeal = 0
+          }
+          // Recursion (Error t3b): pending second hit at 60%
+          if (statusEffects.cls_recursionPending && enemyHp > 0) {
+            const rdmg = Math.round(dmg * 0.6)
+            enemyHp = Math.max(0, enemyHp - rdmg)
+            statusEffects.cls_recursionPending = false
+            messages.push(`⚠ Recursion — second hit for <strong>${rdmg}</strong>.`)
+          }
 
           // ── Class skill: HP-change hook (execute checks) ───────────────
           if (enemyHp > 0) {
             const _clsHp = ClsCombat.onEnemyHpChange(player, statusEffects, enemy, oldEnemyHp, enemyHp, maxEnemyHp)
             for (const m of _clsHp.messages) messages.push(m)
             if (_clsHp.executeKill) enemyHp = 0
+            // Fatal Exception (Error t6c): uncaught → player dies
+            if (statusEffects.cls_fatalExceptionSelfKill) {
+              currentHp = 0
+              statusEffects.cls_fatalExceptionSelfKill = false
+            }
           }
           if(unlocked.includes('fire_passive_burn')){const lv=_skillLv('fire_passive_burn');statusEffects.burnTurns=Math.round(2+(lv-1)*(2/9));statusEffects.burnDmg=Math.round(3+(lv-1)*(3/9));messages.push('🔥 Burn applied!')}
           if(unlocked.includes('lightning_passive_chain_damage')){const lv=_skillLv('lightning_passive_chain_damage');if(Math.random()<0.20+(lv-1)*(0.20/9)){const cd=Math.max(1,Math.floor(dmg*(0.50+(lv-1)*(0.40/9))));enemyHp=Math.max(0,enemyHp-cd);messages.push('⚡ Chain hit <strong>'+cd+'</strong>!')}}
