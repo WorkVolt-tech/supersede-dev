@@ -2465,6 +2465,10 @@ export async function mountChapter1(__mountOptions = {}) {
           if (_clsPost.deferredDamage > 0 && enemyHp > 0) {
             enemyHp = Math.max(0, enemyHp - _clsPost.deferredDamage)
           }
+          // Life-steal: apply healToPlayer
+          if (_clsPost.healToPlayer > 0) {
+            currentHp = Math.min(maxPlayerHp, currentHp + _clsPost.healToPlayer)
+          }
           // ── Class skill: post-attack HP cost (Cataclysm) ──
           if (statusEffects.cls_cataclysmAfterEffect) {
             currentHp = 1
@@ -3023,6 +3027,16 @@ export async function mountChapter1(__mountOptions = {}) {
         // ── Class skill: kill hook (Final Sentence message) ────────────
         const _clsKill = ClsCombat.onKill(player, statusEffects, enemy)
         if (_clsKill.messages.length) log(_clsKill.messages.join(' '))
+        // Apply kill-triggered heals (Vampire's Hunger / Hunter's Pulse)
+        if (statusEffects.cls_killHeal > 0) {
+          currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_killHeal)
+          statusEffects.cls_killHeal = 0
+        }
+        // Devour Soul: full heal if signal set
+        if (statusEffects.cls_devourSoulHealToFull) {
+          currentHp = maxPlayerHp
+          statusEffects.cls_devourSoulHealToFull = false
+        }
         log(enemy.name + ' has fallen.'); endCombat('win'); return
       }
       if (currentHp <= 0) {
