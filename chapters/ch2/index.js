@@ -3477,6 +3477,10 @@ You walk back out.`
             const deferred = _clsPost.deferredDamage
             enemyHp = Math.max(0, enemyHp - deferred)
           }
+          // Life-steal: apply healToPlayer from class hooks
+          if (_clsPost.healToPlayer > 0) {
+            currentHp = Math.min(maxPlayerHp, currentHp + _clsPost.healToPlayer)
+          }
 
           // ── Class skill: post-attack effects ────────────────────────────
           // Cataclysm dropped HP to 1 — apply now.
@@ -3625,8 +3629,17 @@ You walk back out.`
         // ── Class skill: kill hook (Final Sentence may refund an action) ──
         const _clsKill = ClsCombat.onKill(player, statusEffects, enemy)
         if (_clsKill.messages.length) log([...messages, ...(_clsKill.messages)].join('<br>'))
-        // Note: action refund could be wired in future combat by re-enabling
-        // buttons mid-resolve; for now the message itself is the feedback.
+        // Apply kill-triggered heals (Vampire's Hunger / Hunter's Pulse)
+        if (statusEffects.cls_killHeal > 0) {
+          currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_killHeal)
+          statusEffects.cls_killHeal = 0
+        }
+        // Devour Soul: full heal if signal set
+        if (statusEffects.cls_devourSoulHealToFull) {
+          currentHp = maxPlayerHp
+          statusEffects.cls_devourSoulHealToFull = false
+        }
+        // Note: action refund / Slaughterborn chain are cosmetic messages for v1.
         await endCombat('win');return
       }
       if(currentHp<=0){await endCombat('lose');return}
