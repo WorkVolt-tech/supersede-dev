@@ -678,6 +678,230 @@ They go back to the map.
     },
 
     // ═══════════════════════════════
+    // TAM — recurring Builder kid arc (#4)
+    // ═══════════════════════════════
+    // Tam is the bandaged-handed kid from the cache scene. After meeting
+    // the player there, they reappear twice in the mid-chapter: once
+    // wounded (mid-1), once at a crossroads being pressured by a Hunter
+    // runner (mid-2). Player choices in these scenes feed into how the
+    // finales feel — knowing Tam's history shifts the weight of seeing
+    // them in the line at the end (hero finale) or as the combat enemy
+    // (villain finale).
+
+    tam_wounded: {
+      id: 'tam_wounded', type: 'story',
+      text: `You're on your way to the next zone when you spot the bandaged hand. Tam is crouched next to a Builder runner you don't recognize — older, maybe early twenties — pressing a cloth against a leg wound that's bleeding through.
+
+  Tam looks up when they see you. The kid's face does something complicated.
+
+  "You're back." A pause. Then: "I— sorry. I keep doing that. I keep saying things like you've been gone. You haven't. You've just been in the zones."
+
+  They go back to working on the bandage. Their hands are steady. The other runner is breathing through clenched teeth.
+
+  "I'm running out of clean cloth," Tam says without looking up. "And we're not far from the medical station but I— this isn't the kind of bleeding you can walk through."
+
+  They finally look at you again.
+
+  "Could you stay? Or — I don't know. Whatever you can do."`,
+      choices: [
+        { label: 'Help bandage the leg',     sub: 'Stay — moral +5, Builder credit',                              next: 'tam_wounded_help',    moral: 5, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
+        { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical_pack — moral +8, deeper Builder credit',       next: 'tam_wounded_medpack', moral: 8, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
+        { label: '"I have to keep moving."', sub: 'Walk on — moral -3, Tam notes the choice',                     next: 'tam_wounded_left',    moral: -3, allianceTag: 'tam_walked_past' },
+      ],
+    },
+
+    tam_wounded_help: {
+      id: 'tam_wounded_help', type: 'story',
+      text: `You kneel down and take the bandage from Tam. The runner's leg is worse up close — a deep cut, edges already starting to inflame. You hold pressure while Tam tears strips from their own jacket.
+
+  Neither of you talk for a while. The breathing of the wounded runner slows. After maybe ten minutes, the bleeding eases.
+
+  Tam exhales for what feels like the first time.
+
+  "Their name is Dov," Tam says. "They have a daughter in the medical station. She's going to be — okay. Because of you."
+
+  The kid stands up. Their hand brushes yours, very brief, very deliberate. It's the kind of touch a kid gives someone they want to remember.
+
+  "I'll get them moving. Thank you. Really."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+    },
+
+    tam_wounded_medpack: {
+      id: 'tam_wounded_medpack', type: 'story',
+      text: `You pull a medical pack from your kit and hand it over. Tam takes it carefully, the way you'd take something fragile.
+
+  "You— okay. Okay. This is— this is way more than I was asking for."
+
+  Tam tears the pack open. The proper bandage goes on cleanly. The wounded runner — Dov, you'll learn the name later — visibly relaxes.
+
+  Tam looks up at you, holding the empty wrapper.
+
+  "You didn't have to do that. You really, really didn't have to do that." They tuck the wrapper into a pocket like it means something. "I'm going to remember this. I know I say that a lot. I keep saying it. But I mean it every time."
+
+  They go back to securing the bandage. The wound looks like it'll hold.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+    },
+
+    tam_wounded_left: {
+      id: 'tam_wounded_left', type: 'story',
+      text: `"Okay," Tam says quietly. Just that.
+
+  You walk past. The kid doesn't watch you go — they go back to the bandage. The wounded runner — Dov, you'd have learned the name — makes a small sound that might be a thank-you to Tam.
+
+  You keep moving toward the zone.
+
+  You're not sure if what you just felt was guilt or hunger or the System logging something. Maybe all three.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+    },
+
+    // ── Mid-2: Tam at a crossroads ─────────────────────────────────────
+    tam_at_crossroads: {
+      id: 'tam_at_crossroads', type: 'story',
+      text: `You hear the conversation before you see it — Tam's voice, lower than usual, and another voice you don't recognize. You round the corner and find them in a back alley near the plaza edge.
+
+  Tam is talking to a Voss runner. Older, mid-twenties, scar across the jaw. The runner isn't being aggressive — they're being patient, which is somehow worse. Tam looks up when they see you and their face does several things at once.
+
+  The Voss runner notices you too and turns, hands raised slightly.
+
+  "Not what it looks like." The runner has a dry voice. "I'm just — having a conversation with our young friend here about options. The Builders are folding. Everyone in this district knows it. I'm telling them what happens to the kids when a faction folds."
+
+  Tam looks at the ground. Then at you.
+
+  "They've been talking to me for a week. About switching. About what Voss can — what Voss can offer me." The kid's voice is steady but quiet. "I haven't said yes. I haven't said no, either."
+
+  The Voss runner watches you, waiting.`,
+      choices: [
+        { label: '"Walk away from them, Tam."',         sub: 'Tell Tam to stay loyal — Builder credit',                       next: 'tam_xroads_loyal',   moral: 5,  allianceTag: 'tam_stayed_builder', allianceTagRepeatable: 'builders_helped' },
+        { label: '"Tam, you decide. I won\'t."',         sub: 'Respect the kid\'s agency — no faction shift',                  next: 'tam_xroads_neutral', allianceTag: 'tam_chose_own' },
+        { label: '"The Voss runner has a point."',      sub: 'Push Tam toward Voss — Hunter credit + Tam uncertain',          next: 'tam_xroads_voss',    moral: -5, allianceTag: 'tam_uncertain' },
+        { label: 'Confront the Voss runner',            sub: 'Combat — they\'re a humanoid',                                    next: 'tam_xroads_fight',   allianceTag: 'tam_defended' },
+      ],
+    },
+
+    tam_xroads_loyal: {
+      id: 'tam_xroads_loyal', type: 'story',
+      text: `"Walk away from them, Tam." You don't take your eyes off the Voss runner when you say it.
+
+  The runner sighs — a small, patient sigh — and tilts their head toward Tam. "Up to you, kid."
+
+  Tam looks between you for maybe three seconds. Then, very deliberately, walks over and stands next to you. Not close enough to touch, but on your side of the alley.
+
+  The Voss runner shrugs.
+
+  "Fair." They turn and walk away. Slow, unhurried. Not defeated — just done.
+
+  Tam exhales when the runner is out of earshot.
+
+  "I was going to say no. I think. I'm — pretty sure I was going to say no. But I'm glad you came. It's easier with someone behind you."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    tam_xroads_neutral: {
+      id: 'tam_xroads_neutral', type: 'story',
+      text: `"Tam, you decide. I won't make this one for you."
+
+  The kid looks at you for a long moment. Surprise — and something else, harder to read. Maybe respect. Maybe loneliness.
+
+  Tam turns to the Voss runner.
+
+  "I need more time."
+
+  The runner nods. "That's fair. I'm here when you've thought about it."
+
+  They leave. Tam stays where they are. After a while, they look at you again.
+
+  "Most people would have told me what to do. The kind ones especially." A pause. "I don't know if what you did was kind. But it felt different from kindness. It felt like — being a person."
+
+  They give you a small, complicated nod and walk back toward the plaza on their own.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    tam_xroads_voss: {
+      id: 'tam_xroads_voss', type: 'story',
+      text: `"The runner has a point. The Builders are losing, Tam. You should think about it seriously."
+
+  Tam's face goes very still. The Voss runner is watching you now, not Tam, with a small, dry interest. Like noticing something they didn't expect.
+
+  "Yeah," Tam says. Just that. The kid's voice has gone flat.
+
+  The Voss runner looks at Tam. "We'll talk later, then."
+
+  They nod to you — a brief, professional nod, the kind one professional gives another — and leave.
+
+  Tam stays. They don't look at you for a long time.
+
+  Eventually they say: "I thought you were my friend."
+
+  And then they walk off, alone, toward nowhere in particular.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    tam_xroads_fight: {
+      id: 'tam_xroads_fight', type: 'combat',
+      text: `"Step away from the kid." You move between Tam and the Voss runner.
+
+  The runner sighs. "I was being polite. I really was."
+
+  They draw a blade.`,
+      enemy: { name: 'Voss Recruiter', icon: '🗡', hp: 130, atk: 18, def: 8, spd: 22, xp: 110, humanoid: true,
+        loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }] },
+      onWin: 'tam_xroads_fight_win', onLose: 'tam_xroads_fight_lose', onEscape: 'tam_xroads_fight_lose',
+    },
+
+    tam_xroads_fight_win: {
+      id: 'tam_xroads_fight_win', type: 'story',
+      text: `The Voss recruiter goes down. You stand over them. Tam is behind you, very quiet.
+
+  The recruiter is alive but out of the fight. The blade is gone, the leg won't hold. They look up at you — that same dry, professional look — and wait.`,
+      choices: [
+        { label: 'Spare them',   sub: 'Moral +5',                next: 'tam_xroads_fight_spare',   moral: 5,  allianceTag: 'spared_humanoid' },
+        { label: 'Finish them',  sub: 'Moral -5, executed flag', next: 'tam_xroads_fight_execute', moral: -5, allianceTag: 'executed_humanoid' },
+      ],
+    },
+
+    tam_xroads_fight_spare: {
+      id: 'tam_xroads_fight_spare', type: 'story',
+      text: `You step back. The recruiter watches you for a beat, then nods — the slightest nod, recognition between people who could have killed each other and didn't.
+
+  They drag themselves up against the wall and stay there.
+
+  Tam is staring at you.
+
+  "You— you didn't have to fight them at all. But you did. For me."
+
+  The kid looks at the recruiter, then back at you.
+
+  "Thank you. I'm — I won't forget this."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    tam_xroads_fight_execute: {
+      id: 'tam_xroads_fight_execute', type: 'story',
+      text: `You don't pause. The recruiter doesn't make a sound.
+
+  Tam does. A small, sharp inhale. Not a scream — a child realizing what they just watched.
+
+  You wipe the blade. When you look up, Tam is still there but they have stepped back several paces. Their hand is pressed against the wall like they need it to hold them up.
+
+  "Okay." Tam's voice is very even. "Okay. I— I'm going to go now. I'm going to — yeah."
+
+  They walk away. They don't look back.`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    tam_xroads_fight_lose: {
+      id: 'tam_xroads_fight_lose', type: 'story',
+      text: `The Voss recruiter steps over you, calmly. They tap Tam on the shoulder, conversational.
+
+  "We'll talk later, kid."
+
+  Then they walk away. Tam crouches next to you, panicked, until you can stand.
+
+  "I'm sorry," Tam whispers. "I'm so sorry."`,
+      choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+    },
+
+    // ═══════════════════════════════
     // THE SWEEP (#11) — forced plaza encounter
     // Fires from the hub interrupt when tension >= 35 and !sweep_fired.
     // Player has cleared at least 3 zones by definition (cache must have
@@ -1685,6 +1909,18 @@ The Judges are already there.`,
       else if ((log.includes('spared_humanoid') || log.includes('executed_humanoid'))
         && !log.includes('rue_action_reaction_seen') && log.includes('rue_met')) {
         nextId = 'rue_action_reaction'
+      }
+      // Tam mid-1: wounded Tam, fires after 2-3 zones cleared. Gated on
+      // cache_seen (so player has met Tam) AND zones >= 2. Once seen
+      // (tam_mid1_seen), won't refire. Sets follow-up flags that the hero
+      // finale can read for personalized text.
+      else if (!log.includes('tam_mid1_seen') && log.includes('cache_seen') && defeated >= 2 && defeated <= 5) {
+        nextId = 'tam_wounded'
+      }
+      // Tam mid-2: Tam-with-Voss-runner scene, fires after mid-1 AND 4-7
+      // zones cleared. The "Tam is being pressured to switch sides" scene.
+      else if (!log.includes('tam_mid2_seen') && log.includes('tam_mid1_seen') && defeated >= 4 && defeated <= 7) {
+        nextId = 'tam_at_crossroads'
       }
 
       // Passive clock milestones (#23): fire sysMsg overlays the first time
