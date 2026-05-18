@@ -127,13 +127,43 @@ const CLASS_DATA = [
     key: 'eclipse_walker', name: 'Eclipse Walker', judgeOf: 'Final Judge',
     color: '#9b6dff', tagline: 'One who walks between Wrath and Mercy.',
     narrative: 'ANOMALY DETECTED — both Judges paused. The eclipse held. CLASS REGISTERED: ECLIPSE WALKER.',
-    skills: [
-      ['Solar Stance',    'Increased healing and defense'],
-      ['Lunar Stance',    'Increased speed and damage'],
-      ['Twilight Shift',  'Instantly switch stances mid-combo'],
-      ['Balance Breaker', 'Bonus damage when swapping stances'],
-      ['Dual Horizon',    'Gain buffs from both stances briefly'],
-      ['Totality',        'Merge both forms into an ultimate state'],
+    // Three branches:
+    //   a — Solar Path: lock-in defense/regen, survive the long fight
+    //   b — Twilight Path: stance-dancer, swap every turn for compound bonuses
+    //   c — Lunar Path: lock-in speed/crit glass cannon
+    // Stance system: when 1a or 1c is unlocked, a stance toggle appears in the
+    // class skill row. Stance toggling is a free action (doesn't consume turn).
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Solar Stance',   'Toggle: +20% DEF, regen 3% HP/turn while active'],
+        b: ['Stance Step',    'Stance switches grant +5% damage on your next attack'],
+        c: ['Lunar Stance',   'Toggle: +15% SPD, +15% ATK while active'],
+      },
+      { // Tier 2 — level 20
+        a: ['Daylight',       'Solar regen increased to 5% HP/turn'],
+        b: ['Twilight Shift', 'Active: switch stance + free strike with new stance bonuses'],
+        c: ['Moonchaser',     '+10% crit chance while in Lunar Stance'],
+      },
+      { // Tier 3 — level 25
+        a: ["Sun's Mercy",    'Solar Stance: first hit per turn is halved'],
+        b: ['Eclipse Window', '1 turn after switching, both stance bonuses apply'],
+        c: ['Night Hunter',   'Lunar kills grant +10% damage stacking for rest of combat'],
+      },
+      { // Tier 4 — level 30
+        a: ['Burning Ground', 'Solar Stance: enemies attacking you take 5 reflect damage'],
+        b: ['Balance Breaker','Each stance switch deals damage = 10% of your max HP to the enemy'],
+        c: ['Lunar Reach',    'Lunar Stance: strike first regardless of SPD'],
+      },
+      { // Tier 5 — level 35
+        a: ['Solar Crown',    'Solar regen also restores 2 SP per turn'],
+        b: ['Eclipse Echo',   'Every 3rd stance switch is free (no turn cost)'],
+        c: ['Lunar Court',    'Lunar Stance crits deal +50% damage instead of +50%'],
+      },
+      { // Tier 6 — level 40
+        a: ['Totality',       'Active: 5-turn Eclipse mode — both stances + 50% all stats'],
+        b: ['Dual Horizon',   'Active: 3 turns where every action triggers BOTH stances'],
+        c: ['Final Eclipse',  'Active: switch stance, deal damage = stance switches × 30'],
+      },
     ],
   },
   {
@@ -209,26 +239,84 @@ const CLASS_DATA = [
     key: 'monarch', name: 'Monarch', judgeOf: 'Judge of Mercy',
     color: '#e8c34a', tagline: 'A ruler recognized by survivors and the System.',
     narrative: 'ANOMALY DETECTED — the survivors acknowledge a throne. CLASS REGISTERED: MONARCH.',
-    skills: [
-      ['Command Aura',      'Buff nearby allies'],
-      ['Royal Decree',      'Increase ally attack speed'],
-      ['Protect the Throne','Redirect damage from allies'],
-      ['Dominion',          'Expand aura effects over time'],
-      ['Summon Retainers',  'Call elite followers'],
-      ["King's Presence",   'Enemies deal less damage nearby'],
+    // Three branches:
+    //   a — Path of Sovereignty: self-empowerment, "I am the throne" solo build
+    //   b — Path of the Court: patient defender, stack favor while defending
+    //   c — Path of Dominion: battlefield control, stack enemy debuffs
+    // Branch B is solo-viable (no longer ally-dependent); ally bonuses appear
+    // as "(and any ally, if present)" — bonus rather than requirement.
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Command Aura',    '+10% damage while above 50% HP'],
+        b: ['Standing Order',  'Defend action grants +15% ATK on your next strike'],
+        c: ["King's Presence", "Enemy ATK reduced 15% in their first 3 turns"],
+      },
+      { // Tier 2 — level 20
+        a: ["Crown's Weight",  'Heavy strike costs no extra speed (same speed as basic Strike)'],
+        b: ['Loyal Guard',     'First killing blow per combat reduces to 1 HP and grants +30% DEF for 3 turns'],
+        c: ['Dominion',        'Enemy DEF reduced 1 each turn (stacks, max 10)'],
+      },
+      { // Tier 3 — level 25
+        a: ['Throne Steady',   'Taking damage does not interrupt your Defend stance'],
+        b: ["Healer's Decree", 'Defend action heals you for 8% max HP (also heals ally if present)'],
+        c: ['Iron Reign',      'Enemies below 30% HP cannot crit you'],
+      },
+      { // Tier 4 — level 30
+        a: ['Sovereign Will',  'Immune to fear/intimidation; +20% all stats while alone'],
+        b: ['Summon Retainer', 'Active: summon a 30 HP / 8 ATK ally for 5 turns'],
+        c: ['Wide Reign',      'Dominion DEF reduction stacks 2× faster (2 per turn)'],
+      },
+      { // Tier 5 — level 35
+        a: ['Royal Blood',     'Below 25% HP: ATK +30% and DEF +30%'],
+        b: ['Court of Witnesses', 'Each successful Defend grants a Witness stack (max 3, +15% damage each)'],
+        c: ['Crown Tax',       'Enemy crits against you grant +20% damage on your next attack'],
+      },
+      { // Tier 6 — level 40
+        a: ['The Throne',      'Active: 4 turns of HP-cannot-drop-below-1 (effective invulnerability)'],
+        b: ['Mass Decree',     'Active: heal to full + grant +50% ATK for 3 turns (allies too if present)'],
+        c: ['Conquest',        'Active: instantly stack Dominion to max (10); deal damage = Dominion × 5'],
+      },
     ],
   },
   {
     key: 'wrathborn', name: 'Wrathborn', judgeOf: 'Judge of Wrath',
     color: '#c0392b', tagline: 'Rage evolved into power.',
     narrative: 'ANOMALY DETECTED — the rage stabilized into form. CLASS REGISTERED: WRATHBORN.',
-    skills: [
-      ['Rage Engine',        'Damage increases as HP lowers'],
-      ['Bloodrush',          'Gain attack speed after taking damage'],
-      ['Fury Slam',          'Heavy AoE attack'],
-      ['Unbreakable Anger',  'Resist stagger effects'],
-      ['Violence Cycle',     'Kills refresh cooldowns'],
-      ['Cataclysm',          'Massive berserker eruption'],
+    // Three branches:
+    //   a — Path of Fury: low-HP glass cannon, gets stronger as you bleed
+    //   b — Path of the Engine: momentum/speed, kills refresh cooldowns
+    //   c — Path of Cataclysm: bleed/sustain damage, debuff stacking
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Rage Engine',  '+1% damage per 1% HP missing'],
+        b: ['Bloodrush',    '+15% SPD for 3 turns after taking damage'],
+        c: ['Fury Slam',    'Active: heavy hit + applies Bleeding (3 turns, 5 dmg/turn)'],
+      },
+      { // Tier 2 — level 20
+        a: ['Open Wound',   'Your hits prevent enemy regen for 2 turns'],
+        b: ['Adrenaline',   'Below 25% HP, basic strikes cost no action (effective double-strike)'],
+        c: ['Tearing Strike','Basic hits apply Bleeding (3 turns, 4 dmg)'],
+      },
+      { // Tier 3 — level 25
+        a: ['Unbreakable Anger', 'Immune to stun/silence while below 40% HP'],
+        b: ['Bloodrush II',      '+15% damage while Bloodrush is active'],
+        c: ['Bone Crush',        'Crits permanently reduce enemy DEF by 5 (stacks)'],
+      },
+      { // Tier 4 — level 30
+        a: ['Pain Threshold',    'First hit per turn that would deal >25% HP is capped at 25%'],
+        b: ['Violence Cycle',    'Kills refresh skill cooldowns'],
+        c: ['Bleeding Cascade',  'Bleeding ticks also reduce enemy ATK by 1 each turn'],
+      },
+      { // Tier 5 — level 35
+        a: ["Death's Door",      'At 1 HP, all damage doubled for 3 turns (once per battle)'],
+        b: ['Wild Frenzy',       '+5% SPD per consecutive kill (resets at combat end)'],
+        c: ['Wild Blood',        'Every 10 damage you deal reflects 3 back as Bleeding'],
+      },
+      { // Tier 6 — level 40
+        a: ['Cataclysm',         'Active: 3× damage hit, costs all HP above 1'],
+        b: ['Last Engine',       'Active: drop to 1 HP, gain ATK = missing HP for 3 turns (once/battle)'],
+        c: ['Final Massacre',    'Active: strike Bleeding enemies 3× (boosted by Bleeding stacks)'],
+      },
     ],
   },
   {
@@ -315,13 +403,42 @@ const CLASS_DATA = [
     key: 'ravager', name: 'Ravager', judgeOf: 'Judge of Wrath',
     color: '#a02822', tagline: 'A killer who never paused to consider mercy.',
     narrative: 'ANOMALY DETECTED — kill count tolerable. CLASS REGISTERED: RAVAGER.',
-    skills: [
-      ['Savage Hit',      'Critical hits deal +50% damage'],
-      ['Tearing Strike',  'Apply bleed on hit'],
-      ["Predator's Eye",  'Damage scales with target HP missing'],
-      ['Bone Crush',      'Reduce target defense permanently'],
-      ['Wild Frenzy',     'Attack speed scales with consecutive kills'],
-      ['Final Massacre',  'AoE strike that bleeds every enemy'],
+    // Three branches:
+    //   a — Path of the Savage: crit-fishing, reliable high-ceiling DPS
+    //   b — Path of the Bleed: damage-over-time stacking
+    //   c — Path of the Frenzy: kill-chain scaling (works best vs multi or
+    //       phased enemies; passable in 1v1 due to Hunter's Pulse heal)
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Savage Hit',       'Basic strikes have 15% chance to crit (×2 damage)'],
+        b: ['Tearing Strike',   'Basic hits apply Bleeding (3 turns, 5 damage)'],
+        c: ["Predator's Eye",   'Damage to enemies below 50% HP +25%'],
+      },
+      { // Tier 2 — level 20
+        a: ['Brutal Edge',      'Crits deal ×2.5 damage instead of ×2'],
+        b: ['Bleed Stack',      'Bleeding stacks up to 3 (max 15 damage/turn)'],
+        c: ["Hunter's Pulse",   'Kills heal 15% max HP'],
+      },
+      { // Tier 3 — level 25
+        a: ['Bloodlust',        'Crits reduce skill cooldowns by 1 turn'],
+        b: ['Hemorrhage',       'Bleeding enemies take +20% damage from all your attacks'],
+        c: ['Frenzy',           'Gain a Frenzy stack on kill (max 5): each = +10% damage'],
+      },
+      { // Tier 4 — level 30
+        a: ['Bone Crush',       'Crits permanently reduce enemy DEF by 3 (stacks per crit)'],
+        b: ['Wild Wound',       'Basic strikes have 25% chance to deal instant bleed burst (×2 normal)'],
+        c: ['Wild Frenzy',      'Each Frenzy stack also adds +5% SPD'],
+      },
+      { // Tier 5 — level 35
+        a: ['Murder Strike',    'Active: guaranteed crit + ignores 50% DEF (once per combat)'],
+        b: ["Predator's Wound", 'Enemies below 30% HP with Bleeding take 3× bleed damage'],
+        c: ['Apex Predator',    'At 5 Frenzy stacks, basic strikes also apply bleed'],
+      },
+      { // Tier 6 — level 40
+        a: ['Final Massacre',   'Active: 3 strikes at 80% each, all guaranteed crits'],
+        b: ['Bleeding Cascade', 'Active: enemies bleed at 2× stacks for 5 turns'],
+        c: ['Slaughterborn',    'At 3+ Frenzy: kills trigger a free basic strike on same target (chains)'],
+      },
     ],
   },
   {
@@ -348,6 +465,43 @@ const CLASS_DATA = [
       ['Ghost Step',       'Temporarily avoid collision and attacks'],
       ['Execution Thread', 'Bonus damage to marked enemies'],
       ['Void Flurry',      'Extreme-speed multi-hit attack'],
+    ],
+    tiers: [
+      // Ghostblade — Judge of Silence
+      // Three branches:
+      //   a — Path of the Blade: raw speed/DPS scaling, bleed chains
+      //   b — Path of the Phase: stealth/dodge/teleport, Phase stack mechanic
+      //   c — Path of the Execution: mark-and-kill setup, boss specialist
+      { // Tier 1 — level 15
+        a: ['Phase Dash',       '+20% SPD; first basic strike each combat +50% damage'],
+        b: ['Afterimage',       '20% chance when hit: next enemy attack fully misses'],
+        c: ['Silent Cut',       'Strikes against unmarked enemies deal +20% damage'],
+      },
+      { // Tier 2 — level 20
+        a: ['Bladework',        'Basic strikes +5% damage per SPD point above 30'],
+        b: ['Ghost Step',       'Active: 2 turns of crit-immunity + your hits never miss'],
+        c: ['Execution Thread', 'Active: mark enemy for 5 turns (+30% damage to marked)'],
+      },
+      { // Tier 3 — level 25
+        a: ['Quickstep',        'Every 3rd basic strike grants a free extra basic strike'],
+        b: ['Phantom Edge',     'Taking damage grants 1 Phase stack (max 5)'],
+        c: ['Death Thread',     'Strikes vs Execution-marked enemies have +20% crit chance'],
+      },
+      { // Tier 4 — level 30
+        a: ['Speed Demon',      'Effective SPD doubles for crit-chance calculations'],
+        b: ['Untouchable',      'At 5 Phase stacks: take 50% less damage; consume 1 stack/hit'],
+        c: ['Blood Tracker',    'Marked enemies dropping below 30% HP: your next hit is guaranteed crit'],
+      },
+      { // Tier 5 — level 35
+        a: ['Wind Cutter',      'Basic strikes also apply bleed (3 turns, 5 damage)'],
+        b: ['Phase Strike',     'Active: consume 3 Phase stacks: untargetable 1 turn + next strike ×3'],
+        c: ['Coup de Grâce',    'Execution-marked enemies below 25% HP take +100% from basic strikes'],
+      },
+      { // Tier 6 — level 40
+        a: ['Void Flurry',      'Active: 5 strikes at 60% each (300% total, ignores 25% DEF)'],
+        b: ['Shadowmeld',       'Active: 3-turn untargetable, +1 Phase stack/turn, exit +100% next hit'],
+        c: ['Final Witness',    'Active: instant kill if Mark active + below 40% HP, else damage = 40% max HP'],
+      },
     ],
   },
   {
@@ -393,13 +547,43 @@ const CLASS_DATA = [
     key: 'vessel', name: 'Vessel', judgeOf: 'Judge of Despair',
     color: '#5e3a78', tagline: 'Something ancient lives inside you.',
     narrative: 'ANOMALY DETECTED — second signature inside the body. CLASS REGISTERED: VESSEL.',
-    skills: [
-      ['Whispers Below',   'Gain power while corrupted'],
-      ['Possession Surge', 'Temporary stat explosion'],
-      ['Corrupted Flesh',  'Regenerate during combat'],
-      ['Shared Pain',      'Damage spreads to nearby enemies'],
-      ['Awakened Hunger',  'Transformation begins at low HP'],
-      ['True Vessel',      'Fully unleash inner entity'],
+    // Three branches:
+    //   a — Path of Whispers: corruption-stack scaling, reflect/share builds
+    //   b — Path of the Hungering: vampire/life-steal sustain
+    //   c — Path of Awakening: low-HP transformation burst
+    // Corruption stacks: built from taking damage (1/hit) and kills (2/kill).
+    // Capped at 10. Tracked in statusEffects.cls_corruptionStacks.
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Whispers Below',   'Gain 1 Corruption per turn (passive). +2% damage per stack (max 10)'],
+        b: ['Corrupted Flesh',  'Heal 5% max HP at the start of each turn'],
+        c: ['Awakened Hunger',  'Below 30% HP: +20% damage and life-steal 10% of damage dealt'],
+      },
+      { // Tier 2 — level 20
+        a: ['Shared Pain',      '20% of damage you take is reflected to enemy'],
+        b: ['Drain Strike',     'Basic hits restore 8% of damage dealt as HP'],
+        c: ['Possession Surge', 'Active: burn all Corruption stacks for +ATK = stacks × 3 (3 turns)'],
+      },
+      { // Tier 3 — level 25
+        a: ['Festering Mark',   'First hit on enemy applies Rot (3 turns, 8 damage/turn)'],
+        b: ["Vampire's Hunger", 'Kills restore 25% max HP'],
+        c: ['Inner Voice',      'Every 10 stacks of Corruption gained → free SP'],
+      },
+      { // Tier 4 — level 30
+        a: ['Shared Suffering', 'Enemy hits on you also damage them for 30% of their hit'],
+        b: ['Ravenous',         'Life-steal effects are doubled while below 50% HP'],
+        c: ['Mark of the Inside','At 5+ Corruption stacks, your next attack is guaranteed crit'],
+      },
+      { // Tier 5 — level 35
+        a: ['Spreading Rot',    'Kills with Rot active extend Rot to next combat (1 turn)'],
+        b: ['Eternal Hunger',   'Below 25% HP: damage taken heals you instead (once per turn)'],
+        c: ['Whispers Strengthen', 'At 5+ Corruption stacks: +30% all stats'],
+      },
+      { // Tier 6 — level 40
+        a: ['True Vessel',      'Active: transform — HP cap ×2, ATK +50%, Corruption builds 3× faster (irreversible this combat)'],
+        b: ['Devour Soul',      'Active: instant-kill enemy below 30% HP, restore HP to full'],
+        c: ['Final Awakening',  'At 1 HP: cannot die for 5 turns, all damage ×2 (once per battle)'],
+      },
     ],
   },
   {
