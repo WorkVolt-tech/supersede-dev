@@ -1863,6 +1863,16 @@ export async function mountChapter1(__mountOptions = {}) {
           updates.gold = (player.gold || 0) + sGoldDrop
           player.gold = updates.gold
           if (updates.xp) player.xp = updates.xp
+
+          // ── Class skill: combat-end hook (persistent stat updates) ──────
+          // Eternal Sovereign (Prime t5a) carries stat stacks forward.
+          const _clsEnd = ClsCombat.onCombatEnd(player, statusEffects, 'win')
+          if (Object.keys(_clsEnd.dbUpdates).length > 0) {
+            Object.assign(updates, _clsEnd.dbUpdates)
+            for (const k of Object.keys(_clsEnd.dbUpdates)) player[k] = _clsEnd.dbUpdates[k]
+          }
+          if (_clsEnd.messages.length) window.showToast(_clsEnd.messages[0])
+
           await save(updates)
           if (sGoldDrop > 0) queueLoot('◈ ' + sGoldDrop + ' Gold', 1, null)
           // Award guaranteed loot from boss node definition
@@ -2475,11 +2485,51 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.cls_cataclysmAfterEffect = false
             messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
           }
+          // Kernel Panic (Error t4c): deal current HP as damage, set HP to 1
+          if (statusEffects.cls_kernelPanicReady) {
+            const panicDmg = currentHp
+            enemyHp = Math.max(0, enemyHp - panicDmg)
+            currentHp = 1
+            statusEffects.cls_kernelPanicReady = false
+            messages.push('⚠ Kernel Panic dealt ' + panicDmg + '. You drop to 1 HP.')
+          }
+          // Bit Flip (Error t5b): swap player HP and enemy HP
+          if (statusEffects.cls_bitFlipReady) {
+            const t = currentHp
+            currentHp = Math.min(maxPlayerHp, enemyHp)
+            enemyHp   = Math.min(maxEnemyHp, t)
+            statusEffects.cls_bitFlipReady = false
+            messages.push('⚠ Bit Flip — HP values swapped.')
+          }
+          // Verdict Voided (Nullborn t6c): pulse damage on death-save
+          if (statusEffects.cls_verdictVoidedDamage > 0) {
+            const pulseDmg = statusEffects.cls_verdictVoidedDamage
+            enemyHp = Math.max(0, enemyHp - pulseDmg)
+            statusEffects.cls_verdictVoidedDamage = 0
+            messages.push('✕ Null pulse strikes for ' + pulseDmg + '.')
+          }
+          // Cancel (Nullborn t4b): Null-reserve heal after surviving
+          if (statusEffects.cls_cancelHeal > 0) {
+            currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_cancelHeal)
+            statusEffects.cls_cancelHeal = 0
+          }
+          // Recursion (Error t3b): pending second hit at 60%
+          if (statusEffects.cls_recursionPending && enemyHp > 0) {
+            const rdmg = Math.round(dmg * 0.6)
+            enemyHp = Math.max(0, enemyHp - rdmg)
+            statusEffects.cls_recursionPending = false
+            messages.push('⚠ Recursion — second hit for ' + rdmg + '.')
+          }
           // ── Class skill: HP-change hook (Verdict / Last Witness execute) ──
           if (enemyHp > 0) {
             const _clsHp = ClsCombat.onEnemyHpChange(player, statusEffects, enemy, oldEnemyHp, enemyHp, maxEnemyHp)
             for (const m of _clsHp.messages) messages.push(m)
             if (_clsHp.executeKill) enemyHp = 0
+            // Fatal Exception (Error t6c): uncaught → player dies
+            if (statusEffects.cls_fatalExceptionSelfKill) {
+              currentHp = 0
+              statusEffects.cls_fatalExceptionSelfKill = false
+            }
           }
           // Burn passive: Lv1 3dmg × 2 turns → Lv10 6dmg × 4 turns
           if (unlocked.includes('fire_passive_burn')) {
