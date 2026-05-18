@@ -170,26 +170,89 @@ const CLASS_DATA = [
     key: 'nullborn', name: 'Nullborn', judgeOf: 'Final Judge of Humanity',
     color: '#5e5e5e', tagline: 'The System failed to assign an elemental affinity.',
     narrative: 'ANOMALY DETECTED — element registration failed. The slot is empty. CLASS REGISTERED: NULLBORN.',
-    skills: [
-      ['System Rejection',  'Reduce incoming elemental damage'],
-      ['Silence Field',     'Disable enemy elemental effects briefly'],
-      ['Null Pulse',        'Remove buffs from nearby enemies'],
-      ['Affinity Collapse', 'Convert elemental damage into raw damage'],
-      ['Dead Zone',         'Create an anti-element area'],
-      ['Unclassified',      'Become immune to elemental debuffs'],
+    // Verdict-exclusive godlike class. Breaks the "scale one stat" rule —
+    // Nullborn manipulates Null stacks which absorb attacks AND build burst
+    // damage. Late-game can become functionally immune.
+    // Three branches:
+    //   a — Path of the Void: Null-stack engine, build-spend cycle
+    //   b — Path of the Unwritten: anti-enemy denial (cancel crit/status/death)
+    //   c — Path of Erasure: strip enemy buffs/passives, anti-boss specialist
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Null Form',      'Start combat with 3 Null stacks. Each Null absorbs one full attack.'],
+        b: ['Empty Record',   'Enemy crits against you deal normal damage (crit bonus nullified).'],
+        c: ['Static',         '10% chance per basic strike: delete a random enemy buff/passive.'],
+      },
+      { // Tier 2 — level 20
+        a: ['Null Charge',    'Taking damage adds 1 Null stack (max 10).'],
+        b: ['Misread',        '25% chance each enemy turn: they skip their action.'],
+        c: ['Erase Mark',     'Active: erase one enemy status, deal damage equal to its turn count.'],
+      },
+      { // Tier 3 — level 25
+        a: ['Vacuum Strike',  'At 5+ Null: next strike consumes 1 Null and deals (absorbed damage so far) bonus.'],
+        b: ['No Witness',     'Enemies cannot apply status effects on you (burn/bleed/mark/silence/stun).'],
+        c: ['Static Mark',    'Static (1c) procs also permanently reduce enemy ATK by 2.'],
+      },
+      { // Tier 4 — level 30
+        a: ['Mass Null',      'Null cap raised to 20; +2 Null per turn passively.'],
+        b: ['Cancel',         'When HP would drop below 0: survive at 1 HP, consume all Null × 5 as heal.'],
+        c: ['Erasure Cascade','When Static (1c) procs, it also clears one of your negative status effects.'],
+      },
+      { // Tier 5 — level 35
+        a: ['Singularity',    'Active: collapse all Null. Damage = Null × 30, ignores all DEF.'],
+        b: ['Voided Record',  'Below 50% HP: incoming damage halved, your basic strikes +30%.'],
+        c: ['Final Erasure',  'Active: erase all enemy buffs/passives + their cumulative ATK as one-time damage.'],
+      },
+      { // Tier 6 — level 40
+        a: ['Null God',       'At 15+ Null: immune to damage. Enemy attacks add 2 Null instead. Strikes +Null × 5.'],
+        b: ['Read Error',     'Active: 5 turns untargetable. You may still attack.'],
+        c: ['Verdict Voided', 'On death: emit Null pulse (max HP × 0.5 damage). Survive at 1 HP.'],
+      },
     ],
   },
   {
     key: 'error', name: 'Error', judgeOf: 'Final Judge of Humanity',
     color: '#ff3a5e', tagline: 'A broken classification inside the System.',
     narrative: 'ANOMALY DETECTED — record corrupted. The error persists. CLASS REGISTERED: ERROR.',
-    skills: [
-      ['Data Corruption',    'Randomize enemy buffs'],
-      ['Glitch Step',        'Teleport unpredictably'],
-      ['Broken Logic',       'Random stat spikes'],
-      ['Memory Leak',        'Enemy abilities malfunction'],
-      ['Fractured Reality',  'Duplicate attacks randomly'],
-      ['Critical Exception', 'Massive chaotic burst attack'],
+    // Verdict-exclusive godlike class. Breaks the "predictable damage" rule —
+    // Error has high variance via the Glitch mechanic: each turn a random
+    // stat triples while another drops to 1/3. Players control the chaos
+    // through skill choices.
+    // Three branches:
+    //   a — Path of the Bug: tame the chaos, control which stats glitch
+    //   b — Path of Corruption: leverage chaos, SP↔HP swaps, double-strikes
+    //   c — Path of Crash: embrace chaos, suicide-king burst, all-or-nothing
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Glitch',           'Each turn: 1 stat × 3, 1 stat × 1/3 (ATK/DEF/SPD pool).'],
+        b: ['Memory Leak',      'Taking damage gains 5 SP and loses 5 HP.'],
+        c: ['Stack Overflow',   'Kills double your next basic strike damage.'],
+      },
+      { // Tier 2 — level 20
+        a: ['Caught Exception', 'Active (once/combat): force a re-roll of Glitch.'],
+        b: ['Heap Spray',       'Each strike: 10% chance to deal 50 damage randomly to enemy OR self.'],
+        c: ['Buffer',           'Active: store next strike. Release later for 2× damage.'],
+      },
+      { // Tier 3 — level 25
+        a: ['Stable Variant',   'Glitch now affects only one stat per turn (other stays normal).'],
+        b: ['Recursion',        'Every 4th strike auto-procs a second hit at 60% damage.'],
+        c: ['Try/Catch',        'Active: 3 turns where incoming damage reflects to attacker.'],
+      },
+      { // Tier 4 — level 30
+        a: ['Hot Patch',        'Below 30% HP: Glitch only buffs (no 1/3 drops).'],
+        b: ['Format String',    'Memory Leak now also restores 10 HP per 5 SP gained (net heal).'],
+        c: ['Kernel Panic',     'Active: enemy takes damage = your current HP. You drop to 1 HP.'],
+      },
+      { // Tier 5 — level 35
+        a: ['Refactor',         'You pick which stat gets × 3 each turn (random downgrade unchanged).'],
+        b: ['Bit Flip',         'Active (once/combat): swap your HP and enemy HP.'],
+        c: ['Segfault',         'Active: next 3 basic strikes are guaranteed crits +50% bonus.'],
+      },
+      { // Tier 6 — level 40
+        a: ['Compile-Time Error','Active: 3 turns of all stats × 3 (no downgrades).'],
+        b: ['Garbage Collection','Active: clear all status effects, heal 50% max HP, lose 10 SP.'],
+        c: ['Fatal Exception',   'Active: instant kill if enemy < 50% HP. Else you die.'],
+      },
     ],
   },
 
@@ -364,13 +427,46 @@ const CLASS_DATA = [
     key: 'prime', name: 'Prime', judgeOf: 'Judges of Authority',
     color: '#e0a040', tagline: 'Humanity before elemental evolution.',
     narrative: 'ANOMALY DETECTED — pre-evolution baseline holds. CLASS REGISTERED: PRIME.',
-    skills: [
-      ['Adaptive Skin',    'Gain resistance to recent damage type'],
-      ['Perfect Motion',   'Dodge timing becomes more forgiving'],
-      ['Combat Evolution', 'Stats increase during long battles'],
-      ['Instinct Trigger', 'Automatically counter fatal attacks'],
-      ['Predicted Strike', 'Increased damage after enemy repeats attacks'],
-      ['Origin State',     'Temporarily maximize all core stats'],
+    // Dominion class. Breaks the "scale one stat" rule — Prime scales ALL
+    // stats per turn alive. The class doesn't shine in short fights, it
+    // shines in long ones. Late combat: a juggernaut. Eternal Sovereign
+    // (5a) carries stack growth between combats via persistent player
+    // columns (prime_atk_stacks / prime_def_stacks / prime_spd_stacks).
+    // Three branches:
+    //   a — Path of Sovereignty: pure per-turn growth scaling
+    //   b — Path of the Standard: buff stacking on damage taken
+    //   c — Path of the Crown: enemy debuffs + invulnerability windows
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Stand Tall',       'Each turn alive: +2 ATK (permanent for combat).'],
+        b: ['Royal Banner',     'Start combat with +10% all stats.'],
+        c: ["Crown's Weight",   'Basic strikes also permanently reduce enemy ATK by 1.'],
+      },
+      { // Tier 2 — level 20
+        a: ['Iron Resolve',     'Each turn alive: +1 DEF (permanent for combat).'],
+        b: ['Marshal',          'Basic strikes +5% damage per turn elapsed.'],
+        c: ['Authority Pulse',  'Every 3rd turn: your DEF doubles for that turn.'],
+      },
+      { // Tier 3 — level 25
+        a: ['Quickening Will',  'Each turn alive: +2 SPD (permanent for combat).'],
+        b: ['Discipline',       'Defend grants +10% ATK on next strike (stacks).'],
+        c: ['Crown Drain',      'Basic strikes permanently reduce enemy DEF by 2.'],
+      },
+      { // Tier 4 — level 30
+        a: ['Throneborn',       'At 5+ turns elapsed: +30% damage and +30% DEF.'],
+        b: ['Unyielding Standard','Each time you take damage: +1% damage permanently (cap +50%).'],
+        c: ["Sovereign's Reach",'High ATK applies to defense this turn (ATK > DEF → uses ATK).'],
+      },
+      { // Tier 5 — level 35
+        a: ['Eternal Sovereign','Stand Tall / Iron Resolve / Quickening Will stacks persist between combats (cap 50 each, reset at chapter end).'],
+        b: ['March Forever',    'Below 30% HP: all stat gains this turn are doubled.'],
+        c: ['Empyrean',         'Once/combat: when you would die, survive at 1 HP + +50 to all stacks.'],
+      },
+      { // Tier 6 — level 40
+        a: ['Apex Sovereign',   'Active: damage = (total ATK + DEF + SPD bonus stacks).'],
+        b: ['Final Standard',   'Active: 3 turns where every action doubles its effect.'],
+        c: ['The Throne Speaks','Active: 5 turns where enemies cannot act.'],
+      },
     ],
   },
   {
