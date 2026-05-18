@@ -346,7 +346,7 @@ export async function mountChapter2(__mountOptions = {}) {
 
   You raise an eyebrow.
 
-  "The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two evaluators — one looks at what you built, one looks at what you took. At the end of this chapter, everyone faces one of them, or both. I don't know exactly how it works. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
+  "The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two Judges — Mercy, who looks at what you built, and Wrath, who looks at what you took. At the end of this chapter, everyone faces one of them, or both, or some combination that the System decides based on your record. I don't know exactly how the forms work. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
 
   She picks the tablet back up.
 
@@ -384,9 +384,11 @@ export async function mountChapter2(__mountOptions = {}) {
 
   "I'll be straight with you," they say. Which is probably what they say to everyone, you think. But they continue: "The Builders are going to open that third cache. Eleven players, moral scores high, organized — they'll do it. The question is what happens in the four minutes after it opens before they've distributed everything."
 
-  Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Mercy evaluates what you built and with whom. Judge Wrath evaluates what you took and how."
+  Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Mercy — Judge of Salvation — evaluates what you built and with whom. Judge Wrath — Judge of Ruin — evaluates what you took and how."
 
-  They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once." They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
+  They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once. And from what I've gathered, when you push either record far enough, the Judge that matches you doesn't show up as themselves anymore. They show up as something more refined. Absolution. Ruin. There's a name for every form. I don't know all of them."
+
+  They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
 
   They lean against a broken shelf. "I'm not recruiting you to betray the Builders. I'm telling you the System doesn't care which path you pick. It just wants you to pick deliberately."`,
       xp: 50,
@@ -1489,8 +1491,8 @@ The Judges are already there.`,
 
   Your interface shows both:
 
-  JUDGE KAELITH — Evaluator of Cooperation
-  JUDGE MORREN — Evaluator of Dominance
+  JUDGE MERCY — Judge of Salvation
+  JUDGE WRATH — Judge of Ruin
 
   Two axes. Two records. Both present.
 
@@ -2697,11 +2699,34 @@ You walk back out.`
       modifiers.push(`Greed Mark (${elementCount} elements): Wrath notes the spread — Judges' ATK +12%.`)
     }
 
-    const label = form === 'mercy' ? 'MERCY LEADS'
-                : form === 'wrath' ? 'WRATH LEADS'
-                : 'BOTH JUDGES';
+    // ── Canonical 7-form name ────────────────────────────────────────────
+    // The fight composition uses a simpler mercy/wrath/both classification
+    // for stat scaling. But the player-facing label should reveal which of
+    // the 7 canonical forms they're actually facing (same logic as the
+    // win-screen formKey computation). This lets the player learn the
+    // world's vocabulary through play.
+    let canonForm
+    if      (Math.abs(moral) >= 70 && elementCount >= 3) canonForm = 'verdict'
+    else if (Math.abs(moral) < 40 && elementCount >= 2)  canonForm = 'dominion'
+    else if (moral >= 40 && elementCount >= 2)           canonForm = 'absolution'
+    else if (moral <= -40 && elementCount >= 2)          canonForm = 'ruin'
+    else if (Math.abs(moral) < 40)                       canonForm = 'equilibrium'
+    else if (moral >= 40)                                canonForm = 'mercy'
+    else                                                 canonForm = 'wrath'
 
-    return { form, label, hp, atk, def, modifiers, cowardice }
+    // Form labels — canonical Judge titles. Player-facing.
+    const FORM_LABELS = {
+      verdict:     'VERDICT — Final Judge of Humanity',
+      dominion:    'DOMINION — Judges of Authority',
+      absolution:  'ABSOLUTION — Judge of Purity',
+      ruin:        'RUIN — Judge of Desolation',
+      equilibrium: 'EQUILIBRIUM — Judges of Balance',
+      mercy:       'MERCY — Judge of Salvation',
+      wrath:       'WRATH — Judge of Ruin',
+    }
+    const label = FORM_LABELS[canonForm]
+
+    return { form, canonForm, label, hp, atk, def, modifiers, cowardice }
   }
 
   function renderBoss(panel,node) {
@@ -3261,15 +3286,20 @@ You walk back out.`
           //   equilibrium — Equilibrium (Judges of Balance)
           //   mercy       — Mercy (Judge of Salvation)
           //   wrath       — Wrath (Judge of Ruin)
-          const moral = extraCtx.playerMoral||0, elems = extraCtx.elementsAttempted||1
-          let formKey
-          if     (Math.abs(moral)>=70&&elems>=3) formKey='verdict'
-          else if(Math.abs(moral)<40&&elems>=2)  formKey='dominion'
-          else if(moral>=40&&elems>=2)            formKey='absolution'
-          else if(moral<=-40&&elems>=2)           formKey='ruin'
-          else if(Math.abs(moral)<40)             formKey='equilibrium'
-          else if(moral>=40)                      formKey='mercy'
-          else                                    formKey='wrath'
+          // Re-uses the canonForm computed by composeJudgesForm so the form
+          // the player saw at fight start matches the class options offered.
+          let formKey = extraCtx.judgesForm?.canonForm
+          if (!formKey) {
+            // Fallback if judgesForm wasn't populated for some reason.
+            const moral = extraCtx.playerMoral||0, elems = extraCtx.elementsAttempted||1
+            if     (Math.abs(moral)>=70&&elems>=3) formKey='verdict'
+            else if(Math.abs(moral)<40&&elems>=2)  formKey='dominion'
+            else if(moral>=40&&elems>=2)            formKey='absolution'
+            else if(moral<=-40&&elems>=2)           formKey='ruin'
+            else if(Math.abs(moral)<40)             formKey='equilibrium'
+            else if(moral>=40)                      formKey='mercy'
+            else                                    formKey='wrath'
+          }
           // Stash on updates so the post-save class picker can read it.
           // Not persisted to DB — used only for the in-memory handoff.
           extraCtx._formKey = formKey
