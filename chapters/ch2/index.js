@@ -3253,13 +3253,21 @@ You walk back out.`
           const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
           updates.chapters_unlocked=uls
           // ── Per-form SP ──
+          // Form key matches the canonical Judge forms from world design:
+          //   verdict     — Verdict (Final Judge of Humanity)
+          //   dominion    — Dominion (Judges of Authority)
+          //   absolution  — Absolution (Judge of Purity)
+          //   ruin        — Ruin (Judge of Desolation)
+          //   equilibrium — Equilibrium (Judges of Balance)
+          //   mercy       — Mercy (Judge of Salvation)
+          //   wrath       — Wrath (Judge of Ruin)
           const moral = extraCtx.playerMoral||0, elems = extraCtx.elementsAttempted||1
           let formKey
           if     (Math.abs(moral)>=70&&elems>=3) formKey='verdict'
-          else if(Math.abs(moral)<40&&elems>=2)  formKey='dual_powered'
-          else if(moral>=40&&elems>=2)            formKey='mercy_powered'
-          else if(moral<=-40&&elems>=2)           formKey='wrath_powered'
-          else if(Math.abs(moral)<40)             formKey='dual'
+          else if(Math.abs(moral)<40&&elems>=2)  formKey='dominion'
+          else if(moral>=40&&elems>=2)            formKey='absolution'
+          else if(moral<=-40&&elems>=2)           formKey='ruin'
+          else if(Math.abs(moral)<40)             formKey='equilibrium'
           else if(moral>=40)                      formKey='mercy'
           else                                    formKey='wrath'
           // Stash on updates so the post-save class picker can read it.
