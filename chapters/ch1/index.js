@@ -2139,6 +2139,11 @@ export async function mountChapter1(__mountOptions = {}) {
     // ── Class skill combat hooks: initialize ─────────────────────────────
     // Mirrors Ch2 — populates per-combat counters and grants Equal Sky bonus SP.
     const _clsStart = ClsCombat.onCombatStart(player, statusEffects)
+    // First Light (Dawnbringer t2c): heal to full at start (once/chapter)
+    if (statusEffects.cls_firstLightHealToFull) {
+      currentHp = maxPlayerHp
+      statusEffects.cls_firstLightHealToFull = false
+    }
     // (any "Equal Sky" message will appear in the first combat-log push)
 
     // ── Render battle skill slots ─────────────────────────────
@@ -2485,6 +2490,19 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.cls_cataclysmAfterEffect = false
             messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
           }
+          // Hollow drop-to-1 signals
+          if (statusEffects.cls_endlessHollowDropToOne) {
+            currentHp = 1
+            statusEffects.cls_endlessHollowDropToOne = false
+          }
+          if (statusEffects.cls_survivorsEndDropToOne) {
+            if (statusEffects.cls_survivorsEndHeal > 0) {
+              currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_survivorsEndHeal)
+              statusEffects.cls_survivorsEndHeal = 0
+            }
+            currentHp = 1
+            statusEffects.cls_survivorsEndDropToOne = false
+          }
           // Kernel Panic (Error t4c): deal current HP as damage, set HP to 1
           if (statusEffects.cls_kernelPanicReady) {
             const panicDmg = currentHp
@@ -2594,6 +2612,39 @@ export async function mountChapter1(__mountOptions = {}) {
             currentHp = Math.min(maxPlayerHp, currentHp + healAmt)
             statusEffects.absorptionHeal = 0
             messages.push('🛡 Absorption — healed <strong>' + healAmt + '</strong> HP!')
+          }
+          // ── Bastion Bulwark on Defend (t1a) ─────────────────────────
+          if (player.active_class === 'bastion') {
+            statusEffects.cls_lastActionDefend = true
+            const cap = statusEffects.cls_bulwarkCap || 10
+            statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 1)
+            messages.push('🛡 Bulwark — ' + statusEffects.cls_bulwarkStacks + ' stacks.')
+            // Riposte (t1b)
+            if ((player.class_nodes_unlocked||[]).includes('bastion_t1b')) {
+              const def = (player.def||2)+(statusEffects.playerDEFBonus||0)
+              const ripDmg = Math.max(1, Math.round(def * 0.5))
+              enemyHp = Math.max(0, enemyHp - ripDmg)
+              messages.push('🛡 Riposte deals ' + ripDmg + '.')
+            }
+            // Unmoving (t4c)
+            if ((player.class_nodes_unlocked||[]).includes('bastion_t4c')) {
+              const debuffFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
+              for (const k of debuffFields) {
+                if ((statusEffects[k]||0) > 0) {
+                  statusEffects[k] = 0
+                  messages.push('🛡 Unmoving — debuff cleansed.')
+                  break
+                }
+              }
+            }
+          }
+          // ── Dawnbringer Vigil's Stand on Defend (t4c) ───────────────
+          if (player.active_class === 'dawnbringer'
+              && (player.class_nodes_unlocked||[]).includes('dawnbringer_t4c')) {
+            const heal = Math.round(maxPlayerHp * 0.10)
+            currentHp = Math.min(maxPlayerHp, currentHp + heal)
+            statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
+            messages.push("☀ Vigil's Stand — +" + heal + " HP, +2 Sun.")
           }
         } else if (playerAction === 'skill' && skillKey) {
           const sk = BATTLE_SKILLS[skillKey]
