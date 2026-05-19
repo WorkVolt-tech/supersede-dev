@@ -2951,6 +2951,11 @@ You walk back out.`
     // ── Class skill combat hooks: initialize ─────────────────────────────────
     // Equal Sky (Arbiter t5b) grants +5 SP at combat start via statusEffects.cls_bonusSP
     const _clsStart = ClsCombat.onCombatStart(player, statusEffects)
+    // First Light (Dawnbringer t2c): heal to full at start (once/chapter)
+    if (statusEffects.cls_firstLightHealToFull) {
+      currentHp = maxPlayerHp
+      statusEffects.cls_firstLightHealToFull = false
+    }
     // (messages will print in the first combat-log push after enemy actions)
 
     // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
@@ -3538,6 +3543,21 @@ You walk back out.`
             statusEffects.cls_cataclysmAfterEffect = false
             messages.push('💥 Cataclysm consumed your blood. 1 HP remains.')
           }
+          // Hollow drop-to-1 signals (Endless Hollow / Survivor's End)
+          if (statusEffects.cls_endlessHollowDropToOne) {
+            currentHp = 1
+            statusEffects.cls_endlessHollowDropToOne = false
+          }
+          if (statusEffects.cls_survivorsEndDropToOne) {
+            // Apply heal THEN drop. Heal first because the active is "heal,
+            // damage, drop" in order.
+            if (statusEffects.cls_survivorsEndHeal > 0) {
+              currentHp = Math.min(maxPlayerHp, currentHp + statusEffects.cls_survivorsEndHeal)
+              statusEffects.cls_survivorsEndHeal = 0
+            }
+            currentHp = 1
+            statusEffects.cls_survivorsEndDropToOne = false
+          }
           // Kernel Panic (Error t4c): deal current HP as damage, set HP to 1
           if (statusEffects.cls_kernelPanicReady) {
             const panicDmg = currentHp
@@ -3598,6 +3618,39 @@ You walk back out.`
         } else if(playerAction==='defend') {
           defending=true; messages.push('You brace — defense doubled.')
           if(statusEffects.absorptionHeal){const h=statusEffects.absorptionHeal;currentHp=Math.min(maxPlayerHp,currentHp+h);statusEffects.absorptionHeal=0;messages.push('🛡 Absorption +<strong>'+h+'</strong> HP!')}
+          // ── Bastion Bulwark on Defend (t1a) ─────────────────────────
+          if (player.active_class === 'bastion') {
+            statusEffects.cls_lastActionDefend = true
+            const cap = statusEffects.cls_bulwarkCap || 10
+            statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 1)
+            messages.push('🛡 Bulwark — '+statusEffects.cls_bulwarkStacks+' stacks.')
+            // Riposte (t1b): Defend deals damage = DEF × 0.5 to enemy
+            if (ClsCombat.hasSkill ? ClsCombat.hasSkill(player, 'bastion_t1b') : (player.class_nodes_unlocked||[]).includes('bastion_t1b')) {
+              const def = (player.def||2)+(statusEffects.playerDEFBonus||0)
+              const ripDmg = Math.max(1, Math.round(def * 0.5))
+              enemyHp = Math.max(0, enemyHp - ripDmg)
+              messages.push('🛡 Riposte deals <strong>'+ripDmg+'</strong>.')
+            }
+            // Unmoving (t4c): Defend removes one debuff
+            if ((player.class_nodes_unlocked||[]).includes('bastion_t4c')) {
+              const debuffFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
+              for (const k of debuffFields) {
+                if ((statusEffects[k]||0) > 0) {
+                  statusEffects[k] = 0
+                  messages.push('🛡 Unmoving — '+k.replace(/Turns$/,'').replace(/^cls_/,'')+' cleansed.')
+                  break
+                }
+              }
+            }
+          }
+          // ── Dawnbringer Vigil's Stand on Defend (t4c) ───────────────
+          if (player.active_class === 'dawnbringer'
+              && (player.class_nodes_unlocked||[]).includes('dawnbringer_t4c')) {
+            const heal = Math.round(maxPlayerHp * 0.10)
+            currentHp = Math.min(maxPlayerHp, currentHp + heal)
+            statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
+            messages.push("☀ Vigil's Stand — +"+heal+" HP, +2 Sun.")
+          }
         } else if(playerAction==='skill'&&skillKey) {
           const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
           statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
