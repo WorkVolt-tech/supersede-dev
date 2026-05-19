@@ -259,6 +259,66 @@ export function getActiveClassSkills(player, statusEffects) {
         classColor: cls.color, available: !used['throne_speaks'] })
     }
   }
+
+  // ── Bastion ─────────────────────────────────────────────────────────
+  if (ac === 'bastion') {
+    if (hasSkill(player, 'bastion_t5c')) {
+      out.push({ id: 'anchor_pulse', label: 'Anchor Pulse', sub: 'Clear all status + heal 30% max HP',
+        classColor: cls.color, available: !used['anchor_pulse'] })
+    }
+    if (hasSkill(player, 'bastion_t6a')) {
+      out.push({ id: 'living_wall', label: 'Living Wall', sub: '3 turns immune, attacks add Bulwark',
+        classColor: cls.color, available: !used['living_wall'] })
+    }
+    if (hasSkill(player, 'bastion_t6b')) {
+      out.push({ id: 'final_riposte', label: 'Final Riposte', sub: 'Release Bulwark: stacks×15 + DEF×2',
+        classColor: cls.color, available: !used['final_riposte'] && (statusEffects.cls_bulwarkStacks || 0) > 0 })
+    }
+  }
+
+  // ── Dawnbringer ─────────────────────────────────────────────────────
+  if (ac === 'dawnbringer') {
+    if (hasSkill(player, 'dawnbringer_t2a')) {
+      out.push({ id: 'healing_wave', label: 'Healing Wave', sub: 'Heal 30% + (Sun × 5%) max HP',
+        classColor: cls.color, available: !used['healing_wave'] })
+    }
+    if (hasSkill(player, 'dawnbringer_t4b')) {
+      out.push({ id: 'radiant_burst', label: 'Radiant Burst', sub: 'Sun × 8 dmg + cleanse self',
+        classColor: cls.color, available: !used['radiant_burst'] })
+    }
+    if (hasSkill(player, 'dawnbringer_t6a')) {
+      out.push({ id: 'dawnward_light', label: 'Dawnward Light', sub: '5 turns of life-steal strikes',
+        classColor: cls.color, available: !used['dawnward_light'] })
+    }
+    if (hasSkill(player, 'dawnbringer_t6b')) {
+      out.push({ id: 'dawnbreaker', label: 'Dawnbreaker', sub: '5× ATK radiant. Lose 50% Sun.',
+        classColor: cls.color, available: !used['dawnbreaker'] })
+    }
+  }
+
+  // ── Hollow ──────────────────────────────────────────────────────────
+  if (ac === 'hollow') {
+    if (hasSkill(player, 'hollow_t3a')) {
+      out.push({ id: 'disappear', label: 'Disappear', sub: '2 turns untargetable (cannot attack)',
+        classColor: cls.color, available: !used['disappear'] })
+    }
+    if (hasSkill(player, 'hollow_t5c')) {
+      out.push({ id: 'all_that_remains', label: 'All That Remains', sub: 'Damage = missing HP × 2',
+        classColor: cls.color, available: !used['all_that_remains'] })
+    }
+    if (hasSkill(player, 'hollow_t6a')) {
+      out.push({ id: 'the_empty_one', label: 'The Empty One', sub: '4 turns untargetable, pierce all DEF',
+        classColor: cls.color, available: !used['the_empty_one'] })
+    }
+    if (hasSkill(player, 'hollow_t6b')) {
+      out.push({ id: 'survivors_end', label: "Survivor's End", sub: '+50% HP, Void × 20 dmg, drop to 1 HP',
+        classColor: cls.color, available: !used['survivors_end'] })
+    }
+    if (hasSkill(player, 'hollow_t6c')) {
+      out.push({ id: 'endless_hollow', label: 'Endless Hollow', sub: 'Damage = max HP. You drop to 1.',
+        classColor: cls.color, available: !used['endless_hollow'] })
+    }
+  }
   return out
 }
 
@@ -542,6 +602,96 @@ export function onActiveSkill(skillId, player, statusEffects, enemy) {
     messages.push('👑 The Throne Speaks — 5 turns. No one moves but you.')
   }
 
+  // ── Bastion actives ──────────────────────────────────────────────────
+  else if (skillId === 'anchor_pulse') {
+    // Clear all status on player AND enemy. Heal 30% max HP.
+    const clearFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
+                         'enemyStunTurns', 'cls_rotTurns', 'cls_markTurns',
+                         'cls_silenceTurns']
+    for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_anchorPulseHeal = Math.round(maxHp * 0.30)
+    messages.push(`🛡 Anchor Pulse — status cleared on both sides. Heal incoming.`)
+  } else if (skillId === 'living_wall') {
+    statusEffects.cls_livingWallTurns = 3
+    messages.push('🛡 Living Wall — 3 turns of immunity. Attacks become Bulwark.')
+  } else if (skillId === 'final_riposte') {
+    // Release ALL Bulwark stacks as one strike: stacks × 15 + DEF × 2
+    const stacks = statusEffects.cls_bulwarkStacks || 0
+    const def = (player.def || 2) + (statusEffects.playerDEFBonus || 0)
+    statusEffects.cls_finalRiposteDamage = (stacks * 15) + (def * 2)
+    statusEffects.cls_bulwarkStacks = 0
+    messages.push(`🛡 Final Riposte — ${stacks} stacks + DEF released as one strike.`)
+  }
+
+  // ── Dawnbringer actives ──────────────────────────────────────────────
+  else if (skillId === 'healing_wave') {
+    const maxHp = player.hp_max || player.max_hp || 100
+    const stacks = statusEffects.cls_sunStacks || 0
+    let healPct = 0.30 + (stacks * 0.05)
+    // Resurgence — t4a: doubled if <40% HP
+    if (hasSkill(player, 'dawnbringer_t4a') && (statusEffects._enginePlayerHpPct || 1) < 0.40) {
+      healPct *= 2
+    }
+    statusEffects.cls_healingWaveHeal = Math.round(maxHp * healPct)
+    statusEffects.cls_sunStacks = 0
+    // Solar Flow — t3a: +2 SP per heal
+    if (hasSkill(player, 'dawnbringer_t3a')) {
+      statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + 2
+    }
+    messages.push(`☀ Healing Wave — restoring ${statusEffects.cls_healingWaveHeal} HP.`)
+  } else if (skillId === 'radiant_burst') {
+    const stacks = statusEffects.cls_sunStacks || 0
+    statusEffects.cls_radiantBurstDamage = stacks * 8
+    // Cleanse all player debuffs
+    const clearFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
+                         'cls_rotTurns']
+    for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
+    messages.push(`☀ Radiant Burst — ${stacks * 8} damage + cleanse.`)
+  } else if (skillId === 'dawnward_light') {
+    statusEffects.cls_dawnwardLightTurns = 5
+    messages.push('☀ Dawnward Light — 5 turns of life-steal strikes.')
+  } else if (skillId === 'dawnbreaker') {
+    // 5× ATK as untyped radiant damage; lose 50% Sun
+    const atk = (player.atk || 5) + (statusEffects.playerATKBonus || 0)
+    statusEffects.cls_dawnbreakerDamage = atk * 5
+    statusEffects.cls_sunStacks = Math.round((statusEffects.cls_sunStacks || 0) * 0.5)
+    messages.push(`☀ Dawnbreaker — strike for ${atk * 5} radiant damage.`)
+  }
+
+  // ── Hollow actives ───────────────────────────────────────────────────
+  else if (skillId === 'disappear') {
+    statusEffects.cls_disappearTurns = 2
+    messages.push('◇ Disappear — 2 turns. The shape of you gone.')
+    // Voidwalker (t5a): no longer costs turns — engine doesn't disable strike
+    if (!hasSkill(player, 'hollow_t5a')) {
+      // Normal Disappear consumes the turn
+    }
+  } else if (skillId === 'all_that_remains') {
+    // Damage = missing HP × 2
+    const maxHp = player.hp_max || player.max_hp || 100
+    const hpPct = statusEffects._enginePlayerHpPct || 1
+    const missing = Math.round(maxHp * (1 - hpPct))
+    statusEffects.cls_allThatRemainsDamage = missing * 2
+    messages.push(`◇ All That Remains — ${missing * 2} damage from what's gone.`)
+  } else if (skillId === 'the_empty_one') {
+    statusEffects.cls_emptyOneTurns = 4
+    messages.push('◇ The Empty One — 4 turns. Untouchable. All DEF pierced.')
+  } else if (skillId === 'survivors_end') {
+    // Heal 50% max HP, deal Void × 20, drop to 1 HP
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_survivorsEndHeal = Math.round(maxHp * 0.50)
+    statusEffects.cls_survivorsEndDamage = (statusEffects.cls_voidStacks || 0) * 20
+    statusEffects.cls_survivorsEndDropToOne = true
+    messages.push(`◇ Survivor's End — heal ${statusEffects.cls_survivorsEndHeal}, deal ${statusEffects.cls_survivorsEndDamage}, drop to 1 HP.`)
+  } else if (skillId === 'endless_hollow') {
+    // Damage = max HP. Drop to 1.
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_endlessHollowDamage = maxHp
+    statusEffects.cls_endlessHollowDropToOne = true
+    messages.push(`◇ Endless Hollow — ${maxHp} damage. The last move.`)
+  }
+
   return { messages, consumed: true }
 }
 
@@ -653,6 +803,40 @@ export function onCombatStart(player, statusEffects) {
   statusEffects.cls_throneSpeaksTurns   = 0
   statusEffects.cls_apexSovereignDamage = 0
   statusEffects.cls_empyreanUsed        = false
+  // Bastion
+  statusEffects.cls_bulwarkStacks       = 0
+  statusEffects.cls_bulwarkCap          = 10   // increases via Tempered Plate
+  statusEffects.cls_reinforceCounter    = 0   // every-other-hit gate
+  statusEffects.cls_livingWallTurns     = 0
+  statusEffects.cls_lastActionDefend    = false  // tracks for Counterpoint
+  statusEffects.cls_anchorPulseHeal     = 0
+  statusEffects.cls_finalRiposteDamage  = 0
+  // Dawnbringer
+  statusEffects.cls_sunStacks           = 0
+  statusEffects.cls_pureStrikeCounter   = 0   // every-3rd-strike gate
+  statusEffects.cls_healingVeilUsedThisTurn = false
+  statusEffects.cls_lightsRestorationUsed = false
+  statusEffects.cls_eternalVigilUsed    = false
+  statusEffects.cls_dawnwardLightTurns  = 0
+  statusEffects.cls_healingWaveHeal     = 0
+  statusEffects.cls_radiantBurstDamage  = 0
+  statusEffects.cls_dawnbreakerDamage   = 0
+  // Hollow
+  statusEffects.cls_voidStacks          = 0
+  statusEffects.cls_disappearTurns      = 0
+  statusEffects.cls_emptyOneTurns       = 0
+  statusEffects.cls_oneLastStandUsed    = false
+  statusEffects.cls_lastWishStrikes     = 0   // Last Wish guaranteed-crit counter
+  statusEffects.cls_lastWishTriggered   = false
+  statusEffects.cls_coldComfortDebuff   = 0   // enemy ATK reduction (permanent for combat)
+  statusEffects.cls_echoOfLossTurns     = 0   // counter for 5-turn loss-cycle
+  statusEffects.cls_allThatRemainsDamage = 0
+  statusEffects.cls_endlessHollowDamage = 0
+  statusEffects.cls_endlessHollowDropToOne = false
+  statusEffects.cls_survivorsEndHeal    = 0
+  statusEffects.cls_survivorsEndDamage  = 0
+  statusEffects.cls_survivorsEndDropToOne = false
+
   // Royal Banner — Prime t1b: +10% all stats at combat start
   if (hasSkill(player, 'prime_t1b')) {
     statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + Math.round((player.atk || 5) * 0.10)
@@ -676,6 +860,21 @@ export function onCombatStart(player, statusEffects) {
   if (hasSkill(player, 'nullborn_t1a')) {
     statusEffects.cls_nullStacks = 3
     messages.push('✕ Null Form — 3 stacks ready.')
+  }
+  // Bastion — Standing Watch (t2c): cleanse all negative status at start
+  if (hasSkill(player, 'bastion_t2c')) {
+    const clearFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
+                         'enemyStunTurns', 'cls_rotTurns', 'cls_markTurns',
+                         'cls_silenceTurns']
+    for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
+    messages.push('🛡 Standing Watch — start clean.')
+  }
+  // Dawnbringer — First Light (t2c): heal to full once per chapter
+  // Uses player.dawnbringer_first_light_used boolean (persistent column).
+  if (hasSkill(player, 'dawnbringer_t2c') && !player.dawnbringer_first_light_used) {
+    statusEffects.cls_firstLightHealToFull = true
+    statusEffects.cls_firstLightConsumed = true  // engine writes the DB flag
+    messages.push('☀ First Light — restored. The day has come.')
   }
 
   // Arbiter — Equal Sky: +5 SP at combat start
@@ -1109,6 +1308,119 @@ export function onPlayerAttack(player, statusEffects, enemy, baseDamage) {
     }
   }
 
+  // ════════ Bastion ═══════════════════════════════════════════════════
+  if (ac === 'bastion') {
+    // Counterpoint — t2b: strike after Defend +25% damage
+    if (hasSkill(player, 'bastion_t2b') && statusEffects.cls_lastActionDefend) {
+      dmgMult *= 1.25
+      statusEffects.cls_lastActionDefend = false
+      messages.push('🛡 Counterpoint — +25% from defending stance.')
+    }
+    // Final Riposte staged damage
+    if (statusEffects.cls_finalRiposteDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_finalRiposteDamage
+      statusEffects.cls_finalRiposteDamage = 0
+      messages.push('🛡 Final Riposte strikes.')
+    }
+  }
+
+  // ════════ Dawnbringer ═══════════════════════════════════════════════
+  if (ac === 'dawnbringer') {
+    // Dawn Strike — t1b: +10% radiant bonus; 25% chance to ignore DEF
+    if (hasSkill(player, 'dawnbringer_t1b')) {
+      dmgMult *= 1.10
+      if (Math.random() < 0.25) {
+        defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)
+        messages.push('☀ Dawn Strike — light pierces DEF.')
+      }
+    }
+    // Radiant Edge — t2b: +5% damage per Sun stack
+    if (hasSkill(player, 'dawnbringer_t2b')) {
+      dmgMult *= (1 + 0.05 * (statusEffects.cls_sunStacks || 0))
+    }
+    // Pure Strike — t3b: every 3rd strike ignores all DEF
+    if (hasSkill(player, 'dawnbringer_t3b')) {
+      statusEffects.cls_pureStrikeCounter = (statusEffects.cls_pureStrikeCounter || 0) + 1
+      if (statusEffects.cls_pureStrikeCounter >= 3) {
+        statusEffects.cls_pureStrikeCounter = 0
+        defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)
+        messages.push('☀ Pure Strike — all DEF pierced.')
+      }
+    }
+    // Radiant Burst staged damage
+    if (statusEffects.cls_radiantBurstDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_radiantBurstDamage
+      statusEffects.cls_radiantBurstDamage = 0
+      messages.push('☀ Radiant Burst strikes.')
+    }
+    // Dawnbreaker staged damage
+    if (statusEffects.cls_dawnbreakerDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_dawnbreakerDamage
+      defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)  // untyped radiant ignores DEF
+      statusEffects.cls_dawnbreakerDamage = 0
+      messages.push('☀ Dawnbreaker strikes.')
+    }
+  }
+
+  // ════════ Hollow ════════════════════════════════════════════════════
+  if (ac === 'hollow') {
+    // Hollowed — t1a: +3% ATK per Void stack
+    if (hasSkill(player, 'hollow_t1a')) {
+      dmgMult *= (1 + 0.03 * (statusEffects.cls_voidStacks || 0))
+    }
+    // Empty Strike — t2a: 5+ Void → +20% damage + ignore 25% DEF
+    if (hasSkill(player, 'hollow_t2a') && (statusEffects.cls_voidStacks || 0) >= 5) {
+      dmgMult *= 1.20
+      defIgnoreFrac = Math.max(defIgnoreFrac, 0.25)
+    }
+    // Survivor's Wound — t1b: +1% damage per 1% HP lost (uncapped)
+    if (hasSkill(player, 'hollow_t1b')) {
+      const hpPct = statusEffects._enginePlayerHpPct
+      if (typeof hpPct === 'number') {
+        const missing = (1 - hpPct) * 100
+        dmgMult *= (1 + missing / 100)
+      }
+    }
+    // Last Wish — t1c: guaranteed-crit strikes
+    if ((statusEffects.cls_lastWishStrikes || 0) > 0) {
+      critChanceAdd += 1.0
+      statusEffects.cls_lastWishStrikes -= 1
+      messages.push(`◇ Last Wish crit (${statusEffects.cls_lastWishStrikes} left).`)
+    }
+    // Distant Strike — t3c: +10% crit chance + +30% crit damage
+    if (hasSkill(player, 'hollow_t3c')) {
+      critChanceAdd += 0.10
+      // The +30% crit damage is approximated by boosting dmgMult on crit later
+      // (we set a flag the engine could read; for now: bump expected value)
+      statusEffects.cls_distantStrikeBonus = true
+    }
+    // Final Verdict — t4c: <10% HP → ATK ×2
+    if (hasSkill(player, 'hollow_t4c') && (statusEffects._enginePlayerHpPct || 1) < 0.10) {
+      dmgMult *= 2.0
+    }
+    // The Empty One active: pierce all DEF
+    if (statusEffects.cls_emptyOneTurns > 0) {
+      defIgnoreFrac = 1.0
+    }
+    // All That Remains staged damage
+    if (statusEffects.cls_allThatRemainsDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_allThatRemainsDamage
+      statusEffects.cls_allThatRemainsDamage = 0
+      messages.push('◇ All That Remains strikes.')
+    }
+    // Endless Hollow / Survivor's End staged damage
+    if (statusEffects.cls_endlessHollowDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_endlessHollowDamage
+      statusEffects.cls_endlessHollowDamage = 0
+      messages.push('◇ Endless Hollow strikes.')
+    }
+    if (statusEffects.cls_survivorsEndDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_survivorsEndDamage
+      statusEffects.cls_survivorsEndDamage = 0
+      messages.push("◇ Survivor's End strikes.")
+    }
+  }
+
   return { dmgMult, defIgnoreFrac, bonusFlatDmg, critChanceAdd, messages }
 }
 
@@ -1238,6 +1550,24 @@ export function onPlayerAttackPost(player, statusEffects, enemy, damageDealt, wa
       statusEffects.cls_bleedingTurns = Math.max(statusEffects.cls_bleedingTurns || 0, 3)
       statusEffects.cls_bleedingDmg = Math.max(statusEffects.cls_bleedingDmg || 0, 4)
     }
+  }
+
+  // ── Dawnbringer ─────────────────────────────────────────────────────
+  if (ac === 'dawnbringer') {
+    // Searing Truth — t5b: radiant strikes also burn the enemy (3 turns, 5/turn)
+    if (hasSkill(player, 'dawnbringer_t5b')) {
+      statusEffects.burnTurns = Math.max(statusEffects.burnTurns || 0, 3)
+      statusEffects.burnDmg = Math.max(statusEffects.burnDmg || 0, 5)
+    }
+    // Dawnward Light active: life-steal 50% of damage dealt for 5 turns
+    if (statusEffects.cls_dawnwardLightTurns > 0) {
+      healToPlayer += Math.round(damageDealt * 0.50)
+    }
+  }
+
+  // ── Hollow ──────────────────────────────────────────────────────────
+  if (ac === 'hollow') {
+    // (no per-attack post effects currently — bonus damage handled in attack hook)
   }
 
   return { deferredDamage, healToPlayer, messages }
@@ -1580,6 +1910,143 @@ export function onPlayerHit(player, statusEffects, enemy, incomingDamage, player
     }
   }
 
+  // ── Bastion ─────────────────────────────────────────────────────────
+  if (ac === 'bastion') {
+    // Living Wall active: 3 turns of zero damage, attacks add Bulwark
+    if (statusEffects.cls_livingWallTurns > 0) {
+      const cap = statusEffects.cls_bulwarkCap || 10
+      statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 2)
+      dmgMult = 0
+      messages.push('🛡 Living Wall — absorbed. +2 Bulwark.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Bulwark — t1a: each stack = -5% incoming damage
+    if (hasSkill(player, 'bastion_t1a')) {
+      const stacks = statusEffects.cls_bulwarkStacks || 0
+      if (stacks > 0) dmgMult *= (1 - 0.05 * stacks)
+    }
+    // Reflection — t3b: stacks reflect damage (stacks × 2)
+    if (hasSkill(player, 'bastion_t3b')) {
+      reflectAmount += (statusEffects.cls_bulwarkStacks || 0) * 2
+    }
+    // Mirror Wall — t5b: stacks × 1% of damage reflects
+    if (hasSkill(player, 'bastion_t5b')) {
+      reflectAmount += Math.round(incomingDamage * 0.01 * (statusEffects.cls_bulwarkStacks || 0))
+    }
+    // Reinforce — t3a: every other hit grants +1 Bulwark
+    if (hasSkill(player, 'bastion_t3a')) {
+      statusEffects.cls_reinforceCounter = (statusEffects.cls_reinforceCounter || 0) + 1
+      if (statusEffects.cls_reinforceCounter >= 2) {
+        statusEffects.cls_reinforceCounter = 0
+        const cap = statusEffects.cls_bulwarkCap || 10
+        statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 1)
+      }
+    }
+    // Punishing Counter — t4b: 30% chance to fully deflect
+    if (hasSkill(player, 'bastion_t4b') && Math.random() < 0.30) {
+      dmgMult = 0
+      messages.push('🛡 Punishing Counter — attack deflected.')
+    }
+    // Sanctified Ground — t6c: <30% HP → immune to status + halved damage
+    if (hasSkill(player, 'bastion_t6c') && (statusEffects._enginePlayerHpPct || 1) < 0.30) {
+      dmgMult *= 0.5
+      statusEffects.cls_noWitness = true
+    }
+    // Steady — t1c: full HP → immune to stun/silence
+    if (hasSkill(player, 'bastion_t1c') && (statusEffects._enginePlayerHpPct || 1) >= 0.99) {
+      statusEffects.enemyStunResist = true
+    }
+    // Iron Stance — t4a: 5+ Bulwark → immune to knockback/displacement
+    // (Engine doesn't have displacement; this is a flag for future use.)
+    if (hasSkill(player, 'bastion_t4a') && (statusEffects.cls_bulwarkStacks || 0) >= 5) {
+      statusEffects.cls_immuneDisplacement = true
+    }
+  }
+
+  // ── Dawnbringer ─────────────────────────────────────────────────────
+  if (ac === 'dawnbringer') {
+    // Healing Veil — t3c: taking damage triggers 8% max HP heal (once/turn)
+    if (hasSkill(player, 'dawnbringer_t3c') && !statusEffects.cls_healingVeilUsedThisTurn) {
+      statusEffects.cls_healingVeilUsedThisTurn = true
+      statusEffects.cls_healingVeilHeal = Math.round(playerMaxHp * 0.08)
+      // Resurgence — t4a: doubled healing under 40% HP
+      if (hasSkill(player, 'dawnbringer_t4a') && (statusEffects._enginePlayerHpPct || 1) < 0.40) {
+        statusEffects.cls_healingVeilHeal *= 2
+      }
+      messages.push(`☀ Healing Veil — +${statusEffects.cls_healingVeilHeal} HP.`)
+    }
+    // Eternal Vigil — t6c: on would-die, restored to 50% + max Sun stacks (once)
+    if (hasSkill(player, 'dawnbringer_t6c') && !statusEffects.cls_eternalVigilUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_eternalVigilUsed = true
+        statusEffects.cls_eternalVigilHeal = Math.round(playerMaxHp * 0.50)
+        statusEffects.cls_sunStacks = 10
+        statusEffects.cls_loyalGuardSavedHp = 1
+        dmgMult = 0
+        messages.push('☀ Eternal Vigil — the sun rises again. +50% HP, max Sun.')
+      }
+    }
+  }
+
+  // ── Hollow ──────────────────────────────────────────────────────────
+  if (ac === 'hollow') {
+    // Disappear / Empty One: untargetable
+    if (statusEffects.cls_disappearTurns > 0 || statusEffects.cls_emptyOneTurns > 0) {
+      dmgMult = 0
+      messages.push('◇ Hollow — they cannot find you.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Hollowed — t1a: +1 Void stack on damage (max 10)
+    if (hasSkill(player, 'hollow_t1a')) {
+      statusEffects.cls_voidStacks = Math.min(10, (statusEffects.cls_voidStacks || 0) + 1)
+    }
+    // Drifted — t4a: at 8+ Void, 30% dodge
+    if (hasSkill(player, 'hollow_t4a') && (statusEffects.cls_voidStacks || 0) >= 8) {
+      if (Math.random() < 0.30) {
+        dmgMult = 0
+        messages.push('◇ Drifted — the strike passes through nothing.')
+        return { dmgMult, reflectAmount, messages }
+      }
+    }
+    // Mourner's Pace — t2b: <50% HP → SPD doubles (engine handles SPD elsewhere; flag here)
+    if (hasSkill(player, 'hollow_t2b') && (statusEffects._enginePlayerHpPct || 1) < 0.50) {
+      statusEffects.cls_mournersPaceActive = true
+    }
+    // Mourner's Weight — t5b: <30% HP → damage halved
+    if (hasSkill(player, 'hollow_t5b') && (statusEffects._enginePlayerHpPct || 1) < 0.30) {
+      dmgMult *= 0.5
+    }
+    // Cold Comfort — t3b: taking damage applies -5% enemy ATK (stacks)
+    if (hasSkill(player, 'hollow_t3b')) {
+      const cap = 0.50  // cap so it doesn't reduce enemy to nothing
+      statusEffects.cls_coldComfortDebuff = Math.min(cap, (statusEffects.cls_coldComfortDebuff || 0) + 0.05)
+      statusEffects.enemyATKMult = (statusEffects.enemyATKMult || 1.0) * (1 - 0.05)
+    }
+    // Last Wish — t1c: at <25% HP, once/combat → next 3 strikes guaranteed crit
+    if (hasSkill(player, 'hollow_t1c') && !statusEffects.cls_lastWishTriggered) {
+      const hpPct = statusEffects._enginePlayerHpPct
+      if (typeof hpPct === 'number' && hpPct < 0.25) {
+        statusEffects.cls_lastWishTriggered = true
+        statusEffects.cls_lastWishStrikes = 3
+        messages.push('◇ Last Wish — three crits remain.')
+      }
+    }
+    // Final Verdict — t4c: +50% damage taken under 10% HP (offsetting bonus)
+    if (hasSkill(player, 'hollow_t4c') && (statusEffects._enginePlayerHpPct || 1) < 0.10) {
+      dmgMult *= 1.50
+    }
+    // One Last Stand — t2c: first would-die per combat, ignore damage
+    if (hasSkill(player, 'hollow_t2c') && !statusEffects.cls_oneLastStandUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_oneLastStandUsed = true
+        dmgMult = 0
+        messages.push('◇ One Last Stand — the fall does not happen.')
+      }
+    }
+  }
+
   return { dmgMult, reflectAmount, messages }
 }
 
@@ -1746,6 +2213,16 @@ export function onKill(player, statusEffects, enemy) {
     if (hasSkill(player, 'error_t1c')) {
       statusEffects.cls_stackOverflowReady = true
       messages.push('⚠ Stack Overflow — next strike doubled.')
+    }
+  }
+
+  // ── Dawnbringer ─────────────────────────────────────────────────────
+  if (ac === 'dawnbringer') {
+    // Light's Restoration — t5a: kills heal to full (once per combat)
+    if (hasSkill(player, 'dawnbringer_t5a') && !statusEffects.cls_lightsRestorationUsed) {
+      statusEffects.cls_lightsRestorationUsed = true
+      statusEffects.cls_killHeal = (statusEffects.cls_killHeal || 0) + 99999  // engine clamps to maxHp
+      messages.push("☀ Light's Restoration — fully restored.")
     }
   }
 
@@ -1983,6 +2460,89 @@ export function onTurnEnd(player, statusEffects) {
     }
   }
 
+  // ── Bastion ─────────────────────────────────────────────────────────
+  if (ac === 'bastion') {
+    // Tempered Plate — t5a: Bulwark cap +1 per turn (max 30)
+    if (hasSkill(player, 'bastion_t5a')) {
+      statusEffects.cls_bulwarkCap = Math.min(30, (statusEffects.cls_bulwarkCap || 10) + 1)
+    }
+    // Living Wall countdown
+    if (statusEffects.cls_livingWallTurns > 0) statusEffects.cls_livingWallTurns--
+    // Anchor Pulse heal apply
+    if (statusEffects.cls_anchorPulseHeal > 0) {
+      healToPlayer += statusEffects.cls_anchorPulseHeal
+      statusEffects.cls_anchorPulseHeal = 0
+    }
+  }
+
+  // ── Dawnbringer ─────────────────────────────────────────────────────
+  if (ac === 'dawnbringer') {
+    // Inner Light — t1a: 5% max HP per turn (passive regen)
+    if (hasSkill(player, 'dawnbringer_t1a')) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      let regen = Math.round(maxHp * 0.05)
+      if (hasSkill(player, 'dawnbringer_t4a') && (statusEffects._enginePlayerHpPct || 1) < 0.40) {
+        regen *= 2
+      }
+      healToPlayer += regen
+      messages.push(`☀ Inner Light — +${regen} HP.`)
+    }
+    // Sun's Wake — t1c: +1 Sun stack per turn (max 10)
+    if (hasSkill(player, 'dawnbringer_t1c')) {
+      statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 1)
+    }
+    // Sun's Sanctuary — t5c: <50% HP → 8% HP/turn regen (capped at 50%)
+    if (hasSkill(player, 'dawnbringer_t5c') && (statusEffects._enginePlayerHpPct || 1) < 0.50) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      let regen = Math.round(maxHp * 0.08)
+      if (hasSkill(player, 'dawnbringer_t4a') && (statusEffects._enginePlayerHpPct || 1) < 0.40) {
+        regen *= 2
+      }
+      healToPlayer += regen
+    }
+    // Per-turn flag reset
+    statusEffects.cls_healingVeilUsedThisTurn = false
+    // Apply Healing Veil heal (if triggered earlier)
+    if (statusEffects.cls_healingVeilHeal > 0) {
+      healToPlayer += statusEffects.cls_healingVeilHeal
+      statusEffects.cls_healingVeilHeal = 0
+    }
+    // Apply Healing Wave heal (from active)
+    if (statusEffects.cls_healingWaveHeal > 0) {
+      healToPlayer += statusEffects.cls_healingWaveHeal
+      statusEffects.cls_healingWaveHeal = 0
+      if (hasSkill(player, 'dawnbringer_t3a')) {
+        statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + 2
+      }
+    }
+    // Apply Eternal Vigil heal (if triggered)
+    if (statusEffects.cls_eternalVigilHeal > 0) {
+      healToPlayer += statusEffects.cls_eternalVigilHeal
+      statusEffects.cls_eternalVigilHeal = 0
+    }
+    // Dawnward Light countdown
+    if (statusEffects.cls_dawnwardLightTurns > 0) statusEffects.cls_dawnwardLightTurns--
+  }
+
+  // ── Hollow ──────────────────────────────────────────────────────────
+  if (ac === 'hollow') {
+    if (statusEffects.cls_disappearTurns > 0) statusEffects.cls_disappearTurns--
+    if (statusEffects.cls_emptyOneTurns > 0) {
+      statusEffects.cls_emptyOneTurns--
+      // +1 Void stack per turn of The Empty One
+      statusEffects.cls_voidStacks = Math.min(10, (statusEffects.cls_voidStacks || 0) + 1)
+    }
+    // Echo of Loss — t4b: every 5 turns survived, enemy ATK -10% permanently
+    if (hasSkill(player, 'hollow_t4b')) {
+      statusEffects.cls_echoOfLossTurns = (statusEffects.cls_echoOfLossTurns || 0) + 1
+      if (statusEffects.cls_echoOfLossTurns >= 5) {
+        statusEffects.cls_echoOfLossTurns = 0
+        statusEffects.enemyATKMult = (statusEffects.enemyATKMult || 1) * 0.90
+        messages.push('◇ Echo of Loss — enemy ATK -10%.')
+      }
+    }
+  }
+
   return { messages, damageToEnemy, healToPlayer }
 }
 
@@ -2021,6 +2581,13 @@ export function onCombatEnd(player, statusEffects, outcome) {
     if (Object.keys(dbUpdates).length > 0) {
       messages.push(`👑 Eternal Sovereign — stacks persist: ATK ${newAtk}, DEF ${newDef}, SPD ${newSpd}.`)
     }
+  }
+
+  // Dawnbringer First Light — t2c: chapter-persistent once-per-chapter flag.
+  // If we consumed it this combat (statusEffects.cls_firstLightConsumed set
+  // at combat start), write the flag to the DB.
+  if (ac === 'dawnbringer' && statusEffects.cls_firstLightConsumed) {
+    dbUpdates.dawnbringer_first_light_used = true
   }
 
   return { dbUpdates, messages }
