@@ -473,26 +473,88 @@ const CLASS_DATA = [
     key: 'bastion', name: 'Bastion', judgeOf: 'Judge of Purity',
     color: '#5e8aa0', tagline: 'An immovable shield over those who chose to stay.',
     narrative: 'ANOMALY DETECTED — the line held. CLASS REGISTERED: BASTION.',
-    skills: [
-      ['Aegis Form',       'Convert offense into defense temporarily'],
-      ['Shielded Path',    "Allies behind you take reduced damage"],
-      ["Protector's Vow",  'Heal slightly each turn while at full HP'],
-      ['Bulwark Wall',     'Plant a barrier that absorbs attacks'],
-      ['Reflective Guard', 'Block + counter as one action'],
-      ['Final Sanctuary',  'Become invulnerable but rooted for 3 turns'],
+    // Absolution class. Tank/defender. Snowballs via Bulwark stacks built
+    // from successful Defend actions. Each stack: -5% incoming, +2 reflect.
+    // Three branches:
+    //   a — Path of the Wall: pure stack engine, snowball defender
+    //   b — Path of the Counter: defend-counterattack rhythm
+    //   c — Path of the Anchor: status immunity + cleanse, specialist
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Bulwark',          'Each Defend adds 1 Bulwark stack (max 10). Each stack: -5% incoming damage.'],
+        b: ['Riposte',          'Defend deals damage = (your DEF × 0.5) to the enemy.'],
+        c: ['Steady',           'Immune to stun and silence while at full HP.'],
+      },
+      { // Tier 2 — level 20
+        a: ['Held Ground',      'Defending doesn\'t consume your action at 3+ Bulwark stacks.'],
+        b: ['Counterpoint',     'Your basic strike after Defend deals +25% damage.'],
+        c: ['Standing Watch',   'Start of combat: cleanse all negative status effects.'],
+      },
+      { // Tier 3 — level 25
+        a: ['Reinforce',        'Taking damage adds +1 Bulwark (every other hit).'],
+        b: ['Reflection',       'Bulwark stacks reflect damage on hit = (stacks × 2).'],
+        c: ['Anchored',         'Your SPD does not drop below 1 regardless of debuffs.'],
+      },
+      { // Tier 4 — level 30
+        a: ['Iron Stance',      'At 5+ Bulwark: immune to knockback, displacement, mind effects.'],
+        b: ['Punishing Counter','Enemy attacks have 30% chance to fail entirely (deflect).'],
+        c: ['Unmoving',         'Defend action also removes one debuff from you.'],
+      },
+      { // Tier 5 — level 35
+        a: ['Tempered Plate',   'Bulwark cap increases by 1 per turn alive (10 → 15 → 20 ...).'],
+        b: ['Mirror Wall',      'Bulwark stacks add (stacks × 1%) extra reflect on top of base.'],
+        c: ['Anchor Pulse',     'Active: clear ALL status on you AND enemy, heal 30% max HP.'],
+      },
+      { // Tier 6 — level 40
+        a: ['Living Wall',      'Active: 3 turns of zero damage. Enemy attacks add 2 Bulwark instead.'],
+        b: ['Final Riposte',    'Active: release all Bulwark as one strike = (stacks × 15 + DEF × 2).'],
+        c: ['Sanctified Ground','At <30% HP: immune to all status effects AND incoming damage halved.'],
+      },
     ],
   },
   {
     key: 'dawnbringer', name: 'Dawnbringer', judgeOf: 'Judge of Purity',
     color: '#f4d96a', tagline: 'The first light after a long siege.',
     narrative: 'ANOMALY DETECTED — light recognized. CLASS REGISTERED: DAWNBRINGER.',
-    skills: [
-      ['Dawn Light',     'Heal allies in a small area'],
-      ['Healing Wave',   'Single-target heal scaling with insight'],
-      ["Sun's Promise",  'Revive once per chapter at low HP'],
-      ['Radiant Strike', 'Light-based attack, bonus vs corrupted'],
-      ['Rising Sun',     'Battlefield-wide buff at chapter start'],
-      ['First Light',    'Massive area heal + cleanse'],
+    // Absolution class. Healer with a sword. Distinct from Bastion (pure tank):
+    // Dawnbringer recovers HP via Sun stacks built from defending/healing/surviving.
+    // First Light (2c) is chapter-persistent — once per chapter heal-to-full at
+    // combat start. Uses player.dawnbringer_first_light_used column.
+    // Three branches:
+    //   a — Path of the Sun: healing scaling, sustain
+    //   b — Path of the Dawn: radiant offense + self-cleansing
+    //   c — Path of the Vigil: defensive sustain, Bastion-adjacent
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Inner Light',      'Heal 5% max HP per turn alive (passive).'],
+        b: ['Dawn Strike',      'Basic hits deal +10% radiant bonus damage (25% ignore DEF).'],
+        c: ["Sun's Wake",       'Gain 1 Sun stack per turn alive (max 10).'],
+      },
+      { // Tier 2 — level 20
+        a: ['Healing Wave',     'Active: heal 30% max HP + (Sun stacks × 5%). Consumes all stacks.'],
+        b: ['Radiant Edge',     'Basic strikes deal +5% damage per Sun stack carried.'],
+        c: ['First Light',      'Start of combat: heal to full (once per chapter).'],
+      },
+      { // Tier 3 — level 25
+        a: ['Solar Flow',       'When you heal, also restore 2 SP per heal event.'],
+        b: ['Pure Strike',      'Every 3rd basic strike ignores all enemy DEF.'],
+        c: ['Healing Veil',     'Taking damage triggers an 8% max HP heal (once per turn).'],
+      },
+      { // Tier 4 — level 30
+        a: ['Resurgence',       'Below 40% HP: healing effects are doubled.'],
+        b: ['Radiant Burst',    'Active: deal damage = (Sun stacks × 8) and cleanse all your debuffs.'],
+        c: ["Vigil's Stand",    'Defend heals 10% max HP AND grants +2 Sun stacks.'],
+      },
+      { // Tier 5 — level 35
+        a: ["Light's Restoration",'Kills heal you to full HP (once per combat).'],
+        b: ['Searing Truth',    'Radiant damage now also burns the enemy (3 turns, 5/turn).'],
+        c: ["Sun's Sanctuary",  'Below 50% HP: 8% HP/turn regen (capped at 50% max HP).'],
+      },
+      { // Tier 6 — level 40
+        a: ['Dawnward Light',   'Active: 5 turns where basic strikes also heal you 50% of damage dealt.'],
+        b: ['Dawnbreaker',      'Active: deal 5× ATK as untyped radiant damage. Lose 50% Sun stacks.'],
+        c: ['Eternal Vigil',    'On death: restored to 50% max HP + max Sun stacks (once per combat).'],
+      },
     ],
   },
   {
@@ -686,13 +748,45 @@ const CLASS_DATA = [
     key: 'hollow', name: 'Hollow', judgeOf: 'Judge of Ruin',
     color: '#3a3a4a', tagline: 'What remains when grief has finished.',
     narrative: 'ANOMALY DETECTED — interior signal lost. CLASS REGISTERED: HOLLOW.',
-    skills: [
-      ['Empty Vessel',     'Take less damage from emotional/aura effects'],
-      ['Quiet Breath',     'Regenerate stamina while standing still'],
-      ['Hollow Step',      'Move at full speed while silenced'],
-      ['Silent Endurance', 'Resist debuffs while below 25% HP'],
-      ['Numb Strike',      'Ignore enemy defense once per fight'],
-      ['Final Emptiness',  'Become unkillable for 3 turns, then sleep'],
+    // Wrath class. Glass-cannon defensive: doesn't tank well, but disappears
+    // and re-emerges. Distinct from Vessel (corruption grows) — Hollow is
+    // emptiness, refuses to be. Void stacks built from taking damage AND
+    // low HP. Used for disengage moves and one-time burst plays.
+    // Three branches:
+    //   a — Path of the Empty: Void stack scaling, untouchable engine
+    //   b — Path of Grief: low-HP scaling, debuff-the-enemy attrition
+    //   c — Path of the Final: one-time burst plays, death saves
+    tiers: [
+      { // Tier 1 — level 15
+        a: ['Hollowed',         'Taking damage → 1 Void stack (max 10). Each stack: +3% ATK.'],
+        b: ["Survivor's Wound", 'Damage you deal +1% per 1% HP lost (uncapped).'],
+        c: ['Last Wish',        'Below 25% HP, once/combat: next 3 strikes guaranteed crit.'],
+      },
+      { // Tier 2 — level 20
+        a: ['Empty Strike',     'At 5+ Void stacks: basic strikes +20% damage AND ignore 25% DEF.'],
+        b: ["Mourner's Pace",   'Below 50% HP: SPD doubles.'],
+        c: ['One Last Stand',   'First would-die per combat: ignore the damage entirely.'],
+      },
+      { // Tier 3 — level 25
+        a: ['Disappear',        'Active: 2 turns untargetable (cannot attack during).'],
+        b: ['Cold Comfort',     'Taking damage applies -5% enemy ATK (stacks, permanent for combat).'],
+        c: ['Distant Strike',   '+10% crit chance and +30% crit damage on basic strikes.'],
+      },
+      { // Tier 4 — level 30
+        a: ['Drifted',          'At 8+ Void stacks: 30% dodge chance.'],
+        b: ['Echo of Loss',     'Every 5 turns survived: enemy ATK -10% permanently.'],
+        c: ['Final Verdict',    'Below 10% HP: ATK ×2 but take +50% damage.'],
+      },
+      { // Tier 5 — level 35
+        a: ['Voidwalker',       'Disappear no longer costs turns. You can attack while untargetable.'],
+        b: ["Mourner's Weight", 'Below 30% HP: damage taken halved.'],
+        c: ['All That Remains', 'Active: strike for (your missing HP × 2).'],
+      },
+      { // Tier 6 — level 40
+        a: ['The Empty One',    'Active: 4 turns untargetable, strikes pierce all DEF, +1 Void/turn.'],
+        b: ["Survivor's End",   'Active: heal 50% max HP, deal Void × 20, then drop to 1 HP.'],
+        c: ['Endless Hollow',   'Active: strike for (your max HP) damage. Your HP becomes 1.'],
+      },
     ],
   },
   {
