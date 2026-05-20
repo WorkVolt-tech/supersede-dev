@@ -1900,7 +1900,21 @@ export async function mountChapter1(__mountOptions = {}) {
           renderHUD()
           return
         }
-        await save({ hp: Math.max(1, currentHp) })
+        // ── Class skill: combat-end hook for defeat ─────────────────────
+        // Lets Prime/Mourning King reset their accumulated stacks to 0.
+        // Skip the call on 'escape' — fleeing isn't dying.
+        const loseUpdates = { hp: Math.max(1, currentHp) }
+        if (result === 'defeat') {
+          const _clsEnd = ClsCombat.onCombatEnd(player, statusEffects, 'defeat')
+          if (Object.keys(_clsEnd.dbUpdates).length > 0) {
+            Object.assign(loseUpdates, _clsEnd.dbUpdates)
+            for (const k of Object.keys(_clsEnd.dbUpdates)) player[k] = _clsEnd.dbUpdates[k]
+          }
+          if (_clsEnd.messages.length && typeof window.showToast === 'function') {
+            window.showToast(_clsEnd.messages[0])
+          }
+        }
+        await save(loseUpdates)
         setTimeout(() => {
           const dest = result==='escape' ? onEscape : onLose
           if (dest === '__farm_zone__') {
