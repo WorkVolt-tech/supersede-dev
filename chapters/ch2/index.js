@@ -3735,7 +3735,14 @@ You walk back out.`
       if(statusEffects.rootTrapTurns>0)  statusEffects.rootTrapTurns--
       Object.keys(statusEffects.skillCooldowns).forEach(k=>{if(statusEffects.skillCooldowns[k]>0)statusEffects.skillCooldowns[k]--})
 
-      const pSPD=playerSPD()+(statusEffects.playerSPDBonus||0), eSPD=enemySPD()
+      // Mourner's Pace (Hollow t2b): SPD doubles below 50% HP.
+      let pSPD=playerSPD()+(statusEffects.playerSPDBonus||0)
+      if (player.active_class === 'hollow'
+          && (player.class_nodes_unlocked||[]).includes('hollow_t2b')
+          && currentHp < maxPlayerHp * 0.5) {
+        pSPD *= 2
+      }
+      const eSPD=enemySPD()
       const razorTempo=statusEffects.razorTempo&&playerAction==='strike'
       const dashStrike=skillKey==='wind_skill_dash_strike'
       const pEffSPD=pSPD+(playerAction==='heavy'?-3:0)+Math.floor(Math.random()*3)
@@ -4025,6 +4032,15 @@ You walk back out.`
       if(skillKey) recordSkillUse(skillKey)
       if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
       else{resolveEnemyAction();if(currentHp>0)resolvePlayerAction()}
+
+      // Quickstep (Ghostblade t3a): every 3rd basic strike grants a free
+      // chained strike. Flag is set in onPlayerAttackPost. We resolve one
+      // additional strike here (max one chain per turn to prevent recursion).
+      if (statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
+          && playerAction === 'strike') {
+        statusEffects.cls_quickstepFreeStrike = false
+        resolvePlayerAction()
+      }
 
       // DoT effects
       if(statusEffects.burnTurns>0){const bd=statusEffects.burnDmg;enemyHp=Math.max(0,enemyHp-bd);statusEffects.burnTurns--;messages.push('🔥 Burn — <strong>'+bd+'</strong> dmg ('+statusEffects.burnTurns+' left)')}
