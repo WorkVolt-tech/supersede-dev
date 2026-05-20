@@ -299,9 +299,12 @@ export async function mountVehicle(__mountOptions = {}) {
   // Preload top-view vehicle images
   const VTOP_IMGS={}
   ;['motorcycle','car','van'].forEach(t=>{const img=new Image();img.src=`../assets/ride/top_${t}.webp`;VTOP_IMGS[t]=img})
+
   // Preload enemy eye images
-const EYE_IMGS={}
-;['scout','watcher','drone','sniper','swarm'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
+  // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp
+  const EYE_IMGS={}
+  ;['scout','watcher','drone','sniper','swarm','cluster'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
+
   // Draw vehicle
   const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
   const vcol=VCOL[vtype]||'#c8b96e'
@@ -349,35 +352,35 @@ const EYE_IMGS={}
     }
   }
 
-  // Draw eye
-function drawEye(e){
-  ctx.save();ctx.translate(e.x,e.y);e.pulse+=.1
-  const ps=1+Math.sin(e.pulse)*.2
-  const sz=e.sz*ps
-  const img=EYE_IMGS[e.name.toLowerCase()]
-  if(img&&img.complete&&img.naturalWidth>0){
-    // Slight glow halo behind image
-    ctx.shadowColor=e.col;ctx.shadowBlur=22
-    ctx.beginPath();ctx.arc(0,0,sz*1.1,0,Math.PI*2);ctx.fillStyle=e.col+'22';ctx.fill()
-    ctx.shadowBlur=0
-    // Draw the sprite — square bounding box around the circle radius
-    const d=sz*2
-    ctx.drawImage(img,-d/2,-d/2,d,d)
-  } else {
-    // Canvas fallback (also used for Cluster which has no image yet)
-    ctx.shadowColor=e.col;ctx.shadowBlur=28
-    ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,sz*1.35,0,Math.PI*2);ctx.stroke()
-    ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,sz,0,Math.PI*2);ctx.stroke()
-    ctx.fillStyle='rgba(238,228,218,.9)';ctx.beginPath();ctx.ellipse(0,0,sz*.6,sz*.42,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,sz*.32,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,sz*.15,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-sz*.1,-sz*.1,sz*.07,0,Math.PI*2);ctx.fill()
+  // Draw eye — uses custom sprite if available, falls back to canvas drawing
+  function drawEye(e){
+    ctx.save();ctx.translate(e.x,e.y);e.pulse+=.1
+    const ps=1+Math.sin(e.pulse)*.2
+    const sz=e.sz*ps
+    const img=EYE_IMGS[e.name.toLowerCase()]
+    if(img&&img.complete&&img.naturalWidth>0){
+      // Coloured glow halo behind the sprite
+      ctx.shadowColor=e.col;ctx.shadowBlur=22
+      ctx.beginPath();ctx.arc(0,0,sz*1.1,0,Math.PI*2);ctx.fillStyle=e.col+'22';ctx.fill()
+      ctx.shadowBlur=0
+      // Draw sprite — square bounding box sized to the circle radius
+      const d=sz*2
+      ctx.drawImage(img,-d/2,-d/2,d,d)
+    } else {
+      // Canvas fallback (also used for Cluster until cluster.webp is added)
+      ctx.shadowColor=e.col;ctx.shadowBlur=28
+      ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,sz*1.35,0,Math.PI*2);ctx.stroke()
+      ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,sz,0,Math.PI*2);ctx.stroke()
+      ctx.fillStyle='rgba(238,228,218,.9)';ctx.beginPath();ctx.ellipse(0,0,sz*.6,sz*.42,0,0,Math.PI*2);ctx.fill()
+      ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,sz*.32,0,Math.PI*2);ctx.fill()
+      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,sz*.15,0,Math.PI*2);ctx.fill()
+      ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-sz*.1,-sz*.1,sz*.07,0,Math.PI*2);ctx.fill()
+    }
+    // HP bar (same for both paths)
+    if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
+    if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
+    ctx.restore()
   }
-  // HP bar (same as before)
-  if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
-  if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
-  ctx.restore()
-}
 
   // Draw bullet
   function drawBullet(b){
