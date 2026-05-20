@@ -18,7 +18,9 @@ import { CLASSES, isClassNodeUnlocked } from './classes.js'
 
 // ── Helper: is a specific skill unlocked for the active class? ──────────
 // Class skill nodes use IDs like 'arbiter_t1a', 'arbiter_t2c', etc.
-function hasSkill(player, skillNodeId) {
+// Storage format in DB is 'classKey:nodeId' (e.g. 'arbiter:arbiter_t1a'),
+// so we build the tag here.
+export function hasSkill(player, skillNodeId) {
   if (!player.active_class) return false
   return isClassNodeUnlocked(player, player.active_class, skillNodeId)
 }
