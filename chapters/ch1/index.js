@@ -2416,7 +2416,7 @@ export async function mountChapter1(__mountOptions = {}) {
 
       // ── Unwritten — Bury the Hour: snapshot state at turn start ──
       if (player.active_class === 'unwritten'
-          && (player.class_nodes_unlocked||[]).includes('unwritten_t5b')) {
+          && ClsCombat.hasSkill(player, 'unwritten_t5b')) {
         if (!Array.isArray(statusEffects.cls_rewindBuffer)) {
           statusEffects.cls_rewindBuffer = []
         }
@@ -2459,7 +2459,7 @@ export async function mountChapter1(__mountOptions = {}) {
       let pSPD = playerSPD() + (statusEffects.playerSPDBonus || 0)
       // Mourner's Pace (Hollow t2b): SPD doubles below 50% HP.
       if (player.active_class === 'hollow'
-          && (player.class_nodes_unlocked||[]).includes('hollow_t2b')
+          && ClsCombat.hasSkill(player, 'hollow_t2b')
           && currentHp < maxPlayerHp * 0.5) {
         pSPD *= 2
       }
@@ -2716,14 +2716,14 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 1)
             messages.push('🛡 Bulwark — ' + statusEffects.cls_bulwarkStacks + ' stacks.')
             // Riposte (t1b)
-            if ((player.class_nodes_unlocked||[]).includes('bastion_t1b')) {
+            if (ClsCombat.hasSkill(player, 'bastion_t1b')) {
               const def = (player.def||2)+(statusEffects.playerDEFBonus||0)
               const ripDmg = Math.max(1, Math.round(def * 0.5))
               enemyHp = Math.max(0, enemyHp - ripDmg)
               messages.push('🛡 Riposte deals ' + ripDmg + '.')
             }
             // Unmoving (t4c)
-            if ((player.class_nodes_unlocked||[]).includes('bastion_t4c')) {
+            if (ClsCombat.hasSkill(player, 'bastion_t4c')) {
               const debuffFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
               for (const k of debuffFields) {
                 if ((statusEffects[k]||0) > 0) {
@@ -2736,7 +2736,7 @@ export async function mountChapter1(__mountOptions = {}) {
           }
           // ── Dawnbringer Vigil's Stand on Defend (t4c) ───────────────
           if (player.active_class === 'dawnbringer'
-              && (player.class_nodes_unlocked||[]).includes('dawnbringer_t4c')) {
+              && ClsCombat.hasSkill(player, 'dawnbringer_t4c')) {
             const heal = Math.round(maxPlayerHp * 0.10)
             currentHp = Math.min(maxPlayerHp, currentHp + heal)
             statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
@@ -2745,7 +2745,7 @@ export async function mountChapter1(__mountOptions = {}) {
           // ── Oathbreaker Patience of Stone on Defend (t3b, Wall oath) ──
           if (player.active_class === 'oathbreaker'
               && statusEffects.cls_currentOath === 'wall'
-              && (player.class_nodes_unlocked||[]).includes('oathbreaker_t3b')) {
+              && ClsCombat.hasSkill(player, 'oathbreaker_t3b')) {
             const cur = statusEffects.cls_patienceOfStoneBonus || 0
             if (cur < 50) {
               statusEffects.cls_patienceOfStoneBonus = cur + 1
