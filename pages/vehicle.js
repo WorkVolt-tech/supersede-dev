@@ -171,10 +171,10 @@ export async function mountVehicle(__mountOptions = {}) {
   const ETYPES=[
     {name:'Scout',  hp:1,spd:1.6,atk:6, sz:16,col:'#b06eff',score:50, pat:'straight'},
     {name:'Watcher',hp:2,spd:1.2,atk:10,sz:24,col:'#e05555',score:100,pat:'zigzag'},
-    {name:'Drone',  hp:1,spd:2.8,atk:5, sz:13,col:'#5eaee0',score:75, pat:'dive'},
+    {name:'Drone',  hp:1,spd:2.8,atk:5, sz:18,col:'#5eaee0',score:75, pat:'dive'},
     {name:'Cluster',hp:6,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
     {name:'Sniper', hp:3,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
-    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:10,col:'#ff88ff',score:30, pat:'swarm'},
+    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:18,col:'#ff88ff',score:30, pat:'swarm'},
     {name:'Boss',   hp:10,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
   ]
   // Wave spawn pools — Swarm included from wave 3 so it shows up regularly
@@ -393,19 +393,39 @@ export async function mountVehicle(__mountOptions = {}) {
   // Draw eye — uses custom sprite if available, falls back to canvas drawing
   function drawEye(e){
     ctx.save();ctx.translate(e.x,e.y);e.pulse+=.1
-    const ps=1+Math.sin(e.pulse)*.2
+    const ps=1+Math.sin(e.pulse)*.12
     const sz=e.sz*ps
     const img=EYE_IMGS[e.name.toLowerCase()]
     if(img&&img.complete&&img.naturalWidth>0){
-      // Coloured glow halo behind the sprite
-      ctx.shadowColor=e.col;ctx.shadowBlur=22
-      ctx.beginPath();ctx.arc(0,0,sz*1.1,0,Math.PI*2);ctx.fillStyle=e.col+'22';ctx.fill()
+      // Size multiplier per enemy — boss and swarm need more space for their full art
+      const mult=e.isBoss?3.8:e.name==='Swarm'?3.2:e.name==='Drone'?2.8:2.2
+      const d=sz*mult
+      // Rectangular glow behind sprite — no circle, no clipping
+      ctx.shadowColor=e.col;ctx.shadowBlur=28
+      ctx.fillStyle=e.col+'18'
+      ctx.fillRect(-d/2,-d/2,d,d)
       ctx.shadowBlur=0
-    // Draw sprite — boss needs extra room for legs extending past the circle radius
-      const d=e.isBoss?sz*3.2:sz*2
+      // Draw full sprite into rectangle — nothing is clipped
       ctx.drawImage(img,-d/2,-d/2,d,d)
+      // HP bar positioned below the full sprite rect
+      if(e.mhp>1){
+        const bw=e.isBoss?d*.9:d*.8
+        const by=d/2+6
+        ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(-bw/2,by,bw,e.isBoss?7:4)
+        ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555'
+        ctx.fillRect(-bw/2,by,bw*(e.hp/e.mhp),e.isBoss?7:4)
+        if(e.isBoss){ctx.strokeStyle='rgba(255,102,0,.6)';ctx.lineWidth=1;ctx.strokeRect(-bw/2,by,bw,7)}
+      }
+      if(e.isBoss||e.sz>=20){
+        ctx.shadowBlur=0
+        ctx.fillStyle=e.isBoss?'#ff6600':'rgba(200,184,128,.75)'
+        ctx.font=e.isBoss?'bold .38rem Share Tech Mono,monospace':'.28rem Share Tech Mono,monospace'
+        ctx.textAlign='center'
+        const labelY=d/2+(e.isBoss?22:16)
+        ctx.fillText(e.isBoss?'⚠ BOSS ⚠':e.name,0,labelY)
+      }
     } else {
-      // Canvas fallback (also used for Cluster until cluster.webp is added)
+      // Canvas fallback (Cluster until cluster.webp is added)
       ctx.shadowColor=e.col;ctx.shadowBlur=28
       ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,sz*1.35,0,Math.PI*2);ctx.stroke()
       ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,sz,0,Math.PI*2);ctx.stroke()
@@ -413,21 +433,8 @@ export async function mountVehicle(__mountOptions = {}) {
       ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,sz*.32,0,Math.PI*2);ctx.fill()
       ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,sz*.15,0,Math.PI*2);ctx.fill()
       ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-sz*.1,-sz*.1,sz*.07,0,Math.PI*2);ctx.fill()
-    }
-    // HP bar (boss gets a wider, more prominent bar)
-    if(e.mhp>1){
-      const bw=e.isBoss?e.sz*3.5:e.sz*2.4
-      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(-bw/2,e.sz+5,bw,e.isBoss?7:4)
-      ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555'
-      ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),e.isBoss?7:4)
-      if(e.isBoss){ctx.strokeStyle='rgba(255,102,0,.5)';ctx.lineWidth=1;ctx.strokeRect(-bw/2,e.sz+5,bw,7)}
-    }
-    if(e.sz>=20){
-      ctx.shadowBlur=0
-      ctx.fillStyle=e.isBoss?'#ff6600':'rgba(200,184,128,.75)'
-      ctx.font=e.isBoss?'bold .38rem Share Tech Mono,monospace':'.28rem Share Tech Mono,monospace'
-      ctx.textAlign='center'
-      ctx.fillText(e.isBoss?'⚠ '+e.name.toUpperCase()+' ⚠':e.name,0,e.sz+(e.isBoss?20:17))
+      if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
+      if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
     }
     ctx.restore()
   }
@@ -662,10 +669,10 @@ export async function mountVehicle(__mountOptions = {}) {
       return true
     })
 
-    // Loot — accelerates downward with road scroll, disappears at bottom
+    // Loot — gentle fall, fades as it approaches bottom
     lootDrops=lootDrops.filter(l=>{
-      l.vy=Math.min(l.vy+0.08, 5) // gravity acceleration
-      l.y+=l.vy+G.speed*0.4        // also moves with road scroll feel
+      l.vy=Math.min(l.vy+0.02, 2.2) // gentle gravity
+      l.y+=l.vy+G.speed*0.15         // slight road scroll feel, much slower
       l.life--
       if(l.life<=0||l.collected||l.y>canvas.height+10)return false
       drawLoot(l)
