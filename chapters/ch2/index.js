@@ -2654,7 +2654,7 @@ You walk back out.`
     const zoneIds = ['zone_fire','zone_water','zone_lightning','zone_arcane','zone_shadow','zone_earth','zone_wind','zone_plant','zone_metal','zone_poison']
     const inZone = zoneIds.some(z => nodeId === z || nodeId.startsWith(z + '_'))
     const onEscape = node.onEscape || (inZone ? 'district_hub' : null)
-    buildCombatUI(panel,node.enemy,node.onWin,node.onLose,onEscape,false)
+    buildCombatUI(panel,node.enemy,node.onWin,node.onLose,onEscape,false,{ally: node.ally || null})
   }
   // ── Twin Judges scaling (#20 / #21) ──────────────────────────────────────
   // Composes the Judges fight stats and form from the player's actual record.
@@ -2900,12 +2900,45 @@ You walk back out.`
       playerMoral: player.moral_score||0,
       elementsAttempted,
       judgesForm,
+      ally: node.ally || null,
     })
   }
 
+  // ── Combat UI builder ──────────────────────────────────────────────────
+  //
+  // Ally support: pass extraCtx.ally to bring an NPC to combat. Shape:
+  //   ally = {
+  //     name:    string        — display name (e.g. 'Tam', 'Sera')
+  //     hp:      number        — current HP
+  //     maxHp:   number        — max HP
+  //     atk:     number        — base attack power
+  //     def:     number        — damage reduction
+  //     alive:   boolean       — starts true, flipped to false on death
+  //   }
+  //
+  // Mechanics when ally is present:
+  //   - HP bar rendered below player's, in ally color
+  //   - Each turn (after both player + enemy act), ally attacks the enemy
+  //   - Ally has ~40% chance to take retaliation damage per attack
+  //   - If ally HP hits 0, ally.alive = false, but combat continues
+  //   - statusEffects.ally_died is set true the moment they die (one-shot)
+  //   - Class skills (onPlayerHit, etc.) only fire when PLAYER is hit, never ally
+  //   - Status effects (bleed/poison) only apply to player, not ally
+  //   - Win/lose conditions are unchanged — ally death is narrative only
+  //
+  // On win, narrative nodes can check player.alliance_log for the ally death
+  // tag (e.g. 'tam_died_in_combat') which the engine appends if it happened.
+  //
   function buildCombatUI(panel,enemy,onWin,onLose,onEscape,isBoss,extraCtx={}) {
     const cid='cb'+Math.random().toString(36).slice(2,7)
     const $=id=>panel.querySelector('#'+cid+'-'+id)
+    const ally = extraCtx.ally || null
+    // Defensive: default ally.alive to true if author forgot to specify it.
+    // Also default missing maxHp to hp so the bar can render correctly.
+    if (ally) {
+      if (ally.alive === undefined) ally.alive = true
+      if (ally.maxHp === undefined) ally.maxHp = ally.hp
+    }
 
     let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100
     let over=false, defending=false
@@ -3110,6 +3143,13 @@ You walk back out.`
       + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div></div>'
       + '<span id="'+cid+'-c-player-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">'+currentHp+'/'+maxPlayerHp+'</span>'
       + '</div>'
+      + (ally ? (
+          '<div class="stat-row" style="margin-bottom:.4rem">'
+          + '<span class="stat-key" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:#5eaee0">'+ally.name.toUpperCase()+'</span>'
+          + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-ally-bar" style="background:#5eaee0;width:100%;transition:width .4s,background .4s"></div></div>'
+          + '<span id="'+cid+'-c-ally-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:#5eaee0;min-width:50px;text-align:right">'+ally.hp+'/'+ally.maxHp+'</span>'
+          + '</div>'
+        ) : '')
       + '<div id="'+cid+'-combat-actions">'
       + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink);letter-spacing:.09em;margin-bottom:5px">— CHOOSE YOUR ACTION —</p>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:4px">'
@@ -3139,6 +3179,16 @@ You walk back out.`
       if(eHp) eHp.textContent=enemyHp+' / '+maxEnemyHp+' HP'
       if(pBar){pBar.style.width=pPct+'%'; pBar.style.background=pPct>60?'#5ec45e':pPct>30?'#c8b96e':'#e05555'}
       if(pHp) pHp.textContent=currentHp+'/'+maxPlayerHp
+      // Ally bar (if present)
+      if (ally) {
+        const aPct = Math.max(0, Math.round(ally.hp / ally.maxHp * 100))
+        const aBar = $('c-ally-bar'), aHp = $('c-ally-hp')
+        if (aBar) {
+          aBar.style.width = aPct + '%'
+          aBar.style.background = ally.alive ? (aPct>60?'#5eaee0':aPct>30?'#c8b96e':'#e05555') : '#666'
+        }
+        if (aHp) aHp.textContent = ally.alive ? (ally.hp+'/'+ally.maxHp) : 'fallen'
+      }
       updateHpBar(currentHp)
     }
 
@@ -3446,6 +3496,27 @@ You walk back out.`
     async function endCombat(result) {
       if (over) return; over=true
       setButtons(false)
+
+      // ── Ally outcome bookkeeping ────────────────────────────────────
+      // If an ally was present, record their final state via alliance_log.
+      // Tag format: 'ally_<name>_died' or 'ally_<name>_survived'. Narrative
+      // nodes can read these and branch on the outcome. We mutate player in
+      // memory now; the column is committed by the branch-specific save
+      // calls below (we DON'T fire a separate save here because that would
+      // race with the win/lose save calls).
+      let _allyLogUpdate = null
+      if (ally) {
+        const tag = ally.alive
+          ? 'ally_' + ally.name.toLowerCase() + '_survived'
+          : 'ally_' + ally.name.toLowerCase() + '_died'
+        const log = player.alliance_log || []
+        if (!log.includes(tag)) {
+          log.push(tag)
+          player.alliance_log = log
+          _allyLogUpdate = log
+        }
+      }
+
       if (result==='win') {
         const oldXp=player.xp||0, oldLvl=player.level||1
         const newXp=oldXp+(enemy.xp||50)
@@ -3534,6 +3605,9 @@ You walk back out.`
           for (const k of Object.keys(_clsEnd.dbUpdates)) player[k] = _clsEnd.dbUpdates[k]
         }
         if (_clsEnd.messages.length) window.showToast(_clsEnd.messages[0])
+
+        // Merge ally outcome tag into the same updates payload
+        if (_allyLogUpdate) updates.alliance_log = _allyLogUpdate
 
         await save(updates)
         const nextNode=isBoss?'chapter_end_ch2':onWin
@@ -3656,7 +3730,9 @@ You walk back out.`
           }
         }
       } else if (result==='escape') {
-        await save({hp:currentHp})
+        const escapeUpdates = { hp: currentHp }
+        if (_allyLogUpdate) escapeUpdates.alliance_log = _allyLogUpdate
+        await save(escapeUpdates)
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
         $('combat-over').innerHTML=`<button class="choice" data-next-node="${onEscape||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
@@ -3676,6 +3752,8 @@ You walk back out.`
           window.showToast(_clsEnd.messages[0])
         }
         currentHp = loseUpdates.hp
+        // Merge ally outcome tag into the same updates payload
+        if (_allyLogUpdate) loseUpdates.alliance_log = _allyLogUpdate
         await save(loseUpdates)
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
@@ -4065,6 +4143,33 @@ You walk back out.`
           && playerAction === 'strike') {
         statusEffects.cls_quickstepFreeStrike = false
         resolvePlayerAction()
+      }
+
+      // ── Ally turn ──────────────────────────────────────────────────
+      // The ally attacks the enemy if both are still alive. ~40% chance of
+      // taking retaliation damage per swing. If ally HP hits 0, ally.alive
+      // flips to false (the bar greys out) but combat continues. The death
+      // is one-shot logged via statusEffects.ally_died (the engine appends
+      // to alliance_log later for the narrative).
+      if (ally && ally.alive && enemyHp > 0) {
+        const aDmg = Math.max(1, (ally.atk || 5) + Math.floor(Math.random() * 4))
+        enemyHp = Math.max(0, enemyHp - aDmg)
+        // Only check retaliation if the enemy is still alive after the swing.
+        // Otherwise the ally is striking a dead enemy and would take
+        // retaliation from a corpse, which is nonsense.
+        if (enemyHp > 0 && Math.random() < 0.4) {
+          const aHit = Math.max(0, Math.floor((enemy.atk || 10) * 0.5) - (ally.def || 0))
+          ally.hp = Math.max(0, ally.hp - aHit)
+          if (ally.hp <= 0) {
+            ally.alive = false
+            statusEffects.ally_died = true
+            messages.push(`<strong>${ally.name}</strong> strikes for ${aDmg} — then takes ${aHit} and falls.`)
+          } else {
+            messages.push(`<strong>${ally.name}</strong> strikes for ${aDmg} (takes ${aHit} retaliation, ${ally.hp} HP left).`)
+          }
+        } else {
+          messages.push(`<strong>${ally.name}</strong> strikes for ${aDmg}.`)
+        }
       }
 
       // DoT effects
