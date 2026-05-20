@@ -1941,7 +1941,14 @@ export async function mountChapter1(__mountOptions = {}) {
     let defending = false
 
     function playerATK()  { return calcATK() }
-    function playerDEF()  { return calcDEF() }
+    function playerDEF()  {
+      let base = calcDEF()
+      // Armour Shred (applied by enemyAI.js): reduces DEF by shredAmt
+      if (statusEffects.playerDefShredTurns > 0) {
+        base = Math.max(0, base - (statusEffects.playerDefShredAmt||0))
+      }
+      return base
+    }
     function playerSPD()  { return calcSPD() }
     function enemySPD()   { return enemy.spd || Math.floor((enemy.atk||5) * 0.6) }
 
@@ -2455,6 +2462,15 @@ export async function mountChapter1(__mountOptions = {}) {
           && (player.class_nodes_unlocked||[]).includes('hollow_t2b')
           && currentHp < maxPlayerHp * 0.5) {
         pSPD *= 2
+      }
+      // Slow (applied by enemyAI.js): halves SPD while active
+      if (statusEffects.playerSlowTurns > 0) pSPD = Math.floor(pSPD / 2)
+      // Terror (applied by enemyAI.js): skills are unusable while active.
+      // If player tried to use a skill, fall back to a basic strike.
+      if (statusEffects.playerTerrorTurns > 0 && playerAction === 'skill') {
+        log('😱 You cannot focus enough to channel skills.')
+        playerAction = 'strike'
+        skillKey = null
       }
       const eSPD = enemySPD()
 
@@ -3114,7 +3130,13 @@ export async function mountChapter1(__mountOptions = {}) {
         }
       }
 
-      if (playerFirst) {
+      // Player stun gate (applied by enemyAI.js): if stunned, skip player
+      // action this turn. Enemy still gets to act. The tick happens later.
+      const playerStunned = (statusEffects.playerStunTurns||0) > 0
+      if (playerStunned) {
+        log('⚡ You are stunned and cannot act.')
+        if (currentHp > 0) resolveEnemyAction()
+      } else if (playerFirst) {
         resolvePlayerAction()
         resolveEnemyAction()
       } else {
@@ -3123,8 +3145,8 @@ export async function mountChapter1(__mountOptions = {}) {
       }
 
       // Quickstep (Ghostblade t3a): every 3rd basic strike grants a free
-      // chained strike. Flag is set in onPlayerAttackPost.
-      if (statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
+      // chained strike. Flag is set in onPlayerAttackPost. Skip if stunned.
+      if (!playerStunned && statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
           && playerAction === 'strike') {
         statusEffects.cls_quickstepFreeStrike = false
         resolvePlayerAction()
@@ -3149,6 +3171,40 @@ export async function mountChapter1(__mountOptions = {}) {
         const heal = Math.min(player.max_hp||100, currentHp + regenAmt) - currentHp
         currentHp += heal
         if (heal > 0) messages.push('💧 Flow Lv' + regenLv + ': +' + heal + ' HP regen.')
+      }
+      // Player-side status DoTs and counter decrements. Mirrors Ch2.
+      if (statusEffects.playerBleedTurns > 0) {
+        const bd = statusEffects.playerBleedDmg || 3
+        currentHp = Math.max(0, currentHp - bd)
+        statusEffects.playerBleedTurns--
+        messages.push('🩸 Bleed: ' + bd + ' dmg. (' + statusEffects.playerBleedTurns + ' left)')
+        if (statusEffects.playerBleedTurns === 0) statusEffects.playerBleedDmg = 0
+      }
+      if (statusEffects.playerPoisonTurns > 0) {
+        const pd = statusEffects.playerPoisonDmg || 3
+        currentHp = Math.max(0, currentHp - pd)
+        statusEffects.playerPoisonTurns--
+        messages.push('☠ Poison: ' + pd + ' dmg. (' + statusEffects.playerPoisonTurns + ' left)')
+        if (statusEffects.playerPoisonTurns === 0) statusEffects.playerPoisonDmg = 0
+      }
+      if (statusEffects.playerSlowTurns > 0) {
+        statusEffects.playerSlowTurns--
+        if (statusEffects.playerSlowTurns === 0) messages.push('🌀 Slow fades.')
+      }
+      if (statusEffects.playerDefShredTurns > 0) {
+        statusEffects.playerDefShredTurns--
+        if (statusEffects.playerDefShredTurns === 0) {
+          statusEffects.playerDefShredAmt = 0
+          messages.push('🔓 Armour Shred fades.')
+        }
+      }
+      if (statusEffects.playerTerrorTurns > 0) {
+        statusEffects.playerTerrorTurns--
+        if (statusEffects.playerTerrorTurns === 0) messages.push('😱 Terror fades.')
+      }
+      if (statusEffects.playerStunTurns > 0) {
+        statusEffects.playerStunTurns--
+        if (statusEffects.playerStunTurns === 0) messages.push('⚡ Stun fades.')
       }
       // Tick temp buffs
       if (statusEffects.rockArmorTurns > 0) {
