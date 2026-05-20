@@ -2144,6 +2144,12 @@ export async function mountChapter1(__mountOptions = {}) {
       currentHp = maxPlayerHp
       statusEffects.cls_firstLightHealToFull = false
     }
+    // Thick Hide (Dreadnought t1b): +20% max HP at combat start
+    if ((statusEffects.cls_thickHideBonus || 0) > 0) {
+      maxPlayerHp += statusEffects.cls_thickHideBonus
+      currentHp += statusEffects.cls_thickHideBonus
+      statusEffects.cls_thickHideBonus = 0
+    }
     // (any "Equal Sky" message will appear in the first combat-log push)
 
     // ── Render battle skill slots ─────────────────────────────
@@ -2646,6 +2652,18 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
             messages.push("☀ Vigil's Stand — +" + heal + " HP, +2 Sun.")
           }
+          // ── Oathbreaker Patience of Stone on Defend (t3b, Wall oath) ──
+          if (player.active_class === 'oathbreaker'
+              && statusEffects.cls_currentOath === 'wall'
+              && (player.class_nodes_unlocked||[]).includes('oathbreaker_t3b')) {
+            const cur = statusEffects.cls_patienceOfStoneBonus || 0
+            if (cur < 50) {
+              statusEffects.cls_patienceOfStoneBonus = cur + 1
+              const baseATK = (player.atk||5)
+              statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(baseATK * 0.01)
+              messages.push("⚔ Patience of Stone — +1% damage permanent (" + (cur+1) + "%).")
+            }
+          }
         } else if (playerAction === 'skill' && skillKey) {
           const sk = BATTLE_SKILLS[skillKey]
           if (!sk) return
@@ -3141,6 +3159,26 @@ export async function mountChapter1(__mountOptions = {}) {
         log(enemy.name + ' has fallen.'); endCombat('win'); return
       }
       if (currentHp <= 0) {
+        // Empty Throne (Mourning King t6c): enemy dies too
+        if (statusEffects.cls_emptyThronePending) {
+          statusEffects.cls_emptyThronePending = false
+          enemyHp = 0
+          log('☠ Empty Throne — they fall with you.')
+          log(enemy.name + ' has fallen.'); endCombat('win'); return
+        }
+        // Maw of the Survivor (Devourer t5a): final bite
+        if (statusEffects.cls_mawOfSurvivorPending) {
+          statusEffects.cls_mawOfSurvivorPending = false
+          const bite = (player.atk||5) + (statusEffects.playerATKBonus||0)
+          const finalBite = bite * 2
+          enemyHp = Math.max(0, enemyHp - finalBite)
+          log('🦷 Maw of the Survivor — last bite for ' + finalBite + '.')
+          if (enemyHp <= 0) {
+            currentHp = 1
+            log('You survive at 1 HP. The hunger remains.')
+            log(enemy.name + ' has fallen.'); endCombat('win'); return
+          }
+        }
         if (window._hasRevive) {
           window._hasRevive = false; currentHp = 20; syncBars()
           await supabase.from('players').update({ hp: 20 }).eq('id', player.id)
