@@ -3590,9 +3590,8 @@ You walk back out.`
 
             // ── Mourning King — spare bonuses ─────────────────────────
             if (player.active_class === 'mourning_king') {
-              const nodes = player.class_nodes_unlocked || []
               // Mercy's Echo (t1b): +2 Wake stacks, +8 SP
-              if (nodes.includes('mourning_king_t1b')) {
+              if (ClsCombat.hasSkill(player, 'mourning_king_t1b')) {
                 const newWake = Math.min(100, (player.mourning_king_wake_stacks||0) + 2)
                 upd.mourning_king_wake_stacks = newWake
                 player.mourning_king_wake_stacks = newWake
@@ -3603,14 +3602,14 @@ You walk back out.`
                 }
               }
               // Mercy is Power (t5b): +1 Wake permanent across run
-              if (nodes.includes('mourning_king_t5b')) {
+              if (ClsCombat.hasSkill(player, 'mourning_king_t5b')) {
                 const cur = upd.mourning_king_wake_stacks ?? (player.mourning_king_wake_stacks||0)
                 const newWake = Math.min(100, cur + 1)
                 upd.mourning_king_wake_stacks = newWake
                 player.mourning_king_wake_stacks = newWake
               }
               // Quiet Funeral (t3b): heal 15% max HP
-              if (nodes.includes('mourning_king_t3b')) {
+              if (ClsCombat.hasSkill(player, 'mourning_king_t3b')) {
                 const maxHp = player.hp_max || maxPlayerHp || 100
                 const heal = Math.round(maxHp * 0.15)
                 upd.hp = Math.min(maxHp, (player.hp||0) + heal)
@@ -3703,7 +3702,7 @@ You walk back out.`
       // active fire, oldest snapshot is restored. Only enabled if player
       // is Unwritten + has the skill (cheap check; skip otherwise).
       if (player.active_class === 'unwritten'
-          && (player.class_nodes_unlocked||[]).includes('unwritten_t5b')) {
+          && ClsCombat.hasSkill(player, 'unwritten_t5b')) {
         if (!Array.isArray(statusEffects.cls_rewindBuffer)) {
           statusEffects.cls_rewindBuffer = []
         }
@@ -3745,7 +3744,7 @@ You walk back out.`
       // Mourner's Pace (Hollow t2b): SPD doubles below 50% HP.
       let pSPD=playerSPD()+(statusEffects.playerSPDBonus||0)
       if (player.active_class === 'hollow'
-          && (player.class_nodes_unlocked||[]).includes('hollow_t2b')
+          && ClsCombat.hasSkill(player, 'hollow_t2b')
           && currentHp < maxPlayerHp * 0.5) {
         pSPD *= 2
       }
@@ -3911,14 +3910,14 @@ You walk back out.`
             statusEffects.cls_bulwarkStacks = Math.min(cap, (statusEffects.cls_bulwarkStacks || 0) + 1)
             messages.push('🛡 Bulwark — '+statusEffects.cls_bulwarkStacks+' stacks.')
             // Riposte (t1b): Defend deals damage = DEF × 0.5 to enemy
-            if (ClsCombat.hasSkill ? ClsCombat.hasSkill(player, 'bastion_t1b') : (player.class_nodes_unlocked||[]).includes('bastion_t1b')) {
+            if (ClsCombat.hasSkill(player, 'bastion_t1b')) {
               const def = (player.def||2)+(statusEffects.playerDEFBonus||0)
               const ripDmg = Math.max(1, Math.round(def * 0.5))
               enemyHp = Math.max(0, enemyHp - ripDmg)
               messages.push('🛡 Riposte deals <strong>'+ripDmg+'</strong>.')
             }
             // Unmoving (t4c): Defend removes one debuff
-            if ((player.class_nodes_unlocked||[]).includes('bastion_t4c')) {
+            if (ClsCombat.hasSkill(player, 'bastion_t4c')) {
               const debuffFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
               for (const k of debuffFields) {
                 if ((statusEffects[k]||0) > 0) {
@@ -3931,7 +3930,7 @@ You walk back out.`
           }
           // ── Dawnbringer Vigil's Stand on Defend (t4c) ───────────────
           if (player.active_class === 'dawnbringer'
-              && (player.class_nodes_unlocked||[]).includes('dawnbringer_t4c')) {
+              && ClsCombat.hasSkill(player, 'dawnbringer_t4c')) {
             const heal = Math.round(maxPlayerHp * 0.10)
             currentHp = Math.min(maxPlayerHp, currentHp + heal)
             statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
@@ -3940,7 +3939,7 @@ You walk back out.`
           // ── Oathbreaker Patience of Stone on Defend (t3b, Wall oath) ──
           if (player.active_class === 'oathbreaker'
               && statusEffects.cls_currentOath === 'wall'
-              && (player.class_nodes_unlocked||[]).includes('oathbreaker_t3b')) {
+              && ClsCombat.hasSkill(player, 'oathbreaker_t3b')) {
             const cur = statusEffects.cls_patienceOfStoneBonus || 0
             if (cur < 50) {
               statusEffects.cls_patienceOfStoneBonus = cur + 1
