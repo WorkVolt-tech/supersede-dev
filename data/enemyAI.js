@@ -153,14 +153,27 @@ function applyTerror(se, turns, messages) {
 }
 
 // ── Weighted random pick ───────────────────────────────────────────────────────
-function pickWeighted(moves) {
-  const total  = moves.reduce((s, m) => s + (m.weight||1), 0)
+// Optional second arg: array of move names to exclude (used by Unwritten's
+// Empty Page + All Written Out, which delete enemy skills from rotation).
+// If all moves are excluded, falls back to basic strike (returns null and
+// caller should handle).
+function pickWeighted(moves, excludeNames) {
+  let pool = moves
+  if (excludeNames && excludeNames.length) {
+    pool = moves.filter(m => !excludeNames.includes(m.name))
+    if (pool.length === 0) {
+      // Everything deleted — fall back to first move (engine will use it
+      // as a basic strike). Better than returning null/crashing.
+      pool = moves.slice(0, 1)
+    }
+  }
+  const total  = pool.reduce((s, m) => s + (m.weight||1), 0)
   let   roll   = Math.random() * total
-  for (const m of moves) {
+  for (const m of pool) {
     roll -= (m.weight||1)
     if (roll <= 0) return m
   }
-  return moves[moves.length - 1]
+  return pool[pool.length - 1]
 }
 
 // ── Effective DEF considering shred ──────────────────────────────────────────
@@ -496,7 +509,7 @@ function _enemy_fractureWolf(enemy, ctx, hpPct) {
     },
   ]
 
-  const move = pickWeighted(moves.filter(m => m.weight > 0))
+  const move = pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills)
   const anim = move.exec()
   enemyState.lastMove = move.key
   return { anim }
@@ -901,7 +914,7 @@ function _enemy_dorian(enemy, ctx, hpPct) {
     },
   ]
 
-  const move = pickWeighted(moves.filter(m => m.weight > 0))
+  const move = pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills)
   return { anim: move.exec() }
 }
 
@@ -1814,7 +1827,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         },
       },
     ]
-    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills).exec() }
   }
 
   // ── SCENARIO B — Wrath Alone: Wrath leads, Mercy withdraws ───────────────
@@ -1880,7 +1893,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         },
       },
     ]
-    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills).exec() }
   }
 
   // ── SCENARIO C — Dual Conflict: Both Judges present, competing ──────────────
@@ -1942,7 +1955,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
           },
         },
       ]
-      return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+      return { anim: pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills).exec() }
     }
   }
 
@@ -1996,7 +2009,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         },
       },
     ]
-    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills).exec() }
   }
 
   // ── SCENARIO E — Mercy Absorbs Wrath: Mercy dominant, greed contradicts ───
@@ -2050,7 +2063,7 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
         },
       },
     ]
-    return { anim: pickWeighted(moves.filter(m => m.weight > 0)).exec() }
+    return { anim: pickWeighted(moves.filter(m => m.weight > 0), se.cls_deletedEnemySkills).exec() }
   }
 
   // ── SCENARIO F — Synchronized Judges: Both present, both in agreement ────────
