@@ -172,21 +172,51 @@ export async function mountVehicle(__mountOptions = {}) {
     {name:'Scout',  hp:1,spd:1.6,atk:6, sz:16,col:'#b06eff',score:50, pat:'straight'},
     {name:'Watcher',hp:2,spd:1.2,atk:10,sz:24,col:'#e05555',score:100,pat:'zigzag'},
     {name:'Drone',  hp:1,spd:2.8,atk:5, sz:13,col:'#5eaee0',score:75, pat:'dive'},
-    {name:'Cluster',hp:4,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
-    {name:'Sniper', hp:2,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
-    {name:'Swarm',  hp:1,spd:2.5,atk:4, sz:10,col:'#ff88ff',score:30, pat:'swarm'},
+    {name:'Cluster',hp:6,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
+    {name:'Sniper', hp:3,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
+    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:10,col:'#ff88ff',score:30, pat:'swarm'},
+    {name:'Boss',   hp:10,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
   ]
+  // Wave spawn pools — Swarm included from wave 3 so it shows up regularly
+  function getPool(){
+    if(G.wave<=2) return ETYPES.slice(0,2)           // Scout, Watcher
+    if(G.wave<=3) return ETYPES.slice(0,3)           // + Drone
+    if(G.wave<=4) return [...ETYPES.slice(0,3), ETYPES[5]] // + Swarm (no boss/cluster/sniper yet)
+    return ETYPES.slice(0,6)                          // all except boss (boss is manual)
+  }
   function spawnEye(forced){
     const rx=ROAD_X(),rw=ROAD_W()
-    const pool=G.wave<=2?ETYPES.slice(0,2):G.wave<=4?ETYPES.slice(0,4):ETYPES
+    const pool=getPool()
     const t=forced||pool[Math.floor(Math.random()*pool.length)]
-    eyes.push({x:rx+t.sz+Math.random()*(rw-t.sz*2),y:-40,vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,sTimer:60+Math.random()*60,zt:0,zd:1,pulse:0,dead:false})
+    const isBoss=!!t.isBoss
+    eyes.push({
+      x:isBoss?canvas.width/2:rx+t.sz+Math.random()*(rw-t.sz*2),
+      y:isBoss?canvas.height*.08:-40,
+      vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,
+      hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,
+      name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,isBoss,
+      sTimer:isBoss?40:60+Math.random()*60,
+      zt:0,zd:1,pulse:0,dead:false,
+      // spider sweep state
+      spiderDir:1,spiderTimer:0,spiderLeg:0
+    })
   }
   function splitEye(e){for(let i=0;i<3;i++){spawnEye(ETYPES[0]);const ne=eyes[eyes.length-1];ne.x=e.x+(Math.random()-.5)*30;ne.y=e.y;ne.vx=(Math.random()-.5)*4}}
+
+  // Boss alive tracker
+  let bossAlive=false
+  function spawnBoss(){
+    if(bossAlive)return
+    bossAlive=true
+    spawnEye(ETYPES[6])
+    waveBanner('⚠ BOSS APPROACHING',2200)
+    flash('#ff660033')
+  }
 
   // Combo
   function addKill(e){
     G.eyesKilled++;G.waveKills++;G.combo++;comboTimer=130
+    if(e.isBoss) bossAlive=false
     if(G.combo>G.maxCombo)G.maxCombo=G.combo
     const mult=Math.min(G.combo,10),pts=e.score*mult
     G.score+=pts
@@ -235,7 +265,11 @@ export async function mountVehicle(__mountOptions = {}) {
     spawnRate=Math.max(50,110-G.wave*8)
     waveTransition=false;document.getElementById('hud-wave').textContent='WAVE '+G.wave
     waveBanner('WAVE '+G.wave)
-    if(G.wave===5){setTimeout(()=>{spawnEye(ETYPES[3]);spawnEye(ETYPES[4])},1500)}
+    if(G.wave===5){
+      // Wave 5: stop regular spawns, spawn boss only
+      spawnRate=99999
+      setTimeout(spawnBoss,2000)
+    }
   }
 
   // Fire
@@ -303,7 +337,7 @@ export async function mountVehicle(__mountOptions = {}) {
   // Preload enemy eye images
   // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp
   const EYE_IMGS={}
-  ;['scout','watcher','drone','sniper','swarm','cluster'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
+  ;['scout','watcher','drone','sniper','swarm','cluster','boss_eye'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
 
   // Draw vehicle
   const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
@@ -376,9 +410,21 @@ export async function mountVehicle(__mountOptions = {}) {
       ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,sz*.15,0,Math.PI*2);ctx.fill()
       ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-sz*.1,-sz*.1,sz*.07,0,Math.PI*2);ctx.fill()
     }
-    // HP bar (same for both paths)
-    if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
-    if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
+    // HP bar (boss gets a wider, more prominent bar)
+    if(e.mhp>1){
+      const bw=e.isBoss?e.sz*3.5:e.sz*2.4
+      ctx.fillStyle='rgba(0,0,0,.7)';ctx.fillRect(-bw/2,e.sz+5,bw,e.isBoss?7:4)
+      ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555'
+      ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),e.isBoss?7:4)
+      if(e.isBoss){ctx.strokeStyle='rgba(255,102,0,.5)';ctx.lineWidth=1;ctx.strokeRect(-bw/2,e.sz+5,bw,7)}
+    }
+    if(e.sz>=20){
+      ctx.shadowBlur=0
+      ctx.fillStyle=e.isBoss?'#ff6600':'rgba(200,184,128,.75)'
+      ctx.font=e.isBoss?'bold .38rem Share Tech Mono,monospace':'.28rem Share Tech Mono,monospace'
+      ctx.textAlign='center'
+      ctx.fillText(e.isBoss?'⚠ '+e.name.toUpperCase()+' ⚠':e.name,0,e.sz+(e.isBoss?20:17))
+    }
     ctx.restore()
   }
 
@@ -539,8 +585,27 @@ export async function mountVehicle(__mountOptions = {}) {
       if(e.pat==='zigzag'){e.zt++;if(e.zt>28){e.zd*=-1;e.zt=0}e.x+=e.vx+e.zd*2.2}
       else if(e.pat==='dive'){const dx=PV.x-e.x,dy=PV.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;e.vx+=dx/d*.12;e.vy+=dy/d*.04;e.x+=e.vx}
       else if(e.pat==='swarm'){e.x+=Math.sin(e.pulse*2)*2.5;e.x+=e.vx}
+      else if(e.pat==='spider'){
+        // Spider: wide sweeping side-to-side, stays in top 28% of screen, occasional lunge
+        const rx=ROAD_X(),rw=ROAD_W()
+        e.spiderTimer++
+        // Sweep left/right across full road width
+        e.x+=e.spiderDir*3.2+Math.sin(e.spiderTimer*.04)*1.5
+        if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.spiderDir=-1}
+        if(e.x<rx+e.sz){e.x=rx+e.sz;e.spiderDir=1}
+        // Stays near top — drift back up if crept too low
+        const bossYMax=canvas.height*.28
+        if(e.y>bossYMax)e.y-=1.2
+        else e.y+=Math.sin(e.spiderTimer*.06)*0.8
+        e.y=Math.max(canvas.height*.05,e.y)
+        // Occasional lunge downward then snap back
+        if(e.spiderTimer%240===0){e.vy=4}
+        if(e.spiderTimer%240>0&&e.spiderTimer%240<30){e.y+=e.vy;e.vy*=.85}
+        else{e.vy=0}
+      }
       else{e.x+=e.vx}
-      e.y+=e.vy;e.pulse+=.1
+      if(e.pat!=='spider'){e.y+=e.vy}
+      e.pulse+=.1
       if(e.x<rx+e.sz){e.x=rx+e.sz;e.vx=Math.abs(e.vx)}
       if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.vx=-Math.abs(e.vx)}
 
@@ -614,7 +679,11 @@ export async function mountVehicle(__mountOptions = {}) {
 
     if(G.waveKills>=G.waveTarget&&!waveTransition){
       waveTransition=true
-      if(G.wave>=5){G.progress=100;G.finished=true;G.running=false;onArrival()}
+      if(G.wave>=5){
+        // Boss wave — only arrive once boss is actually dead
+        if(!bossAlive){G.progress=100;G.finished=true;G.running=false;onArrival()}
+        else{waveTransition=false} // keep waiting
+      }
       else setTimeout(nextWave,2000)
     }
     if(G.hp<=0&&!G.finished){G.hp=0;G.running=false;G.finished=true;onDeath()}
@@ -622,7 +691,7 @@ export async function mountVehicle(__mountOptions = {}) {
 
   function startGame(){
     Object.assign(G,{running:true,hp:VS.hp,maxHp:VS.hp,progress:0,wave:1,waveKills:0,waveTarget:9,eyesKilled:0,score:0,combo:0,maxCombo:0,finished:false,shake:0,speed:VS.speed,lootDropped:[]})
-    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[]
+    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[];bossAlive=false
     SPECIALS.forEach(s=>{s.cd=0;s.active=0})
     resetPV();initWorld()
     document.getElementById('wave-banner').classList.remove('show')
