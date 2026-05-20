@@ -2449,7 +2449,13 @@ export async function mountChapter1(__mountOptions = {}) {
       // ── FF-Style Turn Order ───────────────────────────────────
       // Base speed comparison with jitter. Faster player goes first.
       // Ties broken randomly (spice!) unless one side has a speed-override skill.
-      const pSPD = playerSPD() + (statusEffects.playerSPDBonus || 0)
+      let pSPD = playerSPD() + (statusEffects.playerSPDBonus || 0)
+      // Mourner's Pace (Hollow t2b): SPD doubles below 50% HP.
+      if (player.active_class === 'hollow'
+          && (player.class_nodes_unlocked||[]).includes('hollow_t2b')
+          && currentHp < maxPlayerHp * 0.5) {
+        pSPD *= 2
+      }
       const eSPD = enemySPD()
 
       // Skill-specific overrides
@@ -3113,6 +3119,14 @@ export async function mountChapter1(__mountOptions = {}) {
         resolveEnemyAction()
       } else {
         resolveEnemyAction()
+        resolvePlayerAction()
+      }
+
+      // Quickstep (Ghostblade t3a): every 3rd basic strike grants a free
+      // chained strike. Flag is set in onPlayerAttackPost.
+      if (statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
+          && playerAction === 'strike') {
+        statusEffects.cls_quickstepFreeStrike = false
         resolvePlayerAction()
       }
 
