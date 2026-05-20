@@ -1392,6 +1392,7 @@ export async function mountChapter1(__mountOptions = {}) {
     const opts = {
       dorianLurking: node.dorianLurking && !window._dorianDefeated,
       sentinelAoe:   node.sentinelAoe   && !window._dorianDefeated,
+      ally:          node.ally || null,
     }
     if (node.video) {
       playCombatCinematic(node.video, () => buildCombatUI(panel, node.enemy, node.onWin, node.onLose, node.onEscape, false, null, null, null, opts))
@@ -1478,6 +1479,18 @@ export async function mountChapter1(__mountOptions = {}) {
     const cid = 'cb' + Math.random().toString(36).slice(2, 7)
     const $ = id => panel.querySelector('#' + cid + '-' + id)
 
+    // ── Ally support ──────────────────────────────────────────────────
+    // The 'yara' parameter is the original Ch1 ally slot (hardcoded for the
+    // chapter-end team boss). For generic ally support across combats, the
+    // node can pass opts.ally which we wire to the same code path. If both
+    // are set, the explicit yara parameter wins.
+    if (!yara && opts.ally) yara = opts.ally
+    // Defensive: default missing fields if the author forgot.
+    if (yara) {
+      if (yara.alive === undefined) yara.alive = true
+      if (yara.maxHp === undefined) yara.maxHp = yara.hp
+    }
+
     // ── Dorian lurk + Sentinel AoE options ───────────────────
     const dorianLurking  = opts.dorianLurking || false   // Dorian backstabs every 2 turns
     const sentinelAoe    = opts.sentinelAoe   || false   // Void Sentinel hits both every 4 turns
@@ -1551,7 +1564,7 @@ export async function mountChapter1(__mountOptions = {}) {
         </div>
         ${yara ? `
         <div class="stat-row" style="margin-bottom:${dorianLurking ? '.3rem' : '1rem'}">
-          <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5ec45e">YARA</span>
+          <span class="stat-key" style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:#5ec45e">${(yara.name || 'ALLY').toUpperCase()}</span>
           <div class="stat-bar-wrap">
             <div class="stat-bar" id="${cid}-c-yara-bar" style="background:#5eaee0;width:100%;transition:width .4s,background .4s"></div>
           </div>
@@ -1630,8 +1643,11 @@ export async function mountChapter1(__mountOptions = {}) {
         const yPct  = Math.max(0, Math.round(yara.hp / yara.maxHp * 100))
         const yBar  = $('c-yara-bar')
         const yHpEl = $('c-yara-hp')
-        if (yBar)  { yBar.style.width = yPct+'%'; yBar.style.background = yPct>50?'#5eaee0':'#c8b96e' }
-        if (yHpEl) yHpEl.textContent = yara.hp+'/'+yara.maxHp
+        if (yBar)  {
+          yBar.style.width = yPct+'%'
+          yBar.style.background = yara.alive ? (yPct>50?'#5eaee0':'#c8b96e') : '#666'
+        }
+        if (yHpEl) yHpEl.textContent = yara.alive ? (yara.hp+'/'+yara.maxHp) : 'fallen'
       }
       if (dorianLurking) {
         const dPct  = Math.max(0, Math.round(dorianLurkHp / 40 * 100))
@@ -1662,6 +1678,25 @@ export async function mountChapter1(__mountOptions = {}) {
       const actions = $('combat-actions')
       const overEl  = $('combat-over')
       if (actions) actions.style.display = 'none'
+
+      // ── Ally outcome bookkeeping ────────────────────────────────────
+      // Tags ally outcome to alliance_log for narrative branching. Format:
+      // 'ally_<name>_died' or 'ally_<name>_survived'. Mutates player in
+      // memory; the column is committed by the save() calls below in each
+      // branch (win/lose/escape). We do NOT save here separately because
+      // that would race with the branch-specific save calls.
+      let _allyLogUpdate = null
+      if (yara) {
+        const tag = yara.alive
+          ? 'ally_yara_survived'
+          : 'ally_yara_died'
+        const log = player.alliance_log || []
+        if (!log.includes(tag)) {
+          log.push(tag)
+          player.alliance_log = log
+          _allyLogUpdate = log  // for branches below to merge into their updates
+        }
+      }
 
       // ── Record passive battle counts on any win ───────────
       if (result === 'win') {
@@ -1873,6 +1908,9 @@ export async function mountChapter1(__mountOptions = {}) {
           }
           if (_clsEnd.messages.length) window.showToast(_clsEnd.messages[0])
 
+          // Merge ally outcome tag into the same updates payload
+          if (_allyLogUpdate) updates.alliance_log = _allyLogUpdate
+
           await save(updates)
           if (sGoldDrop > 0) queueLoot('◈ ' + sGoldDrop + ' Gold', 1, null)
           // Award guaranteed loot from boss node definition
@@ -1895,7 +1933,9 @@ export async function mountChapter1(__mountOptions = {}) {
           // On boss defeat: fully restore HP and reset node so player isn't stuck
           const fullHp = player.max_hp || 100
           currentHp = fullHp
-          await save({ hp: fullHp, current_node: 'ch1_pre_boss_check' })
+          const bossLoseUpdates = { hp: fullHp, current_node: 'ch1_pre_boss_check' }
+          if (_allyLogUpdate) bossLoseUpdates.alliance_log = _allyLogUpdate
+          await save(bossLoseUpdates)
           player.current_node = 'ch1_pre_boss_check'
           renderHUD()
           return
@@ -1914,6 +1954,8 @@ export async function mountChapter1(__mountOptions = {}) {
             window.showToast(_clsEnd.messages[0])
           }
         }
+        // Merge ally outcome tag into the same updates payload
+        if (_allyLogUpdate) loseUpdates.alliance_log = _allyLogUpdate
         await save(loseUpdates)
         setTimeout(() => {
           const dest = result==='escape' ? onEscape : onLose
@@ -3218,17 +3260,27 @@ export async function mountChapter1(__mountOptions = {}) {
       if (statusEffects.voidZoneTurns > 0) { statusEffects.voidZoneTurns--; if(statusEffects.voidZoneTurns===0){statusEffects.enemyATKMult=1.0; messages.push('🌑 Void Zone faded.')} }
       if (statusEffects.tornadoTurns  > 0) { statusEffects.tornadoTurns--;  if(statusEffects.tornadoTurns===0){statusEffects.enemyATKMult=1.0; messages.push('💨 Tornado Field faded.')} }
 
-      // ── Yara attacks (team mode) ────────────────────────
+      // ── Ally attacks (team mode or generic ally) ────────────────────────
+      // Same logic as the original Yara hardcoded fight, but the messages
+      // now use yara.name so generic allies display correctly. We also
+      // gate retaliation on enemyHp > 0 AFTER the swing (dead enemies don't
+      // counter-attack). Existing Yara fight unaffected since Yara is named.
       if (yara && yara.alive && enemyHp > 0) {
+        const aName = yara.name || 'Yara'
         const yaraDmg = Math.max(1, yara.atk + Math.floor(Math.random()*4))
         enemyHp = Math.max(0, enemyHp - yaraDmg)
-        if (Math.random() < 0.4) {
+        if (enemyHp > 0 && Math.random() < 0.4) {
           const yaraHit = Math.max(0, Math.floor(enemy.atk * 0.5) - yara.def)
           yara.hp = Math.max(0, yara.hp - yaraHit)
-          if (yara.hp <= 0) { yara.alive = false; messages.push('Yara strikes for ' + yaraDmg + ' — then takes ' + yaraHit + ' and falls!') }
-          else               { messages.push('Yara strikes for ' + yaraDmg + ' (takes ' + yaraHit + ' retaliation, ' + yara.hp + ' HP left).') }
+          if (yara.hp <= 0) {
+            yara.alive = false
+            statusEffects.ally_died = true  // one-shot flag for narrative
+            messages.push(aName + ' strikes for ' + yaraDmg + ' — then takes ' + yaraHit + ' and falls!')
+          } else {
+            messages.push(aName + ' strikes for ' + yaraDmg + ' (takes ' + yaraHit + ' retaliation, ' + yara.hp + ' HP left).')
+          }
         } else {
-          messages.push('Yara strikes for ' + yaraDmg + '.')
+          messages.push(aName + ' strikes for ' + yaraDmg + '.')
         }
       }
 
