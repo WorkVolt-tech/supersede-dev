@@ -2956,6 +2956,12 @@ You walk back out.`
       currentHp = maxPlayerHp
       statusEffects.cls_firstLightHealToFull = false
     }
+    // Thick Hide (Dreadnought t1b): +20% max HP at combat start
+    if ((statusEffects.cls_thickHideBonus || 0) > 0) {
+      maxPlayerHp += statusEffects.cls_thickHideBonus
+      currentHp += statusEffects.cls_thickHideBonus
+      statusEffects.cls_thickHideBonus = 0
+    }
     // (messages will print in the first combat-log push after enemy actions)
 
     // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
@@ -3406,6 +3412,40 @@ You walk back out.`
             const log = [...(player.alliance_log||[]), 'spared_humanoid']
             const upd = applyMoralWithFeedback(5, { alliance_log: log })
             player.alliance_log = log
+
+            // ── Mourning King — spare bonuses ─────────────────────────
+            if (player.active_class === 'mourning_king') {
+              const nodes = player.class_nodes_unlocked || []
+              // Mercy's Echo (t1b): +2 Wake stacks, +8 SP
+              if (nodes.includes('mourning_king_t1b')) {
+                const newWake = Math.min(100, (player.mourning_king_wake_stacks||0) + 2)
+                upd.mourning_king_wake_stacks = newWake
+                player.mourning_king_wake_stacks = newWake
+                upd.sp = Math.min(player.sp_max || 100, (player.sp||0) + 8)
+                player.sp = upd.sp
+                if (typeof window.showToast === 'function') {
+                  window.showToast('☠ Mercy\'s Echo — +2 Wake, +8 SP')
+                }
+              }
+              // Mercy is Power (t5b): +1 Wake permanent across run
+              if (nodes.includes('mourning_king_t5b')) {
+                const cur = upd.mourning_king_wake_stacks ?? (player.mourning_king_wake_stacks||0)
+                const newWake = Math.min(100, cur + 1)
+                upd.mourning_king_wake_stacks = newWake
+                player.mourning_king_wake_stacks = newWake
+              }
+              // Quiet Funeral (t3b): heal 15% max HP
+              if (nodes.includes('mourning_king_t3b')) {
+                const maxHp = player.hp_max || maxPlayerHp || 100
+                const heal = Math.round(maxHp * 0.15)
+                upd.hp = Math.min(maxHp, (player.hp||0) + heal)
+                player.hp = upd.hp
+                if (typeof window.showToast === 'function') {
+                  window.showToast('☠ Quiet Funeral — +'+heal+' HP')
+                }
+              }
+            }
+
             await save(upd)
             goTo(node?.onSpare || nextNode)
           }
@@ -3651,6 +3691,18 @@ You walk back out.`
             statusEffects.cls_sunStacks = Math.min(10, (statusEffects.cls_sunStacks || 0) + 2)
             messages.push("☀ Vigil's Stand — +"+heal+" HP, +2 Sun.")
           }
+          // ── Oathbreaker Patience of Stone on Defend (t3b, Wall oath) ──
+          if (player.active_class === 'oathbreaker'
+              && statusEffects.cls_currentOath === 'wall'
+              && (player.class_nodes_unlocked||[]).includes('oathbreaker_t3b')) {
+            const cur = statusEffects.cls_patienceOfStoneBonus || 0
+            if (cur < 50) {
+              statusEffects.cls_patienceOfStoneBonus = cur + 1
+              const baseATK = (player.atk||5)
+              statusEffects.playerATKBonus = (statusEffects.playerATKBonus||0) + Math.round(baseATK * 0.01)
+              messages.push("⚔ Patience of Stone — +1% damage permanent ("+(cur+1)+"%).")
+            }
+          }
         } else if(playerAction==='skill'&&skillKey) {
           const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
           statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
@@ -3784,7 +3836,34 @@ You walk back out.`
         // Note: action refund / Slaughterborn chain are cosmetic messages for v1.
         await endCombat('win');return
       }
-      if(currentHp<=0){await endCombat('lose');return}
+      if(currentHp<=0){
+        // Empty Throne (Mourning King t6c): enemy takes 100% their max HP, both die
+        if (statusEffects.cls_emptyThronePending) {
+          statusEffects.cls_emptyThronePending = false
+          enemyHp = 0
+          log(messages.concat(['☠ Empty Throne — they fall with you.']).join('<br>'))
+          // Player still loses (death first), but the enemy dies too. We choose
+          // to call the combat won since the enemy is dead.
+          await endCombat('win'); return
+        }
+        // Maw of the Survivor (Devourer t5a): pending strike at enemy.
+        // If kills, you survive at 1 HP.
+        if (statusEffects.cls_mawOfSurvivorPending) {
+          statusEffects.cls_mawOfSurvivorPending = false
+          // Deal damage based on player ATK ×2 as a "final bite"
+          const bite = (player.atk||5) + (statusEffects.playerATKBonus||0)
+          const finalBite = bite * 2
+          enemyHp = Math.max(0, enemyHp - finalBite)
+          log(messages.concat(['🦷 Maw of the Survivor — last bite for '+finalBite+'.']).join('<br>'))
+          if (enemyHp <= 0) {
+            currentHp = 1
+            log('You survive at 1 HP. The hunger remains.')
+            await endCombat('win'); return
+          }
+          // Didn't kill — you die
+        }
+        await endCombat('lose');return
+      }
 
       setButtons(true)
       renderSkillSlots()
