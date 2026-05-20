@@ -216,7 +216,11 @@ export async function mountVehicle(__mountOptions = {}) {
   // Combo
   function addKill(e){
     G.eyesKilled++;G.waveKills++;G.combo++;comboTimer=130
-    if(e.isBoss) bossAlive=false
+    if(e.isBoss){
+      bossAlive=false
+      // Boss killed — trigger arrival after a short celebration delay
+      setTimeout(()=>{G.progress=100;G.finished=true;G.running=false;onArrival()},1800)
+    }
     if(G.combo>G.maxCombo)G.maxCombo=G.combo
     const mult=Math.min(G.combo,10),pts=e.score*mult
     G.score+=pts
@@ -229,7 +233,7 @@ export async function mountVehicle(__mountOptions = {}) {
   // Loot
   const LTBL=['scrap_metal','flashlight','energy_drink','rune_lux','rune_umbra','scrap_blade']
   const LIC={scrap_metal:'⚙️',flashlight:'🔦',energy_drink:'🥤',rune_lux:'✨',rune_umbra:'🌑',scrap_blade:'🗡️'}
-  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.4,k,life:200,collected:false})}
+  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.0,k,life:480,collected:false})}
   async function collectLoot(l){
     l.collected=true
     const {data:ex}=await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',l.k).maybeSingle()
@@ -313,14 +317,14 @@ export async function mountVehicle(__mountOptions = {}) {
     ctx.strokeStyle='rgba(200,81,42,.65)';ctx.lineWidth=3
     ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx,H);ctx.stroke()
     ctx.beginPath();ctx.moveTo(rx+rw,0);ctx.lineTo(rx+rw,H);ctx.stroke()
-    // Center dash
-    ctx.strokeStyle='rgba(200,184,128,.12)';ctx.lineWidth=1.5;ctx.setLineDash([22,18])
+    // Center dash — longer dashes with bigger gaps for real road feel
+    ctx.strokeStyle='rgba(200,184,128,.18)';ctx.lineWidth=2;ctx.setLineDash([32,52])
     ctx.beginPath();ctx.moveTo(rx+rw/2,0);ctx.lineTo(rx+rw/2,H);ctx.stroke();ctx.setLineDash([])
-    // Lane markers
+    // Lane markers — spaced far apart like real lane dividers
     roadLines.forEach(l=>{
       const lx=rx+(l.lane+.5)*(rw/3)
-      ctx.strokeStyle=`rgba(255,255,255,${l.alpha*.8+.04})`;ctx.lineWidth=1;ctx.setLineDash([16,24])
-      ctx.beginPath();ctx.moveTo(lx,l.y);ctx.lineTo(lx,l.y+18);ctx.stroke();ctx.setLineDash([])
+      ctx.strokeStyle=`rgba(255,255,255,${l.alpha*.6+.03})`;ctx.lineWidth=1.5;ctx.setLineDash([28,60])
+      ctx.beginPath();ctx.moveTo(lx,l.y);ctx.lineTo(lx,l.y+28);ctx.stroke();ctx.setLineDash([])
     })
     // Debris
     sideDebris.forEach(d=>{
@@ -397,8 +401,8 @@ export async function mountVehicle(__mountOptions = {}) {
       ctx.shadowColor=e.col;ctx.shadowBlur=22
       ctx.beginPath();ctx.arc(0,0,sz*1.1,0,Math.PI*2);ctx.fillStyle=e.col+'22';ctx.fill()
       ctx.shadowBlur=0
-      // Draw sprite — square bounding box sized to the circle radius
-      const d=sz*2
+    // Draw sprite — boss needs extra room for legs extending past the circle radius
+      const d=e.isBoss?sz*3.2:sz*2
       ctx.drawImage(img,-d/2,-d/2,d,d)
     } else {
       // Canvas fallback (also used for Cluster until cluster.webp is added)
@@ -439,7 +443,11 @@ export async function mountVehicle(__mountOptions = {}) {
 
   // Draw loot
   function drawLoot(l){
-    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/40)
+    ctx.save();ctx.translate(l.x,l.y)
+    // Fade out as it approaches bottom of screen
+    const bottomFade=Math.max(0,Math.min(1,(canvas.height-l.y-30)/120))
+    const lifeFade=Math.min(1,l.life/30)
+    ctx.globalAlpha=Math.min(bottomFade,lifeFade)
     ctx.shadowColor='#c8b96e';ctx.shadowBlur=10
     ctx.fillStyle='rgba(200,184,128,.18)';ctx.strokeStyle='rgba(200,184,128,.7)';ctx.lineWidth=1.5
     ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke()
@@ -654,10 +662,12 @@ export async function mountVehicle(__mountOptions = {}) {
       return true
     })
 
-    // Loot
+    // Loot — accelerates downward with road scroll, disappears at bottom
     lootDrops=lootDrops.filter(l=>{
-      l.y+=l.vy;l.life--
-      if(l.life<=0||l.collected||l.y>canvas.height+20)return false
+      l.vy=Math.min(l.vy+0.08, 5) // gravity acceleration
+      l.y+=l.vy+G.speed*0.4        // also moves with road scroll feel
+      l.life--
+      if(l.life<=0||l.collected||l.y>canvas.height+10)return false
       drawLoot(l)
       if(Math.abs(l.x-PV.x)<PV.w+8&&Math.abs(l.y-PV.y)<PV.h+8){collectLoot(l);return false}
       return true
@@ -679,12 +689,8 @@ export async function mountVehicle(__mountOptions = {}) {
 
     if(G.waveKills>=G.waveTarget&&!waveTransition){
       waveTransition=true
-      if(G.wave>=5){
-        // Boss wave — only arrive once boss is actually dead
-        if(!bossAlive){G.progress=100;G.finished=true;G.running=false;onArrival()}
-        else{waveTransition=false} // keep waiting
-      }
-      else setTimeout(nextWave,2000)
+      if(G.wave<5) setTimeout(nextWave,2000)
+      // Wave 5 arrival is triggered by boss kill in addKill, not here
     }
     if(G.hp<=0&&!G.finished){G.hp=0;G.running=false;G.finished=true;onDeath()}
   }
