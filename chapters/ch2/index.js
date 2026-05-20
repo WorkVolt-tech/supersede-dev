@@ -8,7 +8,10 @@ import {
   pickClass,
 } from '../../data/classes.js'
 import * as ClsCombat from '../../data/class_combat.js'
-import { resolveEnemyTurn, initEnemyState } from '../../data/enemyAI.js'
+import {
+  resolveEnemyTurn, initEnemyState,
+  applyBleed, applyPoison, applySlow, applyStun, applyDefShred, applyTerror,
+} from '../../data/enemyAI.js'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
 import ZONE_FIRE      from './zones/zone-fire.js'
@@ -2819,7 +2822,7 @@ You walk back out.`
     // Form labels — canonical Judge titles. Player-facing.
     const FORM_LABELS = {
       verdict:     'VERDICT — Final Judge of Humanity',
-      dominion:    'DOMINION — Judges of Authority',
+      dominion:    'DOMINION — Judges in Accord',
       absolution:  'ABSOLUTION — Judge of Purity',
       ruin:        'RUIN — Judge of Desolation',
       equilibrium: 'EQUILIBRIUM — Judges of Balance',
