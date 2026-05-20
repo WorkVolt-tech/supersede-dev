@@ -2914,7 +2914,14 @@ You walk back out.`
     window._enemyAIState = initEnemyState(enemy)
 
     function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
-    function playerDEF() { return (player.def||2)+(player.guard||0)*.5+(player.armor||0) }
+    function playerDEF() {
+      let base = (player.def||2)+(player.guard||0)*.5+(player.armor||0)
+      // Armour Shred (applied by enemyAI.js): reduces DEF by shredAmt
+      if (statusEffects.playerDefShredTurns > 0) {
+        base = Math.max(0, base - (statusEffects.playerDefShredAmt||0))
+      }
+      return base
+    }
     function playerSPD() { return (player.speed||5)+(player.agility||0)*.5 }
     function enemySPD()  { return enemy.spd||5 }
     const eqLuck = player.luck||0
@@ -3742,6 +3749,17 @@ You walk back out.`
           && currentHp < maxPlayerHp * 0.5) {
         pSPD *= 2
       }
+      // Slow (applied by enemyAI.js): halves SPD while active
+      if (statusEffects.playerSlowTurns > 0) pSPD = Math.floor(pSPD / 2)
+      // Terror (applied by enemyAI.js): skills are unusable while active. If
+      // the player tried to use a skill, fall back to a basic strike with a
+      // message. Cosmetic concession — disabling the skill button at the UI
+      // level would be cleaner but requires renderClassSkills changes.
+      if (statusEffects.playerTerrorTurns > 0 && playerAction === 'skill') {
+        log('😱 You cannot focus enough to channel skills.')
+        playerAction = 'strike'
+        skillKey = null
+      }
       const eSPD=enemySPD()
       const razorTempo=statusEffects.razorTempo&&playerAction==='strike'
       const dashStrike=skillKey==='wind_skill_dash_strike'
@@ -4030,13 +4048,21 @@ You walk back out.`
 
       // Turn order
       if(skillKey) recordSkillUse(skillKey)
-      if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
+      // Player stun gate (applied by enemyAI.js): if stunned, skip player
+      // action this turn. Enemy still gets to act. The tick happens later
+      // in the DoT block so this turn counts against the duration.
+      const playerStunned = (statusEffects.playerStunTurns||0) > 0
+      if (playerStunned) {
+        log('⚡ You are stunned and cannot act.')
+        if (currentHp > 0) resolveEnemyAction()
+      } else if(playerFirst){resolvePlayerAction();if(enemyHp>0)resolveEnemyAction()}
       else{resolveEnemyAction();if(currentHp>0)resolvePlayerAction()}
 
       // Quickstep (Ghostblade t3a): every 3rd basic strike grants a free
       // chained strike. Flag is set in onPlayerAttackPost. We resolve one
       // additional strike here (max one chain per turn to prevent recursion).
-      if (statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
+      // Also skip if the player was stunned this turn — no strike happened.
+      if (!playerStunned && statusEffects.cls_quickstepFreeStrike && enemyHp > 0 && currentHp > 0
           && playerAction === 'strike') {
         statusEffects.cls_quickstepFreeStrike = false
         resolvePlayerAction()
@@ -4046,6 +4072,45 @@ You walk back out.`
       if(statusEffects.burnTurns>0){const bd=statusEffects.burnDmg;enemyHp=Math.max(0,enemyHp-bd);statusEffects.burnTurns--;messages.push('🔥 Burn — <strong>'+bd+'</strong> dmg ('+statusEffects.burnTurns+' left)')}
       if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
       if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
+
+      // Player-side status DoTs and counter decrements. Player statuses are
+      // applied by enemyAI.js (when used) via apply* helpers; ticking lives
+      // here in the engine so it works regardless of where the apply call
+      // came from. Bleed/poison deal damage; slow/defShred/terror/stun are
+      // read elsewhere and just decremented here.
+      if(statusEffects.playerBleedTurns>0){
+        const bd=statusEffects.playerBleedDmg||3
+        currentHp=Math.max(0,currentHp-bd)
+        statusEffects.playerBleedTurns--
+        messages.push('🩸 Bleed — <strong>'+bd+'</strong> dmg ('+statusEffects.playerBleedTurns+' left)')
+        if(statusEffects.playerBleedTurns===0){statusEffects.playerBleedDmg=0}
+      }
+      if(statusEffects.playerPoisonTurns>0){
+        const pd=statusEffects.playerPoisonDmg||3
+        currentHp=Math.max(0,currentHp-pd)
+        statusEffects.playerPoisonTurns--
+        messages.push('☠ Poison — <strong>'+pd+'</strong> dmg ('+statusEffects.playerPoisonTurns+' left)')
+        if(statusEffects.playerPoisonTurns===0){statusEffects.playerPoisonDmg=0}
+      }
+      if(statusEffects.playerSlowTurns>0){
+        statusEffects.playerSlowTurns--
+        if(statusEffects.playerSlowTurns===0){messages.push('🌀 Slow fades.')}
+      }
+      if(statusEffects.playerDefShredTurns>0){
+        statusEffects.playerDefShredTurns--
+        if(statusEffects.playerDefShredTurns===0){
+          statusEffects.playerDefShredAmt=0
+          messages.push('🔓 Armour Shred fades.')
+        }
+      }
+      if(statusEffects.playerTerrorTurns>0){
+        statusEffects.playerTerrorTurns--
+        if(statusEffects.playerTerrorTurns===0){messages.push('😱 Terror fades.')}
+      }
+      if(statusEffects.playerStunTurns>0){
+        statusEffects.playerStunTurns--
+        if(statusEffects.playerStunTurns===0){messages.push('⚡ Stun fades.')}
+      }
 
       // ── Class skill: turn-end hook (mark/silence countdown + DoT) ─────
       const _clsTurn = ClsCombat.onTurnEnd(player, statusEffects)
