@@ -319,6 +319,227 @@ export function getActiveClassSkills(player, statusEffects) {
         classColor: cls.color, available: !used['endless_hollow'] })
     }
   }
+
+  // ── Devourer ────────────────────────────────────────────────────────
+  if (ac === 'devourer') {
+    if (hasSkill(player, 'devourer_t4c')) {
+      out.push({ id: 'cleansing_devour', label: 'Cleansing Devour', sub: 'Eat all status, +15 dmg per',
+        classColor: cls.color, available: !used['cleansing_devour'] })
+    }
+    if (hasSkill(player, 'devourer_t6a')) {
+      out.push({ id: 'last_course', label: 'The Last Course', sub: 'Damage = max HP × 1.5. Costs all SP.',
+        classColor: cls.color, available: !used['last_course'] })
+    }
+    if (hasSkill(player, 'devourer_t6b')) {
+      out.push({ id: 'great_hunger', label: 'The Great Hunger', sub: '5 turns: Hunger=100, +50% dmg, no heals',
+        classColor: cls.color, available: !used['great_hunger'] })
+    }
+  }
+
+  // ── Mourning King ───────────────────────────────────────────────────
+  if (ac === 'mourning_king') {
+    if (hasSkill(player, 'mourning_king_t3a')) {
+      out.push({ id: 'memory_of_steel', label: 'Memory of Steel', sub: 'Burn 5 Wake: next 3 strikes +50%',
+        classColor: cls.color, available: !used['memory_of_steel'] && (statusEffects.cls_wakeStacks || 0) >= 5 })
+    }
+    if (hasSkill(player, 'mourning_king_t4c')) {
+      out.push({ id: 'speak_to_dead', label: 'Speak to the Dead', sub: '5 turns of 25% chance extra strikes',
+        classColor: cls.color, available: !used['speak_to_dead'] })
+    }
+    if (hasSkill(player, 'mourning_king_t6a')) {
+      out.push({ id: 'all_crowns_worn', label: 'All Crowns Worn', sub: 'Spend ALL Wake stacks × 25',
+        classColor: cls.color, available: !used['all_crowns_worn'] && (statusEffects.cls_wakeStacks || 0) > 0 })
+    }
+    if (hasSkill(player, 'mourning_king_t6b')) {
+      out.push({ id: 'last_mercy', label: 'Last Mercy', sub: 'Heal enemy to full, mark for execute',
+        classColor: cls.color, available: !used['last_mercy'] })
+    }
+  }
+
+  // ── Chimera ─────────────────────────────────────────────────────────
+  if (ac === 'chimera') {
+    const currentForm = statusEffects.cls_chimeraForm || 'beast'
+    const cd = statusEffects.cls_shiftCooldown || 0
+    if (hasSkill(player, 'chimera_t2a') && currentForm !== 'beast') {
+      out.push({ id: 'shift_beast', label: 'Shift: Beast', sub: cd > 0 ? `(cooldown ${cd})` : 'Switch to Beast form (free)',
+        classColor: cls.color, available: cd === 0 })
+    }
+    if (hasSkill(player, 'chimera_t2b') && currentForm !== 'coil') {
+      out.push({ id: 'shift_coil', label: 'Shift: Coil', sub: cd > 0 ? `(cooldown ${cd})` : 'Switch to Coil form (free)',
+        classColor: cls.color, available: cd === 0 })
+    }
+    if (hasSkill(player, 'chimera_t2c') && currentForm !== 'storm') {
+      out.push({ id: 'shift_storm', label: 'Shift: Storm', sub: cd > 0 ? `(cooldown ${cd})` : 'Switch to Storm form (free)',
+        classColor: cls.color, available: cd === 0 })
+    }
+    if (hasSkill(player, 'chimera_t6a')) {
+      out.push({ id: 'true_beast', label: 'True Beast', sub: '3 turns Beast +50% damage',
+        classColor: cls.color, available: !used['true_beast'] })
+    }
+    if (hasSkill(player, 'chimera_t6b')) {
+      out.push({ id: 'eternal_coil', label: 'Eternal Coil', sub: '3 turns Coil, damage cap 20% max HP/hit',
+        classColor: cls.color, available: !used['eternal_coil'] })
+    }
+    if (hasSkill(player, 'chimera_t6c')) {
+      out.push({ id: 'stormlord', label: 'Stormlord', sub: '3 turns ALL form bonuses simultaneously',
+        classColor: cls.color, available: !used['stormlord'] })
+    }
+  }
+
+  // ── Unwritten ───────────────────────────────────────────────────────
+  if (ac === 'unwritten') {
+    if (hasSkill(player, 'unwritten_t1a')) {
+      out.push({ id: 'erasure', label: 'Erasure', sub: 'Undo the last hit you took',
+        classColor: cls.color, available: !used['erasure'] && (statusEffects.cls_lastDamageTaken || 0) > 0 })
+    }
+    if (hasSkill(player, 'unwritten_t1b')) {
+      out.push({ id: 'skip', label: 'Skip', sub: 'Enemy skips their next turn',
+        classColor: cls.color, available: !used['skip'] })
+    }
+    if (hasSkill(player, 'unwritten_t3a')) {
+      out.push({ id: 'disowned_hit', label: 'Disowned Hit', sub: 'Undo your last strike, +2 Absence',
+        classColor: cls.color, available: !used['disowned_hit'] && (statusEffects.cls_lastStrikeDamage || 0) > 0 })
+    }
+    if (hasSkill(player, 'unwritten_t4b')) {
+      out.push({ id: 'the_unmoved', label: 'The Unmoved', sub: '2 turns of enemy paralysis',
+        classColor: cls.color, available: !used['the_unmoved'] })
+    }
+    if (hasSkill(player, 'unwritten_t5b')) {
+      out.push({ id: 'bury_the_hour', label: 'Bury the Hour', sub: 'Rewind combat 3 turns (placeholder)',
+        classColor: cls.color, available: !used['bury_the_hour'] })
+    }
+    if (hasSkill(player, 'unwritten_t6a')) {
+      out.push({ id: 'no_such_person', label: 'No Such Person', sub: '5 turns immune + delayed strike',
+        classColor: cls.color, available: !used['no_such_person'] })
+    }
+    if (hasSkill(player, 'unwritten_t6b')) {
+      out.push({ id: 'long_silence', label: 'The Long Silence', sub: '5 turns enemy cannot act',
+        classColor: cls.color, available: !used['long_silence'] })
+    }
+    if (hasSkill(player, 'unwritten_t6c')) {
+      out.push({ id: 'all_written_out', label: 'All Written Out', sub: 'Erase all enemy skills (placeholder)',
+        classColor: cls.color, available: !used['all_written_out'] })
+    }
+  }
+
+  // ── Oathbreaker ─────────────────────────────────────────────────────
+  if (ac === 'oathbreaker') {
+    const currentOath = statusEffects.cls_currentOath || null
+    if (hasSkill(player, 'oathbreaker_t2a') && currentOath === 'fury') {
+      out.push({ id: 'break_fury', label: 'Break: Fury', sub: 'Burn oath for damage × turns held',
+        classColor: cls.color, available: !used['break_fury'] })
+    }
+    if (hasSkill(player, 'oathbreaker_t2b') && currentOath === 'wall') {
+      out.push({ id: 'break_wall', label: 'Break: Wall', sub: 'Burn oath for heal × turns held',
+        classColor: cls.color, available: !used['break_wall'] })
+    }
+    if (hasSkill(player, 'oathbreaker_t2c') && currentOath === 'hunt') {
+      out.push({ id: 'break_hunt', label: 'Break: Hunt', sub: 'Burn oath: next strike guaranteed crit + pierce',
+        classColor: cls.color, available: !used['break_hunt'] })
+    }
+    // Old Anger: re-swear Fury at half duration
+    if (hasSkill(player, 'oathbreaker_t5a') && statusEffects.cls_furyBroken && !currentOath) {
+      out.push({ id: 'reswear_fury', label: 'Re-swear: Fury', sub: 'Weaker Fury (+10% damage only)',
+        classColor: cls.color, available: !used['reswear_fury'] })
+    }
+    if (hasSkill(player, 'oathbreaker_t6a')) {
+      out.push({ id: 'final_oath_wrath', label: 'Final Oath: Wrath', sub: 'All oaths + break = (turns × 75)',
+        classColor: cls.color, available: !used['final_oath_wrath'] })
+    }
+    if (hasSkill(player, 'oathbreaker_t6b')) {
+      out.push({ id: 'final_oath_sanctuary', label: 'Final Oath: Sanctuary', sub: 'Heal to full, cleanse, +50 DEF 5t',
+        classColor: cls.color, available: !used['final_oath_sanctuary'] })
+    }
+    if (hasSkill(player, 'oathbreaker_t6c')) {
+      out.push({ id: 'final_oath_hunt', label: 'Final Oath: Hunt', sub: 'Next 5 strikes ×2, pierce, all crit',
+        classColor: cls.color, available: !used['final_oath_hunt'] })
+    }
+  }
+
+  // ── Silent Judge ────────────────────────────────────────────────────
+  if (ac === 'silent_judge') {
+    if (hasSkill(player, 'silent_judge_t2c')) {
+      const marks = statusEffects.cls_verdictMarks || 0
+      out.push({ id: 'render_verdict', label: 'Render Verdict', sub: `Consume ${marks} marks × 30 dmg`,
+        classColor: cls.color, available: !used['render_verdict'] && marks > 0 })
+    }
+    if (hasSkill(player, 'silent_judge_t4b')) {
+      out.push({ id: 'quiet_court', label: 'The Quiet Court', sub: '3 turns of status immunity',
+        classColor: cls.color, available: !used['quiet_court'] })
+    }
+    if (hasSkill(player, 'silent_judge_t5b')) {
+      const marks = statusEffects.cls_verdictMarks || 0
+      out.push({ id: 'court_adjourned', label: 'Court Adjourned', sub: marks >= 5 ? 'Consume 5 marks: enemy skips 3 turns' : 'Need 5 marks',
+        classColor: cls.color, available: !used['court_adjourned'] && marks >= 5 })
+    }
+    if (hasSkill(player, 'silent_judge_t6a')) {
+      out.push({ id: 'eyes_of_equilibrium', label: 'Eyes of Equilibrium', sub: '5 turns: +3 marks/strike, -50% incoming',
+        classColor: cls.color, available: !used['eyes_of_equilibrium'] })
+    }
+    if (hasSkill(player, 'silent_judge_t6b')) {
+      const marks = statusEffects.cls_verdictMarks || 0
+      out.push({ id: 'silent_court', label: 'The Silent Court', sub: marks > 0 ? 'Consume all marks: 5-turn stun + ×2 dmg' : 'Need marks',
+        classColor: cls.color, available: !used['silent_court'] && marks > 0 })
+    }
+    if (hasSkill(player, 'silent_judge_t6c')) {
+      const marks = statusEffects.cls_verdictMarks || 0
+      out.push({ id: 'final_verdict_sj', label: 'Final Verdict', sub: marks > 0 ? `${marks}×50 + 15% max HP` : 'Need marks',
+        classColor: cls.color, available: !used['final_verdict_sj'] && marks > 0 })
+    }
+  }
+
+  // ── Dreadnought ─────────────────────────────────────────────────────
+  if (ac === 'dreadnought') {
+    if (hasSkill(player, 'dreadnought_t2c')) {
+      out.push({ id: 'inexorable', label: 'Inexorable', sub: 'Cleanse + stun enemy 1 turn',
+        classColor: cls.color, available: !used['inexorable'] })
+    }
+    if (hasSkill(player, 'dreadnought_t5c')) {
+      out.push({ id: 'one_step_more', label: 'One Step More', sub: '3 turns immune; end = 3 × ATK dmg',
+        classColor: cls.color, available: !used['one_step_more'] })
+    }
+    if (hasSkill(player, 'dreadnought_t6a')) {
+      const armor = statusEffects.cls_armorStacks || 0
+      out.push({ id: 'hammer_falls', label: 'The Hammer Falls', sub: `Burn ${armor} Armor: ${armor*25} + max HP×50%`,
+        classColor: cls.color, available: !used['hammer_falls'] && armor > 0 })
+    }
+    if (hasSkill(player, 'dreadnought_t6b')) {
+      out.push({ id: 'walking_tomb', label: 'Walking Tomb', sub: '5 turns cannot die. End: +20 Armor.',
+        classColor: cls.color, available: !used['walking_tomb'] })
+    }
+    if (hasSkill(player, 'dreadnought_t6c')) {
+      out.push({ id: 'the_inevitable', label: 'The Inevitable', sub: '5 turns enemy stunned. Strikes = max HP×25%.',
+        classColor: cls.color, available: !used['the_inevitable'] })
+    }
+  }
+
+  // ── Abyss Walker ────────────────────────────────────────────────────
+  if (ac === 'abyss_walker') {
+    if (hasSkill(player, 'abyss_walker_t1c')) {
+      out.push({ id: 'anchor_line', label: 'Anchor Line', sub: '-3 Depth (once/combat)',
+        classColor: cls.color, available: !used['anchor_line'] && (statusEffects.cls_depth || 0) >= 3 })
+    }
+    if (hasSkill(player, 'abyss_walker_t2c')) {
+      out.push({ id: 'climb', label: 'Climb', sub: '-1 Depth/turn for 3 turns',
+        classColor: cls.color, available: !used['climb'] })
+    }
+    if (hasSkill(player, 'abyss_walker_t3c')) {
+      out.push({ id: 'surface_memory', label: 'Surface Memory', sub: 'Set Depth to 0 (once/combat)',
+        classColor: cls.color, available: !used['surface_memory'] })
+    }
+    if (hasSkill(player, 'abyss_walker_t6a')) {
+      out.push({ id: 'hollow_sea', label: 'The Hollow Sea', sub: '5 turns: max HP×25%/hit, +100% incoming',
+        classColor: cls.color, available: !used['hollow_sea'] })
+    }
+    if (hasSkill(player, 'abyss_walker_t6b')) {
+      out.push({ id: 'drowned', label: 'Drowned', sub: 'Set enemy 10 Drown × 5 turns',
+        classColor: cls.color, available: !used['drowned'] })
+    }
+    if (hasSkill(player, 'abyss_walker_t6c')) {
+      out.push({ id: 'return_from_below', label: 'Return From Below', sub: 'Full heal + Depth 0',
+        classColor: cls.color, available: !used['return_from_below'] })
+    }
+  }
   return out
 }
 
@@ -692,7 +913,331 @@ export function onActiveSkill(skillId, player, statusEffects, enemy) {
     messages.push(`◇ Endless Hollow — ${maxHp} damage. The last move.`)
   }
 
+  // ── Devourer actives ─────────────────────────────────────────────────
+  else if (skillId === 'cleansing_devour') {
+    // Eat all status (buffs + debuffs); +15 damage per consumed
+    const allStatusFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
+                             'enemyStunTurns', 'cls_rotTurns', 'cls_markTurns',
+                             'cls_silenceTurns', 'invulnerable',
+                             'cls_possessionSurgeTurns', 'cls_dawnwardLightTurns',
+                             'cls_ghostStepTurns', 'cls_shadowmeldTurns',
+                             'cls_phaseUntargetableTurns']
+    let consumed = 0
+    for (const k of allStatusFields) {
+      if ((statusEffects[k] || 0) > 0) {
+        statusEffects[k] = 0
+        consumed += 1
+      }
+    }
+    statusEffects.cls_cleansingDevourDamage = consumed * 15
+    messages.push(`🦷 Cleansing Devour — ate ${consumed} effects. +${consumed * 15} damage.`)
+  } else if (skillId === 'last_course') {
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_lastCourseDamage = Math.round(maxHp * 1.5)
+    // Costs all SP — handled via cls_bonusSP set to negative
+    statusEffects.cls_lastCourseSPCost = true
+    messages.push(`🦷 The Last Course — strike for ${statusEffects.cls_lastCourseDamage}. SP burnt.`)
+  } else if (skillId === 'great_hunger') {
+    statusEffects.cls_hunger = 100
+    statusEffects.cls_greatHungerTurns = 5
+    statusEffects.cls_blockAllHeals = true
+    messages.push('🦷 The Great Hunger — Hunger maxed. 5 turns. No heals reach you.')
+  }
+
+  // ── Mourning King actives ────────────────────────────────────────────
+  else if (skillId === 'memory_of_steel') {
+    statusEffects.cls_wakeStacks = (statusEffects.cls_wakeStacks || 0) - 5
+    statusEffects.cls_memoryOfSteelStrikes = 3
+    messages.push('☠ Memory of Steel — next 3 strikes +50%.')
+  } else if (skillId === 'speak_to_dead') {
+    statusEffects.cls_speakToDeadTurns = 5
+    messages.push('☠ Speak to the Dead — echoes will strike.')
+  } else if (skillId === 'all_crowns_worn') {
+    const stacks = statusEffects.cls_wakeStacks || 0
+    statusEffects.cls_allCrownsWornDamage = stacks * 25
+    statusEffects.cls_wakeStacks = 0
+    messages.push(`☠ All Crowns Worn — ${stacks} stacks released as ${stacks * 25} damage.`)
+  } else if (skillId === 'last_mercy') {
+    // Heal enemy to full, mark for execute
+    statusEffects.cls_lastMercyHealEnemyToFull = true
+    statusEffects.cls_lastMercyExecuteMark = true
+    messages.push('☠ Last Mercy — they are made whole. Now they die.')
+  }
+
+  // ── Chimera actives ──────────────────────────────────────────────────
+  else if (skillId === 'shift_beast' || skillId === 'shift_coil' || skillId === 'shift_storm') {
+    const newForm = skillId.replace('shift_', '')
+    const oldForm = statusEffects.cls_chimeraForm || 'beast'
+    statusEffects.cls_chimeraForm = newForm
+    statusEffects.cls_shiftCooldown = 2
+    // Wild Energy (4c): switching heals 20% max HP if you have Storm
+    if (hasSkill(player, 'chimera_t4c')) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      statusEffects.cls_wildEnergyHeal = Math.round(maxHp * 0.20)
+    }
+    // Coiled Spring (5b): switching FROM Coil to Beast triggers heavy strike +50%
+    if (hasSkill(player, 'chimera_t5b') && oldForm === 'coil' && newForm === 'beast') {
+      statusEffects.cls_coiledSpringReady = true
+    }
+    messages.push(`◎ Shift — ${newForm.toUpperCase()} form active.`)
+    return { messages, consumed: false }  // doesn't burn the turn (free action)
+  } else if (skillId === 'true_beast') {
+    statusEffects.cls_chimeraForm = 'beast'
+    statusEffects.cls_trueBeastTurns = 3
+    messages.push('◎ True Beast — 3 turns of beast at +50% damage.')
+  } else if (skillId === 'eternal_coil') {
+    statusEffects.cls_chimeraForm = 'coil'
+    statusEffects.cls_eternalCoilTurns = 3
+    messages.push('◎ Eternal Coil — 3 turns. Damage capped at 20% max HP per hit.')
+  } else if (skillId === 'stormlord') {
+    statusEffects.cls_stormlordTurns = 3
+    messages.push('◎ Stormlord — 3 turns of every form bonus.')
+  }
+
+  // ── Unwritten actives ────────────────────────────────────────────────
+  else if (skillId === 'erasure') {
+    // Undo last hit taken — heal back the last damage
+    const refund = statusEffects.cls_lastDamageTaken || 0
+    if (refund > 0) {
+      statusEffects.cls_erasureHeal = refund
+      statusEffects.cls_absenceStacks = (statusEffects.cls_absenceStacks || 0) + 1
+      statusEffects.cls_lastDamageTaken = 0
+      messages.push(`✎ Erasure — last hit (${refund}) undone. +1 Absence.`)
+    } else {
+      messages.push('✎ Erasure — nothing to erase yet.')
+      return { messages, consumed: false }
+    }
+  } else if (skillId === 'skip') {
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+    messages.push('✎ Skip — enemy forgets their next turn.')
+  } else if (skillId === 'disowned_hit') {
+    // Undo your last strike, gain 2 Absence stacks
+    const refund = statusEffects.cls_lastStrikeDamage || 0
+    if (refund > 0) {
+      statusEffects.cls_disownedHitEnemyHeal = refund  // engine reads + restores enemy HP
+      statusEffects.cls_absenceStacks = (statusEffects.cls_absenceStacks || 0) + 2
+      statusEffects.cls_lastStrikeDamage = 0
+      messages.push(`✎ Disowned Hit — last strike (${refund}) undone. +2 Absence.`)
+    } else {
+      messages.push('✎ Disowned Hit — nothing to disown.')
+      return { messages, consumed: false }
+    }
+  } else if (skillId === 'the_unmoved') {
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 2)
+    messages.push('✎ The Unmoved — 2 turns of paralysis.')
+  } else if (skillId === 'bury_the_hour') {
+    // Real rewind: signal engine to restore the oldest snapshot in the
+    // rolling buffer. Engine maintains statusEffects.cls_rewindBuffer (last
+    // 4 snapshots, one per player turn). On this signal, engine pops the
+    // oldest snapshot and overwrites currentHp / enemyHp / statusEffects /
+    // maxPlayerHp from it. If buffer is empty (combat just started),
+    // applies the placeholder healing instead.
+    if (Array.isArray(statusEffects.cls_rewindBuffer) && statusEffects.cls_rewindBuffer.length > 0) {
+      statusEffects.cls_buryTheHourPending = true
+      messages.push('✎ Bury the Hour — the past unwinds.')
+    } else {
+      // Fallback: too early in combat to rewind. Apply mild heal + Absence.
+      const refund = (statusEffects.cls_lastDamageTaken || 0) * 2
+      statusEffects.cls_burryHourHeal = refund
+      statusEffects.cls_absenceStacks = (statusEffects.cls_absenceStacks || 0) + 3
+      messages.push(`✎ Bury the Hour — nothing to undo yet. +${refund} HP, +3 Absence.`)
+    }
+  } else if (skillId === 'no_such_person') {
+    statusEffects.cls_noSuchPersonTurns = 5
+    statusEffects.cls_noSuchPersonAvoidedDamage = 0
+    messages.push('✎ No Such Person — 5 turns outside the record. Then the strike comes.')
+  } else if (skillId === 'long_silence') {
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 5)
+    statusEffects.cls_longSilenceTurns = 5
+    messages.push('✎ The Long Silence — 5 turns. No motion permitted.')
+  } else if (skillId === 'all_written_out') {
+    // Populate cls_deletedEnemySkills with sentinel that engine expands to
+    // all enemy.moves. enemyAI.js pickWeighted filters by these names.
+    // If the engine doesn't use the AI module (current Ch1/Ch2 both have
+    // inline AI), the silence fallback still triggers via cls_silenceTurns.
+    statusEffects.cls_allWrittenOut = true
+    statusEffects.cls_deletedEnemySkills = statusEffects.cls_deletedEnemySkills || []
+    statusEffects.cls_deletedEnemySkills.push('__ALL__')
+    // Fallback for inline-AI engines: long silence keeps them from using
+    // skill-tagged moves (some enemies use this flag).
+    statusEffects.cls_silenceTurns = Math.max(statusEffects.cls_silenceTurns || 0, 99)
+    messages.push('✎ All Written Out — every skill in their record is erased.')
+  }
+
+  // ── Oathbreaker actives ──────────────────────────────────────────────
+  else if (skillId === 'break_fury') {
+    const turnsHeld = statusEffects.cls_oathTurnsHeld || 0
+    statusEffects.cls_breakFuryDamage = turnsHeld * 30
+    statusEffects.cls_currentOath = null
+    statusEffects.cls_furyBroken = true
+    if (hasSkill(player, 'oathbreaker_t4a')) {
+      // Bitter Promise: +10% damage permanent for combat
+      statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + Math.round((player.atk || 5) * 0.10)
+      messages.push(`⚔ Bitter Promise — +10% damage permanent.`)
+    }
+    messages.push(`⚔ Break: Fury — ${turnsHeld * 30} damage incoming.`)
+  } else if (skillId === 'break_wall') {
+    const turnsHeld = statusEffects.cls_oathTurnsHeld || 0
+    const maxHp = player.hp_max || player.max_hp || 100
+    const heal = Math.round(maxHp * 0.08 * turnsHeld)
+    statusEffects.cls_breakWallHeal = heal
+    statusEffects.cls_currentOath = null
+    statusEffects.cls_wallBroken = true
+    if (hasSkill(player, 'oathbreaker_t4b')) {
+      // Steady Promise: +30% max SP
+      const maxSP = player.sp_max || 100
+      statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + Math.round(maxSP * 0.30)
+    }
+    if (hasSkill(player, 'oathbreaker_t5b')) {
+      // Restoration: next 3 enemy attacks -50%
+      statusEffects.cls_wallRestorationCount = 3
+    }
+    messages.push(`⚔ Break: Wall — ${heal} HP restored.`)
+  } else if (skillId === 'break_hunt') {
+    statusEffects.cls_breakHuntReady = true
+    statusEffects.cls_currentOath = null
+    statusEffects.cls_huntBroken = true
+    if (hasSkill(player, 'oathbreaker_t4c')) {
+      // Hunter's Promise: free extra turn — engine should re-enable buttons
+      statusEffects.cls_freeBonusTurn = true
+    }
+    if (hasSkill(player, 'oathbreaker_t5c')) {
+      // Old Hunt: basic strikes ignore 25% DEF rest of combat
+      statusEffects.cls_oldHuntActive = true
+    }
+    messages.push('⚔ Break: Hunt — next strike: guaranteed crit, all DEF pierced.')
+  } else if (skillId === 'reswear_fury') {
+    // Old Anger: re-swear at half buff
+    statusEffects.cls_currentOath = 'fury_weak'
+    statusEffects.cls_oathTurnsHeld = 0
+    messages.push('⚔ Re-swear Fury — the anger remembers, but weaker.')
+  } else if (skillId === 'final_oath_wrath') {
+    const turnsElapsed = statusEffects.cls_primeTurnsAlive || statusEffects.cls_turnsElapsed || 0
+    statusEffects.cls_finalOathWrathDamage = turnsElapsed * 75
+    messages.push(`⚔ Final Oath: Wrath — all oaths broken. ${turnsElapsed * 75} damage.`)
+  } else if (skillId === 'final_oath_sanctuary') {
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_finalOathSanctuaryHeal = maxHp  // engine clamps
+    // Cleanse all status
+    const clearFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
+    for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
+    statusEffects.cls_finalOathDEFBonusTurns = 5
+    statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + 50
+    messages.push('⚔ Final Oath: Sanctuary — full restore, cleansed, +50 DEF.')
+  } else if (skillId === 'final_oath_hunt') {
+    statusEffects.cls_finalOathHuntStrikes = 5
+    messages.push('⚔ Final Oath: Hunt — 5 strikes coming. All ×2, all crit, all pierce.')
+  }
+
+  // ── Silent Judge actives ─────────────────────────────────────────────
+  else if (skillId === 'render_verdict') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    statusEffects.cls_renderVerdictDamage = marks * 30
+    statusEffects.cls_verdictMarks = 0
+    messages.push(`⚖ Render Verdict — ${marks} marks → ${marks * 30} damage.`)
+  } else if (skillId === 'quiet_court') {
+    statusEffects.cls_quietCourtTurns = 3
+    messages.push('⚖ The Quiet Court — 3 turns, no status reaches you.')
+  } else if (skillId === 'court_adjourned') {
+    statusEffects.cls_verdictMarks -= 5
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 3)
+    messages.push('⚖ Court Adjourned — 3 turns of enemy silence.')
+  } else if (skillId === 'eyes_of_equilibrium') {
+    statusEffects.cls_eyesOfEquilibriumTurns = 5
+    messages.push('⚖ Eyes of Equilibrium — 5 turns. The court sees all.')
+  } else if (skillId === 'silent_court') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    statusEffects.cls_silentCourtTurns = 5
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 5)
+    statusEffects.cls_verdictMarks = 0
+    messages.push(`⚖ The Silent Court — ${marks} marks spent. 5 turns of silence + ×2 damage.`)
+  } else if (skillId === 'final_verdict_sj') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    const enemyMax = enemy.hp_max || enemy.hp || 100
+    statusEffects.cls_finalVerdictSJDamage = (marks * 50) + Math.round(enemyMax * 0.15)
+    statusEffects.cls_verdictMarks = 0
+    messages.push(`⚖ Final Verdict — ${statusEffects.cls_finalVerdictSJDamage} damage.`)
+  }
+
+  // ── Dreadnought actives ──────────────────────────────────────────────
+  else if (skillId === 'inexorable') {
+    // Cleanse all status on player + stun enemy 1 turn
+    const clearFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
+                         'cls_rotTurns', 'cls_silenceTurns', 'cls_markTurns']
+    for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+    messages.push('🛡 Inexorable — cleansed. Enemy stunned 1 turn.')
+  } else if (skillId === 'one_step_more') {
+    statusEffects.cls_oneStepMoreTurns = 3
+    statusEffects.cls_oneStepMoreBlockHeal = true
+    messages.push('🛡 One Step More — 3 turns of nothing reaching you, nothing leaving you.')
+  } else if (skillId === 'hammer_falls') {
+    const armor = statusEffects.cls_armorStacks || 0
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_hammerFallsDamage = (armor * 25) + Math.round(maxHp * 0.5)
+    statusEffects.cls_armorStacks = 0
+    messages.push(`🛡 The Hammer Falls — ${armor} Armor + max HP × 0.5 = ${statusEffects.cls_hammerFallsDamage} damage.`)
+  } else if (skillId === 'walking_tomb') {
+    statusEffects.cls_walkingTombTurns = 5
+    messages.push('🛡 Walking Tomb — 5 turns. Death does not come.')
+  } else if (skillId === 'the_inevitable') {
+    statusEffects.cls_theInevitableTurns = 5
+    statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 5)
+    messages.push('🛡 The Inevitable — 5 turns. No one moves but you.')
+  }
+
+  // ── Abyss Walker actives ─────────────────────────────────────────────
+  else if (skillId === 'anchor_line') {
+    statusEffects.cls_depth = Math.max(0, (statusEffects.cls_depth || 0) - 3)
+    messages.push(`◊ Anchor Line — Depth ${statusEffects.cls_depth}.`)
+  } else if (skillId === 'climb') {
+    statusEffects.cls_climbTurns = 3
+    messages.push('◊ Climb — slow ascent begins.')
+  } else if (skillId === 'surface_memory') {
+    statusEffects.cls_depth = 0
+    messages.push('◊ Surface Memory — Depth 0.')
+  } else if (skillId === 'hollow_sea') {
+    statusEffects.cls_depth = 15
+    statusEffects.cls_hollowSeaTurns = 5
+    messages.push('◊ The Hollow Sea — Depth 15. 5 turns of devastation.')
+  } else if (skillId === 'drowned') {
+    statusEffects.cls_drownStacks = 10
+    statusEffects.cls_drownTurns = 5
+    statusEffects.cls_drownedActive = true
+    messages.push('◊ Drowned — 10 stacks. They cannot escape.')
+  } else if (skillId === 'return_from_below') {
+    const maxHp = player.hp_max || player.max_hp || 100
+    statusEffects.cls_returnFromBelowHeal = maxHp
+    statusEffects.cls_depth = 0
+    messages.push('◊ Return From Below — Depth 0, fully restored.')
+  }
+
   return { messages, consumed: true }
+}
+
+// ── Oathbreaker helpers ─────────────────────────────────────────────────
+// Applies oath effect + state. Used both by onCombatStart auto-path and
+// by setOathbreakerOath (engine UI hook).
+function _applyOath(oathKey, statusEffects, messages) {
+  statusEffects.cls_currentOath = oathKey
+  statusEffects.cls_oathTurnsHeld = 0
+  if (oathKey === 'fury') {
+    messages.push('⚔ Oath of Fury sworn. +20% damage, -10% DEF.')
+  } else if (oathKey === 'wall') {
+    messages.push('⚔ Oath of the Wall sworn. +25% DEF, -15% damage.')
+  } else if (oathKey === 'hunt') {
+    messages.push('⚔ Oath of the Hunt sworn. +15% SPD, +10% crit.')
+  }
+}
+
+// Called by engine after player clicks an oath in the picker UI.
+// Returns: { messages }
+export function setOathbreakerOath(oathKey, statusEffects) {
+  const messages = []
+  if (!['fury', 'wall', 'hunt'].includes(oathKey)) return { messages: ['Invalid oath.'] }
+  _applyOath(oathKey, statusEffects, messages)
+  delete statusEffects.cls_oathPickerPending
+  return { messages }
 }
 
 // ── HOOK: combat start ──────────────────────────────────────────────────
@@ -836,6 +1381,39 @@ export function onCombatStart(player, statusEffects) {
   statusEffects.cls_survivorsEndHeal    = 0
   statusEffects.cls_survivorsEndDamage  = 0
   statusEffects.cls_survivorsEndDropToOne = false
+  // Devourer
+  statusEffects.cls_hunger              = 0  // 0-100 meter
+  statusEffects.cls_feastATKGain        = 0  // accumulated per kill
+  statusEffects.cls_greatHungerTurns    = 0
+  statusEffects.cls_blockAllHeals       = false
+  statusEffects.cls_cleansingDevourDamage = 0
+  statusEffects.cls_lastCourseDamage    = 0
+  statusEffects.cls_lastCourseSPCost    = false
+  statusEffects.cls_gnawCounter         = 0
+  statusEffects.cls_throatHitCounter    = 0  // Devourer's Throat every-3rd-hit
+  // Mourning King
+  statusEffects.cls_wakeStacks          = 0
+  statusEffects.cls_memoryOfSteelStrikes = 0
+  statusEffects.cls_speakToDeadTurns    = 0
+  statusEffects.cls_deathMarkUsed       = false
+  statusEffects.cls_quietStepReady      = false  // After Death Mark save
+  statusEffects.cls_allCrownsWornDamage = 0
+  statusEffects.cls_lastMercyHealEnemyToFull = false
+  statusEffects.cls_lastMercyExecuteMark = false
+  statusEffects.cls_emptyThroneUsed     = false
+  // Chimera
+  statusEffects.cls_chimeraForm         = 'beast'  // default starting form
+  statusEffects.cls_shiftCooldown       = 0
+  statusEffects.cls_trueBeastTurns      = 0
+  statusEffects.cls_eternalCoilTurns    = 0
+  statusEffects.cls_stormlordTurns      = 0
+  statusEffects.cls_huntersClawsBonus   = 0  // accumulated per kill in Beast
+  statusEffects.cls_livingShellDEFGain  = 0  // accumulated per turn in Coil
+  statusEffects.cls_bloodscentNextCrit  = false
+  statusEffects.cls_wildEnergyHeal      = 0
+  statusEffects.cls_coiledSpringReady   = false
+  statusEffects.cls_stormRandomStat     = 'atk'  // rolled per turn in Storm
+  statusEffects.cls_tempestCounter      = 0
 
   // Royal Banner — Prime t1b: +10% all stats at combat start
   if (hasSkill(player, 'prime_t1b')) {
@@ -861,6 +1439,145 @@ export function onCombatStart(player, statusEffects) {
     statusEffects.cls_nullStacks = 3
     messages.push('✕ Null Form — 3 stacks ready.')
   }
+  // Devourer — Empty Stomach (t1b): Hunger starts at 50
+  if (hasSkill(player, 'devourer_t1b')) {
+    statusEffects.cls_hunger = 50
+    messages.push('🦷 Empty Stomach — Hunger at 50.')
+  }
+  // Devourer — Inverted Stomach (t5c): swap one enemy buff to player side
+  // (Cosmetic: most enemies don't have buffs; we just set a flag for engine display)
+  if (hasSkill(player, 'devourer_t5c')) {
+    // Best-effort: try to swap enemyATKMult > 1 to player
+    if ((statusEffects.enemyATKMult || 1) > 1) {
+      const buff = statusEffects.enemyATKMult - 1
+      statusEffects.enemyATKMult = 1
+      // Translate to a flat ATK bonus equal to the buff fraction × current ATK
+      statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + Math.round((player.atk || 5) * buff)
+      messages.push('🦷 Inverted Stomach — their force is yours now.')
+    }
+  }
+  // Mourning King — First Breath (t1c): +3 Wake at combat start
+  if (hasSkill(player, 'mourning_king_t1c')) {
+    statusEffects.cls_wakeStacks = (statusEffects.cls_wakeStacks || 0) + 3
+  }
+  // Mourning King — The Long Wait (t2b): persistent Wake stacks from DB
+  if (hasSkill(player, 'mourning_king_t2b')) {
+    const persistent = player.mourning_king_wake_stacks || 0
+    statusEffects.cls_wakeStacks = (statusEffects.cls_wakeStacks || 0) + persistent
+    if (persistent > 0) {
+      messages.push(`☠ The Long Wait — ${persistent} Wake stacks carried forward.`)
+    }
+  }
+  // Unwritten state init
+  statusEffects.cls_absenceStacks       = 0
+  statusEffects.cls_lastDamageTaken     = 0  // for Erasure
+  statusEffects.cls_lastStrikeDamage    = 0  // for Disowned Hit
+  statusEffects.cls_disownedHitEnemyHeal = 0
+  statusEffects.cls_erasureHeal         = 0
+  statusEffects.cls_burryHourHeal       = 0
+  statusEffects.cls_noSuchPersonTurns   = 0
+  statusEffects.cls_noSuchPersonAvoidedDamage = 0
+  statusEffects.cls_longSilenceTurns    = 0
+  statusEffects.cls_allWrittenOut       = false
+  statusEffects.cls_forgottenWoundActive = false
+  statusEffects.cls_turnsElapsed        = 0  // generic turn counter
+
+  // Unwritten — Forgotten Wound (t1c): preventatively cleanse one debuff
+  if (hasSkill(player, 'unwritten_t1c')) {
+    statusEffects.cls_forgottenWoundActive = true
+    // Will fire on first debuff application; for simplicity, cleanse any
+    // starting debuff now too
+    const debuffFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns', 'cls_rotTurns']
+    for (const k of debuffFields) {
+      if ((statusEffects[k] || 0) > 0) {
+        statusEffects[k] = 0
+        messages.push(`✎ Forgotten Wound — debuff erased.`)
+        statusEffects.cls_forgottenWoundActive = false
+        break
+      }
+    }
+  }
+
+  // Oathbreaker state + auto-oath swearing
+  statusEffects.cls_currentOath         = null   // 'fury' | 'wall' | 'hunt' | 'fury_weak'
+  statusEffects.cls_oathTurnsHeld       = 0
+  statusEffects.cls_furyBroken          = false
+  statusEffects.cls_wallBroken          = false
+  statusEffects.cls_huntBroken          = false
+  statusEffects.cls_wallRestorationCount = 0
+  statusEffects.cls_oldHuntActive       = false
+  statusEffects.cls_breakFuryDamage     = 0
+  statusEffects.cls_breakWallHeal       = 0
+  statusEffects.cls_breakHuntReady      = false
+  statusEffects.cls_freeBonusTurn       = false
+  statusEffects.cls_finalOathWrathDamage = 0
+  statusEffects.cls_finalOathSanctuaryHeal = 0
+  statusEffects.cls_finalOathDEFBonusTurns = 0
+  statusEffects.cls_finalOathHuntStrikes = 0
+
+  // Oathbreaker — defer oath selection to UI picker.
+  // If the player has multiple oath options unlocked, the engine should
+  // show a modal at combat start; player picks an oath, then calls
+  // ClsCombat.setOathbreakerOath(oathKey, statusEffects, messages).
+  // If only one oath is unlocked, we auto-swear it (no UI needed).
+  if (player.active_class === 'oathbreaker') {
+    const oaths = []
+    if (hasSkill(player, 'oathbreaker_t1a')) oaths.push('fury')
+    if (hasSkill(player, 'oathbreaker_t1b')) oaths.push('wall')
+    if (hasSkill(player, 'oathbreaker_t1c')) oaths.push('hunt')
+    if (oaths.length === 1) {
+      // Auto-swear if only one option
+      _applyOath(oaths[0], statusEffects, messages)
+    } else if (oaths.length > 1) {
+      // Signal to engine: show picker
+      statusEffects.cls_oathPickerPending = oaths
+    }
+  }
+
+  // Silent Judge state init
+  statusEffects.cls_verdictMarks        = 0
+  statusEffects.cls_quietCourtTurns     = 0
+  statusEffects.cls_silentCourtTurns    = 0
+  statusEffects.cls_eyesOfEquilibriumTurns = 0
+  statusEffects.cls_renderVerdictDamage = 0
+  statusEffects.cls_finalVerdictSJDamage = 0
+  statusEffects.cls_sentencingCycleCounter = 0
+  // Dreadnought state init
+  statusEffects.cls_armorStacks         = 0
+  statusEffects.cls_armorCap            = 15
+  statusEffects.cls_oneStepMoreTurns    = 0
+  statusEffects.cls_oneStepMoreBlockHeal = false
+  statusEffects.cls_walkingTombTurns    = 0
+  statusEffects.cls_theInevitableTurns  = 0
+  statusEffects.cls_hammerFallsDamage   = 0
+  // Abyss Walker state init
+  statusEffects.cls_depth               = 0
+  statusEffects.cls_drownStacks         = 0
+  statusEffects.cls_drownTurns          = 0
+  statusEffects.cls_drownedActive       = false
+  statusEffects.cls_climbTurns          = 0
+  statusEffects.cls_hollowSeaTurns      = 0
+  statusEffects.cls_returnFromBelowHeal = 0
+  // Dreadnought — Thick Hide (t1b): +20% max HP at combat start
+  if (hasSkill(player, 'dreadnought_t1b')) {
+    // Engine should read this and bump maxPlayerHp accordingly
+    statusEffects.cls_thickHideBonus = Math.round((player.hp_max || player.max_hp || 100) * 0.20)
+    messages.push(`🛡 Thick Hide — +${statusEffects.cls_thickHideBonus} max HP.`)
+  }
+  // Dreadnought — Steel Marrow (t2a): Armor cap raised to 20
+  if (hasSkill(player, 'dreadnought_t2a')) statusEffects.cls_armorCap = 20
+  // Dreadnought — Slow Tide (t4c): -25% SPD permanent for combat
+  if (hasSkill(player, 'dreadnought_t4c')) {
+    statusEffects.playerSPDBonus = (statusEffects.playerSPDBonus || 0) - Math.round((player.speed || 5) * 0.25)
+    messages.push('🛡 Slow Tide — slower steps, heavier strikes.')
+  }
+  // Dreadnought — No Retreat (t3c): flag for status immunity
+  if (hasSkill(player, 'dreadnought_t3c')) {
+    statusEffects.cls_noWitness = true
+  }
+
+  // Chimera — Beast Form (t1a): default starting form. Apply form-mods.
+  // (Form mods recomputed every turn in onTurnEnd; engine reads at start too)
   // Bastion — Standing Watch (t2c): cleanse all negative status at start
   if (hasSkill(player, 'bastion_t2c')) {
     const clearFields = ['burnTurns', 'poisonTurns', 'cls_bleedingTurns',
@@ -1421,6 +2138,343 @@ export function onPlayerAttack(player, statusEffects, enemy, baseDamage) {
     }
   }
 
+  // ════════ Devourer ══════════════════════════════════════════════════
+  if (ac === 'devourer') {
+    const hunger = statusEffects.cls_hunger || 0
+    // Above Half (t3b): Hunger ≥ 50 → +15% damage
+    if (hasSkill(player, 'devourer_t3b') && hunger >= 50) {
+      dmgMult *= 1.15
+    }
+    // Fed State (t4b): Hunger ≥ 80 → +30% damage, +10% crit
+    if (hasSkill(player, 'devourer_t4b') && hunger >= 80) {
+      dmgMult *= 1.30
+      critChanceAdd += 0.10
+    }
+    // Starvation (t5b): Hunger < 25 → guaranteed crits
+    if (hasSkill(player, 'devourer_t5b') && hunger < 25) {
+      critChanceAdd += 1.0
+    }
+    // Great Hunger active: +50% damage
+    if (statusEffects.cls_greatHungerTurns > 0) {
+      dmgMult *= 1.50
+    }
+    // Stomach Acid (t2c): +10% damage when you have any status on you
+    if (hasSkill(player, 'devourer_t2c')) {
+      const statusFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns','enemyStunTurns']
+      const hasStatus = statusFields.some(k => (statusEffects[k] || 0) > 0)
+      if (hasStatus) dmgMult *= 1.10
+    }
+    // Feast (t1a) accumulated ATK bonus
+    if ((statusEffects.cls_feastATKGain || 0) > 0) {
+      bonusFlatDmg += statusEffects.cls_feastATKGain
+    }
+    // Staged active damages:
+    if (statusEffects.cls_cleansingDevourDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_cleansingDevourDamage
+      statusEffects.cls_cleansingDevourDamage = 0
+      messages.push('🦷 Cleansing Devour strikes.')
+    }
+    if (statusEffects.cls_lastCourseDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_lastCourseDamage
+      statusEffects.cls_lastCourseDamage = 0
+      messages.push('🦷 The Last Course strikes.')
+    }
+  }
+
+  // ════════ Mourning King ═════════════════════════════════════════════
+  if (ac === 'mourning_king') {
+    const wake = statusEffects.cls_wakeStacks || 0
+    // Old Wounds Speak (t1a): +1% damage per Wake stack
+    if (hasSkill(player, 'mourning_king_t1a') && wake > 0) {
+      dmgMult *= (1 + 0.01 * wake)
+    }
+    // Risen Edge (t2a): at 10+ Wake, basic strikes +8 radiant damage
+    if (hasSkill(player, 'mourning_king_t2a') && wake >= 10) {
+      bonusFlatDmg += 8
+    }
+    // Crown Heavy (t4a): at 20+ Wake → DEF bonus (already in DEF pool, but also adds to attack via Sovereign-style nope — this is purely DEF buff. Skip in attack.
+    // Memory of Steel strikes
+    if ((statusEffects.cls_memoryOfSteelStrikes || 0) > 0) {
+      dmgMult *= 1.50
+      statusEffects.cls_memoryOfSteelStrikes -= 1
+      messages.push(`☠ Memory of Steel — strike +50% (${statusEffects.cls_memoryOfSteelStrikes} left).`)
+    }
+    // The Quiet Step: after Death Mark save, next strike deals (max HP) damage
+    if (statusEffects.cls_quietStepReady) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      bonusFlatDmg += maxHp
+      statusEffects.cls_quietStepReady = false
+      messages.push(`☠ The Quiet Step — ${maxHp} damage from grief.`)
+    }
+    // All Crowns Worn staged damage
+    if (statusEffects.cls_allCrownsWornDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_allCrownsWornDamage
+      statusEffects.cls_allCrownsWornDamage = 0
+      messages.push('☠ All Crowns Worn strikes.')
+    }
+  }
+
+  // ════════ Chimera ═══════════════════════════════════════════════════
+  if (ac === 'chimera') {
+    const form = statusEffects.cls_chimeraForm || 'beast'
+    const stormlord = statusEffects.cls_stormlordTurns > 0
+    const tempest = statusEffects.cls_tempestCounter >= 5
+    // Beast form mods
+    if (form === 'beast' || stormlord) {
+      if (hasSkill(player, 'chimera_t1a')) dmgMult *= 1.20
+      // Hunter's Claws (t3a) — accumulated
+      if ((statusEffects.cls_huntersClawsBonus || 0) > 0) {
+        dmgMult *= (1 + statusEffects.cls_huntersClawsBonus / 100)
+      }
+      // Bloodscent next strike
+      if (statusEffects.cls_bloodscentNextCrit) {
+        critChanceAdd += 1.0
+        statusEffects.cls_bloodscentNextCrit = false
+        messages.push('◎ Bloodscent — crit.')
+      }
+      // Predator's Lock (t5a): enemies <50% HP take +30%
+      if (hasSkill(player, 'chimera_t5a') && (statusEffects._engineEnemyHpPct || 1) < 0.50) {
+        dmgMult *= 1.30
+      }
+    }
+    if (form === 'coil' || stormlord) {
+      if (hasSkill(player, 'chimera_t1b')) dmgMult *= 0.85  // -15% ATK
+    }
+    if (form === 'storm' || stormlord) {
+      // Random stat each turn — applied per-stat. Damage if 'atk'.
+      if (hasSkill(player, 'chimera_t1c') && statusEffects.cls_stormRandomStat === 'atk') {
+        dmgMult *= 1.30
+      }
+      // Random Strike (t3c): 33% chance per strike for +10 damage
+      if (hasSkill(player, 'chimera_t3c') && Math.random() < 0.33) {
+        bonusFlatDmg += 10
+        messages.push('◎ Random Strike — +10.')
+      }
+    }
+    // Tempest (t5c): every 5 turns in Storm, ALL form bonuses apply for 1 turn
+    if (hasSkill(player, 'chimera_t5c') && tempest) {
+      dmgMult *= 1.20  // Beast bonus added
+      // (DEF mods applied in onPlayerHit)
+    }
+    // True Beast (t6a)
+    if (statusEffects.cls_trueBeastTurns > 0) {
+      dmgMult *= 1.50
+    }
+    // Coiled Spring (t5b): switching FROM Coil to Beast triggers heavy strike +50%
+    if (statusEffects.cls_coiledSpringReady) {
+      dmgMult *= 1.50
+      statusEffects.cls_coiledSpringReady = false
+      messages.push('◎ Coiled Spring — released.')
+    }
+  }
+
+  // ════════ Unwritten ═════════════════════════════════════════════════
+  if (ac === 'unwritten') {
+    const abs = statusEffects.cls_absenceStacks || 0
+    // Faded Memory (t2a): +5% damage on next strike per Absence stack
+    if (hasSkill(player, 'unwritten_t2a') && abs > 0) {
+      dmgMult *= (1 + 0.05 * abs)
+      // Consume one stack on attack
+      statusEffects.cls_absenceStacks = Math.max(0, abs - 1)
+    }
+    // Pre-emptive Strike (t2c): +5% if you have any Absence
+    if (hasSkill(player, 'unwritten_t2c') && abs > 0) {
+      dmgMult *= 1.05
+    }
+    // Refused Account (t4a): 5+ Absence: +30% damage, ignore 15% DEF
+    if (hasSkill(player, 'unwritten_t4a') && abs >= 5) {
+      dmgMult *= 1.30
+      defIgnoreFrac = Math.max(defIgnoreFrac, 0.15)
+    }
+    // Cold Page (t4c): +20% vs enemies who lost a skill
+    if (hasSkill(player, 'unwritten_t4c') && statusEffects.cls_emptyPageProc) {
+      dmgMult *= 1.20
+    }
+    // No Such Person active: deal no damage
+    if (statusEffects.cls_noSuchPersonTurns > 0) {
+      dmgMult = 0
+      messages.push('✎ No Such Person — your strike does not happen.')
+    }
+  }
+
+  // ════════ Oathbreaker ═══════════════════════════════════════════════
+  if (ac === 'oathbreaker') {
+    const oath = statusEffects.cls_currentOath
+    // Oath of Fury (t1a): +20% damage, -10% DEF
+    if (oath === 'fury') dmgMult *= 1.20
+    if (oath === 'fury_weak') dmgMult *= 1.10  // re-sworn weaker version
+    // Oath of the Wall (t1b): -15% damage
+    if (oath === 'wall') dmgMult *= 0.85
+    // Oath of the Hunt (t1c): +10% crit
+    if (oath === 'hunt') critChanceAdd += 0.10
+    // Burning Oath (t3a): while Fury, 20% chance for +15 fire damage
+    if (hasSkill(player, 'oathbreaker_t3a') && (oath === 'fury' || oath === 'fury_weak')
+        && Math.random() < 0.20) {
+      bonusFlatDmg += 15
+      messages.push('🔥 Burning Oath — +15 fire damage.')
+    }
+    // Predator's Patience (t3c): while Hunt, +1% damage per turn elapsed
+    if (hasSkill(player, 'oathbreaker_t3c') && oath === 'hunt') {
+      const t = statusEffects.cls_turnsElapsed || 0
+      if (t > 0) dmgMult *= (1 + 0.01 * t)
+    }
+    // Old Hunt (t5c): basic strikes ignore 25% DEF rest of combat
+    if (statusEffects.cls_oldHuntActive) {
+      defIgnoreFrac = Math.max(defIgnoreFrac, 0.25)
+    }
+    // Break: Fury staged damage
+    if (statusEffects.cls_breakFuryDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_breakFuryDamage
+      statusEffects.cls_breakFuryDamage = 0
+      messages.push('⚔ Break: Fury strikes.')
+    }
+    // Break: Hunt: next attack guaranteed crit + DEF pierce
+    if (statusEffects.cls_breakHuntReady) {
+      critChanceAdd += 1.0
+      defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)
+      statusEffects.cls_breakHuntReady = false
+      messages.push('⚔ Break: Hunt strikes — all DEF pierced.')
+    }
+    // Final Oath: Wrath staged damage
+    if (statusEffects.cls_finalOathWrathDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_finalOathWrathDamage
+      statusEffects.cls_finalOathWrathDamage = 0
+      messages.push('⚔ Final Oath: Wrath strikes.')
+    }
+    // Final Oath: Hunt: 5 strikes ×2 + pierce + crit
+    if ((statusEffects.cls_finalOathHuntStrikes || 0) > 0) {
+      dmgMult *= 2.0
+      critChanceAdd += 1.0
+      defIgnoreFrac = Math.max(defIgnoreFrac, 1.0)
+      statusEffects.cls_finalOathHuntStrikes -= 1
+      messages.push(`⚔ Final Oath: Hunt — ${statusEffects.cls_finalOathHuntStrikes} strikes left.`)
+    }
+  }
+
+  // ════════ Silent Judge ══════════════════════════════════════════════
+  if (ac === 'silent_judge') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    // Deepened Sight (t2a): +2% damage per mark
+    if (hasSkill(player, 'silent_judge_t2a') && marks > 0) {
+      dmgMult *= (1 + 0.02 * marks)
+    }
+    // Calm Mind (t1c): 5+ marks → +20% damage
+    if (hasSkill(player, 'silent_judge_t1c') && marks >= 5) {
+      dmgMult *= 1.20
+    }
+    // Documented Weakness (t3a): 5+ marks → -25% effective enemy DEF
+    if (hasSkill(player, 'silent_judge_t3a') && marks >= 5) {
+      defIgnoreFrac = Math.max(defIgnoreFrac, 0.25)
+    }
+    // Closing Argument (t3c): 5+ marks → 10% chance +20 flat
+    if (hasSkill(player, 'silent_judge_t3c') && marks >= 5 && Math.random() < 0.10) {
+      bonusFlatDmg += 20
+      messages.push('⚖ Closing Argument — +20.')
+    }
+    // Witness's Standing (t4a): 7+ marks → +15% crit
+    if (hasSkill(player, 'silent_judge_t4a') && marks >= 7) {
+      critChanceAdd += 0.15
+    }
+    // Full Witness (t5a): 10 marks → +50% damage
+    if (hasSkill(player, 'silent_judge_t5a') && marks >= 10) {
+      dmgMult *= 1.50
+    }
+    // Silent Court active: +100% damage
+    if (statusEffects.cls_silentCourtTurns > 0) {
+      dmgMult *= 2.0
+    }
+    // Staged active damages
+    if (statusEffects.cls_renderVerdictDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_renderVerdictDamage
+      statusEffects.cls_renderVerdictDamage = 0
+      messages.push('⚖ Render Verdict strikes.')
+    }
+    if (statusEffects.cls_finalVerdictSJDamage > 0) {
+      bonusFlatDmg += statusEffects.cls_finalVerdictSJDamage
+      statusEffects.cls_finalVerdictSJDamage = 0
+      messages.push('⚖ Final Verdict strikes.')
+    }
+  }
+
+  // ════════ Dreadnought ═══════════════════════════════════════════════
+  if (ac === 'dreadnought') {
+    const armor = statusEffects.cls_armorStacks || 0
+    // Armor Forms (t1a): +2% damage out per stack
+    if (hasSkill(player, 'dreadnought_t1a') && armor > 0) {
+      dmgMult *= (1 + 0.02 * armor)
+    }
+    // Steel Marrow (t2a): at 10+ Armor → +30% damage on basic strikes
+    if (hasSkill(player, 'dreadnought_t2a') && armor >= 10) {
+      dmgMult *= 1.30
+    }
+    // Standing Forward (t1c): +10% damage when YOUR HP% < enemy HP%
+    if (hasSkill(player, 'dreadnought_t1c')) {
+      const pHp = statusEffects._enginePlayerHpPct
+      const eHp = statusEffects._engineEnemyHpPct
+      if (typeof pHp === 'number' && typeof eHp === 'number' && pHp < eHp) {
+        dmgMult *= 1.10
+      }
+    }
+    // Crushing Step (t4a): at 15+ Armor → +25 flat damage
+    if (hasSkill(player, 'dreadnought_t4a') && armor >= 15) {
+      bonusFlatDmg += 25
+    }
+    // Final Hammer (t5a): at 20+ Armor → crits ×3 (instead of ×2). Approx via +50% on crit.
+    if (hasSkill(player, 'dreadnought_t5a') && armor >= 20 && statusEffects._engineWasCrit) {
+      dmgMult *= 1.5
+    }
+    // The Hammer Falls staged damage
+    if ((statusEffects.cls_hammerFallsDamage || 0) > 0) {
+      bonusFlatDmg += statusEffects.cls_hammerFallsDamage
+      statusEffects.cls_hammerFallsDamage = 0
+      messages.push('🛡 The Hammer Falls strikes.')
+    }
+    // The Inevitable active: per-turn strikes = max HP × 25%
+    if (statusEffects.cls_theInevitableTurns > 0) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      bonusFlatDmg += Math.round(maxHp * 0.25)
+    }
+    // Slow Tide (t4c): +50% damage on basic strikes
+    if (hasSkill(player, 'dreadnought_t4c')) {
+      dmgMult *= 1.50
+    }
+  }
+
+  // ════════ Abyss Walker ══════════════════════════════════════════════
+  if (ac === 'abyss_walker') {
+    const depth = statusEffects.cls_depth || 0
+    // Depth Begins (t1a): per Depth → +5% damage out
+    if (hasSkill(player, 'abyss_walker_t1a') && depth > 0) {
+      dmgMult *= (1 + 0.05 * depth)
+    }
+    // Crushing Depth (t3a): at Depth 5+ → ignore 25% enemy DEF
+    if (hasSkill(player, 'abyss_walker_t3a') && depth >= 5) {
+      defIgnoreFrac = Math.max(defIgnoreFrac, 0.25)
+    }
+    // Black Sun (t5a): at Depth 10 → +100% damage
+    if (hasSkill(player, 'abyss_walker_t5a') && depth >= 10) {
+      dmgMult *= 2.0
+    }
+    // The Hollow Sea active: per-turn max HP × 25% damage
+    if (statusEffects.cls_hollowSeaTurns > 0) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      bonusFlatDmg += Math.round(maxHp * 0.25)
+    }
+    // Quiet Path (t4c): at Depth 0 → next strike +50% damage
+    if (hasSkill(player, 'abyss_walker_t4c') && depth === 0 && !statusEffects.cls_quietPathConsumed) {
+      dmgMult *= 1.50
+      statusEffects.cls_quietPathConsumed = true
+      messages.push('◊ Quiet Path — surface strike +50%.')
+    } else if (depth > 0) {
+      // Reset the flag when we go back below
+      statusEffects.cls_quietPathConsumed = false
+    }
+    // Beyond Light (t5c): at Depth 0 → +30% crit
+    if (hasSkill(player, 'abyss_walker_t5c') && depth === 0) {
+      critChanceAdd += 0.30
+    }
+  }
+
   return { dmgMult, defIgnoreFrac, bonusFlatDmg, critChanceAdd, messages }
 }
 
@@ -1568,6 +2622,139 @@ export function onPlayerAttackPost(player, statusEffects, enemy, damageDealt, wa
   // ── Hollow ──────────────────────────────────────────────────────────
   if (ac === 'hollow') {
     // (no per-attack post effects currently — bonus damage handled in attack hook)
+  }
+
+  // ── Devourer ────────────────────────────────────────────────────────
+  if (ac === 'devourer') {
+    const hunger = statusEffects.cls_hunger || 0
+    // Above Half (t3b): +5% lifesteal at Hunger ≥ 50
+    let lifestealPct = 0
+    if (hasSkill(player, 'devourer_t3b') && hunger >= 50) lifestealPct += 0.05
+    // Fed State (t4b): +15% lifesteal at Hunger ≥ 80
+    if (hasSkill(player, 'devourer_t4b') && hunger >= 80) lifestealPct += 0.15
+    // Great Hunger active: +20% lifesteal (but heals blocked)
+    if (statusEffects.cls_greatHungerTurns > 0) {
+      // Skip lifesteal under Great Hunger (no heals allowed)
+      lifestealPct = 0
+    }
+    if (lifestealPct > 0) {
+      healToPlayer += Math.round(damageDealt * lifestealPct)
+    }
+    // Gnaw (t3a): 20% chance for +5 damage + 1% lifesteal
+    if (hasSkill(player, 'devourer_t3a') && Math.random() < 0.20) {
+      deferredDamage += 5
+      healToPlayer += Math.round(damageDealt * 0.01)
+    }
+    // Devourer's Throat (t6c): every 3rd hit -2% enemy max HP cap (max -20%)
+    if (hasSkill(player, 'devourer_t6c')) {
+      statusEffects.cls_throatHitCounter = (statusEffects.cls_throatHitCounter || 0) + 1
+      if (statusEffects.cls_throatHitCounter >= 3) {
+        statusEffects.cls_throatHitCounter = 0
+        const reduction = (statusEffects.cls_throatHpReduction || 0) + 0.02
+        if (reduction <= 0.20) {
+          statusEffects.cls_throatHpReduction = reduction
+          messages.push(`🦷 Devourer's Throat — enemy max HP -2%.`)
+        }
+      }
+    }
+  }
+
+  // ── Mourning King ───────────────────────────────────────────────────
+  if (ac === 'mourning_king') {
+    // Speak to the Dead (t4c): 25% chance to deal extra strike (60% damage)
+    if (statusEffects.cls_speakToDeadTurns > 0 && Math.random() < 0.25) {
+      const extra = Math.round(damageDealt * 0.60)
+      deferredDamage += extra
+      messages.push(`☠ Echo of the dead — +${extra} damage.`)
+    }
+    // Hollow Throne (t5a): vs enemies below 30% HP, 50% chance echo damage (2 turns)
+    if (hasSkill(player, 'mourning_king_t5a')
+        && (statusEffects._engineEnemyHpPct || 1) < 0.30
+        && Math.random() < 0.50) {
+      // Apply as bleed-equivalent (uses existing bleed system)
+      statusEffects.cls_bleedingTurns = Math.max(statusEffects.cls_bleedingTurns || 0, 2)
+      statusEffects.cls_bleedingDmg = Math.max(statusEffects.cls_bleedingDmg || 0, 8)
+      messages.push('☠ Hollow Throne — echo strikes follow.')
+    }
+  }
+
+  // ── Chimera ─────────────────────────────────────────────────────────
+  if (ac === 'chimera') {
+    // (form-based post effects on kill handled in onKill)
+  }
+
+  // ── Unwritten ───────────────────────────────────────────────────────
+  if (ac === 'unwritten') {
+    // Track last strike damage for Disowned Hit (3a)
+    statusEffects.cls_lastStrikeDamage = damageDealt
+    // Empty Page (t3c): 10% chance per strike to delete a random enemy skill
+    // from their rotation. Real implementation: pick a random move from
+    // enemy.moves (if it exists) and add to cls_deletedEnemySkills list.
+    // enemyAI.js pickWeighted filters by these names.
+    if (hasSkill(player, 'unwritten_t3c') && Math.random() < 0.10) {
+      statusEffects.cls_emptyPageProc = true
+      if (enemy && Array.isArray(enemy.moves) && enemy.moves.length > 0) {
+        statusEffects.cls_deletedEnemySkills = statusEffects.cls_deletedEnemySkills || []
+        // Pick a not-yet-deleted move
+        const available = enemy.moves.filter(m =>
+          m.name && !statusEffects.cls_deletedEnemySkills.includes(m.name))
+        if (available.length > 0) {
+          const pick = available[Math.floor(Math.random() * available.length)]
+          statusEffects.cls_deletedEnemySkills.push(pick.name)
+          messages.push(`✎ Empty Page — "${pick.name}" is forgotten.`)
+        } else {
+          messages.push('✎ Empty Page procs — but nothing left to forget.')
+        }
+      } else {
+        // Fallback: enemy has no named moves array — use stun as proxy
+        statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+        messages.push('✎ Empty Page — a beat passes.')
+      }
+    }
+  }
+
+  // ── Silent Judge ────────────────────────────────────────────────────
+  if (ac === 'silent_judge') {
+    // Witness Strike (t1a): basic strikes place 1 Verdict mark (cap 10)
+    if (hasSkill(player, 'silent_judge_t1a')) {
+      let cap = 10
+      // Eyes of Equilibrium active: +3 marks per strike instead of 1
+      const eyes = statusEffects.cls_eyesOfEquilibriumTurns > 0
+      const inc = eyes ? 3 : 1
+      const oldMarks = statusEffects.cls_verdictMarks || 0
+      statusEffects.cls_verdictMarks = Math.min(cap, oldMarks + inc)
+      if (statusEffects.cls_verdictMarks > oldMarks) {
+        messages.push(`⚖ Verdict marks — ${statusEffects.cls_verdictMarks}/10.`)
+      }
+    }
+    // Full Witness (t5a): 10 marks → +10% life-steal on basic strikes
+    if (hasSkill(player, 'silent_judge_t5a') && (statusEffects.cls_verdictMarks || 0) >= 10) {
+      healToPlayer += Math.round(damageDealt * 0.10)
+    }
+    // Sentencing Cycle (t5c): at 10 marks, every 3rd strike auto-consumes
+    // for free Render Verdict
+    if (hasSkill(player, 'silent_judge_t5c') && (statusEffects.cls_verdictMarks || 0) >= 10) {
+      statusEffects.cls_sentencingCycleCounter = (statusEffects.cls_sentencingCycleCounter || 0) + 1
+      if (statusEffects.cls_sentencingCycleCounter >= 3) {
+        statusEffects.cls_sentencingCycleCounter = 0
+        const marks = statusEffects.cls_verdictMarks
+        deferredDamage += marks * 30
+        statusEffects.cls_verdictMarks = 0
+        messages.push(`⚖ Sentencing Cycle — free Render Verdict: ${marks * 30} damage.`)
+      }
+    }
+  }
+
+  // ── Abyss Walker ────────────────────────────────────────────────────
+  if (ac === 'abyss_walker') {
+    // First Tide (t1b): basic strikes apply 1 Drown stack (cap 5; 3 turns; 5 dmg/turn)
+    if (hasSkill(player, 'abyss_walker_t1b')) {
+      statusEffects.cls_drownStacks = Math.min(5, (statusEffects.cls_drownStacks || 0) + 1)
+      statusEffects.cls_drownTurns = Math.max(statusEffects.cls_drownTurns || 0, 3)
+      if (statusEffects.cls_drownStacks === 1) {
+        messages.push('◊ Drown — 1 stack on enemy.')
+      }
+    }
   }
 
   return { deferredDamage, healToPlayer, messages }
@@ -2047,6 +3234,253 @@ export function onPlayerHit(player, statusEffects, enemy, incomingDamage, player
     }
   }
 
+  // ── Devourer ────────────────────────────────────────────────────────
+  if (ac === 'devourer') {
+    // Hunger Builds (t2b): taking damage adds Hunger = (damage / 5)
+    if (hasSkill(player, 'devourer_t2b')) {
+      const gain = Math.round(incomingDamage / 5)
+      statusEffects.cls_hunger = Math.min(100, (statusEffects.cls_hunger || 0) + gain)
+    }
+    // Hardened Lining (t3c): 5% damage resistance per status on you (max 25%)
+    if (hasSkill(player, 'devourer_t3c')) {
+      const statusFields = ['burnTurns','poisonTurns','cls_bleedingTurns','cls_rotTurns','cls_silenceTurns']
+      const count = statusFields.filter(k => (statusEffects[k] || 0) > 0).length
+      const resist = Math.min(0.25, count * 0.05)
+      if (resist > 0) dmgMult *= (1 - resist)
+    }
+    // Starvation (t5b): take 30% LESS damage at Hunger < 25 (offsetting bonus crit)
+    if (hasSkill(player, 'devourer_t5b') && (statusEffects.cls_hunger || 0) < 25) {
+      dmgMult *= 0.70
+    }
+    // Maw of the Survivor (t5a): on death, instant strike at enemy. Kill→survive at 1
+    if (hasSkill(player, 'devourer_t5a') && !statusEffects.cls_mawOfSurvivorUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_mawOfSurvivorUsed = true
+        statusEffects.cls_mawOfSurvivorPending = true
+        statusEffects.cls_loyalGuardSavedHp = 1  // reuse 1-HP save signal
+        dmgMult = 0
+        messages.push('🦷 Maw of the Survivor — one last bite.')
+      }
+    }
+  }
+
+  // ── Mourning King ───────────────────────────────────────────────────
+  if (ac === 'mourning_king') {
+    // Death Mark (t2c): once/chapter, lethal damage leaves you at 1 HP
+    if (hasSkill(player, 'mourning_king_t2c')
+        && !statusEffects.cls_deathMarkUsed
+        && !player.mourning_king_death_mark_used) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_deathMarkUsed = true
+        statusEffects.cls_deathMarkConsumed = true  // for DB write
+        statusEffects.cls_loyalGuardSavedHp = 1
+        // The Quiet Step (5c): next strike deals max HP damage
+        if (hasSkill(player, 'mourning_king_t5c')) {
+          statusEffects.cls_quietStepReady = true
+        }
+        dmgMult = 0
+        messages.push('☠ Death Mark — you do not fall today.')
+      }
+    }
+    // Wakeful (t3c): <30% HP → +1 Wake per turn (handled in onTurnEnd)
+    // Crown Heavy (t4a): at 20+ Wake → DEF +5 per stack above 20
+    if (hasSkill(player, 'mourning_king_t4a') && (statusEffects.cls_wakeStacks || 0) > 20) {
+      // Translate to incoming damage reduction
+      const extraDEF = (statusEffects.cls_wakeStacks - 20) * 5
+      const def = (player.def || 2) + (statusEffects.playerDEFBonus || 0) + extraDEF
+      // Approximation: extraDEF adds to soak. Convert to a 1% damage reduction per 2 DEF added
+      dmgMult *= Math.max(0.30, 1 - (extraDEF / 200))
+    }
+    // Empty Throne (t6c): on death, enemy takes 100% their max HP, both die
+    if (hasSkill(player, 'mourning_king_t6c') && !statusEffects.cls_emptyThroneUsed) {
+      const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
+      if (wouldKill) {
+        statusEffects.cls_emptyThroneUsed = true
+        statusEffects.cls_emptyThronePending = true  // engine reads + kills enemy
+        // Player dies anyway — we don't block the damage
+        messages.push('☠ Empty Throne — we go together.')
+      }
+    }
+  }
+
+  // ── Chimera ─────────────────────────────────────────────────────────
+  if (ac === 'chimera') {
+    const form = statusEffects.cls_chimeraForm || 'beast'
+    const stormlord = statusEffects.cls_stormlordTurns > 0
+    const eternalCoil = statusEffects.cls_eternalCoilTurns > 0
+    // Beast form: -10% DEF (incoming +10%)
+    if ((form === 'beast' || stormlord) && hasSkill(player, 'chimera_t1a')) {
+      dmgMult *= 1.10  // Worse DEF in Beast
+    }
+    // Coil form: +30% DEF (incoming /1.30 = approximate 23% reduction)
+    if (form === 'coil' || stormlord || eternalCoil) {
+      if (hasSkill(player, 'chimera_t1b')) {
+        const ironHide = hasSkill(player, 'chimera_t3b') && (statusEffects._enginePlayerHpPct || 1) < 0.50
+        const def_mult = ironHide ? 1.40 : 1.30
+        dmgMult *= (1 / def_mult)
+      }
+    }
+    // Storm form: random stat. If 'def' rolled, +30% DEF
+    if ((form === 'storm' || stormlord) && hasSkill(player, 'chimera_t1c')
+        && statusEffects.cls_stormRandomStat === 'def') {
+      dmgMult *= (1 / 1.30)
+    }
+    // Eternal Coil active: damage capped at 20% max HP per hit
+    if (eternalCoil) {
+      const cap = Math.round(playerMaxHp * 0.20)
+      if (incomingDamage * dmgMult > cap) {
+        dmgMult = cap / Math.max(1, incomingDamage)
+        messages.push('◎ Eternal Coil — damage capped.')
+      }
+    }
+    // Tempest (t5c): every 5 turns, all form bonuses simultaneously
+    if (hasSkill(player, 'chimera_t5c') && statusEffects.cls_tempestCounter >= 5) {
+      // Applies Coil DEF bonus in addition to whatever form gave
+      dmgMult *= (1 / 1.30)
+    }
+  }
+
+  // ── Unwritten ───────────────────────────────────────────────────────
+  if (ac === 'unwritten') {
+    // No Such Person active: 5 turns immune. Track avoided damage for ultimate.
+    if (statusEffects.cls_noSuchPersonTurns > 0) {
+      statusEffects.cls_noSuchPersonAvoidedDamage = (statusEffects.cls_noSuchPersonAvoidedDamage || 0) + incomingDamage
+      dmgMult = 0
+      messages.push('✎ No Such Person — they cannot reach you.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Quiet Disagreement (t2b): 10% chance enemy "doesn't remember" attacking
+    // — heal back half the damage
+    if (hasSkill(player, 'unwritten_t2b') && Math.random() < 0.10) {
+      const healBack = Math.round(incomingDamage * 0.5)
+      statusEffects.cls_quietDisagreementHeal = (statusEffects.cls_quietDisagreementHeal || 0) + healBack
+      messages.push(`✎ Quiet Disagreement — ${healBack} HP restored.`)
+    }
+    // The Disremembered (t5c): at 8+ Absence, 25% chance enemy action erased mid-cast
+    if (hasSkill(player, 'unwritten_t5c') && (statusEffects.cls_absenceStacks || 0) >= 8
+        && Math.random() < 0.25) {
+      dmgMult = 0
+      messages.push('✎ The Disremembered — their action was never completed.')
+    }
+    // Track last damage taken for Erasure
+    statusEffects.cls_lastDamageTaken = incomingDamage
+  }
+
+  // ── Oathbreaker ─────────────────────────────────────────────────────
+  if (ac === 'oathbreaker') {
+    const oath = statusEffects.cls_currentOath
+    // Oath of Fury (t1a): -10% DEF (incoming +10%)
+    if (oath === 'fury' || oath === 'fury_weak') dmgMult *= 1.10
+    // Oath of the Wall (t1b): +25% DEF (incoming /1.25)
+    if (oath === 'wall') dmgMult *= 0.80
+    // Oath of the Hunt (t1c): -10% DEF (incoming +10%)
+    if (oath === 'hunt') dmgMult *= 1.10
+    // Restoration (t5b): next 3 enemy attacks after breaking Wall: -50%
+    if ((statusEffects.cls_wallRestorationCount || 0) > 0) {
+      dmgMult *= 0.5
+      statusEffects.cls_wallRestorationCount -= 1
+      messages.push(`⚔ Restoration — incoming halved (${statusEffects.cls_wallRestorationCount} left).`)
+    }
+    // Final Oath: Sanctuary +50 DEF for 5 turns (handled in stats; here add small reduce)
+    if (statusEffects.cls_finalOathDEFBonusTurns > 0) {
+      dmgMult *= 0.75
+    }
+  }
+
+  // ── Silent Judge ────────────────────────────────────────────────────
+  if (ac === 'silent_judge') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    // Witness Strike (t1a): -2% incoming per mark
+    if (hasSkill(player, 'silent_judge_t1a') && marks > 0) {
+      dmgMult *= (1 - 0.02 * marks)
+    }
+    // Stillness (t3b): at 7+ marks, 20% chance to fully evade
+    if (hasSkill(player, 'silent_judge_t3b') && marks >= 7 && Math.random() < 0.20) {
+      dmgMult = 0
+      messages.push('⚖ Stillness — you anticipated the strike.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Truth Weighs (t4c): at 7+ marks, DEF effectively doubles
+    if (hasSkill(player, 'silent_judge_t4c') && marks >= 7) {
+      dmgMult *= 0.5
+    }
+    // The Quiet Court active: no status applied
+    if (statusEffects.cls_quietCourtTurns > 0) {
+      statusEffects.cls_noWitness = true
+    }
+    // Eyes of Equilibrium active: -50% incoming
+    if (statusEffects.cls_eyesOfEquilibriumTurns > 0) {
+      dmgMult *= 0.5
+    }
+  }
+
+  // ── Dreadnought ─────────────────────────────────────────────────────
+  if (ac === 'dreadnought') {
+    // Walking Tomb active: cannot die — clamp incoming damage
+    if (statusEffects.cls_walkingTombTurns > 0) {
+      // The actual "cannot die" check happens in engine; we just signal
+      statusEffects.cls_loyalGuardSavedHp = 1
+      messages.push('🛡 Walking Tomb — death is not permitted.')
+    }
+    // One Step More active: immune to damage
+    if (statusEffects.cls_oneStepMoreTurns > 0) {
+      dmgMult = 0
+      messages.push('🛡 One Step More — they cannot reach you.')
+      return { dmgMult, reflectAmount, messages }
+    }
+    // Wall of Flesh (t4b): at 15+ Armor: cap damage at 30% max HP per hit
+    if (hasSkill(player, 'dreadnought_t4b') && (statusEffects.cls_armorStacks || 0) >= 15) {
+      const cap = Math.round(playerMaxHp * 0.30)
+      if (incomingDamage * dmgMult > cap) {
+        dmgMult = cap / Math.max(1, incomingDamage)
+        messages.push('🛡 Wall of Flesh — damage capped.')
+      }
+    }
+    // Armor Forms (t1a): -3% incoming damage per stack
+    if (hasSkill(player, 'dreadnought_t1a')) {
+      const armor = statusEffects.cls_armorStacks || 0
+      if (armor > 0) dmgMult *= (1 - 0.03 * armor)
+    }
+    // Build Armor stacks from taking damage
+    if (hasSkill(player, 'dreadnought_t1a')) {
+      const cap = statusEffects.cls_armorCap || 15
+      const inc = hasSkill(player, 'dreadnought_t2b') ? 2 : 1  // Slow Bleed = 2/hit
+      const old = statusEffects.cls_armorStacks || 0
+      statusEffects.cls_armorStacks = Math.min(cap, old + inc)
+      // Hammerhand (t3a): every 5 stacks gained → +1 SP
+      if (hasSkill(player, 'dreadnought_t3a')) {
+        const prevTier = Math.floor(old / 5)
+        const newTier = Math.floor(statusEffects.cls_armorStacks / 5)
+        if (newTier > prevTier) {
+          statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + (newTier - prevTier)
+        }
+      }
+    }
+  }
+
+  // ── Abyss Walker ────────────────────────────────────────────────────
+  if (ac === 'abyss_walker') {
+    const depth = statusEffects.cls_depth || 0
+    // Inverted Light (t4a): at Depth 5+ → incoming damage halved
+    // (REPLACES the +2% per Depth from t1a)
+    if (hasSkill(player, 'abyss_walker_t4a') && depth >= 5) {
+      dmgMult *= 0.5
+    } else if (hasSkill(player, 'abyss_walker_t1a') && depth > 0) {
+      // Depth Begins (t1a): +2% damage in per Depth
+      dmgMult *= (1 + 0.02 * depth)
+    }
+    // Beyond Light (t5c): at Depth 0 → +30% DEF
+    if (hasSkill(player, 'abyss_walker_t5c') && depth === 0) {
+      dmgMult *= (1 / 1.30)
+    }
+    // The Hollow Sea active: +100% damage in
+    if (statusEffects.cls_hollowSeaTurns > 0) {
+      dmgMult *= 2.0
+    }
+  }
+
   return { dmgMult, reflectAmount, messages }
 }
 
@@ -2116,6 +3550,13 @@ export function onEnemyHpChange(player, statusEffects, enemy, oldHp, newHp, enem
       statusEffects.cls_fatalExceptionSelfKill = true  // engine sets HP=0
     }
     statusEffects.cls_fatalExceptionReady = false
+  }
+
+  // Last Mercy — Mourning King t6b: marked enemy executes on next strike
+  if (!executeKill && statusEffects.cls_lastMercyExecuteMark) {
+    executeKill = true
+    statusEffects.cls_lastMercyExecuteMark = false
+    messages.push('☠ Last Mercy — the kindness ends them.')
   }
 
   return { executeKill, messages }
@@ -2223,6 +3664,45 @@ export function onKill(player, statusEffects, enemy) {
       statusEffects.cls_lightsRestorationUsed = true
       statusEffects.cls_killHeal = (statusEffects.cls_killHeal || 0) + 99999  // engine clamps to maxHp
       messages.push("☀ Light's Restoration — fully restored.")
+    }
+  }
+
+  // ── Devourer ────────────────────────────────────────────────────────
+  if (ac === 'devourer') {
+    // Feast (t1a): kills restore 20% max HP and +5 ATK permanent for combat
+    if (hasSkill(player, 'devourer_t1a')) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      const heal = Math.round(maxHp * 0.20)
+      statusEffects.cls_killHeal = (statusEffects.cls_killHeal || 0) + heal
+      statusEffects.cls_feastATKGain = (statusEffects.cls_feastATKGain || 0) + 5
+      messages.push(`🦷 Feast — +${heal} HP, +5 ATK.`)
+    }
+    // Bone Marrow (t2a): kills also restore 10% max SP (via cls_bonusSP)
+    if (hasSkill(player, 'devourer_t2a')) {
+      const maxSP = player.sp_max || 100
+      statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) + Math.round(maxSP * 0.10)
+    }
+    // Ravenous Bite (t4a): kills reset all skill cooldowns
+    if (hasSkill(player, 'devourer_t4a') && statusEffects.skillCooldowns) {
+      for (const k of Object.keys(statusEffects.skillCooldowns)) {
+        statusEffects.skillCooldowns[k] = 0
+      }
+      messages.push('🦷 Ravenous Bite — cooldowns reset.')
+    }
+  }
+
+  // ── Chimera ─────────────────────────────────────────────────────────
+  if (ac === 'chimera') {
+    const form = statusEffects.cls_chimeraForm || 'beast'
+    // Hunter's Claws (t3a): kills in Beast → +5% damage permanent for combat
+    if (hasSkill(player, 'chimera_t3a') && (form === 'beast' || statusEffects.cls_stormlordTurns > 0)) {
+      statusEffects.cls_huntersClawsBonus = (statusEffects.cls_huntersClawsBonus || 0) + 5
+      messages.push(`◎ Hunter's Claws — +5% damage.`)
+    }
+    // Bloodscent (t4a): kills in Beast → next strike guaranteed crit
+    if (hasSkill(player, 'chimera_t4a') && (form === 'beast' || statusEffects.cls_stormlordTurns > 0)) {
+      statusEffects.cls_bloodscentNextCrit = true
+      messages.push('◎ Bloodscent — next strike guaranteed crit.')
     }
   }
 
@@ -2543,6 +4023,267 @@ export function onTurnEnd(player, statusEffects) {
     }
   }
 
+  // ── Devourer ────────────────────────────────────────────────────────
+  if (ac === 'devourer') {
+    // Fed State drain (t4b): Hunger ≥ 80 → drain 5/turn
+    if (hasSkill(player, 'devourer_t4b') && (statusEffects.cls_hunger || 0) >= 80) {
+      statusEffects.cls_hunger = Math.max(0, statusEffects.cls_hunger - 5)
+    }
+    // Great Hunger countdown
+    if (statusEffects.cls_greatHungerTurns > 0) {
+      statusEffects.cls_greatHungerTurns--
+      if (statusEffects.cls_greatHungerTurns === 0) {
+        statusEffects.cls_blockAllHeals = false
+        messages.push('🦷 Great Hunger fades.')
+      }
+    }
+    // Apply Last Course SP cost
+    if (statusEffects.cls_lastCourseSPCost) {
+      // Burn current SP via negative bonusSP (clamped by engine)
+      statusEffects.cls_bonusSP = (statusEffects.cls_bonusSP || 0) - (player.sp || 100)
+      statusEffects.cls_lastCourseSPCost = false
+    }
+    // Apply Throat HP reduction (cosmetic — enemy max HP reduction; engine
+    // applies via the modifier when displaying)
+    if ((statusEffects.cls_throatHpReduction || 0) > 0) {
+      // Already tracked. Engine doesn't enforce max-HP changes mid-fight;
+      // the bonus is a flag for narrative effect.
+    }
+    // Block all heals while Great Hunger active
+    if (statusEffects.cls_blockAllHeals) {
+      healToPlayer = 0
+    }
+  }
+
+  // ── Mourning King ───────────────────────────────────────────────────
+  if (ac === 'mourning_king') {
+    // Wakeful (t3c): <30% HP → +1 Wake per turn
+    if (hasSkill(player, 'mourning_king_t3c') && (statusEffects._enginePlayerHpPct || 1) < 0.30) {
+      statusEffects.cls_wakeStacks = Math.min(100, (statusEffects.cls_wakeStacks || 0) + 1)
+    }
+    if (statusEffects.cls_speakToDeadTurns > 0) statusEffects.cls_speakToDeadTurns--
+  }
+
+  // ── Chimera ─────────────────────────────────────────────────────────
+  if (ac === 'chimera') {
+    if (statusEffects.cls_shiftCooldown > 0) statusEffects.cls_shiftCooldown--
+    if (statusEffects.cls_trueBeastTurns > 0) statusEffects.cls_trueBeastTurns--
+    if (statusEffects.cls_eternalCoilTurns > 0) statusEffects.cls_eternalCoilTurns--
+    if (statusEffects.cls_stormlordTurns > 0) statusEffects.cls_stormlordTurns--
+    // Wild Energy heal apply
+    if ((statusEffects.cls_wildEnergyHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_wildEnergyHeal
+      statusEffects.cls_wildEnergyHeal = 0
+    }
+    // Living Shell (t4b): in Coil, per turn → +5% max HP regen + +1 DEF
+    const form = statusEffects.cls_chimeraForm || 'beast'
+    if (hasSkill(player, 'chimera_t4b') && (form === 'coil' || statusEffects.cls_stormlordTurns > 0)) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      healToPlayer += Math.round(maxHp * 0.05)
+      statusEffects.playerDEFBonus = (statusEffects.playerDEFBonus || 0) + 1
+      statusEffects.cls_livingShellDEFGain = (statusEffects.cls_livingShellDEFGain || 0) + 1
+    }
+    // Storm Form (t1c): roll new random stat each turn
+    if (hasSkill(player, 'chimera_t1c') && (form === 'storm' || statusEffects.cls_stormlordTurns > 0)) {
+      const stats = ['atk', 'def', 'spd']
+      statusEffects.cls_stormRandomStat = stats[Math.floor(Math.random() * 3)]
+      messages.push(`◎ Storm — ${statusEffects.cls_stormRandomStat.toUpperCase()} surged.`)
+    }
+    // Tempest (t5c): every 5 turns in Storm
+    if (hasSkill(player, 'chimera_t5c') && form === 'storm') {
+      statusEffects.cls_tempestCounter = (statusEffects.cls_tempestCounter || 0) + 1
+      if (statusEffects.cls_tempestCounter >= 5) {
+        // Apply for 1 turn — reset next turn
+        messages.push('◎ Tempest — all forms speak.')
+        // Counter resets after this turn applies. Set to -1 so it goes to 0 next turn.
+        statusEffects.cls_tempestCounter = -1
+      } else if (statusEffects.cls_tempestCounter < 0) {
+        statusEffects.cls_tempestCounter = 0
+      }
+    }
+  }
+
+  // Generic turn counter (used by Unwritten, Oathbreaker for elapsed-turn logic)
+  statusEffects.cls_turnsElapsed = (statusEffects.cls_turnsElapsed || 0) + 1
+
+  // ── Unwritten ───────────────────────────────────────────────────────
+  if (ac === 'unwritten') {
+    // Apply Erasure heal (from active)
+    if ((statusEffects.cls_erasureHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_erasureHeal
+      statusEffects.cls_erasureHeal = 0
+    }
+    // Apply Bury the Hour heal
+    if ((statusEffects.cls_burryHourHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_burryHourHeal
+      statusEffects.cls_burryHourHeal = 0
+    }
+    // Apply Quiet Disagreement heal
+    if ((statusEffects.cls_quietDisagreementHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_quietDisagreementHeal
+      statusEffects.cls_quietDisagreementHeal = 0
+    }
+    // Apply Disowned Hit enemy heal
+    if ((statusEffects.cls_disownedHitEnemyHeal || 0) > 0) {
+      damageToEnemy -= statusEffects.cls_disownedHitEnemyHeal
+      statusEffects.cls_disownedHitEnemyHeal = 0
+    }
+    // No Such Person countdown — at expiry, deliver the strike
+    if (statusEffects.cls_noSuchPersonTurns > 0) {
+      statusEffects.cls_noSuchPersonTurns--
+      if (statusEffects.cls_noSuchPersonTurns === 0) {
+        const finalDmg = Math.round((statusEffects.cls_noSuchPersonAvoidedDamage || 0) * 1.5)
+        damageToEnemy += finalDmg
+        statusEffects.cls_noSuchPersonAvoidedDamage = 0
+        messages.push(`✎ No Such Person ends — ${finalDmg} damage from the absence.`)
+      }
+    }
+    if (statusEffects.cls_longSilenceTurns > 0) {
+      statusEffects.cls_longSilenceTurns--
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+    }
+    // Reset Empty Page proc flag (it should only count for one strike)
+    if (statusEffects.cls_emptyPageProc) statusEffects.cls_emptyPageProc = false
+  }
+
+  // ── Oathbreaker ─────────────────────────────────────────────────────
+  if (ac === 'oathbreaker') {
+    // Track turns oath has been held
+    if (statusEffects.cls_currentOath) {
+      statusEffects.cls_oathTurnsHeld = (statusEffects.cls_oathTurnsHeld || 0) + 1
+    }
+    // Oath of the Wall (t1b): +5% per-turn regen
+    if (statusEffects.cls_currentOath === 'wall' && hasSkill(player, 'oathbreaker_t1b')) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      healToPlayer += Math.round(maxHp * 0.05)
+    }
+    // Break: Wall staged heal
+    if ((statusEffects.cls_breakWallHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_breakWallHeal
+      statusEffects.cls_breakWallHeal = 0
+    }
+    // Final Oath: Sanctuary heal
+    if ((statusEffects.cls_finalOathSanctuaryHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_finalOathSanctuaryHeal
+      statusEffects.cls_finalOathSanctuaryHeal = 0
+    }
+    // Final Oath DEF bonus countdown
+    if (statusEffects.cls_finalOathDEFBonusTurns > 0) {
+      statusEffects.cls_finalOathDEFBonusTurns--
+      if (statusEffects.cls_finalOathDEFBonusTurns === 0) {
+        statusEffects.playerDEFBonus = Math.max(0, (statusEffects.playerDEFBonus || 0) - 50)
+        messages.push('⚔ Final Oath: Sanctuary fades.')
+      }
+    }
+  }
+
+  // ── Silent Judge ────────────────────────────────────────────────────
+  if (ac === 'silent_judge') {
+    const marks = statusEffects.cls_verdictMarks || 0
+    // Silent Observation (t1b): 3+ marks → 15% chance per turn to skip enemy
+    if (hasSkill(player, 'silent_judge_t1b') && marks >= 3 && Math.random() < 0.15) {
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+      messages.push('⚖ Silent Observation — they pause.')
+    }
+    if (statusEffects.cls_quietCourtTurns > 0) statusEffects.cls_quietCourtTurns--
+    if (statusEffects.cls_silentCourtTurns > 0) {
+      statusEffects.cls_silentCourtTurns--
+      // Maintain stun every turn while active
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+    }
+    if (statusEffects.cls_eyesOfEquilibriumTurns > 0) statusEffects.cls_eyesOfEquilibriumTurns--
+  }
+
+  // ── Dreadnought ─────────────────────────────────────────────────────
+  if (ac === 'dreadnought') {
+    // Slow Heart (t3b): at 10+ Armor → 5% max HP regen per turn
+    if (hasSkill(player, 'dreadnought_t3b') && (statusEffects.cls_armorStacks || 0) >= 10) {
+      const maxHp = player.hp_max || player.max_hp || 100
+      healToPlayer += Math.round(maxHp * 0.05)
+    }
+    if (statusEffects.cls_oneStepMoreTurns > 0) {
+      statusEffects.cls_oneStepMoreTurns--
+      if (statusEffects.cls_oneStepMoreTurns === 0) {
+        // End: deal damage = 3 × ATK
+        const finalDmg = ((player.atk || 5) + (statusEffects.playerATKBonus || 0)) * 3
+        damageToEnemy += finalDmg
+        statusEffects.cls_oneStepMoreBlockHeal = false
+        messages.push(`🛡 One Step More ends — ${finalDmg} damage from the held breath.`)
+      } else {
+        // Block heals while active
+        healToPlayer = 0
+      }
+    }
+    if (statusEffects.cls_walkingTombTurns > 0) {
+      statusEffects.cls_walkingTombTurns--
+      if (statusEffects.cls_walkingTombTurns === 0) {
+        // End: +20 Armor stacks
+        const cap = statusEffects.cls_armorCap || 15
+        statusEffects.cls_armorStacks = Math.min(cap, (statusEffects.cls_armorStacks || 0) + 20)
+        messages.push('🛡 Walking Tomb ends. +20 Armor.')
+      } else {
+        // Keep loyalGuard signal active while in tomb
+        statusEffects.cls_loyalGuardSavedHp = Math.max(statusEffects.cls_loyalGuardSavedHp || 0, 1)
+      }
+    }
+    if (statusEffects.cls_theInevitableTurns > 0) {
+      statusEffects.cls_theInevitableTurns--
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+    }
+  }
+
+  // ── Abyss Walker ────────────────────────────────────────────────────
+  if (ac === 'abyss_walker') {
+    // Depth Begins / Faster Descent
+    if (hasSkill(player, 'abyss_walker_t1a')) {
+      const inc = hasSkill(player, 'abyss_walker_t2a') ? 2 : 1
+      // Climb cancels out 1 per turn
+      const dec = (statusEffects.cls_climbTurns || 0) > 0 ? 1 : 0
+      const net = inc - dec
+      statusEffects.cls_depth = Math.max(0, (statusEffects.cls_depth || 0) + net)
+    }
+    if (statusEffects.cls_climbTurns > 0) statusEffects.cls_climbTurns--
+    if (statusEffects.cls_hollowSeaTurns > 0) statusEffects.cls_hollowSeaTurns--
+
+    // Drown DoT
+    if (statusEffects.cls_drownTurns > 0) {
+      const stacks = statusEffects.cls_drownStacks || 1
+      let tick = stacks * 5
+      // Drown Cascade (t3b): at 5+ stacks, ticks double
+      if (hasSkill(player, 'abyss_walker_t3b') && stacks >= 5) tick *= 2
+      // Drowned active: (50 + max HP × 10%) damage per turn
+      if (statusEffects.cls_drownedActive) {
+        const eMax = enemy ? (enemy.hp_max || enemy.hp || 100) : 100
+        tick = 50 + Math.round(eMax * 0.10)
+      }
+      damageToEnemy += tick
+      statusEffects.cls_drownTurns--
+      if (statusEffects.cls_drownTurns === 0) {
+        statusEffects.cls_drownStacks = 0
+        statusEffects.cls_drownedActive = false
+      }
+      messages.push(`◊ Drown — ${tick} damage to enemy.`)
+    }
+    // Pulled Below (t2b): at 3+ Drown → enemy SPD halves (apply via enemyATKMult proxy? Use a flag)
+    if (hasSkill(player, 'abyss_walker_t2b') && (statusEffects.cls_drownStacks || 0) >= 3) {
+      // Halve enemy SPD effective; we approximate via enemy stun chance bump
+      if (Math.random() < 0.50) {
+        statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+      }
+    }
+    // The Pull (t5b): 5+ Drown → 10% chance per enemy turn their action skipped
+    if (hasSkill(player, 'abyss_walker_t5b') && (statusEffects.cls_drownStacks || 0) >= 5
+        && Math.random() < 0.10) {
+      statusEffects.enemyStunTurns = Math.max(statusEffects.enemyStunTurns || 0, 1)
+      messages.push('◊ The Pull — drowned in its own motion.')
+    }
+    // Apply Return From Below heal
+    if ((statusEffects.cls_returnFromBelowHeal || 0) > 0) {
+      healToPlayer += statusEffects.cls_returnFromBelowHeal
+      statusEffects.cls_returnFromBelowHeal = 0
+    }
+  }
+
   return { messages, damageToEnemy, healToPlayer }
 }
 
@@ -2588,6 +4329,24 @@ export function onCombatEnd(player, statusEffects, outcome) {
   // at combat start), write the flag to the DB.
   if (ac === 'dawnbringer' && statusEffects.cls_firstLightConsumed) {
     dbUpdates.dawnbringer_first_light_used = true
+  }
+
+  // Mourning King — Wake stack persistence
+  if (ac === 'mourning_king') {
+    // The Long Wait (t2b): stacks persist across chapter
+    // Mercy is Power (t5b): every spare grants +1 permanent across the run
+    // We always write the current Wake stack count to the DB if either skill is unlocked
+    if (hasSkill(player, 'mourning_king_t2b') || hasSkill(player, 'mourning_king_t5b')) {
+      const newStacks = Math.min(100, statusEffects.cls_wakeStacks || 0)
+      if (newStacks !== (player.mourning_king_wake_stacks || 0)) {
+        dbUpdates.mourning_king_wake_stacks = newStacks
+        messages.push(`☠ ${newStacks} Wake stacks remembered.`)
+      }
+    }
+    // Death Mark consumed → flag for chapter persistence
+    if (statusEffects.cls_deathMarkConsumed) {
+      dbUpdates.mourning_king_death_mark_used = true
+    }
   }
 
   return { dbUpdates, messages }
