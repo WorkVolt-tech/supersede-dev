@@ -3169,6 +3169,30 @@ You walk back out.`
           syncBars()
         }
       }
+      // Bury the Hour restore (Unwritten t5b) — apply oldest snapshot
+      if (statusEffects.cls_buryTheHourPending && Array.isArray(statusEffects.cls_rewindBuffer)
+          && statusEffects.cls_rewindBuffer.length > 0) {
+        const snap = statusEffects.cls_rewindBuffer.shift()
+        currentHp = snap.currentHp
+        enemyHp = snap.enemyHp
+        maxPlayerHp = snap.maxPlayerHp
+        maxEnemyHp = snap.maxEnemyHp
+        // Restore the statusEffects from snapshot, preserving the rewind
+        // buffer + the pending flag (so we don't restore stale buffer state).
+        const preservedBuffer = statusEffects.cls_rewindBuffer
+        for (const k of Object.keys(statusEffects)) {
+          if (k === 'cls_rewindBuffer' || k === 'cls_buryTheHourPending') continue
+          delete statusEffects[k]
+        }
+        for (const k of Object.keys(snap.se)) {
+          if (k === 'cls_rewindBuffer' || k === 'cls_buryTheHourPending') continue
+          statusEffects[k] = snap.se[k]
+        }
+        statusEffects.cls_rewindBuffer = preservedBuffer
+        statusEffects.cls_buryTheHourPending = false
+        log('✎ The past replaces the present.')
+        syncBars()
+      }
       log(result.messages.join('<br>'))
       renderClassSkills()
       syncBars()
@@ -3255,6 +3279,48 @@ You walk back out.`
     renderSkillSlots()
     renderClassSkills()
     syncBars()
+
+    // ── Oathbreaker oath picker ──────────────────────────────────────
+    // When combat starts and the player has multiple Oathbreaker oaths
+    // unlocked, statusEffects.cls_oathPickerPending contains an array of
+    // oath keys (e.g. ['fury', 'wall']). We render a modal with one button
+    // per oath; clicking sets the oath and removes the modal.
+    if (Array.isArray(statusEffects.cls_oathPickerPending) && statusEffects.cls_oathPickerPending.length > 0) {
+      const OATH_INFO = {
+        fury: { label: 'Oath of Fury',     sub: '+20% damage, -10% DEF',           icon: '⚔' },
+        wall: { label: 'Oath of the Wall', sub: '+25% DEF, -15% damage, +5%/turn', icon: '🛡' },
+        hunt: { label: 'Oath of the Hunt', sub: '+15% SPD, +10% crit, -10% DEF',   icon: '🏹' },
+      }
+      const oaths = statusEffects.cls_oathPickerPending
+      const modal = document.createElement('div')
+      modal.id = 'cls-oath-picker'
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,24,18,.78);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px'
+      modal.innerHTML = `
+        <div style="background:var(--paper,#f4ead7);border:2px solid var(--ink,#3a2a1a);padding:20px;max-width:420px;width:100%;font-family:'JetBrains Mono',monospace;color:var(--ink,#3a2a1a)">
+          <div style="font-size:11px;letter-spacing:.18em;margin-bottom:6px;opacity:.7">CHOOSE YOUR OATH</div>
+          <div style="font-size:13px;line-height:1.4;margin-bottom:14px">Before combat, you must swear. The oath shapes how you fight — and the moment you break it.</div>
+          ${oaths.map(o => `
+            <button data-oath="${o}" style="display:block;width:100%;margin-bottom:8px;padding:10px 12px;background:#fff;border:1px solid var(--ink,#3a2a1a);font-family:inherit;color:inherit;cursor:pointer;text-align:left">
+              <div style="font-weight:600;font-size:12px;letter-spacing:.06em">${OATH_INFO[o].icon} ${OATH_INFO[o].label.toUpperCase()}</div>
+              <div style="font-size:10px;opacity:.7;margin-top:2px">${OATH_INFO[o].sub}</div>
+            </button>
+          `).join('')}
+        </div>
+      `
+      document.body.appendChild(modal)
+      // Disable action buttons until picked
+      setButtons(false)
+      modal.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('button[data-oath]')
+        if (!btn) return
+        const oath = btn.getAttribute('data-oath')
+        const r = ClsCombat.setOathbreakerOath(oath, statusEffects)
+        for (const m of r.messages) log(m)
+        modal.remove()
+        setButtons(true)
+        renderClassSkills()  // re-render in case new actives appear (Break: X)
+      })
+    }
 
     // ── Button event listeners ─────────────────────────────────────────────────
     ;[['btn-strike','strike'],['btn-heavy','heavy'],['btn-defend','defend']].forEach(([id,action])=>{
@@ -3508,6 +3574,45 @@ You walk back out.`
       setButtons(false)
       defending=false
       const luckBonus=Math.floor(eqLuck/2)
+
+      // ── Unwritten — Bury the Hour: snapshot state at turn start ──
+      // Rolling buffer of last 4 snapshots (one per player turn). On
+      // active fire, oldest snapshot is restored. Only enabled if player
+      // is Unwritten + has the skill (cheap check; skip otherwise).
+      if (player.active_class === 'unwritten'
+          && (player.class_nodes_unlocked||[]).includes('unwritten_t5b')) {
+        if (!Array.isArray(statusEffects.cls_rewindBuffer)) {
+          statusEffects.cls_rewindBuffer = []
+        }
+        statusEffects.cls_rewindBuffer.push({
+          currentHp,
+          enemyHp,
+          maxPlayerHp,
+          maxEnemyHp,
+          // Deep clone of statusEffects, but exclude the buffer itself to
+          // avoid recursion. Skip non-numeric/string nested objects we
+          // wouldn't restore safely.
+          se: (function snapse() {
+            const out = {}
+            for (const k of Object.keys(statusEffects)) {
+              if (k === 'cls_rewindBuffer') continue
+              const v = statusEffects[k]
+              if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+                out[k] = { ...v }
+              } else if (Array.isArray(v)) {
+                out[k] = [...v]
+              } else {
+                out[k] = v
+              }
+            }
+            return out
+          })(),
+        })
+        // Keep only the last 4 snapshots
+        if (statusEffects.cls_rewindBuffer.length > 4) {
+          statusEffects.cls_rewindBuffer.shift()
+        }
+      }
 
       // Tick cooldowns and status
       if(statusEffects.enemyStunTurns>0) statusEffects.enemyStunTurns--
