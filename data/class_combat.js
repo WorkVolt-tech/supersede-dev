@@ -23,6 +23,23 @@ function hasSkill(player, skillNodeId) {
   return isClassNodeUnlocked(player, player.active_class, skillNodeId)
 }
 
+// ── Helper: 24-hour cooldown check ──────────────────────────────────────
+// Used by Dawnbringer First Light (t2c) and Mourning King Death Mark (t2c),
+// which are once-per-24h real-time-gated skills. Takes an ISO timestamp
+// string (the value stored in the DB column) and returns true if the skill
+// is available (either never used, or last used more than 24h ago).
+//
+// Stored format: TIMESTAMPTZ from Supabase, which arrives as ISO 8601
+// string. NULL/undefined = never used (always available).
+function is24hReady(timestamp) {
+  if (!timestamp) return true
+  const last = new Date(timestamp).getTime()
+  if (!Number.isFinite(last)) return true  // malformed → treat as ready
+  const now = Date.now()
+  const ONE_DAY_MS = 24 * 60 * 60 * 1000
+  return (now - last) >= ONE_DAY_MS
+}
+
 // ── Active skill list (rendered as combat buttons) ──────────────────────
 // Returns an array of { id, label, sub, classColor, available } for every
 // active-type class skill the player has unlocked. The engine renders these
@@ -1586,11 +1603,13 @@ export function onCombatStart(player, statusEffects) {
     for (const k of clearFields) if (statusEffects[k]) statusEffects[k] = 0
     messages.push('🛡 Standing Watch — start clean.')
   }
-  // Dawnbringer — First Light (t2c): heal to full once per chapter
-  // Uses player.dawnbringer_first_light_used boolean (persistent column).
-  if (hasSkill(player, 'dawnbringer_t2c') && !player.dawnbringer_first_light_used) {
+  // Dawnbringer — First Light (t2c): heal to full, once per 24 hours.
+  // Reads player.dawnbringer_first_light_at (TIMESTAMPTZ); if null OR more
+  // than 24h ago, the skill fires and the engine writes a fresh timestamp
+  // via cls_firstLightConsumed → onCombatEnd dbUpdates.
+  if (hasSkill(player, 'dawnbringer_t2c') && is24hReady(player.dawnbringer_first_light_at)) {
     statusEffects.cls_firstLightHealToFull = true
-    statusEffects.cls_firstLightConsumed = true  // engine writes the DB flag
+    statusEffects.cls_firstLightConsumed = true  // engine writes timestamp on combat end
     messages.push('☀ First Light — restored. The day has come.')
   }
 
@@ -3267,10 +3286,12 @@ export function onPlayerHit(player, statusEffects, enemy, incomingDamage, player
 
   // ── Mourning King ───────────────────────────────────────────────────
   if (ac === 'mourning_king') {
-    // Death Mark (t2c): once/chapter, lethal damage leaves you at 1 HP
+    // Death Mark (t2c): lethal damage leaves you at 1 HP, once per 24h.
+    // Combined gate: cls_deathMarkUsed prevents re-triggering within the
+    // same combat; is24hReady() prevents re-use across combats within 24h.
     if (hasSkill(player, 'mourning_king_t2c')
         && !statusEffects.cls_deathMarkUsed
-        && !player.mourning_king_death_mark_used) {
+        && is24hReady(player.mourning_king_death_mark_at)) {
       const wouldKill = incomingDamage >= playerMaxHp * (statusEffects._enginePlayerHpPct || 1)
       if (wouldKill) {
         statusEffects.cls_deathMarkUsed = true
@@ -4305,10 +4326,37 @@ export function onAllyWouldDie(player, statusEffects, ally) {
 // Returns: { dbUpdates: {col: value, ...}, messages: [str] }
 export function onCombatEnd(player, statusEffects, outcome) {
   if (!player.active_class) return { dbUpdates: {}, messages: [] }
-  if (outcome !== 'win') return { dbUpdates: {}, messages: [] }
   const messages = []
   const dbUpdates = {}
   const ac = player.active_class
+
+  // ── Defeat: reset accumulating stacks to 0 ──────────────────────────
+  // Prime stat stacks (Eternal Sovereign) and Mourning King Wake stacks
+  // accumulate across combats indefinitely (up to their caps). On combat
+  // defeat (no revive), they reset to 0. This is the only reset trigger;
+  // chapter transitions and time do not affect them.
+  // Note: 'defeat' is the outcome string from Ch1; 'lose' is used by Ch2.
+  // Accept both for safety.
+  if (outcome === 'defeat' || outcome === 'lose') {
+    if (ac === 'prime') {
+      if ((player.prime_atk_stacks || 0) > 0) dbUpdates.prime_atk_stacks = 0
+      if ((player.prime_def_stacks || 0) > 0) dbUpdates.prime_def_stacks = 0
+      if ((player.prime_spd_stacks || 0) > 0) dbUpdates.prime_spd_stacks = 0
+      if (Object.keys(dbUpdates).length > 0) {
+        messages.push('👑 Eternal Sovereign — death claims all stacks.')
+      }
+    }
+    if (ac === 'mourning_king') {
+      if ((player.mourning_king_wake_stacks || 0) > 0) {
+        dbUpdates.mourning_king_wake_stacks = 0
+        messages.push('☠ Wake stacks — lost to the long quiet.')
+      }
+    }
+    return { dbUpdates, messages }
+  }
+
+  // Wins: continue to the snowball/persistence logic below.
+  if (outcome !== 'win') return { dbUpdates, messages }
 
   if (ac === 'prime' && hasSkill(player, 'prime_t5a')) {
     // Eternal Sovereign — persist stat stacks (cap 50 each, sum with existing).
@@ -4324,11 +4372,11 @@ export function onCombatEnd(player, statusEffects, outcome) {
     }
   }
 
-  // Dawnbringer First Light — t2c: chapter-persistent once-per-chapter flag.
-  // If we consumed it this combat (statusEffects.cls_firstLightConsumed set
-  // at combat start), write the flag to the DB.
+  // Dawnbringer First Light — t2c: once-per-24h skill. If we consumed it
+  // this combat, write the current timestamp to the DB so subsequent combats
+  // within 24h will not re-trigger it.
   if (ac === 'dawnbringer' && statusEffects.cls_firstLightConsumed) {
-    dbUpdates.dawnbringer_first_light_used = true
+    dbUpdates.dawnbringer_first_light_at = new Date().toISOString()
   }
 
   // Mourning King — Wake stack persistence
@@ -4343,9 +4391,9 @@ export function onCombatEnd(player, statusEffects, outcome) {
         messages.push(`☠ ${newStacks} Wake stacks remembered.`)
       }
     }
-    // Death Mark consumed → flag for chapter persistence
+    // Death Mark consumed → write timestamp (24h cooldown)
     if (statusEffects.cls_deathMarkConsumed) {
-      dbUpdates.mourning_king_death_mark_used = true
+      dbUpdates.mourning_king_death_mark_at = new Date().toISOString()
     }
   }
 
