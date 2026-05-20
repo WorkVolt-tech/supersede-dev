@@ -2750,16 +2750,30 @@ export function onPlayerAttackPost(player, statusEffects, enemy, damageDealt, wa
     if (hasSkill(player, 'silent_judge_t5a') && (statusEffects.cls_verdictMarks || 0) >= 10) {
       healToPlayer += Math.round(damageDealt * 0.10)
     }
-    // Sentencing Cycle (t5c): at 10 marks, every 3rd strike auto-consumes
-    // for free Render Verdict
+    // Sentencing Cycle (t5c): at 10 marks, every 3rd basic strike auto-fires
+    // a free Render Verdict. Base damage = marks × 30. Applies the same
+    // mark-based multipliers a manually-cast Render Verdict would get when
+    // it goes through onPlayerAttack (Deepened Sight +2%/mark, Calm Mind
+    // +20% at 5+, Documented Weakness DEF-pierce, Full Witness +50% at 10).
     if (hasSkill(player, 'silent_judge_t5c') && (statusEffects.cls_verdictMarks || 0) >= 10) {
       statusEffects.cls_sentencingCycleCounter = (statusEffects.cls_sentencingCycleCounter || 0) + 1
       if (statusEffects.cls_sentencingCycleCounter >= 3) {
         statusEffects.cls_sentencingCycleCounter = 0
         const marks = statusEffects.cls_verdictMarks
-        deferredDamage += marks * 30
+        let damage = marks * 30
+        // Mirror the multipliers the same player would get on a strike
+        if (hasSkill(player, 'silent_judge_t2a')) damage *= (1 + 0.02 * marks)
+        if (hasSkill(player, 'silent_judge_t1c')) damage *= 1.20   // Calm Mind (5+ marks)
+        if (hasSkill(player, 'silent_judge_t5a')) damage *= 1.50   // Full Witness (10 marks)
+        // Note: Documented Weakness DEF-pierce would only matter if the
+        // engine subtracted DEF from this damage. Since deferredDamage
+        // bypasses DEF entirely, the pierce is "free" — we just don't need
+        // to apply it explicitly. (No bug, but flag for future refactor if
+        // damage path becomes DEF-aware for class effects.)
+        damage = Math.round(damage)
+        deferredDamage += damage
         statusEffects.cls_verdictMarks = 0
-        messages.push(`⚖ Sentencing Cycle — free Render Verdict: ${marks * 30} damage.`)
+        messages.push(`⚖ Sentencing Cycle — free Render Verdict: ${damage} damage.`)
       }
     }
   }
