@@ -2168,6 +2168,108 @@ The Judges are already there.`,
     return baseText
   }
 
+  // ── Tam history acknowledgement ─────────────────────────────────────
+  // Fires at the chapter finale scenes (hero / villain branches). Reads
+  // the player's alliance_log for Tam-related flags from the mid-zone
+  // scenes (tam_helped_fire, tam_gave_medpack, tam_walked_past,
+  // tam_stayed_builder, tam_chose_own, tam_uncertain, tam_defended). Each
+  // flag inflects how Tam appears in the finale text — a child-of-the-
+  // district recognizing the player vs. a stranger.
+  //
+  // Scenes addressed:
+  //   - hero_finale_done           — Tam alive, the line held
+  //   - villain_finale_offer       — moment before the Tam fight
+  //   - villain_finale_done        — Tam down, Voss says nothing
+  //   - villain_finale_done_spared — Tam alive but you walked past
+  //   - villain_finale_done_executed — Tam dead by your hand
+  function prependTamRecognition(baseText, nid, p) {
+    const FINALE_NODES = ['hero_finale_done', 'villain_finale_offer',
+                          'villain_finale_done', 'villain_finale_done_spared',
+                          'villain_finale_done_executed']
+    if (!FINALE_NODES.includes(nid)) return baseText
+    const log = p.alliance_log || []
+    const flags = {
+      helped:    log.includes('tam_helped_fire'),
+      medpack:   log.includes('tam_gave_medpack'),
+      walked:    log.includes('tam_walked_past'),
+      loyal:     log.includes('tam_stayed_builder'),
+      chose_own: log.includes('tam_chose_own'),
+      uncertain: log.includes('tam_uncertain'),
+      defended:  log.includes('tam_defended'),
+    }
+    // If no Tam-history flags at all, Tam is essentially a stranger — keep
+    // base text. The finales work fine without recognition; they just
+    // hit lighter.
+    const anyTam = Object.values(flags).some(v => v)
+    if (!anyTam) return baseText
+
+    // Build the recognition line. Priority order: kindness > respect >
+    // ambiguity > harm. Strongest history line goes in.
+    let recognition = ''
+    if (nid === 'hero_finale_done') {
+      // Tam survives — what they remember about you matters
+      if (flags.medpack) {
+        recognition = 'Tam meets your eye before anyone else does. Their hand goes to the spot on their leg where the medpack stopped the bleeding, weeks ago now. They don\'t say anything. They don\'t need to.'
+      } else if (flags.helped) {
+        recognition = 'Tam meets your eye before anyone else does. The bandage on their leg is long gone but the look they give you is the same one you got back then — surprise that you stopped.'
+      } else if (flags.loyal) {
+        recognition = 'Tam stands close to Sera. You remember telling them to. You remember saying it like it was easy. They watch you across the plaza like they\'re measuring whether you knew what you were asking of them.'
+      } else if (flags.chose_own) {
+        recognition = 'Tam looks at you the way kids look at adults who said the right thing at the right time. You told them they got to decide. They\'re still here, so apparently they did.'
+      } else if (flags.defended) {
+        recognition = 'Tam sees you and goes still. You remember the Voss runner — the fight. Tam was watching. They\'re still watching now, but the look is different. Older.'
+      } else if (flags.uncertain) {
+        recognition = 'Tam is at the edge of the group. Not quite with the Builders, not quite away from them. You remember pushing them toward Voss. They look at you like someone who didn\'t take the push but didn\'t forget it either.'
+      } else if (flags.walked) {
+        recognition = 'Tam is here too, with the others. You remember walking past them in the fire zone — the look they gave you. They\'re not looking at you now.'
+      }
+    } else if (nid === 'villain_finale_offer') {
+      // The moment before fighting Tam. Recognition makes it heavier.
+      if (flags.medpack) {
+        recognition = 'You see Tam before Voss says anything. They\'re standing in the corridor with a pack of supplies — the kind a kid carries when they\'ve been doing real work. You remember the medpack you gave them in the fire zone. Their leg healed clean.'
+      } else if (flags.helped) {
+        recognition = 'You recognize Tam from the corridor angle. The kid you bandaged in the fire zone. They\'ve grown since then — not much, but enough that it\'s noticeable. They\'re holding a Builder sigil.'
+      } else if (flags.loyal) {
+        recognition = 'Tam is the one in the corridor. You told them once to walk away from Voss. They did. Now they\'re standing where you told them to stand. That\'s on you, in a way that doesn\'t admit a clean version.'
+      } else if (flags.defended) {
+        recognition = 'You remember the Voss runner you fought to protect Tam. The same Tam. Standing in the corridor now in a Builder vest, the seal pinned where it\'s visible.'
+      } else if (flags.chose_own) {
+        recognition = 'You told Tam they got to decide. Apparently this is what they decided. You don\'t know if that means you respected them correctly or just abandoned them to make their own bad choice. Either way, they\'re here.'
+      } else if (flags.uncertain) {
+        recognition = 'Tam is the one Voss is pointing at. You remember pushing them toward Voss in the crossroads. They didn\'t come. They picked Builders anyway. And now Voss is asking you to finish what your push didn\'t.'
+      } else if (flags.walked) {
+        recognition = 'You\'ve seen Tam before. The fire zone — the bandage. You didn\'t stop. Voss doesn\'t know that. Maybe Tam doesn\'t even remember. You do.'
+      }
+    } else if (nid === 'villain_finale_done') {
+      // Tam is down — Voss approves
+      if (flags.helped || flags.medpack || flags.defended || flags.loyal) {
+        recognition = 'You think of the fire zone. The corridor where you helped them. The Voss runner you fought to keep them safe. The history is on you and only you — Voss doesn\'t know it, and now no one ever will.'
+      } else if (flags.chose_own || flags.uncertain || flags.walked) {
+        recognition = 'You don\'t think of much. The kid was in the way. The kid is no longer in the way.'
+      }
+    } else if (nid === 'villain_finale_done_spared') {
+      // Tam alive, you walked past
+      if (flags.helped || flags.medpack || flags.defended) {
+        recognition = 'You hesitated and Voss saw it. You wonder if Tam knows it was you in the fire zone. You wonder if it would matter to them.'
+      } else if (flags.loyal || flags.chose_own) {
+        recognition = 'You hesitated and Voss saw it. The kid had been doing what you told them. You don\'t know what to do with that.'
+      }
+    } else if (nid === 'villain_finale_done_executed') {
+      // Tam dead by your hand — the heaviest version
+      if (flags.medpack) {
+        recognition = 'The medpack you gave them in the fire zone — it would still be in their kit somewhere. You don\'t check. You don\'t want to know.'
+      } else if (flags.helped || flags.defended) {
+        recognition = 'You think of the fire zone, then you stop thinking of the fire zone.'
+      } else if (flags.loyal || flags.chose_own) {
+        recognition = 'You told them, once, that they got to decide. You did this anyway. That\'s the part that\'s yours.'
+      } else if (flags.uncertain || flags.walked) {
+        recognition = 'You knew Tam, distantly. Not well enough that it should weigh much. It does anyway.'
+      }
+    }
+    if (!recognition) return baseText
+    return recognition + '\n\n' + baseText
+  }
+
   function buildJudgesVerdict(p) {
     const moral       = p.moral_score || 0
     const helps       = p.helps_given || 0
@@ -2406,7 +2508,7 @@ You walk back out.`
     const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player)
                    : nodeId === 'camp_reflection' ? buildCampReflection(player)
                    : (node.text || '')
-    stEl.textContent = appendFactionOutro(prependZoneAftermath(prependPellRecognition(baseText, nodeId, player), nodeId, player), nodeId, player)
+    stEl.textContent = appendFactionOutro(prependZoneAftermath(prependPellRecognition(prependTamRecognition(baseText, nodeId, player), nodeId, player), nodeId, player), nodeId, player)
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
     // Judge image near boss (and on the verdict scene)
@@ -3554,7 +3656,21 @@ You walk back out.`
         $('combat-over').innerHTML=`<button class="choice" data-next-node="${onEscape||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">You escape</span></button>`
         $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
       } else {
-        currentHp=Math.max(1,Math.round(maxPlayerHp*0.25)); await save({hp:currentHp})
+        // 'lose' / defeat path
+        // ── Class skill: combat-end hook for defeat ─────────────────────
+        // Lets Prime/Mourning King reset their accumulated stacks to 0.
+        // Returns DB updates which we merge into the same save call.
+        const _clsEnd = ClsCombat.onCombatEnd(player, statusEffects, 'lose')
+        const loseUpdates = { hp: Math.max(1, Math.round(maxPlayerHp*0.25)) }
+        if (Object.keys(_clsEnd.dbUpdates).length > 0) {
+          Object.assign(loseUpdates, _clsEnd.dbUpdates)
+          for (const k of Object.keys(_clsEnd.dbUpdates)) player[k] = _clsEnd.dbUpdates[k]
+        }
+        if (_clsEnd.messages.length && typeof window.showToast === 'function') {
+          window.showToast(_clsEnd.messages[0])
+        }
+        currentHp = loseUpdates.hp
+        await save(loseUpdates)
         const acts=$('combat-actions'); if(acts) acts.style.display='none'
         $('combat-over').style.display='block'
         $('combat-over').innerHTML=`<p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#e05555;margin-bottom:.5rem">You fall.</p><button class="choice" data-next-node="${onLose||'district_hub'}"><span class="choice-arrow">↩</span><span class="choice-body">Try again</span></button>`
