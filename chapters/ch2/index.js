@@ -8,10 +8,13 @@ import {
   pickClass,
 } from '../../data/classes.js'
 import * as ClsCombat from '../../data/class_combat.js'
+// Cache-bust enemyAI.js by hardcoding the version. When enemyAI.js changes,
+// bump the ?v= here AND in book.html. Without this, browsers cache the file
+// indefinitely.
 import {
   resolveEnemyTurn, initEnemyState,
   applyBleed, applyPoison, applySlow, applyStun, applyDefShred, applyTerror,
-} from '../../data/enemyAI.js'
+} from '../../data/enemyAI.js?v=2026-05-14-enemyai-cachebust'
 import { META, ELEMENT_NAMES, ZONE_ELEMENT_MAP, ZONES, STORY_EVENTS } from './config.js'
 import { ITEM_IMAGES } from './items.js'
 import ZONE_FIRE      from './zones/zone-fire.js'
