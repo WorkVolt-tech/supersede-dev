@@ -3738,20 +3738,150 @@ You walk back out.`
           $('combat-over').querySelector('[data-spare]')?.addEventListener('click', handleSpare)
           $('combat-over').querySelector('[data-execute]')?.addEventListener('click', handleExecute)
         } else {
-          // ── Twin Judges: hidden class picker ─────────────────────────────
+          // ── Twin Judges: deferred class picker ────────────────────────────
           // If this is the Twin Judges win AND the player is class-eligible
-          // (no SP in elementals) AND hasn't already picked a class on any
-          // prior run, render a picker showing the 3–4 class choices that
-          // map to the formKey we computed earlier. Choice is final.
-          // Otherwise (zone bosses, picked-already, ineligible): the normal
-          // Continue button.
+          // AND hasn't already picked a class, the picker is now DEFERRED
+          // (not auto-rendered). The combat-over panel shows an anomaly
+          // message + two buttons:
+          //   • Continue — advance to chapter_end_ch2, picker waits on the
+          //     skills page
+          //   • View options now — open the picker modal inline
+          // Refuse-in-modal closes the modal; both buttons remain available.
+          // Pick-in-modal writes the class to DB and replaces combat-over
+          // with just a Continue button.
+          //
+          // Alliance log tags written:
+          //   class_picker_unlocked — set once, indicates the player has
+          //     earned the option (used by skills.js to auto-show picker
+          //     on first visit)
+          //   class_form_<formKey>  — preserves the form the player saw
+          //     (in case moral_score shifts before they pick)
           const formKey = extraCtx._formKey
           const choices = (isBoss && formKey && isClassEligible(player) && !hasPickedClass(player))
             ? getClassChoicesForFormKey(formKey)
             : []
 
           if (choices.length) {
-            renderClassPicker($('combat-over'), choices, formKey, nextNode)
+            // Persist unlock + form tags
+            const log = (player.alliance_log || []).slice()
+            if (!log.includes('class_picker_unlocked')) log.push('class_picker_unlocked')
+            // Replace any prior form tag (in case picker was unlocked twice)
+            const cleaned = log.filter(t => !t.startsWith('class_form_'))
+            cleaned.push('class_form_' + formKey)
+            player.alliance_log = cleaned
+            // Fire-and-forget save; non-critical for combat resolution.
+            save({ alliance_log: cleaned })
+
+            const renderCombatOverWithPickerButton = () => {
+              $('combat-over').innerHTML = `
+                <div style="margin-bottom:10px;padding:10px 12px;border:1px solid rgba(155,109,255,.45);background:rgba(155,109,255,.08);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--ink);line-height:1.5">
+                  ⚠ ANOMALY DETECTED — a hidden pre-requisite has resolved.<br>
+                  The System has logged a designation slot. Claim it on the skills page when ready, or view the options now.
+                </div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <button class="choice" data-next-node="${nextNode}">
+                    <span class="choice-arrow">→</span>
+                    <span class="choice-body">Continue — handle this later</span>
+                  </button>
+                  <button class="choice" data-action="view-picker">
+                    <span class="choice-arrow">⚖</span>
+                    <span class="choice-body">View options now</span>
+                  </button>
+                </div>`
+              $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
+              $('combat-over').querySelector('[data-action=view-picker]')?.addEventListener('click', () => {
+                showClassPickerModalCh2(choices, formKey, nextNode)
+              })
+            }
+
+            // The modal — overlay over the whole viewport. Pick or refuse.
+            // On pick, writes class + replaces combat-over with a single
+            // Continue button (no more View Now since the choice is made).
+            const showClassPickerModalCh2 = (choices, formKey, nextNode) => {
+              const heading = formKey === 'verdict'
+                ? 'ANOMALY CASCADE — three paths recognized. Choose one. The choice is final.'
+                : 'ANOMALY DETECTED — the System offers a designation. Choose one. The choice is final.'
+
+              const cards = choices.map(key => {
+                const cls = CLASSES[key]
+                if (!cls) return ''
+                let peekItems = []
+                if (Array.isArray(cls.tiers) && cls.tiers[0]) {
+                  const t1 = cls.tiers[0]
+                  for (const b of ['a', 'b', 'c']) {
+                    if (Array.isArray(t1[b]) && t1[b][0]) peekItems.push(t1[b][0])
+                  }
+                  peekItems = peekItems.slice(0, 2)
+                } else if (Array.isArray(cls.skills)) {
+                  peekItems = cls.skills.slice(0, 2).map(s => Array.isArray(s) ? s[0] : s)
+                }
+                const peek = peekItems.map(name => `<li style="margin:0;padding:0;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--ink-dim);line-height:1.35">▸ ${name}</li>`).join('')
+                return `
+                  <button class="cls-card" data-class="${cls.key}" style="
+                      text-align:left;cursor:pointer;background:rgba(244,234,215,.55);
+                      border:1px solid ${cls.color}66;padding:14px 16px;
+                      font-family:inherit;color:inherit;display:flex;flex-direction:column;gap:8px;
+                      transition:border-color .15s, background .15s, transform .15s;">
+                    <div style="display:flex;align-items:baseline;gap:8px">
+                      <span style="font-family:'Cinzel',serif;font-size:1.05rem;color:${cls.color};font-weight:700;letter-spacing:.06em">${cls.name}</span>
+                      <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em">${(cls.judgeOf||'').toUpperCase()}</span>
+                    </div>
+                    <p style="margin:0;font-family:'IM Fell English',serif;font-style:italic;font-size:14px;color:var(--ink);line-height:1.4">${cls.tagline||''}</p>
+                    <ul style="margin:0;padding:0;list-style:none">${peek}</ul>
+                  </button>`
+              }).join('')
+
+              const modal = document.createElement('div')
+              modal.id = 'cls-picker-modal'
+              modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,24,18,.82);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto'
+              modal.innerHTML = `
+                <div style="background:var(--paper,#f4ead7);border:2px solid var(--ink,#3a2a1a);padding:20px;max-width:520px;width:100%;font-family:'JetBrains Mono',monospace;color:var(--ink,#3a2a1a);max-height:90vh;overflow-y:auto">
+                  <div style="margin-bottom:14px;padding:8px 10px;border:1px solid rgba(155,109,255,.45);background:rgba(155,109,255,.08);font-size:10px;letter-spacing:.06em;line-height:1.5">
+                    ⚠ ${heading}
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px">${cards}</div>
+                  <button id="cls-picker-refuse" style="margin-top:14px;width:100%;padding:8px 12px;background:transparent;border:1px solid var(--ink,#3a2a1a);font-family:inherit;font-size:11px;letter-spacing:.1em;color:var(--ink,#3a2a1a);cursor:pointer;text-transform:uppercase">↩ Decide Later</button>
+                </div>`
+              document.body.appendChild(modal)
+
+              modal.querySelectorAll('.cls-card').forEach(btn => {
+                btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(244,234,215,.85)'; btn.style.transform='translateY(-1px)' })
+                btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(244,234,215,.55)'; btn.style.transform='none' })
+                btn.addEventListener('click', async () => {
+                  const classKey = btn.dataset.class
+                  const cls = CLASSES[classKey]
+                  if (!cls) return
+                  modal.querySelectorAll('.cls-card').forEach(other => {
+                    other.style.pointerEvents = 'none'
+                    if (other !== btn) other.style.opacity = '0.3'
+                  })
+                  btn.style.borderColor = cls.color
+                  btn.style.background = cls.color + '22'
+                  try {
+                    const upd = pickClass(player, classKey)
+                    Object.assign(player, upd)
+                    await save(upd)
+                  } catch (err) {
+                    console.error('[class pick] failed', err)
+                    window.showToast?.('Failed to save class — try again', true)
+                    return
+                  }
+                  window.showSysOverlay?.(cls.unlockNarrative, 'warn')
+                  setTimeout(() => {
+                    modal.remove()
+                    // Replace combat-over with just Continue (no more View Now)
+                    $('combat-over').innerHTML = `<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">You are <em style="color:${cls.color}">${cls.name}</em>. Continue.</span></button>`
+                    $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
+                  }, 1800)
+                })
+              })
+              modal.querySelector('#cls-picker-refuse').addEventListener('click', () => {
+                modal.remove()
+                // combat-over still has both buttons; nothing to re-render
+              })
+            }
+
+            renderCombatOverWithPickerButton()
           } else {
             $('combat-over').innerHTML=`<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">${isBoss?'The Judges are defeated. Chapter ends.':'Continue'}</span></button>`
             $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', event => goTo(event.currentTarget.dataset.nextNode))
