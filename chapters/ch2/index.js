@@ -1688,7 +1688,23 @@ The Judges are already there.`,
     const cards = choices.map(key => {
       const cls = CLASSES[key]
       if (!cls) return ''
-      const peek = cls.skills.slice(0, 2).map(s => `<li style="margin:0;padding:0;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--ink-dim);line-height:1.35">▸ ${s[0]}</li>`).join('')
+      // Peek at tier-1 abilities (branches a/b/c). Falls back to cls.skills
+      // for classes that still use the old skills array shape, or to an empty
+      // list if neither exists. This avoids the crash that occurred when a
+      // class had `tiers:` but no `skills:` (most classes after the v2 refactor).
+      let peekItems = []
+      if (Array.isArray(cls.tiers) && cls.tiers[0]) {
+        const t1 = cls.tiers[0]
+        for (const branch of ['a', 'b', 'c']) {
+          if (Array.isArray(t1[branch]) && t1[branch][0]) {
+            peekItems.push(t1[branch][0])  // ability name only
+          }
+        }
+        peekItems = peekItems.slice(0, 2)
+      } else if (Array.isArray(cls.skills)) {
+        peekItems = cls.skills.slice(0, 2).map(s => Array.isArray(s) ? s[0] : s)
+      }
+      const peek = peekItems.map(name => `<li style="margin:0;padding:0;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--ink-dim);line-height:1.35">▸ ${name}</li>`).join('')
       return `
         <button class="cls-card" data-class="${cls.key}" style="
             text-align:left;cursor:pointer;
@@ -1701,9 +1717,9 @@ The Judges are already there.`,
         ">
           <div style="display:flex;align-items:baseline;gap:8px">
             <span style="font-family:'Cinzel',serif;font-size:1.05rem;color:${cls.color};font-weight:700;letter-spacing:.06em">${cls.name}</span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em">${cls.judgeOf.toUpperCase()}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em">${(cls.judgeOf||'').toUpperCase()}</span>
           </div>
-          <p style="margin:0;font-family:'IM Fell English',serif;font-style:italic;font-size:14px;color:var(--ink);line-height:1.4">${cls.tagline}</p>
+          <p style="margin:0;font-family:'IM Fell English',serif;font-style:italic;font-size:14px;color:var(--ink);line-height:1.4">${cls.tagline||''}</p>
           <ul style="margin:0;padding:0;list-style:none">${peek}</ul>
         </button>`
     }).join('')
@@ -2511,9 +2527,15 @@ You walk back out.`
     // node uses its authored node.text as-is, with one exception: zone boss-win
     // nodes get a faction-tinted closing paragraph appended (Sera for Builders,
     // Voss for Hunter-aligned, nothing for neutral). The base text stays intact.
-    const baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player)
-                   : nodeId === 'camp_reflection' ? buildCampReflection(player)
-                   : (node.text || '')
+    let baseText = nodeId === 'judges_verdict' ? buildJudgesVerdict(player)
+                 : nodeId === 'camp_reflection' ? buildCampReflection(player)
+                 : (node.text || '')
+    // ── Placeholder substitution ───────────────────────────────────
+    // Authors write [YOUR NAME] in narrative text where the player's name
+    // should appear. Replace at render time with player.username.
+    if (baseText.includes('[YOUR NAME]')) {
+      baseText = baseText.split('[YOUR NAME]').join(player.username || 'OPERATOR')
+    }
     stEl.textContent = appendFactionOutro(prependZoneAftermath(prependPellRecognition(prependTamRecognition(baseText, nodeId, player), nodeId, player), nodeId, player), nodeId, player)
     stEl.className=nodeId==='opening'?'story-text drop-cap':'story-text'
 
