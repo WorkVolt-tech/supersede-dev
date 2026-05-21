@@ -7,6 +7,10 @@ import {
   isClassNodeAvailable,
   isTierAlreadyPicked,
   unlockClassNode,
+  pickClass,
+  hasPickedClass,
+  isClassEligible,
+  getClassChoicesForFormKey,
 } from '../data/classes.js'
 
 const MODULE_STYLE_ID = 'book-module-style-skills'
@@ -365,6 +369,160 @@ export async function mountSkills(__mountOptions = {}) {
   updateSPDisplay()
   renderPageSummary()
   renderBattleSlotsPage()
+
+  // ── Deferred class picker (post-Twin-Judges) ──────────────────────
+  // When the player beats the Twin Judges with eligible state, ch2 writes
+  // 'class_picker_unlocked' + 'class_form_<key>' to alliance_log instead of
+  // showing the picker inline. We pick that up here:
+  //   • If the picker hasn't been seen on this page yet (no
+  //     'class_picker_seen_skills' tag), auto-open the modal on first visit
+  //     and write the seen tag.
+  //   • Always show a "Class Selection Available" button at the top of the
+  //     skills page when the picker is unlocked + no active_class.
+  //   • The button re-opens the modal any time.
+  // Refusing the modal closes it without writing anything. The unlock tag
+  // stays in alliance_log so the button stays visible.
+  setupDeferredClassPicker()
+
+  async function setupDeferredClassPicker() {
+    const log = player.alliance_log || []
+    const unlocked = log.includes('class_picker_unlocked')
+    if (!unlocked) return
+    if (hasPickedClass(player)) return         // already picked — done
+    if (!isClassEligible(player)) return       // lost eligibility (used elements) — picker gone
+    const formTag = log.find(t => t.startsWith('class_form_'))
+    if (!formTag) return                       // no form recorded — bail
+    const formKey = formTag.replace('class_form_', '')
+    const choices = getClassChoicesForFormKey(formKey)
+    if (!choices.length) return                // form unknown — bail
+
+    // Render the persistent "Class Selection Available" button at the top.
+    // We insert it just under the SP display row.
+    renderClassPickerButton(choices, formKey)
+
+    // Auto-open the modal on first visit (no 'seen' tag yet)
+    if (!log.includes('class_picker_seen_skills')) {
+      log.push('class_picker_seen_skills')
+      player.alliance_log = log
+      // Fire-and-forget save
+      try {
+        await supabase.from('players').update({ alliance_log: log }).eq('id', player.id)
+      } catch (e) { /* non-critical */ }
+      showClassPickerModal(choices, formKey)
+    }
+  }
+
+  function renderClassPickerButton(choices, formKey) {
+    // Insert just under the SP display row. Avoid duplicate if re-rendered.
+    if (document.getElementById('cls-pick-banner')) return
+    const spDisplay = document.getElementById('sp-display')
+    if (!spDisplay) return
+    const banner = document.createElement('div')
+    banner.id = 'cls-pick-banner'
+    banner.style.cssText = 'margin:.5rem 0;padding:.6rem .8rem;background:rgba(155,109,255,.08);border:1px solid rgba(155,109,255,.45);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap'
+    banner.innerHTML = `
+      <div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;line-height:1.5;color:var(--ink);letter-spacing:.06em;flex:1;min-width:0">
+        ⚠ CLASS SELECTION AVAILABLE — anomaly designation pending.
+      </div>
+      <button id="cls-pick-open" style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.06em;color:var(--ink);background:rgba(155,109,255,.18);border:1px solid rgba(155,109,255,.55);padding:.45rem .9rem;cursor:pointer;border-radius:3px;white-space:nowrap">⚖ View Options</button>
+    `
+    // Insert after the parent row containing sp-display
+    const parent = spDisplay.closest('div').parentElement
+    parent.parentElement.insertBefore(banner, parent.parentElement.querySelector('hr.ink-divider')?.nextSibling || parent.nextSibling)
+    document.getElementById('cls-pick-open').addEventListener('click', () => {
+      showClassPickerModal(choices, formKey)
+    })
+  }
+
+  function showClassPickerModal(choices, formKey) {
+    // Avoid double-opening
+    if (document.getElementById('cls-picker-modal')) return
+
+    const heading = formKey === 'verdict'
+      ? 'ANOMALY CASCADE — three paths recognized. Choose one. The choice is final.'
+      : 'ANOMALY DETECTED — the System offers a designation. Choose one. The choice is final.'
+
+    const cards = choices.map(key => {
+      const cls = CLASSES[key]
+      if (!cls) return ''
+      let peekItems = []
+      if (Array.isArray(cls.tiers) && cls.tiers[0]) {
+        const t1 = cls.tiers[0]
+        for (const b of ['a', 'b', 'c']) {
+          if (Array.isArray(t1[b]) && t1[b][0]) peekItems.push(t1[b][0])
+        }
+        peekItems = peekItems.slice(0, 2)
+      } else if (Array.isArray(cls.skills)) {
+        peekItems = cls.skills.slice(0, 2).map(s => Array.isArray(s) ? s[0] : s)
+      }
+      const peek = peekItems.map(name => `<li style="margin:0;padding:0;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--ink-dim);line-height:1.35">▸ ${name}</li>`).join('')
+      return `
+        <button class="cls-card" data-class="${cls.key}" style="
+            text-align:left;cursor:pointer;background:rgba(244,234,215,.55);
+            border:1px solid ${cls.color}66;padding:14px 16px;
+            font-family:inherit;color:inherit;display:flex;flex-direction:column;gap:8px;
+            transition:border-color .15s, background .15s, transform .15s;">
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-family:'Cinzel',serif;font-size:1.05rem;color:${cls.color};font-weight:700;letter-spacing:.06em">${cls.name}</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--ink-dim);letter-spacing:.08em">${(cls.judgeOf||'').toUpperCase()}</span>
+          </div>
+          <p style="margin:0;font-family:'IM Fell English',serif;font-style:italic;font-size:14px;color:var(--ink);line-height:1.4">${cls.tagline||''}</p>
+          <ul style="margin:0;padding:0;list-style:none">${peek}</ul>
+        </button>`
+    }).join('')
+
+    const modal = document.createElement('div')
+    modal.id = 'cls-picker-modal'
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(28,24,18,.82);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px;overflow-y:auto'
+    modal.innerHTML = `
+      <div style="background:var(--paper,#f4ead7);border:2px solid var(--ink,#3a2a1a);padding:20px;max-width:520px;width:100%;font-family:'JetBrains Mono',monospace;color:var(--ink,#3a2a1a);max-height:90vh;overflow-y:auto">
+        <div style="margin-bottom:14px;padding:8px 10px;border:1px solid rgba(155,109,255,.45);background:rgba(155,109,255,.08);font-size:10px;letter-spacing:.06em;line-height:1.5">
+          ⚠ ${heading}
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px">${cards}</div>
+        <button id="cls-picker-refuse" style="margin-top:14px;width:100%;padding:8px 12px;background:transparent;border:1px solid var(--ink,#3a2a1a);font-family:inherit;font-size:11px;letter-spacing:.1em;color:var(--ink,#3a2a1a);cursor:pointer;text-transform:uppercase">↩ Decide Later</button>
+      </div>`
+    document.body.appendChild(modal)
+
+    modal.querySelectorAll('.cls-card').forEach(btn => {
+      btn.addEventListener('mouseenter', () => { btn.style.background = 'rgba(244,234,215,.85)'; btn.style.transform='translateY(-1px)' })
+      btn.addEventListener('mouseleave', () => { btn.style.background = 'rgba(244,234,215,.55)'; btn.style.transform='none' })
+      btn.addEventListener('click', async () => {
+        const classKey = btn.dataset.class
+        const cls = CLASSES[classKey]
+        if (!cls) return
+        modal.querySelectorAll('.cls-card').forEach(other => {
+          other.style.pointerEvents = 'none'
+          if (other !== btn) other.style.opacity = '0.3'
+        })
+        btn.style.borderColor = cls.color
+        btn.style.background = cls.color + '22'
+        try {
+          const upd = pickClass(player, classKey)
+          Object.assign(player, upd)
+          const { error } = await supabase.from('players').update(upd).eq('id', player.id)
+          if (error) throw new Error(error.message)
+        } catch (err) {
+          console.error('[class pick] failed', err)
+          window.showToast?.('Failed to save class — try again', true)
+          return
+        }
+        window.showSysOverlay?.(cls.unlockNarrative, 'warn')
+        setTimeout(() => {
+          modal.remove()
+          // Remove the banner since the choice is made
+          document.getElementById('cls-pick-banner')?.remove()
+          // Reload the page so all skill-tree displays refresh with the new
+          // class context. Simpler than incrementally re-rendering.
+          window.location.reload()
+        }, 1800)
+      })
+    })
+    modal.querySelector('#cls-picker-refuse').addEventListener('click', () => {
+      modal.remove()
+      // Banner is still visible; user can re-open any time.
+    })
+  }
 
   function renderElementalTags() {
     const chapter = player.current_chapter || 1
