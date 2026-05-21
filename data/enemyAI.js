@@ -130,39 +130,44 @@ export const ANIM = {
 // when the player is "outside the record" — immune to status effects from
 // any source. Each apply helper checks this flag and silently returns if set.
 // The flag is set per-frame by the relevant onPlayerHit/onCombatStart hook.
-function noWitness(se) {
+//
+// All apply helpers are EXPORTED so engines (Ch1/Ch2) can call them directly
+// from inline enemy moves. The engines own the turn loop; this module just
+// provides the centralized "apply player-status with No Witness immunity"
+// primitives. Call signature: apply<X>(statusEffects, ...args, messages[]).
+export function noWitness(se) {
   return !!se.cls_noWitness
 }
 
-function applyBleed(se, dmg, turns, messages) {
+export function applyBleed(se, dmg, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Bleed</em> — no witness.'); return }
   se.playerBleedDmg   = Math.max(se.playerBleedDmg||0, dmg)
   se.playerBleedTurns = Math.max(se.playerBleedTurns||0, turns)
   messages.push(`🩸 <em>Bleed</em> applied — ${dmg} dmg/turn × ${turns} turns.`)
 }
-function applyPoison(se, dmg, turns, messages) {
+export function applyPoison(se, dmg, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Poison</em> — no witness.'); return }
   se.playerPoisonDmg   = Math.max(se.playerPoisonDmg||0, dmg)
   se.playerPoisonTurns = Math.max(se.playerPoisonTurns||0, turns)
   messages.push(`☠ <em>Poison</em> applied — ${dmg} dmg/turn × ${turns} turns.`)
 }
-function applySlow(se, turns, messages) {
+export function applySlow(se, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Slow</em> — no witness.'); return }
   se.playerSlowTurns = Math.max(se.playerSlowTurns||0, turns)
   messages.push(`🌀 <em>Slowed</em> — your Speed halved for ${turns} turns.`)
 }
-function applyStun(se, turns, messages) {
+export function applyStun(se, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Stun</em> — no witness.'); return }
   se.playerStunTurns = Math.max(se.playerStunTurns||0, turns)
   messages.push(`⚡ <em>Stunned!</em> You lose ${turns} action${turns>1?'s':''}.`)
 }
-function applyDefShred(se, amt, turns, messages) {
+export function applyDefShred(se, amt, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Armour Shred</em> — no witness.'); return }
   se.playerDefShredAmt   = Math.max(se.playerDefShredAmt||0, amt)
   se.playerDefShredTurns = Math.max(se.playerDefShredTurns||0, turns)
   messages.push(`🔓 <em>Armour Shred</em> — your DEF reduced by ${amt} for ${turns} turns.`)
 }
-function applyTerror(se, turns, messages) {
+export function applyTerror(se, turns, messages) {
   if (noWitness(se)) { messages.push('✕ <em>Terror</em> — no witness.'); return }
   se.playerTerrorTurns = Math.max(se.playerTerrorTurns||0, turns)
   messages.push(`😱 <em>Terror</em> — skills disabled for ${turns} turns.`)
