@@ -4,9 +4,13 @@ import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
 import * as ClsCombat from '../../data/class_combat.js'
+// Cache-bust enemyAI.js by hardcoding the version in the import path.
+// When enemyAI.js changes, bump the ?v= here AND in book.html. Without
+// this, browsers cache enemyAI.js indefinitely because book.html only
+// cache-busts the chapter file itself, not its dependencies.
 import {
   applyBleed, applyPoison, applySlow, applyStun, applyDefShred, applyTerror,
-} from '../../data/enemyAI.js'
+} from '../../data/enemyAI.js?v=2026-05-14-enemyai-cachebust'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-1'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 1 \u2014 System Initialization</p>\n        <p class=\"chapter-sub\">The world stops. The game begins.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
