@@ -36,6 +36,59 @@ function installModuleStyle() {
   supp.id = MODULE_STYLE_ID + '-supp'
   supp.dataset.bookModuleStyle = 'true'
   supp.textContent = `
+    /* ── Force-fix dark text on dark overlay ──
+       The global MODULE_STYLES has rules like 'h1,h2,...h6 { color: var(--ink) !important }'
+       which override the topbar's own colors. We need !important here too to win. */
+    #tree-overlay h2, #esp-overlay h2 {
+      color: #ffe94d !important;
+    }
+    #esp-overlay h2 { color: #b06eff !important; }
+    /* Force light text on overlay buttons regardless of hover state. */
+    #tree-overlay button, #esp-overlay button {
+      color: #e8e3d6 !important;
+    }
+    #tree-overlay .tree-close-btn, #tree-overlay .tree-slots-btn {
+      color: #ffe94d !important;
+      background: rgba(255,233,77,.1) !important;
+      border: 1px solid rgba(255,233,77,.4) !important;
+    }
+    #tree-overlay .tree-reset-btn {
+      color: #ff6060 !important;
+      background: rgba(192,64,64,.08) !important;
+      border: 1px solid rgba(192,64,64,.4) !important;
+    }
+    #tree-overlay .tree-close-btn:hover,
+    #tree-overlay .tree-slots-btn:hover {
+      color: #fff7a8 !important;
+      border-color: rgba(255,233,77,.8) !important;
+    }
+    #tree-overlay .tree-reset-btn:hover {
+      color: #ff9090 !important;
+      border-color: rgba(192,64,64,.7) !important;
+    }
+    /* Topbar info text "Scroll to zoom / Drag to pan" */
+    #tree-topbar > div > span,
+    #esp-topbar > div > span {
+      color: #a08858 !important;
+    }
+    /* Class-tab buttons in the tree topbar */
+    #tree-tabs button {
+      color: #e8e3d6 !important;
+      background: rgba(255,233,77,.08) !important;
+      border: 1px solid rgba(255,233,77,.25) !important;
+    }
+    #tree-tabs button:hover {
+      border-color: rgba(255,233,77,.6) !important;
+      color: #ffe94d !important;
+    }
+    /* Tier-level header boxes for the class tree */
+    .cls-tier-hdr {
+      color: #e8e3d6 !important;
+    }
+    /* Skill-node labels — these float below each circle, dark on the overlay */
+    #tree-canvas .sn-lbl {
+      color: #e8e3d6 !important;
+    }
     /* ── ESP overlay (Elemental Skill Tree fullscreen modal) ── */
     #esp-overlay {
       display:none; position:fixed; inset:0; z-index:900;
@@ -48,16 +101,15 @@ function installModuleStyle() {
       border-bottom:1px solid rgba(176,110,255,.25);
       flex-shrink:0; gap:.75rem; flex-wrap:wrap;
     }
-    #esp-topbar h2 { font-family:'Cinzel',serif; font-size:.95rem; color:#b06eff; margin:0; }
-    .esp-badge { font-family:'Share Tech Mono',monospace; font-size:.72rem; color:#b06eff;
+    .esp-badge { font-family:'Share Tech Mono',monospace; font-size:.72rem; color:#b06eff !important;
       background:rgba(176,110,255,.1); border:.5px solid rgba(176,110,255,.3);
       padding:3px 10px; border-radius:20px; }
     .esp-close-btn {
       font-family:'Share Tech Mono',monospace; font-size:.6rem;
       padding:4px 10px; cursor:pointer; border-radius:3px;
-      color:#e8e3d6; background:none; border:.5px solid rgba(232,227,214,.4);
+      color:#e8e3d6 !important; background:none !important; border:.5px solid rgba(232,227,214,.4) !important;
     }
-    .esp-close-btn:hover { color:#b06eff; border-color:rgba(176,110,255,.6); }
+    .esp-close-btn:hover { color:#b06eff !important; border-color:rgba(176,110,255,.6) !important; }
     #esp-body {
       flex:1; display:flex; overflow:hidden;
     }
@@ -66,20 +118,24 @@ function installModuleStyle() {
       background:#100d0a; border-right:1px solid rgba(176,110,255,.15);
       overflow-y:auto;
     }
+    #esp-sidebar p {
+      color:#f4c45a !important;
+    }
     #esp-el-tabs { display:flex; flex-direction:column; gap:4px; }
     #esp-el-tabs button {
       font-family:'Share Tech Mono',monospace; font-size:.62rem;
       padding:.4rem .55rem; cursor:pointer; text-align:left;
-      background:rgba(176,110,255,.06); border:1px solid rgba(176,110,255,.25);
-      color:#e8e3d6; letter-spacing:.08em; text-transform:uppercase;
+      background:rgba(176,110,255,.06) !important;
+      border:1px solid rgba(176,110,255,.25) !important;
+      color:#e8e3d6 !important; letter-spacing:.08em; text-transform:uppercase;
       transition:background .15s, border-color .15s;
     }
-    #esp-el-tabs button:hover { background:rgba(176,110,255,.16); border-color:rgba(176,110,255,.55); }
-    #esp-el-tabs button.active { background:rgba(176,110,255,.22); border-color:rgba(176,110,255,.7); color:#d4b4ff; }
+    #esp-el-tabs button:hover { background:rgba(176,110,255,.16) !important; border-color:rgba(176,110,255,.55) !important; }
+    #esp-el-tabs button.active { background:rgba(176,110,255,.22) !important; border-color:rgba(176,110,255,.7) !important; color:#d4b4ff !important; }
     #esp-el-tabs button.locked { opacity:.45; cursor:not-allowed; }
     #esp-main-panel {
       flex:1; padding:1rem; overflow:auto;
-      color:#e8e3d6;
+      color:#e8e3d6 !important;
     }
     #esp-main-panel p, #esp-main-panel li, #esp-main-panel span,
     #esp-main-panel h1, #esp-main-panel h2, #esp-main-panel h3 { color:#e8e3d6 !important; }
@@ -93,24 +149,14 @@ function installModuleStyle() {
     #esp-slot-chooser .esp-chooser-inner {
       background:#140f08; border:1px solid rgba(176,110,255,.4);
       padding:1rem 1.25rem; max-width:340px; width:100%;
-      color:#e8e3d6;
+      color:#e8e3d6 !important;
+    }
+    #esp-slot-chooser p {
+      color:#f4c45a !important;
     }
     #esp-chooser-list {
       display:flex; flex-direction:column; gap:6px;
       max-height:60vh; overflow-y:auto;
-    }
-    /* ── Tree-topbar buttons that aren't on the explicit whitelist ──
-       The global button rule darkens any button not in the topbar
-       whitelist. Class-tab buttons (in #tree-tabs) need to override that
-       and use light colors so they're readable on the dark overlay. ── */
-    #tree-tabs button {
-      color:#e8e3d6 !important;
-      background:rgba(255,233,77,.08) !important;
-      border:1px solid rgba(255,233,77,.25) !important;
-    }
-    #tree-tabs button:hover {
-      border-color:rgba(255,233,77,.6) !important;
-      color:#ffe94d !important;
     }
   `
   document.head.appendChild(supp)
@@ -1136,7 +1182,7 @@ export async function mountSkills(__mountOptions = {}) {
       ? `<span style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:.5rem;color:${available?col:'#7a6938'};letter-spacing:.06em;white-space:nowrap">Lv ${nd.levelRequired}</span>`
       : ''
     const labelHTML = nd.label
-      ? `<span class="sn-label" style="color:${locked?'rgba(212,175,55,.35)':col}">${nd.label}</span>`
+      ? `<div class="sn-lbl" style="color:${locked?'rgba(212,175,55,.35)':col};max-width:120px;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.8)">${nd.label}</div>`
       : ''
 
     return `<div class="sn-ring" style="position:relative">${inner}${lvlBadge}</div>${labelHTML}`
