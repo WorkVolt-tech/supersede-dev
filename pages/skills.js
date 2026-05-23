@@ -811,7 +811,7 @@ export async function mountSkills(__mountOptions = {}) {
   // All edges are drawn faintly so the tree's structure is visible. Paths to
   // every unlocked node are lit up permanently in their branch colour. The
   // path to a selected (but not yet unlocked) node is also shown as a preview.
-  function refreshLines() {
+    function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
@@ -839,10 +839,8 @@ export async function mountSkills(__mountOptions = {}) {
       }
     }
 
-    // Light up paths for all permanently unlocked nodes
-    for (const nd of nodes) if (isNodeUnlocked(nd.id)) walk(nd.id)
-    // Also preview the path to a selected node that isn't unlocked yet
-    if (selectedNode && !isNodeUnlocked(selectedNode)) walk(selectedNode)
+    // Only light up the path to the currently selected node
+    if (selectedNode) walk(selectedNode)
 
     let lines = ''
     nodes.forEach(nd => {
