@@ -3772,12 +3772,16 @@ You walk back out.`
             // Fire-and-forget save; non-critical for combat resolution.
             save({ alliance_log: cleaned })
 
-            const renderCombatOverWithPickerButton = () => {
+            // ── System popup — boss-win class unlock announcement ──────
+            // Shows a blocking modal overlay styled as an in-universe
+            // System event. Includes pulsing border, scanline pattern,
+            // a timestamp header, and the two action buttons. The combat
+            // panel underneath shows a quiet Continue button as fallback
+            // (in case the popup gets dismissed via ESC or backdrop click).
+            const showAnomalyPopup = () => {
+              // Hidden behind: a quiet Continue button + view button on the
+              // combat-over panel, in case the popup is dismissed.
               $('combat-over').innerHTML = `
-                <div style="margin-bottom:10px;padding:10px 12px;border:1px solid rgba(155,109,255,.45);background:rgba(155,109,255,.08);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.06em;color:var(--ink);line-height:1.5">
-                  ⚠ ANOMALY DETECTED — a hidden pre-requisite has resolved.<br>
-                  The System has logged a designation slot. Claim it on the skills page when ready, or view the options now.
-                </div>
                 <div style="display:flex;flex-direction:column;gap:8px">
                   <button class="choice" data-next-node="${nextNode}">
                     <span class="choice-arrow">→</span>
@@ -3785,14 +3789,170 @@ You walk back out.`
                   </button>
                   <button class="choice" data-action="view-picker">
                     <span class="choice-arrow">⚖</span>
-                    <span class="choice-body">View options now</span>
+                    <span class="choice-body">View designation options</span>
                   </button>
                 </div>`
               $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
               $('combat-over').querySelector('[data-action=view-picker]')?.addEventListener('click', () => {
                 showClassPickerModalCh2(choices, formKey, nextNode)
               })
+
+              // The popup itself. Inserts into document.body so it sits over
+              // everything regardless of combat-panel scroll position.
+              if (document.getElementById('sys-anomaly-popup')) return
+              const ts = new Date().toISOString().slice(11, 19) + 'Z'
+              const popup = document.createElement('div')
+              popup.id = 'sys-anomaly-popup'
+              popup.style.cssText = `
+                position:fixed;inset:0;z-index:10000;
+                background:radial-gradient(ellipse at center, rgba(28,24,18,.65) 0%, rgba(10,8,5,.92) 80%);
+                display:flex;align-items:center;justify-content:center;padding:20px;
+                animation:sysAnomalyFadeIn .4s ease-out;
+              `
+              popup.innerHTML = `
+                <style>
+                  @keyframes sysAnomalyFadeIn {
+                    from { opacity: 0; }
+                    to   { opacity: 1; }
+                  }
+                  @keyframes sysAnomalyPulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(155,109,255,.5), inset 0 0 0 0 rgba(155,109,255,.15); }
+                    50%      { box-shadow: 0 0 24px 2px rgba(155,109,255,.55), inset 0 0 32px 0 rgba(155,109,255,.18); }
+                  }
+                  @keyframes sysAnomalyScanline {
+                    from { background-position: 0 0; }
+                    to   { background-position: 0 4px; }
+                  }
+                  @keyframes sysAnomalyGlitch {
+                    0%, 92%, 100% { transform: translateX(0); }
+                    93%           { transform: translateX(-1px); }
+                    94%           { transform: translateX(1px); }
+                    95%           { transform: translateX(-1px); }
+                    96%           { transform: translateX(0); }
+                  }
+                  #sys-anomaly-popup .frame {
+                    background:linear-gradient(180deg, rgba(20,16,12,.96) 0%, rgba(28,24,18,.96) 100%);
+                    border:2px solid rgba(155,109,255,.65);
+                    box-shadow: 0 0 24px 2px rgba(155,109,255,.45), inset 0 0 32px 0 rgba(155,109,255,.12);
+                    color:#e8dcc2;
+                    max-width:520px;width:100%;
+                    font-family:'JetBrains Mono','Share Tech Mono',monospace;
+                    position:relative;
+                    animation:sysAnomalyPulse 2.6s ease-in-out infinite, sysAnomalyGlitch 5s infinite;
+                  }
+                  #sys-anomaly-popup .frame::before {
+                    content:'';position:absolute;inset:0;pointer-events:none;
+                    background:repeating-linear-gradient(0deg, rgba(155,109,255,.04) 0px, rgba(155,109,255,.04) 1px, transparent 1px, transparent 4px);
+                    animation:sysAnomalyScanline 1.2s linear infinite;
+                  }
+                  #sys-anomaly-popup .frame > * { position:relative; z-index:1; }
+                  #sys-anomaly-popup .sys-header {
+                    display:flex;justify-content:space-between;align-items:center;
+                    padding:8px 14px;
+                    background:linear-gradient(90deg, rgba(155,109,255,.18), rgba(155,109,255,.04));
+                    border-bottom:1px solid rgba(155,109,255,.55);
+                    font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+                    color:#c8a8ff;
+                  }
+                  #sys-anomaly-popup .sys-header .badge {
+                    background:rgba(255,80,80,.18);
+                    border:1px solid rgba(255,80,80,.5);
+                    padding:2px 8px;font-size:8px;color:#ff9090;
+                    letter-spacing:.2em;
+                  }
+                  #sys-anomaly-popup .sys-body {
+                    padding:18px 22px 14px;
+                  }
+                  #sys-anomaly-popup .sys-title {
+                    font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;
+                    color:#d4b4ff;letter-spacing:.12em;margin-bottom:8px;
+                    text-shadow:0 0 12px rgba(155,109,255,.5);
+                  }
+                  #sys-anomaly-popup .sys-msg {
+                    font-family:'Share Tech Mono',monospace;font-size:11px;
+                    line-height:1.7;letter-spacing:.04em;color:#d8c8a8;
+                    margin-bottom:6px;
+                  }
+                  #sys-anomaly-popup .sys-msg em {
+                    color:#c8a8ff;font-style:normal;font-weight:600;letter-spacing:.06em;
+                  }
+                  #sys-anomaly-popup .sys-divider {
+                    height:1px;background:linear-gradient(90deg, transparent, rgba(155,109,255,.5), transparent);
+                    margin:14px 0 12px;
+                  }
+                  #sys-anomaly-popup .sys-actions {
+                    display:flex;flex-direction:column;gap:8px;padding:0 22px 18px;
+                  }
+                  #sys-anomaly-popup .sys-btn {
+                    font-family:'Cinzel',serif;letter-spacing:.08em;
+                    background:rgba(155,109,255,.12);
+                    border:1px solid rgba(155,109,255,.45);
+                    color:#e8dcc2;padding:11px 14px;
+                    cursor:pointer;font-size:.85rem;
+                    transition:background .15s,border-color .15s,transform .1s;
+                    text-align:left;display:flex;align-items:center;gap:10px;
+                  }
+                  #sys-anomaly-popup .sys-btn:hover {
+                    background:rgba(155,109,255,.25);
+                    border-color:rgba(155,109,255,.8);
+                    transform:translateX(2px);
+                  }
+                  #sys-anomaly-popup .sys-btn .arrow {
+                    font-size:1rem;color:#c8a8ff;flex:none;
+                  }
+                  #sys-anomaly-popup .sys-btn .sub {
+                    display:block;font-family:'Share Tech Mono',monospace;
+                    font-size:9px;color:#9a8870;letter-spacing:.1em;
+                    margin-top:2px;text-transform:uppercase;
+                  }
+                  #sys-anomaly-popup .sys-btn.primary {
+                    background:rgba(200,168,255,.16);
+                    border-color:rgba(200,168,255,.6);
+                  }
+                  #sys-anomaly-popup .sys-btn.primary:hover {
+                    background:rgba(200,168,255,.28);
+                  }
+                </style>
+                <div class="frame">
+                  <div class="sys-header">
+                    <span>System / 0xANOMALY · ${ts}</span>
+                    <span class="badge">⚠ ALERT</span>
+                  </div>
+                  <div class="sys-body">
+                    <div class="sys-title">ANOMALY DETECTED</div>
+                    <div class="sys-msg">A hidden pre-requisite has <em>resolved</em>.</div>
+                    <div class="sys-msg">The System has logged a <em>designation slot</em> against your record.</div>
+                    <div class="sys-msg" style="font-size:10px;color:#9a8870;letter-spacing:.06em;margin-top:8px">› Reference: TWIN-JUDGES :: ${formKey.toUpperCase()}</div>
+                    <div class="sys-divider"></div>
+                    <div class="sys-msg" style="color:#a8987a">Select how to proceed.</div>
+                  </div>
+                  <div class="sys-actions">
+                    <button class="sys-btn primary" data-action="view">
+                      <span class="arrow">⚖</span>
+                      <span>View designation options
+                        <span class="sub">Open the picker now</span>
+                      </span>
+                    </button>
+                    <button class="sys-btn" data-action="defer">
+                      <span class="arrow">→</span>
+                      <span>Defer — claim it later on the skills page
+                        <span class="sub">A button will remain visible there</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>`
+              document.body.appendChild(popup)
+              popup.querySelector('[data-action=view]').addEventListener('click', () => {
+                popup.remove()
+                showClassPickerModalCh2(choices, formKey, nextNode)
+              })
+              popup.querySelector('[data-action=defer]').addEventListener('click', () => {
+                popup.remove()
+                // combat-over panel still shows both buttons — fine
+              })
             }
+
+            const renderCombatOverWithPickerButton = showAnomalyPopup
 
             // The modal — overlay over the whole viewport. Pick or refuse.
             // On pick, writes class + replaces combat-over with a single
