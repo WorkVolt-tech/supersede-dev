@@ -24,6 +24,96 @@ function installModuleStyle() {
   style.dataset.bookModuleStyle = 'true'
   style.textContent = MODULE_STYLES
   document.head.appendChild(style)
+
+  // Supplementary styles — keep these here (not in the giant stringified
+  // MODULE_STYLES blob) for readability. Covers:
+  //   • The ESP overlay (#esp-overlay) which had no CSS — was rendering
+  //     inline at the bottom of the page.
+  //   • Class-tab buttons in the tree topbar (dark-on-dark fix).
+  //   • Buttons in #tree-topbar that aren't whitelisted by the global
+  //     selector (e.g., the class-tab buttons inserted into #tree-tabs).
+  const supp = document.createElement('style')
+  supp.id = MODULE_STYLE_ID + '-supp'
+  supp.dataset.bookModuleStyle = 'true'
+  supp.textContent = `
+    /* ── ESP overlay (Elemental Skill Tree fullscreen modal) ── */
+    #esp-overlay {
+      display:none; position:fixed; inset:0; z-index:900;
+      background:#0d0b08; flex-direction:column;
+    }
+    #esp-overlay.open { display:flex; }
+    #esp-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:.5rem 1rem; background:#0d0d0d;
+      border-bottom:1px solid rgba(176,110,255,.25);
+      flex-shrink:0; gap:.75rem; flex-wrap:wrap;
+    }
+    #esp-topbar h2 { font-family:'Cinzel',serif; font-size:.95rem; color:#b06eff; margin:0; }
+    .esp-badge { font-family:'Share Tech Mono',monospace; font-size:.72rem; color:#b06eff;
+      background:rgba(176,110,255,.1); border:.5px solid rgba(176,110,255,.3);
+      padding:3px 10px; border-radius:20px; }
+    .esp-close-btn {
+      font-family:'Share Tech Mono',monospace; font-size:.6rem;
+      padding:4px 10px; cursor:pointer; border-radius:3px;
+      color:#e8e3d6; background:none; border:.5px solid rgba(232,227,214,.4);
+    }
+    .esp-close-btn:hover { color:#b06eff; border-color:rgba(176,110,255,.6); }
+    #esp-body {
+      flex:1; display:flex; overflow:hidden;
+    }
+    #esp-sidebar {
+      width:160px; flex-shrink:0; padding:.75rem;
+      background:#100d0a; border-right:1px solid rgba(176,110,255,.15);
+      overflow-y:auto;
+    }
+    #esp-el-tabs { display:flex; flex-direction:column; gap:4px; }
+    #esp-el-tabs button {
+      font-family:'Share Tech Mono',monospace; font-size:.62rem;
+      padding:.4rem .55rem; cursor:pointer; text-align:left;
+      background:rgba(176,110,255,.06); border:1px solid rgba(176,110,255,.25);
+      color:#e8e3d6; letter-spacing:.08em; text-transform:uppercase;
+      transition:background .15s, border-color .15s;
+    }
+    #esp-el-tabs button:hover { background:rgba(176,110,255,.16); border-color:rgba(176,110,255,.55); }
+    #esp-el-tabs button.active { background:rgba(176,110,255,.22); border-color:rgba(176,110,255,.7); color:#d4b4ff; }
+    #esp-el-tabs button.locked { opacity:.45; cursor:not-allowed; }
+    #esp-main-panel {
+      flex:1; padding:1rem; overflow:auto;
+      color:#e8e3d6;
+    }
+    #esp-main-panel p, #esp-main-panel li, #esp-main-panel span,
+    #esp-main-panel h1, #esp-main-panel h2, #esp-main-panel h3 { color:#e8e3d6 !important; }
+    /* ── ESP slot chooser modal ── */
+    #esp-slot-chooser {
+      display:none; position:fixed; inset:0; z-index:920;
+      background:rgba(13,11,8,.85);
+      align-items:center; justify-content:center; padding:1rem;
+    }
+    #esp-slot-chooser.open { display:flex; }
+    #esp-slot-chooser .esp-chooser-inner {
+      background:#140f08; border:1px solid rgba(176,110,255,.4);
+      padding:1rem 1.25rem; max-width:340px; width:100%;
+      color:#e8e3d6;
+    }
+    #esp-chooser-list {
+      display:flex; flex-direction:column; gap:6px;
+      max-height:60vh; overflow-y:auto;
+    }
+    /* ── Tree-topbar buttons that aren't on the explicit whitelist ──
+       The global button rule darkens any button not in the topbar
+       whitelist. Class-tab buttons (in #tree-tabs) need to override that
+       and use light colors so they're readable on the dark overlay. ── */
+    #tree-tabs button {
+      color:#e8e3d6 !important;
+      background:rgba(255,233,77,.08) !important;
+      border:1px solid rgba(255,233,77,.25) !important;
+    }
+    #tree-tabs button:hover {
+      border-color:rgba(255,233,77,.6) !important;
+      color:#ffe94d !important;
+    }
+  `
+  document.head.appendChild(supp)
 }
 
 export async function mountSkills(__mountOptions = {}) {
@@ -786,6 +876,34 @@ export async function mountSkills(__mountOptions = {}) {
     // node and trace the prerequisite path from that node back to root.
     refreshLines()
 
+    // ── Class tree: tier-level headers ──────────────────────────────
+    // Render the 6 tier-level headers (15/20/25/30/35/40) as boxes above
+    // each column. Element tree doesn't need these — only class tree.
+    if (treeMode !== 'elements') {
+      const TIER_X = [400, 660, 920, 1180, 1440, 1700]
+      const TIER_LEVELS = [15, 20, 25, 30, 35, 40]
+      TIER_LEVELS.forEach((lvl, i) => {
+        const hdr = document.createElement('div')
+        hdr.style.cssText = `
+          position:absolute;
+          left:${TIER_X[i]}px;top:400px;transform:translate(-50%,-50%);
+          width:140px;padding:.5rem 0;
+          border:1px solid rgba(232,227,214,.35);
+          background:rgba(255,255,255,.04);
+          font-family:'Cinzel',serif;font-size:.9rem;
+          color:#e8e3d6;text-align:center;letter-spacing:.08em;
+          user-select:none;pointer-events:none;
+        `
+        // Class color tint
+        const cls = CLASSES[treeMode]
+        if (cls && cls.color) {
+          hdr.style.borderColor = cls.color + '55'
+        }
+        hdr.textContent = lvl
+        canvas.appendChild(hdr)
+      })
+    }
+
     // Nodes — iterate activeNodes() so the same render path serves both the
     // elemental tree and class trees. Class nodes use buildClassNodeClass /
     // buildClassNodeHTML, which respect level-gating instead of SP.
@@ -811,19 +929,24 @@ export async function mountSkills(__mountOptions = {}) {
   // All edges are drawn faintly so the tree's structure is visible. Paths to
   // every unlocked node are lit up permanently in their branch colour. The
   // path to a selected (but not yet unlocked) node is also shown as a preview.
-    function refreshLines() {
+  function refreshLines() {
     const svg = document.getElementById('tree-svg')
     if (!svg) return
 
-    const nodes = activeNodes()
-    // In class mode, "unlocked" means the node is in class_nodes_unlocked
-    // (or it's the start node). In element mode, it's the regular check.
-    const isNodeUnlocked = (id) => {
-      if (treeMode === 'elements') return skillsUnlocked.includes(id)
-      const nd = nodes.find(n => n.id === id)
-      if (nd && nd.type === 'start') return true
-      return isClassNodeUnlocked(player, treeMode, id)
+    // ── Class tree: no connector lines ────────────────────────────────
+    // The class tree is laid out as 3 horizontal rows (branches a/b/c) ×
+    // 6 columns (tiers 1-6). The horizontal grouping IS the visual
+    // relationship — connector lines would just clutter and (because the
+    // data model has each node requiring all 3 of the previous tier's
+    // branches) light up almost the entire tree on hover.
+    // Element tree keeps its connector lines as designed.
+    if (treeMode !== 'elements') {
+      svg.innerHTML = ''
+      return
     }
+
+    const nodes = activeNodes()
+    const isNodeUnlocked = (id) => skillsUnlocked.includes(id)
 
     // Walk back from a node through `requires` to root, recording every edge.
     const litEdges = new Set()
@@ -839,8 +962,10 @@ export async function mountSkills(__mountOptions = {}) {
       }
     }
 
-    // Only light up the path to the currently selected node
-    if (selectedNode) walk(selectedNode)
+    // Light up paths for all permanently unlocked nodes
+    for (const nd of nodes) if (isNodeUnlocked(nd.id)) walk(nd.id)
+    // Also preview the path to a selected node that isn't unlocked yet
+    if (selectedNode && !isNodeUnlocked(selectedNode)) walk(selectedNode)
 
     let lines = ''
     nodes.forEach(nd => {
@@ -1120,8 +1245,8 @@ export async function mountSkills(__mountOptions = {}) {
           font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.12em;
           padding:.3rem .8rem;cursor:pointer;border-radius:2px;margin-right:6px;
           background:${active ? t.color + '33' : 'transparent'};
-          border:1px solid ${active ? t.color : 'rgba(200,184,128,.25)'};
-          color:${active ? t.color : 'var(--ink-dim)'};font-weight:600">
+          border:1px solid ${active ? t.color : 'rgba(200,184,128,.35)'};
+          color:${active ? t.color : '#a08858'};font-weight:600">
           <span style="margin-right:4px">${t.sigil}</span>${t.label}
         </button>`
     }).join('')
