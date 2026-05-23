@@ -339,9 +339,9 @@ export async function mountVehicle(__mountOptions = {}) {
   ;['motorcycle','car','van'].forEach(t=>{const img=new Image();img.src=`../assets/ride/top_${t}.webp`;VTOP_IMGS[t]=img})
 
   // Preload enemy eye images
-  // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp
+  // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp, boss.webp (key matches e.name.toLowerCase())
   const EYE_IMGS={}
-  ;['scout','watcher','drone','sniper','swarm','cluster','boss_eye'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
+  ;['scout','watcher','drone','sniper','swarm','cluster','boss'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
 
   // Draw vehicle
   const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
