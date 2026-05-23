@@ -995,17 +995,21 @@ export async function mountSkills(__mountOptions = {}) {
     const isNodeUnlocked = (id) => skillsUnlocked.includes(id)
 
     // Walk back from a node through `requires` to root, recording every edge.
+    // For multi-parent nodes (e.g. of7 requires both ofn4 AND ofn6), we only
+    // follow ONE parent — the unlocked one if any, else the first listed.
+    // This prevents lighting up paths from unselected siblings.
     const litEdges = new Set()
     const visited = new Set()
     const walk = (id) => {
       if (visited.has(id)) return
       visited.add(id)
       const nd = nodes.find(n => n.id === id)
-      if (!nd || !nd.requires) return
-      for (const req of nd.requires) {
-        litEdges.add(req + '\x00' + id)
-        walk(req)
-      }
+      if (!nd || !nd.requires || nd.requires.length === 0) return
+      // Prefer an unlocked parent. If none, take the first listed.
+      let parent = nd.requires.find(req => isNodeUnlocked(req))
+      if (!parent) parent = nd.requires[0]
+      litEdges.add(parent + '\x00' + id)
+      walk(parent)
     }
 
     // Light up paths for all permanently unlocked nodes
@@ -1282,7 +1286,7 @@ export async function mountSkills(__mountOptions = {}) {
 
     const revealed = getRevealedClasses(player)
     const tabs = [
-      { key: 'elements', label: 'Elements', sigil: '⬡', color: '#c8b96e' },
+      { key: 'elements', label: 'Skills', sigil: '⬡', color: '#c8b96e' },
       ...revealed.map(c => ({ key: c.key, label: c.name, sigil: '⚖', color: c.color })),
     ]
     host.innerHTML = tabs.map(t => {
