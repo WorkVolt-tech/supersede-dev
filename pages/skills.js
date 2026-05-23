@@ -396,11 +396,13 @@ export async function mountSkills(__mountOptions = {}) {
     const choices = getClassChoicesForFormKey(formKey)
     if (!choices.length) return                // form unknown — bail
 
-    // Render the persistent "Class Selection Available" button at the top.
-    // We insert it just under the SP display row.
+    // Render the persistent banner at the top.
     renderClassPickerButton(choices, formKey)
 
-    // Auto-open the modal on first visit (no 'seen' tag yet)
+    // Auto-fire the SYSTEM POPUP on first visit (no 'seen' tag yet).
+    // The popup is the announcement; clicking "View options" inside it
+    // transitions to the picker modal. Clicking "Defer" closes the popup;
+    // the banner button stays available for later.
     if (!log.includes('class_picker_seen_skills')) {
       log.push('class_picker_seen_skills')
       player.alliance_log = log
@@ -408,23 +410,203 @@ export async function mountSkills(__mountOptions = {}) {
       try {
         await supabase.from('players').update({ alliance_log: log }).eq('id', player.id)
       } catch (e) { /* non-critical */ }
-      showClassPickerModal(choices, formKey)
+      // Small delay so the page has finished laying out before we drop the
+      // popup. Otherwise it can flash before the page is visible.
+      setTimeout(() => showAnomalyPopupSkills(choices, formKey), 250)
     }
   }
 
+  function showAnomalyPopupSkills(choices, formKey) {
+    // Same shape as the post-combat popup but adapted for the skills page
+    // context (the message references "designation pending" rather than
+    // "hidden pre-requisite resolved" because the unlock has already happened).
+    if (document.getElementById('sys-anomaly-popup')) return
+    const ts = new Date().toISOString().slice(11, 19) + 'Z'
+    const popup = document.createElement('div')
+    popup.id = 'sys-anomaly-popup'
+    popup.style.cssText = `
+      position:fixed;inset:0;z-index:10000;
+      background:radial-gradient(ellipse at center, rgba(28,24,18,.65) 0%, rgba(10,8,5,.92) 80%);
+      display:flex;align-items:center;justify-content:center;padding:20px;
+      animation:sysAnomalyFadeIn .4s ease-out;
+    `
+    popup.innerHTML = `
+      <style>
+        @keyframes sysAnomalyFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes sysAnomalyPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(155,109,255,.5), inset 0 0 0 0 rgba(155,109,255,.15); }
+          50%      { box-shadow: 0 0 24px 2px rgba(155,109,255,.55), inset 0 0 32px 0 rgba(155,109,255,.18); }
+        }
+        @keyframes sysAnomalyScanline { from { background-position: 0 0; } to { background-position: 0 4px; } }
+        @keyframes sysAnomalyGlitch {
+          0%, 92%, 100% { transform: translateX(0); }
+          93% { transform: translateX(-1px); }
+          94% { transform: translateX(1px); }
+          95% { transform: translateX(-1px); }
+          96% { transform: translateX(0); }
+        }
+        #sys-anomaly-popup .frame {
+          background:linear-gradient(180deg, rgba(20,16,12,.96) 0%, rgba(28,24,18,.96) 100%);
+          border:2px solid rgba(155,109,255,.65);
+          box-shadow: 0 0 24px 2px rgba(155,109,255,.45), inset 0 0 32px 0 rgba(155,109,255,.12);
+          color:#e8dcc2;
+          max-width:520px;width:100%;
+          font-family:'JetBrains Mono','Share Tech Mono',monospace;
+          position:relative;
+          animation:sysAnomalyPulse 2.6s ease-in-out infinite, sysAnomalyGlitch 5s infinite;
+        }
+        #sys-anomaly-popup .frame::before {
+          content:'';position:absolute;inset:0;pointer-events:none;
+          background:repeating-linear-gradient(0deg, rgba(155,109,255,.04) 0px, rgba(155,109,255,.04) 1px, transparent 1px, transparent 4px);
+          animation:sysAnomalyScanline 1.2s linear infinite;
+        }
+        #sys-anomaly-popup .frame > * { position:relative; z-index:1; }
+        #sys-anomaly-popup .sys-header {
+          display:flex;justify-content:space-between;align-items:center;
+          padding:8px 14px;
+          background:linear-gradient(90deg, rgba(155,109,255,.18), rgba(155,109,255,.04));
+          border-bottom:1px solid rgba(155,109,255,.55);
+          font-size:9px;letter-spacing:.18em;text-transform:uppercase;
+          color:#c8a8ff;
+        }
+        #sys-anomaly-popup .sys-header .badge {
+          background:rgba(255,80,80,.18); border:1px solid rgba(255,80,80,.5);
+          padding:2px 8px;font-size:8px;color:#ff9090;letter-spacing:.2em;
+        }
+        #sys-anomaly-popup .sys-body { padding:18px 22px 14px; }
+        #sys-anomaly-popup .sys-title {
+          font-family:'Cinzel',serif;font-size:1.35rem;font-weight:700;
+          color:#d4b4ff;letter-spacing:.12em;margin-bottom:8px;
+          text-shadow:0 0 12px rgba(155,109,255,.5);
+        }
+        #sys-anomaly-popup .sys-msg {
+          font-family:'Share Tech Mono',monospace;font-size:11px;
+          line-height:1.7;letter-spacing:.04em;color:#d8c8a8;margin-bottom:6px;
+        }
+        #sys-anomaly-popup .sys-msg em {
+          color:#c8a8ff;font-style:normal;font-weight:600;letter-spacing:.06em;
+        }
+        #sys-anomaly-popup .sys-divider {
+          height:1px;background:linear-gradient(90deg, transparent, rgba(155,109,255,.5), transparent);
+          margin:14px 0 12px;
+        }
+        #sys-anomaly-popup .sys-actions {
+          display:flex;flex-direction:column;gap:8px;padding:0 22px 18px;
+        }
+        #sys-anomaly-popup .sys-btn {
+          font-family:'Cinzel',serif;letter-spacing:.08em;
+          background:rgba(155,109,255,.12);
+          border:1px solid rgba(155,109,255,.45);
+          color:#e8dcc2;padding:11px 14px;
+          cursor:pointer;font-size:.85rem;
+          transition:background .15s,border-color .15s,transform .1s;
+          text-align:left;display:flex;align-items:center;gap:10px;
+        }
+        #sys-anomaly-popup .sys-btn:hover {
+          background:rgba(155,109,255,.25);border-color:rgba(155,109,255,.8);transform:translateX(2px);
+        }
+        #sys-anomaly-popup .sys-btn .arrow { font-size:1rem;color:#c8a8ff;flex:none; }
+        #sys-anomaly-popup .sys-btn .sub {
+          display:block;font-family:'Share Tech Mono',monospace;font-size:9px;
+          color:#9a8870;letter-spacing:.1em;margin-top:2px;text-transform:uppercase;
+        }
+        #sys-anomaly-popup .sys-btn.primary {
+          background:rgba(200,168,255,.16);border-color:rgba(200,168,255,.6);
+        }
+        #sys-anomaly-popup .sys-btn.primary:hover { background:rgba(200,168,255,.28); }
+      </style>
+      <div class="frame">
+        <div class="sys-header">
+          <span>System / 0xANOMALY · ${ts}</span>
+          <span class="badge">⚠ ALERT</span>
+        </div>
+        <div class="sys-body">
+          <div class="sys-title">DESIGNATION PENDING</div>
+          <div class="sys-msg">The System has flagged your record for <em>designation review</em>.</div>
+          <div class="sys-msg">A class slot is open against your registry — claim it now or defer.</div>
+          <div class="sys-msg" style="font-size:10px;color:#9a8870;letter-spacing:.06em;margin-top:8px">› Reference: TWIN-JUDGES :: ${formKey.toUpperCase()}</div>
+          <div class="sys-divider"></div>
+          <div class="sys-msg" style="color:#a8987a">Select how to proceed.</div>
+        </div>
+        <div class="sys-actions">
+          <button class="sys-btn primary" data-action="view">
+            <span class="arrow">⚖</span>
+            <span>View designation options
+              <span class="sub">Open the picker now</span>
+            </span>
+          </button>
+          <button class="sys-btn" data-action="defer">
+            <span class="arrow">→</span>
+            <span>Defer — keep the banner visible
+              <span class="sub">Choose later from the skills page</span>
+            </span>
+          </button>
+        </div>
+      </div>`
+    document.body.appendChild(popup)
+    popup.querySelector('[data-action=view]').addEventListener('click', () => {
+      popup.remove()
+      showClassPickerModal(choices, formKey)
+    })
+    popup.querySelector('[data-action=defer]').addEventListener('click', () => {
+      popup.remove()
+    })
+  }
+
   function renderClassPickerButton(choices, formKey) {
-    // Insert just under the SP display row. Avoid duplicate if re-rendered.
+    // A more visible banner — pulses to draw the eye, styled like a real
+    // system event panel. Insert just under the SP display row.
     if (document.getElementById('cls-pick-banner')) return
     const spDisplay = document.getElementById('sp-display')
     if (!spDisplay) return
     const banner = document.createElement('div')
     banner.id = 'cls-pick-banner'
-    banner.style.cssText = 'margin:.5rem 0;padding:.6rem .8rem;background:rgba(155,109,255,.08);border:1px solid rgba(155,109,255,.45);display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap'
+    banner.style.cssText = `
+      margin:.6rem 0;
+      position:relative;
+      background:linear-gradient(90deg, rgba(155,109,255,.22), rgba(155,109,255,.08) 60%, transparent);
+      border:1px solid rgba(155,109,255,.55);
+      border-left:3px solid rgba(155,109,255,.85);
+      padding:.65rem .9rem;
+      display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;
+      box-shadow: 0 0 12px rgba(155,109,255,.18), inset 0 0 16px rgba(155,109,255,.05);
+      animation: clsBannerPulse 3.2s ease-in-out infinite;
+    `
     banner.innerHTML = `
-      <div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;line-height:1.5;color:var(--ink);letter-spacing:.06em;flex:1;min-width:0">
-        ⚠ CLASS SELECTION AVAILABLE — anomaly designation pending.
+      <style>
+        @keyframes clsBannerPulse {
+          0%, 100% { box-shadow: 0 0 8px rgba(155,109,255,.12), inset 0 0 12px rgba(155,109,255,.04); }
+          50%      { box-shadow: 0 0 16px rgba(155,109,255,.28), inset 0 0 18px rgba(155,109,255,.1); }
+        }
+        #cls-pick-banner .cls-banner-tag {
+          font-family:'Share Tech Mono',monospace;font-size:.55rem;
+          letter-spacing:.18em;color:rgba(155,109,255,.95);
+          display:block;margin-bottom:.15rem;text-transform:uppercase;
+        }
+        #cls-pick-banner .cls-banner-msg {
+          font-family:'IM Fell English',serif;font-size:.85rem;color:var(--ink);
+          line-height:1.3;
+        }
+        #cls-pick-open {
+          font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.08em;
+          color:#e8dcc2;
+          background:linear-gradient(180deg, rgba(155,109,255,.32), rgba(155,109,255,.18));
+          border:1px solid rgba(155,109,255,.7);
+          padding:.5rem 1rem;cursor:pointer;border-radius:2px;white-space:nowrap;
+          transition:background .15s, border-color .15s, transform .1s;
+          text-transform:uppercase;
+        }
+        #cls-pick-open:hover {
+          background:linear-gradient(180deg, rgba(155,109,255,.48), rgba(155,109,255,.28));
+          border-color:rgba(155,109,255,.95);
+          transform:translateY(-1px);
+        }
+      </style>
+      <div style="flex:1;min-width:0">
+        <span class="cls-banner-tag">⚠ System Alert · Designation Pending</span>
+        <span class="cls-banner-msg">A class slot is open against your record. Claim it when ready — the choice is final.</span>
       </div>
-      <button id="cls-pick-open" style="font-family:'Cinzel',serif;font-size:.72rem;letter-spacing:.06em;color:var(--ink);background:rgba(155,109,255,.18);border:1px solid rgba(155,109,255,.55);padding:.45rem .9rem;cursor:pointer;border-radius:3px;white-space:nowrap">⚖ View Options</button>
+      <button id="cls-pick-open">⚖ View Options</button>
     `
     // Insert after the parent row containing sp-display
     const parent = spDisplay.closest('div').parentElement
