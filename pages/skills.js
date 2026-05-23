@@ -922,30 +922,59 @@ export async function mountSkills(__mountOptions = {}) {
     // node and trace the prerequisite path from that node back to root.
     refreshLines()
 
-    // ── Class tree: tier-level headers ──────────────────────────────
-    // Render the 6 tier-level headers (15/20/25/30/35/40) as boxes above
-    // each column. Element tree doesn't need these — only class tree.
+    // ── Class tree: column backgrounds + tier headers ──────────────────
+    // Renders behind nodes: faint vertical panels per tier (gives structure
+    // to the empty space), then tier-level header boxes (15/20/25/30/35/40)
+    // above each column. Element tree doesn't need these.
     if (treeMode !== 'elements') {
-      const TIER_X = [400, 660, 920, 1180, 1440, 1700]
+      const TIER_X = [280, 460, 640, 820, 1000, 1180]
       const TIER_LEVELS = [15, 20, 25, 30, 35, 40]
+      const cls = CLASSES[treeMode]
+      const clsCol = cls?.color || '#d4af37'
+      // Column background panels — span from above headers to below row c
+      TIER_X.forEach((x, i) => {
+        const panel = document.createElement('div')
+        panel.style.cssText = `
+          position:absolute;
+          left:${x}px;top:1080px;transform:translate(-50%,-50%);
+          width:130px;height:880px;
+          background:linear-gradient(180deg, ${clsCol}08 0%, ${clsCol}14 50%, ${clsCol}08 100%);
+          border-left:1px solid ${clsCol}22;
+          border-right:1px solid ${clsCol}22;
+          pointer-events:none;user-select:none;
+          z-index:0;
+        `
+        canvas.appendChild(panel)
+      })
+      // Same-row connector lines (1a→2a→3a→4a→5a→6a, etc.) — faint
+      const ROW_Y = { a: 580, b: 800, c: 1020 }
+      Object.values(ROW_Y).forEach(y => {
+        const line = document.createElement('div')
+        line.style.cssText = `
+          position:absolute;
+          left:${TIER_X[0]}px;top:${y}px;
+          width:${TIER_X[5] - TIER_X[0]}px;height:1px;
+          background:linear-gradient(90deg, ${clsCol}00, ${clsCol}55 10%, ${clsCol}55 90%, ${clsCol}00);
+          pointer-events:none;user-select:none;
+          z-index:0;
+        `
+        canvas.appendChild(line)
+      })
+      // Tier-level headers (15/20/25/30/35/40)
       TIER_LEVELS.forEach((lvl, i) => {
         const hdr = document.createElement('div')
         hdr.style.cssText = `
           position:absolute;
-          left:${TIER_X[i]}px;top:400px;transform:translate(-50%,-50%);
-          width:140px;padding:.5rem 0;
-          border:1px solid rgba(232,227,214,.35);
-          background:rgba(255,255,255,.04);
-          font-family:'Cinzel',serif;font-size:.9rem;
+          left:${TIER_X[i]}px;top:420px;transform:translate(-50%,-50%);
+          width:90px;padding:.4rem 0;
+          border:1px solid ${clsCol}66;
+          background:${clsCol}11;
+          font-family:'Cinzel',serif;font-size:.85rem;
           color:#e8e3d6;text-align:center;letter-spacing:.08em;
           user-select:none;pointer-events:none;
+          z-index:1;
         `
-        // Class color tint
-        const cls = CLASSES[treeMode]
-        if (cls && cls.color) {
-          hdr.style.borderColor = cls.color + '55'
-        }
-        hdr.textContent = lvl
+        hdr.textContent = 'Lv ' + lvl
         canvas.appendChild(hdr)
       })
     }
@@ -1183,7 +1212,7 @@ export async function mountSkills(__mountOptions = {}) {
     }
 
     const lvlBadge = nd.levelRequired > 1 && !unlocked
-      ? `<span style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:.5rem;color:${available?col:'#7a6938'};letter-spacing:.06em;white-space:nowrap">Lv ${nd.levelRequired}</span>`
+      ? `<span style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:.5rem;color:${available?col:'#7a6938'};letter-spacing:.06em;white-space:nowrap">Lv ${nd.levelRequired}</span>`
       : ''
     const labelHTML = nd.label
       ? `<div class="sn-lbl" style="color:${locked?'rgba(212,175,55,.35)':col};max-width:120px;margin-top:8px;font-family:'Share Tech Mono',monospace;font-size:9px;text-align:center;line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.8)">${nd.label}</div>`
