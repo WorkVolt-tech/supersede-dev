@@ -70,8 +70,14 @@ export function hasUsedAnyElement(player) {
 const TIER_LEVELS = [15, 20, 25, 30, 35, 40]
 // X positions for the 6 columns and Y positions for the 3 rows (a/b/c).
 // 2000×2000 canvas, centered horizontally with even spacing.
-const TIER_X = [400, 660, 920, 1180, 1440, 1700]
-const ROW_Y  = { a: 700, b: 1000, c: 1300 }
+// Layout coordinates for the class tree.
+//   TIER_X: x positions for the 6 tier columns (left → right)
+//   ROW_Y:  y positions for the 3 branches (a/b/c)
+// Tightened from the original 260/300 spacing → 180/220 for a denser feel.
+// Tier headers (rendered in skills.js) and start node x=180 also depend on
+// these values — keep them in sync if you change anything here.
+const TIER_X = [280, 460, 640, 820, 1000, 1180]
+const ROW_Y  = { a: 580, b: 800, c: 1020 }
 
 // Build the 18-node tree from a 6-tier × 3-branch tiers[] array.
 // Each tier entry: { a: [label, sub], b: [label, sub], c: [label, sub] }
@@ -82,8 +88,8 @@ function makeClassNodes(classKey, color, name, tiers) {
     id: classKey + '_start',
     label: name,
     sub: 'Recognized',
-    // Start sits left of all tiers, vertically centered.
-    x: 180, y: 1000,
+    // Start sits left of all tiers, vertically centered on branch b.
+    x: 180, y: 800,
     levelRequired: 1,
     requires: [],
     type: 'start',
