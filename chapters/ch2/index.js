@@ -4769,25 +4769,28 @@ You walk back out.`
 
   function renderHUD() {
     const hp=currentHp, mhp=player.max_hp||100, xp=player.xp||0, lvl=player.level||1
-    const BC={neutral:'#8b6a20',red:'#a02020',green:'#2f7a2f',elite:'#5f3aa0'}
-    const BS={neutral:'🟡',red:'🔴',green:'🟢',elite:'🟣'}
-    const bc=BC[player.badge]||'#8b6a20', bs=BS[player.badge]||'🟡'
+    // ── 6-tier moral standing (HUD display) ─────────────────────────
+    // We derive the seal display from moral_score directly, not from
+    // player.badge. The badge column still exists for the lobby/PvP
+    // 4-tier system (Hunter/Helper/Elite/Neutral as PvP roles), but the
+    // single-player HUD shows the 6-tier morality ladder for clarity.
+    const moral=player.moral_score||0
+    const moralPct=Math.round((moral+100)/2)
+    const moralCol=moral>=70?'#1e5a8a':moral>=30?'#2f7a2f':moral>=-10?'#8b6a20':moral>=-40?'#a04a18':moral>=-70?'#a02020':'#7a0a0a'
+    const moralLabel=moral>=70?'HERO':moral>=30?'GOOD':moral>=-10?'NEUTRAL':moral>=-40?'RUTHLESS':moral>=-70?'CORRUPT':'VILLAIN'
+    const moralSeal=moral>=70?'🔵':moral>=30?'🟢':moral>=-10?'🟡':moral>=-40?'🟠':'🔴'
     const hpPct=Math.max(0,Math.round(hp/mhp*100))
     const hpCol=hpPct>60?'#5ec45e':hpPct>30?'#c8b96e':'#e05555'
     const xpNext=xpForLevel(lvl)
     const xpIntoLevel=Math.max(0,Math.min(xp,xpNext-1))
     const xpPct=Math.min(100,Math.round(xpIntoLevel/xpNext*100))
-    const moral=player.moral_score||0
-    const moralPct=Math.round((moral+100)/2)
-    const moralCol=moral>=60?'#1e5a8a':moral>=20?'#2f7a2f':moral>=-20?'#8b6a20':moral>=-60?'#a04a18':'#a02020'
-    const moralLabel=moral>=70?'HERO':moral>=30?'GOOD':moral>=-10?'NEUTRAL':moral>=-40?'RUTHLESS':moral>=-70?'CORRUPT':'VILLAIN'
     const dotLeft=Math.max(2,Math.min(94,moralPct))
 
     document.getElementById('hud').innerHTML=`
       <div class="hud-badge-row">
-        <span class="hud-seal">${bs}</span>
+        <span class="hud-seal">${moralSeal}</span>
         <div>
-          <p class="hud-seal-label" style="color:${bc}">${(player.badge||'neutral')[0].toUpperCase()+(player.badge||'neutral').slice(1)}</p>
+          <p class="hud-seal-label" style="color:${moralCol}">${moralLabel.charAt(0)+moralLabel.slice(1).toLowerCase()}</p>
           <p class="hud-chapter">Chapter 2 · Lvl ${lvl}</p>
         </div>
       </div>
