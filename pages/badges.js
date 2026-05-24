@@ -37,6 +37,9 @@ export async function mountBadges(__mountOptions = {}) {
     const earnedKeys = new Set((earnedRows||[]).map(b=>b.badge_key))
 
     // ── Auto-award badges based on current player stats ──
+    // For each badge, check if the player qualifies. If they do AND it's not
+    // already earned, insert into player_badges. If the insert fails (RLS,
+    // duplicate, etc.), log it so we can diagnose.
     function hasEarned(b) {
       switch(b.ctype) {
         case 'chapter': return (player.chapters_unlocked||[]).includes(2) || (player.current_chapter||1) >= 2
@@ -60,17 +63,34 @@ export async function mountBadges(__mountOptions = {}) {
       }
     }
 
-    // Insert any newly earned badges not yet recorded
+    console.log('[badges] player state:', {
+      level: player.level,
+      current_chapter: player.current_chapter,
+      chapters_unlocked: player.chapters_unlocked,
+      helps_given: player.helps_given,
+      pvp_kills: player.pvp_kills,
+      defeated_bosses: defeated,
+    })
+    console.log('[badges] already earned:', [...earnedKeys])
+
     for (const b of ALL_BADGES) {
-      if (!earnedKeys.has(b.key) && hasEarned(b)) {
+      const qualifies = hasEarned(b)
+      if (qualifies) console.log(`[badges] ${b.key} qualifies (already earned: ${earnedKeys.has(b.key)})`)
+      if (!earnedKeys.has(b.key) && qualifies) {
         const {error} = await supabase.from('player_badges').insert({
           player_id: player.id,
           badge_key:  b.key,
           earned_at:  new Date().toISOString(),
         })
-        if (!error) earnedKeys.add(b.key)
+        if (error) {
+          console.error(`[badges] FAILED to insert ${b.key}:`, error.message)
+        } else {
+          console.log(`[badges] inserted ${b.key}`)
+          earnedKeys.add(b.key)
+        }
       }
     }
+    console.log('[badges] final earned set:', [...earnedKeys])
 
     const earned = ALL_BADGES.filter(b => earnedKeys.has(b.key))
     const locked  = ALL_BADGES.filter(b => !earnedKeys.has(b.key))
