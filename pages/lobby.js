@@ -1,4 +1,5 @@
 import { supabase }          from '../supabase.js'
+import { getBadgeMeta, calcBadge } from '../data/reputation.js'
 
 const MODULE_STYLE_ID = 'book-module-style-lobby'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\">\n    <div class=\"page-left parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter <span id=\"ch-num\">1</span> \u00b7 Lobby</p>\n        <h1 class=\"page-title\">Nearby Players</h1>\n        <div style=\"display:flex;align-items:center;gap:.4rem;margin-bottom:.5rem\">\n          <span class=\"blink\" style=\"width:6px;height:6px;border-radius:50%;background:#5ec45e;box-shadow:0 0 4px #5ec45e;display:inline-block;flex-shrink:0\"></span>\n          <span id=\"count\" style=\"font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--ink-dim);letter-spacing:.06em\">scanning\u2026</span>\n        </div>\n        <hr class=\"ink-divider\">\n        <div id=\"ping-log\" style=\"background:rgba(0,0,0,.06);border-left:2px solid rgba(139,106,32,.3);padding:.6rem .75rem;min-height:44px;border-radius:0 2px 2px 0;margin-bottom:.75rem\">\n          <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink-dim);letter-spacing:.06em\">System scanning\u2026</p>\n        </div>\n        <div id=\"player-list\"></div>\n      </div>\n    </div>\n        <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Your Presence</p>\n        <h2 class=\"page-title\" id=\"own-name\">\u2014</h2>\n        <hr class=\"ink-divider\">\n        <div id=\"own-stats\"></div>\n        <hr class=\"ink-divider\">\n        <div style=\"margin-top:.75rem\">\n          <p style=\"font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim);letter-spacing:.08em;margin-bottom:.4rem\">FIGHT MODES</p>\n          <div style=\"background:rgba(224,85,85,.06);border:.5px solid rgba(224,85,85,.2);border-radius:4px;padding:.5rem .65rem;margin-bottom:.4rem\">\n            <p style=\"font-family:'Cinzel',serif;font-size:.72rem;color:#e05555;margin-bottom:2px\">\u2694 PVP Challenge</p>\n            <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#6b5a35;line-height:1.4\">Target is online. They receive a notification and must accept to fight.</p>\n          </div>\n          <div style=\"background:rgba(176,110,255,.06);border:.5px solid rgba(176,110,255,.2);border-radius:4px;padding:.5rem .65rem\">\n            <p style=\"font-family:'Cinzel',serif;font-size:.72rem;color:#b06eff;margin-bottom:2px\">\ud83c\udf11 Raid Attack</p>\n            <p style=\"font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:#6b5a35;line-height:1.4\">Target is away. Auto-resolved by stats. They get a Revenge notice on return.</p>\n          </div>\n        </div>\n        <hr class=\"ink-divider\" style=\"margin-top:.75rem\">\n        <p style=\"font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c04040;letter-spacing:.06em\">\u26a0 Reputation shifts are permanent.</p>\n      </div>\n    </div>\n  </div>\n</div>"
@@ -24,13 +25,10 @@ export async function mountLobby(__mountOptions = {}) {
   const ADMIN_USER_IDS = new Set(['YOUR_USER_ID_HERE'])
   function isAdmin(uid) { return ADMIN_USER_IDS.has(uid) }
 
-  const BC = {
-    neutral:{ label:'Neutral', color:'#c8b96e' },
-    red:    { label:'Hunter',  color:'#e05555' },
-    green:  { label:'Helper',  color:'#5ec45e' },
-    elite:  { label:'Elite',   color:'#a07de0' },
-    unknown:{ label:'Unknown', color:'#666'    },
-  }
+  // BC was a local 4-tier badge → {label, color} map. Now sources from
+  // reputation.js so the canonical lookup is in one place. Kept as a Proxy
+  // so all `BC[player.badge]` callsites work unchanged.
+  const BC = new Proxy({}, { get: (_, key) => getBadgeMeta(key) })
   const SC = {
     online:    { label:'Online',    color:'#5ec45e' },
     in_combat: { label:'In Combat', color:'#e05555' },
@@ -652,11 +650,7 @@ export async function mountLobby(__mountOptions = {}) {
       if (won) {
         const newKills = (player.pvp_kills||0) + 1
         player.pvp_kills = newKills
-        const m = player.moral_score||0, hg = player.helps_given||0, pk = newKills
-        let newBadge = 'neutral'
-        if (m >= 60 && (hg >= 3 || pk === 0)) newBadge = 'elite'
-        else if (m >= 20)                      newBadge = 'green'
-        else if (m <= -20 || (pk >= 5 && pk > hg*3)) newBadge = 'red'
+        const newBadge = calcBadge(player.moral_score, newKills, player.helps_given)
         player.badge = newBadge
         await supabase.from('players').update({ pvp_kills: newKills, badge: newBadge, reputation: newBadge }).eq('id', player.id)
       }
