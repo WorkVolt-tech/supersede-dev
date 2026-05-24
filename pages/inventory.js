@@ -129,7 +129,11 @@ export async function mountInventory(__mountOptions = {}) {
       { key:'offhand',    label:'Off-hand',    icon:'🛡',  accepts:['shield','dagger','tome','sword'] },
     ]
 
-    const RARITY = { common:'#c8c0a0', uncommon:'#5ec45e', rare:'#5eaee0', epic:'#c090ff', legendary:'#f0d060', mythic:'#ff88ff' }
+    // Item rarity colors — chosen for contrast on the LIGHT parchment
+    // background. Each color keeps its rarity hue identity but is darker
+    // and more saturated so text is readable. If the theme changes back
+    // to dark, these will need to be lightened again.
+    const RARITY = { common:'#5c4638', uncommon:'#2f7a2f', rare:'#1e5a8a', epic:'#6b2da8', legendary:'#a06820', mythic:'#a82a8a' }
     const FILTERS = ['all','weapon','armor','accessory','consumable','material','key']
 
 
@@ -162,7 +166,7 @@ export async function mountInventory(__mountOptions = {}) {
         return `<div class="equip-slot${selectedId?' clickable':''}" data-slot="${s.key}" title="${item?item.name+' — click to manage':s.label}">
           ${(()=>{if(!item)return '<span class="slot-icon">'+s.icon+'</span>';const _s=getItemImg(item.item_key);return _s?('<img src="'+_s+'" class="slot-icon" style="width:28px;height:28px;object-fit:contain;flex-shrink:0" onerror="this.style.display=\'none\'">'):'<span class="slot-icon" style="flex-shrink:0">'+item.icon+'</span>';})()}
           <div style="flex:1;min-width:0;overflow:hidden">
-            <div style="color:${item ? (RARITY[item.rarity]||'#c8c0a0') : 'rgba(200,168,74,.35)'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem;font-family:'Cinzel',serif">${item ? item.name : s.label}</div>
+            <div style="color:${item ? (RARITY[item.rarity]||'#5c4638') : '#a08060'};display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.82rem;font-family:'Cinzel',serif">${item ? item.name : s.label}</div>
             ${item ? (()=>{
               const bonuses = [
                 item.atk_bonus>0?'ATK +'+item.atk_bonus:'',
@@ -175,8 +179,8 @@ export async function mountInventory(__mountOptions = {}) {
                 (item.luck_bonus||0)>0?'LCK +'+item.luck_bonus:'',
               ].filter(Boolean).join(' ')
               const rwLine = _runeword ? '✦ '+_runeword : (_socketsTotal>0?_socketsUsed+'/'+_socketsTotal+' sockets':'')
-              return (bonuses ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:rgba(200,168,74,.65);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</div>' : '')
-                + (rwLine ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:'+(_runeword?'#c090ff':'rgba(200,168,74,.45)')+'">'+rwLine+'</div>' : '')
+              return (bonuses ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:#7a5c30;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+bonuses+'</div>' : '')
+                + (rwLine ? '<div style="font-family:\'JetBrains Mono\',monospace;font-size:.44rem;color:'+(_runeword?'#6b2da8':'#7a5cb0')+'">'+rwLine+'</div>' : '')
             })() : ''}
           </div>
         </div>`
@@ -277,11 +281,11 @@ export async function mountInventory(__mountOptions = {}) {
               <div class="item-type">${item.subtype||item.item_type}${item.quantity>1?' ×'+item.quantity:''}</div>
             </div>
           </div>
-          ${bonuses ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:rgba(200,168,74,.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bonuses}</div>` : ''}
-          ${(item.sockets_total||0)>0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:${item.runeword_name?'#c090ff':'rgba(160,125,224,.5)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.runeword_name?'✦ '+item.runeword_name:(item.sockets_used||0)+'/'+item.sockets_total+' ◈'}</div>` : ''}
+          ${bonuses ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:#7a5c30;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${bonuses}</div>` : ''}
+          ${(item.sockets_total||0)>0 ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.42rem;color:${item.runeword_name?'#6b2da8':'#7a5cb0'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${item.runeword_name?'✦ '+item.runeword_name:(item.sockets_used||0)+'/'+item.sockets_total+' ◈'}</div>` : ''}
           ${item.equipped_slot ? `<div class="item-eq" style="position:absolute;top:3px;right:3px">EQ</div>` : ''}
         </div>`
-      }).join('') || `<div style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:rgba(200,168,74,.4);grid-column:span 3;padding:.5rem">Nothing here.</div>`
+      }).join('') || `<div style="font-family:'IM Fell English',serif;font-style:italic;font-size:.88rem;color:#7a5c30;grid-column:span 3;padding:.5rem">Nothing here.</div>`
 
       document.querySelectorAll('.item-card').forEach(el => {
         el.addEventListener('click', () => {
@@ -576,7 +580,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const RUNE_COLORS = {ignis:'#ff5500',aqua:'#0088ff',terra:'#8b5e3c',aero:'#a8d8ea',umbra:'#b06eff',lux:'#ffd700',venin:'#4caf50',ferro:'#90a4ae',flora:'#66bb6a',volt:'#ffee58'}
       const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
-      const RARITY_COL  = {common:'#c8c0a0',uncommon:'#5ec45e',rare:'#5eaee0',epic:'#c090ff',legendary:'#f0d060',mythic:'#ff88ff'}
+      const RARITY_COL  = {common:'#5c4638',uncommon:'#2f7a2f',rare:'#1e5a8a',epic:'#6b2da8',legendary:'#a06820',mythic:'#a82a8a'}
 
       const sockets  = item.sockets_total || 0
       const used     = item.sockets_used  || 0
