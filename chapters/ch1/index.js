@@ -4,6 +4,13 @@ import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
 import * as ClsCombat from '../../data/class_combat.js'
+import {
+  getMoralTier,
+  getMoralBarPct,
+  calcBadge,
+  applyMoralChange,
+  getBadgeShiftLabel,
+} from '../../data/reputation.js'
 // Cache-bust enemyAI.js by hardcoding the version in the import path.
 // When enemyAI.js changes, bump the ?v= here AND in book.html. Without
 // this, browsers cache enemyAI.js indefinitely because book.html only
@@ -119,37 +126,17 @@ export async function mountChapter1(__mountOptions = {}) {
     const xpIntoLevel = Math.max(0, Math.min(xp, xpNext - 1))
     const xpPct = Math.min(100, Math.round(xpIntoLevel / xpNext * 100))
 
-    // ── 6-tier moral standing (HUD display) ─────────────────────────
-    // We derive the seal display from moral_score directly, not from
-    // player.badge. The badge column still exists for the lobby/PvP
-    // 4-tier system, but the single-player HUD shows the 6-tier morality
-    // ladder for clarity. Aligned with Ch2.
-    const moral = player.moral_score || 0
-    const moralPct  = Math.round((moral + 100) / 2)
-    const moralCol  = moral >= 70 ? '#1e5a8a'
-      : moral >= 30  ? '#2f7a2f'
-      : moral >= -10 ? '#8b6a20'
-      : moral >= -40 ? '#a04a18'
-      : moral >= -70 ? '#a02020'
-      :                '#7a0a0a'
-    const moralLabel = moral >= 70  ? 'HERO'
-      : moral >= 30   ? 'GOOD'
-      : moral >= -10  ? 'NEUTRAL'
-      : moral >= -40  ? 'RUTHLESS'
-      : moral >= -70  ? 'CORRUPT'
-      :                 'VILLAIN'
-    const moralSeal = moral >= 70 ? '🔵'
-      : moral >= 30  ? '🟢'
-      : moral >= -10 ? '🟡'
-      : moral >= -40 ? '🟠'
-      :                '🔴'
+    // ── Moral standing (HUD display) ─────────────────────────
+    // Shared 6-tier ladder via reputation.js (Hero/Good/Neutral/Ruthless/Corrupt/Villain).
+    const tier = getMoralTier(player.moral_score)
+    const moralPct = getMoralBarPct(player.moral_score)
     const dotLeft = Math.max(2, Math.min(94, moralPct))
 
     document.getElementById('hud').innerHTML = `
       <div class="hud-badge-row">
-        <span class="hud-seal">${moralSeal}</span>
+        <span class="hud-seal">${tier.seal}</span>
         <div>
-          <p class="hud-seal-label" style="color:${moralCol}">${moralLabel.charAt(0)+moralLabel.slice(1).toLowerCase()}</p>
+          <p class="hud-seal-label" style="color:${tier.color}">${tier.label}</p>
           <p class="hud-chapter">Chapter ${player.current_chapter||1} · Lvl ${lvl}</p>
         </div>
       </div>
@@ -166,10 +153,10 @@ export async function mountChapter1(__mountOptions = {}) {
       <div style="margin-bottom:5px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
           <span style="font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--ink);font-weight:600;letter-spacing:.14em">REPUTATION</span>
-          <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
+          <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${tier.color};letter-spacing:.06em">${tier.label.toUpperCase()}</span>
         </div>
         <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
-          <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
+          <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${tier.color};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
         </div>
       </div>
       ${(player.skill_points||0)>0?`<div onclick="window.bookNavigate('skills.html')" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
@@ -747,26 +734,7 @@ export async function mountChapter1(__mountOptions = {}) {
     document.body.appendChild(modal)
   }
 
-  // ── Badge/Reputation calculator ──────────────────────────
-  // Badge is DERIVED from moral_score + pvp_kills + helps_given
-  // Never permanent — recalculates every time moral changes
-  function calcBadge(moral, pvpKills, helpsGiven, backstabs) {
-    const m  = moral      || 0
-    const pk = pvpKills   || 0
-    const hg = helpsGiven || 0
-
-    // Elite: high moral, boosted by helping others
-    if (m >= 60 && (hg >= 3 || pk === 0)) return 'elite'
-
-    // Green: positive moral score — helping actions reinforce it, but moral alone is enough
-    if (m >= 20) return 'green'
-
-    // Red: negative moral OR heavily pvp-focused
-    if (m <= -20 || (pk >= 5 && pk > hg * 3)) return 'red'
-
-    // Neutral: everything else (-19 to +19)
-    return 'neutral'
-  }
+  // calcBadge is now imported from reputation.js (shared with Ch2 + lobby).
 
   window.goTo = async function goTo(nextId, choice = {}) {
     // Resolve eye encounter return node
@@ -794,22 +762,16 @@ export async function mountChapter1(__mountOptions = {}) {
     if (cur?.xp)     { updates.xp = oldXp + cur.xp; player.xp = updates.xp }
     if (cur?.hpLoss) { currentHp = Math.max(1, currentHp - cur.hpLoss); updates.hp = currentHp }
 
-    if (choice.outcome === 'attack') {
-      updates.moral_score = Math.max(-100, (player.moral_score || 0) - 20)
-      player.moral_score = updates.moral_score
-    }
-    // Moral score shifts from story choices
-    if (choice.moral) {
-      const newMoral = Math.max(-100, Math.min(100, (player.moral_score || 0) + choice.moral))
-      updates.moral_score = newMoral
-      player.moral_score  = newMoral
-    }
-    // Recalculate badge whenever moral changes
-    if (updates.moral_score !== undefined) {
-      const newBadge = calcBadge(updates.moral_score, player.pvp_kills, player.helps_given, player.backstabs)
-      updates.badge      = newBadge
-      updates.reputation = newBadge
-      player.badge       = newBadge
+    // ── Moral updates ─────────────────────────────────────────────────
+    // Two sources: (a) choice.outcome === 'attack' is a hard -20, (b)
+    // choice.moral is the explicit delta. Combine, then apply via the
+    // shared reputation helper.
+    let moralDelta = 0
+    if (choice.outcome === 'attack') moralDelta -= 20
+    if (choice.moral)                moralDelta += choice.moral
+    if (moralDelta !== 0) {
+      const r = applyMoralChange(player, moralDelta)
+      Object.assign(updates, r.updates)
     }
 
     if (choice.bossMode) bossMode = choice.bossMode
