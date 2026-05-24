@@ -8,6 +8,13 @@ import {
   pickClass,
 } from '../../data/classes.js'
 import * as ClsCombat from '../../data/class_combat.js'
+import {
+  getMoralTier,
+  getMoralBarPct,
+  calcBadge,
+  applyMoralChange,
+  getBadgeShiftLabel,
+} from '../../data/reputation.js'
 // Cache-bust enemyAI.js by hardcoding the version. When enemyAI.js changes,
 // bump the ?v= here AND in book.html. Without this, browsers cache the file
 // indefinitely.
@@ -1775,13 +1782,7 @@ The Judges are already there.`,
     })
   }
 
-  function calcBadge(moral, pvpKills, helpsGiven) {
-    const m=moral||0, pk=pvpKills||0, hg=helpsGiven||0
-    if (m>=60&&(hg>=3||pk===0)) return 'elite'
-    if (m>=20) return 'green'
-    if (m<=-20||(pk>=5&&pk>hg*3)) return 'red'
-    return 'neutral'
-  }
+  // calcBadge is now imported from reputation.js (shared with Ch1 + lobby).
 
   // ── Chapter Resonance ─────────────────────────────────────────────────────────
   // Resonance is set when the player defeats their first zone boss.
@@ -1982,27 +1983,23 @@ The Judges are already there.`,
     if (cur?.xp)     { updates.xp=oldXp+cur.xp; player.xp=updates.xp }
     if (cur?.hpLoss) { currentHp=Math.max(1,currentHp-cur.hpLoss); updates.hp=currentHp }
     if (choice.moral) {
-      const oldMoral = player.moral_score||0
-      const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
-      const nm=Math.max(-100,Math.min(100,oldMoral+choice.moral))
-      updates.moral_score=nm; player.moral_score=nm
-      const nb=calcBadge(nm,player.pvp_kills,player.helps_given)
-      updates.badge=nb; updates.reputation=nb; player.badge=nb
+      // applyMoralChange handles: clamp moral, recompute badge, mutate
+      // player, build update payload. Caller merges payload into save.
+      const r = applyMoralChange(player, choice.moral)
+      Object.assign(updates, r.updates)
 
       // ── Visible feedback on moral changes ────────────────────────────────
       // Toast the delta with the new total so the player sees the swing
       // even when it doesn't cross a reputation band. If the band DID change
-      // (Neutral → Green, Green → Elite, Neutral → Red, etc.) escalate to a
-      // sysOverlay since that's a more meaningful event.
+      // escalate to a sysOverlay since that's a more meaningful event.
       const sign = choice.moral > 0 ? '+' : ''
-      const ntot = nm > 0 ? '+'+nm : String(nm)
+      const ntot = r.newMoral > 0 ? '+'+r.newMoral : String(r.newMoral)
       const isErr = choice.moral < 0
       window.showToast(`Moral ${sign}${choice.moral} · now ${ntot}`, isErr)
 
-      if (nb !== oldBadge) {
-        const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
-        const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
-        window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+      if (r.shifted) {
+        const variant = (r.newBadge === 'elite' || r.newBadge === 'green') ? 'info' : 'warn'
+        window.showSysOverlay(`REPUTATION SHIFT — ${getBadgeShiftLabel(r.oldBadge)} → ${getBadgeShiftLabel(r.newBadge)}`, variant)
       }
     }
     // Optional allianceTag on the chosen option — pushes a flag onto the
@@ -3665,23 +3662,21 @@ You walk back out.`
               </button>
             </div>`
           // Shared helper: apply moral delta + recompute badge + show feedback.
-          // Used by both spare and execute branches so the post-combat moral
-          // beats behave the same as choice-driven moral shifts elsewhere.
+          // Wraps applyMoralChange so we can also accept extraUpdates that
+          // get merged into the returned payload (e.g. pvp_kills, alliance_log).
           const applyMoralWithFeedback = (delta, extraUpdates = {}) => {
-            const oldMoral = player.moral_score || 0
-            const oldBadge = player.badge || calcBadge(oldMoral, player.pvp_kills, player.helps_given)
-            const nm = Math.max(-100, Math.min(100, oldMoral + delta))
-            const newPvp = extraUpdates.pvp_kills ?? player.pvp_kills
-            const nb = calcBadge(nm, newPvp, player.helps_given)
-            const updates = { moral_score: nm, badge: nb, reputation: nb, ...extraUpdates }
-            player.moral_score = nm; player.badge = nb
+            // pvp_kills may be updated in this same beat (executions), so we
+            // pass the new value through opts so badge gets recomputed against it.
+            const opts = {}
+            if (extraUpdates.pvp_kills !== undefined) opts.pvpKills = extraUpdates.pvp_kills
+            const r = applyMoralChange(player, delta, opts)
+            const updates = { ...r.updates, ...extraUpdates }
             const sign = delta > 0 ? '+' : ''
-            const ntot = nm > 0 ? '+'+nm : String(nm)
+            const ntot = r.newMoral > 0 ? '+'+r.newMoral : String(r.newMoral)
             window.showToast(`Moral ${sign}${delta} · now ${ntot}`, delta < 0)
-            if (nb !== oldBadge) {
-              const labels = { elite:'ELITE', green:'GREEN', neutral:'NEUTRAL', red:'RED' }
-              const variant = (nb === 'elite' || nb === 'green') ? 'info' : 'warn'
-              window.showSysOverlay(`REPUTATION SHIFT — ${labels[oldBadge]||oldBadge?.toUpperCase()} → ${labels[nb]||nb.toUpperCase()}`, variant)
+            if (r.shifted) {
+              const variant = (r.newBadge === 'elite' || r.newBadge === 'green') ? 'info' : 'warn'
+              window.showSysOverlay(`REPUTATION SHIFT — ${getBadgeShiftLabel(r.oldBadge)} → ${getBadgeShiftLabel(r.newBadge)}`, variant)
             }
             return updates
           }
@@ -4774,11 +4769,8 @@ You walk back out.`
     // player.badge. The badge column still exists for the lobby/PvP
     // 4-tier system (Hunter/Helper/Elite/Neutral as PvP roles), but the
     // single-player HUD shows the 6-tier morality ladder for clarity.
-    const moral=player.moral_score||0
-    const moralPct=Math.round((moral+100)/2)
-    const moralCol=moral>=70?'#1e5a8a':moral>=30?'#2f7a2f':moral>=-10?'#8b6a20':moral>=-40?'#a04a18':moral>=-70?'#a02020':'#7a0a0a'
-    const moralLabel=moral>=70?'HERO':moral>=30?'GOOD':moral>=-10?'NEUTRAL':moral>=-40?'RUTHLESS':moral>=-70?'CORRUPT':'VILLAIN'
-    const moralSeal=moral>=70?'🔵':moral>=30?'🟢':moral>=-10?'🟡':moral>=-40?'🟠':'🔴'
+    const tier = getMoralTier(player.moral_score)
+    const moralPct = getMoralBarPct(player.moral_score)
     const hpPct=Math.max(0,Math.round(hp/mhp*100))
     const hpCol=hpPct>60?'#5ec45e':hpPct>30?'#c8b96e':'#e05555'
     const xpNext=xpForLevel(lvl)
@@ -4788,9 +4780,9 @@ You walk back out.`
 
     document.getElementById('hud').innerHTML=`
       <div class="hud-badge-row">
-        <span class="hud-seal">${moralSeal}</span>
+        <span class="hud-seal">${tier.seal}</span>
         <div>
-          <p class="hud-seal-label" style="color:${moralCol}">${moralLabel.charAt(0)+moralLabel.slice(1).toLowerCase()}</p>
+          <p class="hud-seal-label" style="color:${tier.color}">${tier.label}</p>
           <p class="hud-chapter">Chapter 2 · Lvl ${lvl}</p>
         </div>
       </div>
@@ -4807,10 +4799,10 @@ You walk back out.`
       <div style="margin-bottom:5px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
           <span style="font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--ink);font-weight:600;letter-spacing:.14em">REPUTATION</span>
-          <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
+          <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${tier.color};letter-spacing:.06em">${tier.label.toUpperCase()}</span>
         </div>
         <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
-          <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
+          <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${tier.color};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
         </div>
       </div>
       ${(player.skill_points||0)>0?`<div id="hud-skill-points-link" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
