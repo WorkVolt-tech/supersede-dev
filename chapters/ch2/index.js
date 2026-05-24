@@ -1830,12 +1830,12 @@ The Judges are already there.`,
       el.id = 'deviation-warning'
       el.style.cssText = 'position:fixed;inset:0;z-index:800;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:1rem'
       el.innerHTML = `<div style="max-width:400px;background:#12111a;border:1px solid #f4c45a44;padding:1.5rem;border-radius:4px;text-align:center">
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#f4c45a;letter-spacing:.12em;margin-bottom:.75rem">DEVIATION DETECTED</p>
-        <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8e3d6;line-height:1.6;margin-bottom:.5rem">Your chapter resonance is <strong style="color:#f4c45a">${resName}</strong>.</p>
-        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:#857f92;line-height:1.6;margin-bottom:1.25rem">Entering the ${zoneName} zone will escalate enemy parameters. The Judges will note the deviation.<br><br>This path again?</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#f4c45a !important;letter-spacing:.12em;margin-bottom:.75rem">DEVIATION DETECTED</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:1rem;color:#e8e3d6 !important;line-height:1.6;margin-bottom:.5rem">Your chapter resonance is <strong style="color:#f4c45a !important">${resName}</strong>.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.9rem;color:#a8a09a !important;line-height:1.6;margin-bottom:1.25rem">Entering the ${zoneName} zone will escalate enemy parameters. The Judges will note the deviation.<br><br>This path again?</p>
         <div style="display:flex;gap:.75rem;justify-content:center">
-          <button id="deviation-enter-anyway" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
-          <button id="deviation-turn-back" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#857f92;background:transparent;border:1px solid #26232f;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
+          <button id="deviation-enter-anyway" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#e8e3d6 !important;background:rgba(244,196,90,.1);border:1px solid rgba(244,196,90,.4);padding:.5rem 1.2rem;cursor:pointer">Enter anyway</button>
+          <button id="deviation-turn-back" style="font-family:'Share Tech Mono',monospace;font-size:.6rem;letter-spacing:.08em;color:#c8c0b8 !important;background:transparent;border:1px solid #4a4555;padding:.5rem 1.2rem;cursor:pointer">Turn back</button>
         </div>
       </div>`
       document.body.appendChild(el)
