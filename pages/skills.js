@@ -934,10 +934,14 @@ export async function mountSkills(__mountOptions = {}) {
       // Column background panels — span from above headers to below row c
       TIER_X.forEach((x, i) => {
         const panel = document.createElement('div')
+        // Panel uses explicit top/left/width/height — no transform translate.
+        // Spans y=440 (just below tier headers at y=420) to y=1120 (past row c
+        // at y=1020 with label space). Wraps all 3 rows (a=580, b=800, c=1020).
+        // x position centered on the column by subtracting half the width.
         panel.style.cssText = `
           position:absolute;
-          left:${x}px;top:1080px;transform:translate(-50%,-50%);
-          width:130px;height:880px;
+          left:${x - 65}px;top:440px;
+          width:130px;height:680px;
           background:linear-gradient(180deg, ${clsCol}08 0%, ${clsCol}14 50%, ${clsCol}08 100%);
           border-left:1px solid ${clsCol}22;
           border-right:1px solid ${clsCol}22;
