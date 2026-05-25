@@ -113,7 +113,54 @@ Two Glyph Sentinels guard the passage — animated shelf-units, running on arcan
 
 They register you as unauthorized.`,
     xp: 40,
-    choices: [{ label: 'Fight the Glyph Sentinels', next: 'zone_arcane_enemy_2' }],
+    choices: [
+      { label: 'Fight the Glyph Sentinels', next: 'zone_arcane_enemy_2' },
+      { label: 'Movement two aisles over — someone trapped', sub: 'A scholar pinned by fallen shelves.', next: 'zone_arcane_scholar' },
+    ],
+  },
+
+  // ── Side-quest: trapped scholar ──────────────────────────────────────
+  // Mirrors the Builders pattern in plant/water/earth. A neutral civilian
+  // encounter that gives the player a moral test (help / loot / walk
+  // away). Adds 4 nodes to bring arcane's content in line with the
+  // faction-rich zones.
+  zone_arcane_scholar: {
+    id: 'zone_arcane_scholar', type: 'story',
+    text: `Two aisles over, a section of shelving has come down. A man is under it — older, glasses cracked, one leg pinned under a beam of solid oak loaded with reference volumes. He's conscious. He's also bleeding from a scalp wound that's running into his collar.
+
+A Glyph Sentinel paces the next aisle. It hasn't found him yet. It will.
+
+He sees you. Doesn't beg. Just says, quietly: "Lift from the left side. The pin is mostly the books."`,
+    choices: [
+      { label: 'Lift the beam, get him out, fight the Sentinel when it comes', sub: 'Sentinel ambush — easier with momentum', next: 'zone_arcane_scholar_combat' },
+      { label: 'Wait for the Sentinel to find him. Take what he has after.', sub: 'Moral -10', next: 'zone_arcane_scholar_loot', moral: -10 },
+      { label: 'Back out quietly', sub: 'The System notes this', next: 'zone_arcane_enemy_2', allianceTagRepeatable: 'cowardice' },
+    ],
+  },
+  zone_arcane_scholar_combat: {
+    id: 'zone_arcane_scholar_combat', type: 'combat',
+    text: `The beam shifts. He pulls his leg free in one motion that costs him visibly. He doesn't make a sound. The Sentinel rounds the corner just as he reaches for the broken edge of a shelf and turns it into a weapon.`,
+    enemy: { name: 'Glyph Sentinel', icon: '✨', hp: 95, atk: 16, def: 9, xp: 120,
+      loot: [{ itemKey: 'rune_lux', qty: 1 }] },
+    onWin: 'zone_arcane_scholar_win', onLose: 'zone_arcane_enemy_2',
+  },
+  zone_arcane_scholar_win: {
+    id: 'zone_arcane_scholar_win', type: 'story',
+    text: `The Sentinel collapses into its component shelves. The scholar leans against the wall, holding his side. "I was cataloguing what's still here. The Archivist won't let me leave with notes." He hands you a folded page anyway. "Pre-collapse arcane index. It's accurate."
+
+He limps toward the front of the shop on his own.`,
+    rewards: [{ itemKey: 'rune_lux', qty: 1 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_arcane_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+  },
+  zone_arcane_scholar_loot: {
+    id: 'zone_arcane_scholar_loot', type: 'story',
+    text: `You step back behind a shelf and wait. The Sentinel does what Sentinels do.
+
+When it's done, the aisle is quiet. You walk over. The scholar's notes are folded in his coat pocket, blood-edged but legible. His glasses are still on, somehow.
+
+You take what's useful and keep moving.`,
+    rewards: [{ itemKey: 'rune_lux', qty: 2 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_arcane_midpoint' }],
   },
 
   zone_arcane_enemy_2: {
