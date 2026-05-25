@@ -167,8 +167,17 @@ export async function mountVehicle(__mountOptions = {}) {
   }
   renderSpecialBar()
 
-  // Eye types
-  const ETYPES=[
+  // ── Eye types, per destination chapter ───────────────────────────
+  // Each destination has its own roster of 7 enemies, indexed 0-6:
+  //   0=Scout role (small fast, low HP), 1=Watcher role (medium dodgy),
+  //   2=Drone role (fast diver), 3=Cluster role (tank that splits),
+  //   4=Sniper role (shoots back), 5=Swarm role (fast small group),
+  //   6=Boss role (large, shoots, isBoss flag — spawns at wave 5).
+  // Stats stay aligned across destinations so wave balance is identical.
+  // Only the name/color/score change to fit each chapter's theme.
+  // ETYPES_DEFAULT is used for any destination without an entry below
+  // (so adding Ch4+ drives later doesn't crash; they fall back here).
+  const ETYPES_DEFAULT = [
     {name:'Scout',  hp:1,spd:1.6,atk:6, sz:16,col:'#b06eff',score:50, pat:'straight'},
     {name:'Watcher',hp:2,spd:1.2,atk:10,sz:24,col:'#e05555',score:100,pat:'zigzag'},
     {name:'Drone',  hp:1,spd:2.8,atk:5, sz:18,col:'#5eaee0',score:75, pat:'dive'},
@@ -177,12 +186,34 @@ export async function mountVehicle(__mountOptions = {}) {
     {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:18,col:'#ff88ff',score:30, pat:'swarm'},
     {name:'Boss',   hp:10,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
   ]
+  // ── Ch2 drive (Hunter faction theme) ───────────────────────────
+  // The drive between Ch1 and Ch2 leaves Watcher territory and crosses
+  // contested PvP-faction ground. Enemies are Voss's Hunters plus some
+  // district wildlife leaking onto the road. Boss is a Hunter Captain —
+  // Voss's lieutenant, a preview of the Ch2 faction antagonist.
+  const ETYPES_CH2 = [
+    {name:'Looter',         hp:1,spd:1.6,atk:6, sz:16,col:'#9a5e3a',score:50, pat:'straight'},
+    {name:'Hunter Scout',   hp:2,spd:1.2,atk:10,sz:24,col:'#c84030',score:100,pat:'zigzag'},
+    {name:'Bike Hunter',    hp:1,spd:2.8,atk:5, sz:18,col:'#e8b850',score:75, pat:'dive'},
+    {name:'Looter Truck',   hp:6,spd:0.9,atk:16,sz:32,col:'#7a4a28',score:200,pat:'straight',splits:true},
+    {name:'Hunter Marksman',hp:3,spd:1.0,atk:14,sz:20,col:'#d8a020',score:150,pat:'straight',shoots:true},
+    {name:'Stalker Pack',   hp:3,spd:2.5,atk:4, sz:18,col:'#5ec45e',score:30, pat:'swarm'},
+    {name:'Hunter Captain', hp:10,spd:0.7,atk:20,sz:52,col:'#a02020',score:1000,pat:'spider',shoots:true,isBoss:true},
+  ]
+  // Resolve ETYPES based on destination. Destination is captured from
+  // the URL before startGame; we close over the variable here so the
+  // pool reflects whichever chapter the player is driving to.
+  const ETYPES_BY_CH = { 2: ETYPES_CH2 }
+  function getEtypes() {
+    return ETYPES_BY_CH[destination] || ETYPES_DEFAULT
+  }
   // Wave spawn pools — Swarm included from wave 3 so it shows up regularly
   function getPool(){
-    if(G.wave<=2) return ETYPES.slice(0,2)           // Scout, Watcher
-    if(G.wave<=3) return ETYPES.slice(0,3)           // + Drone
-    if(G.wave<=4) return [...ETYPES.slice(0,3), ETYPES[5]] // + Swarm (no boss/cluster/sniper yet)
-    return ETYPES.slice(0,6)                          // all except boss (boss is manual)
+    const E = getEtypes()
+    if(G.wave<=2) return E.slice(0,2)           // Scout role, Watcher role
+    if(G.wave<=3) return E.slice(0,3)           // + Drone role
+    if(G.wave<=4) return [...E.slice(0,3), E[5]] // + Swarm role (no boss/cluster/sniper yet)
+    return E.slice(0,6)                         // all except boss (boss is manual)
   }
   function spawnEye(forced){
     const rx=ROAD_X(),rw=ROAD_W()
@@ -201,16 +232,23 @@ export async function mountVehicle(__mountOptions = {}) {
       spiderDir:1,spiderTimer:0,spiderLeg:0
     })
   }
-  function splitEye(e){for(let i=0;i<3;i++){spawnEye(ETYPES[0]);const ne=eyes[eyes.length-1];ne.x=e.x+(Math.random()-.5)*30;ne.y=e.y;ne.vx=(Math.random()-.5)*4}}
+  function splitEye(e){const E=getEtypes();for(let i=0;i<3;i++){spawnEye(E[0]);const ne=eyes[eyes.length-1];ne.x=e.x+(Math.random()-.5)*30;ne.y=e.y;ne.vx=(Math.random()-.5)*4}}
 
   // Boss alive tracker
   let bossAlive=false
   function spawnBoss(){
     if(bossAlive)return
     bossAlive=true
-    spawnEye(ETYPES[6])
-    waveBanner('⚠ BOSS APPROACHING',2200)
-    flash('#ff660033')
+    const E = getEtypes()
+    spawnEye(E[6])
+    // Banner names the boss when we have one specifically themed; otherwise
+    // generic. The custom banner uses the boss's own name so it reads e.g.
+    // "⚠ HUNTER CAPTAIN APPROACHING" on the Ch2 drive.
+    const bossName = (E[6] && E[6].name) ? E[6].name.toUpperCase() : 'BOSS'
+    waveBanner(`⚠ ${bossName} APPROACHING`, 2200)
+    // Tint the screen flash to match the boss color for theme variety.
+    const flashCol = (E[6] && E[6].col) ? E[6].col + '33' : '#ff660033'
+    flash(flashCol)
   }
 
   // Combo
@@ -339,9 +377,9 @@ export async function mountVehicle(__mountOptions = {}) {
   ;['motorcycle','car','van'].forEach(t=>{const img=new Image();img.src=`../assets/ride/top_${t}.webp`;VTOP_IMGS[t]=img})
 
   // Preload enemy eye images
-  // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp, boss.webp (key matches e.name.toLowerCase())
+  // Place files at: assets/ride/enemy/scout.webp, watcher.webp, drone.webp, sniper.webp, swarm.webp, cluster.webp
   const EYE_IMGS={}
-  ;['scout','watcher','drone','sniper','swarm','cluster','boss'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
+  ;['scout','watcher','drone','sniper','swarm','cluster','boss_eye'].forEach(t=>{const img=new Image();img.src=`../assets/ride/enemy/${t}.webp`;EYE_IMGS[t]=img})
 
   // Draw vehicle
   const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
