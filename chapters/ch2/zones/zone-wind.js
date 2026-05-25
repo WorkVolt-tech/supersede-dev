@@ -115,7 +115,55 @@ You pocket it. Could be useful.`,
 
 Two Gale Hawks circle in the open air above — large wind elementals in rough bird shape, riding the draft. They descend when you enter the open section.`,
     xp: 40,
-    choices: [{ label: 'Fight the Gale Hawks', next: 'zone_wind_enemy_2' }],
+    choices: [
+      { label: 'Fight the Gale Hawks', next: 'zone_wind_enemy_2' },
+      { label: 'Movement at the maintenance balcony — someone hanging', sub: 'A salvager dangling from a rigging line, losing grip.', next: 'zone_wind_salvager' },
+    ],
+  },
+
+  // ── Side-quest: stranded salvager ────────────────────────────────────
+  // Civilian encounter mirroring the Builders pattern in plant/water/earth.
+  // Moral choice: cut her down safely (combat with a wind elemental on the
+  // way), wait for her to fall, or walk away.
+  zone_wind_salvager: {
+    id: 'zone_wind_salvager', type: 'story',
+    text: `Three stories up on the maintenance balcony, a woman is hanging from a frayed rigging line — one hand around the rope, the other on her harness clip, which is jammed. Her toolkit dangles from her belt and swings hard in the crossdraft. She's not screaming. She's working on the clip.
+
+A Zephyr Wraith — a sharp, narrow wind elemental — is gliding the updraft toward her line. One more pass and it'll cut the rope clean.
+
+She sees you below. Yells over the wind: "Top of the stairs. The pulley. If you can hold it I can climb."`,
+    choices: [
+      { label: 'Take the stairs, kill the Wraith, hold the pulley', sub: 'Wraith combat — wind hits hard', next: 'zone_wind_salvager_combat' },
+      { label: 'Wait. The rope cuts itself eventually.', sub: 'Moral -10', next: 'zone_wind_salvager_loot', moral: -10 },
+      { label: 'Back out — the climb is too exposed', sub: 'The System notes this', next: 'zone_wind_enemy_2', allianceTagRepeatable: 'cowardice' },
+    ],
+  },
+  zone_wind_salvager_combat: {
+    id: 'zone_wind_salvager_combat', type: 'combat',
+    text: `You take the stairs three at a time. The Wraith pivots from the rope to you — better target, closer. It comes in fast and low, cutting the air with edges that aren't quite visible until they're already past you.`,
+    enemy: { name: 'Zephyr Wraith', icon: '💨', hp: 100, atk: 18, def: 6, xp: 125,
+      loot: [{ itemKey: 'rune_aero', qty: 1 }] },
+    onWin: 'zone_wind_salvager_win', onLose: 'zone_wind_enemy_2',
+  },
+  zone_wind_salvager_win: {
+    id: 'zone_wind_salvager_win', type: 'story',
+    text: `The Wraith breaks apart into a hard gust that flattens against the far wall. You brace on the pulley. She climbs in fifteen seconds — fast, deliberate, no wasted movement.
+
+On the balcony she unhooks the toolkit and hands you a section of it without ceremony. "Climbing rigging. Pre-collapse spec. Worth more than you'd think." She rolls her shoulder, tests the joint. "Thanks. I owe you."
+
+She heads back down the stairs at a measured pace.`,
+    rewards: [{ itemKey: 'rune_aero', qty: 1 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_wind_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+  },
+  zone_wind_salvager_loot: {
+    id: 'zone_wind_salvager_loot', type: 'story',
+    text: `You step back behind the doorframe. It takes longer than you expected. She works at the clip almost the entire way down. The Wraith makes one more pass and the line parts.
+
+She lands on rubble three floors below. Her toolkit comes apart on impact. You wait for the Wraith to drift away before going down to collect the pieces.
+
+The rigging is still good. So is most of the kit.`,
+    rewards: [{ itemKey: 'rune_aero', qty: 2 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+    choices: [{ label: 'Continue', next: 'zone_wind_midpoint' }],
   },
 
   zone_wind_enemy_2: {
