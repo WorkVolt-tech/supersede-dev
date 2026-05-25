@@ -743,7 +743,7 @@ window.showSysOverlay = showSysOverlay
   ]
 
   // ── Book module router ──────────────────────────────
-  const MODULE_VERSION = '2026-05-14-ch3-opening'
+  const MODULE_VERSION = '2026-05-14-echo-beast-preview'
   const MODULE_ROUTES = {
     ch1:          () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
     ch2:          () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
@@ -758,6 +758,7 @@ window.showSysOverlay = showSysOverlay
     vehicle:      () => import(`./vehicle.js?v=${MODULE_VERSION}`),
     'the-watcher': () => import(`./the-watcher.js?v=${MODULE_VERSION}`),
     'twin-judges': () => import(`./twin-judges.js?v=${MODULE_VERSION}`),
+    'the-echo-beast': () => import(`./the-echo-beast.js?v=${MODULE_VERSION}`),
   }
 
   let activeModule = null
@@ -786,6 +787,7 @@ window.showSysOverlay = showSysOverlay
       'vehicle.html': 'vehicle',
       'The_Watcher.html': 'the-watcher',
       'Twin_Judges.html': 'twin-judges',
+      'The_Echo_Beast.html': 'the-echo-beast',
       'book.html': 'chapters',
     }
 
@@ -1129,7 +1131,7 @@ window.showSysOverlay = showSysOverlay
     }).join('')
 
     // Chapter preview pages map (add entries as chapters get preview pages)
-    const CH_PREVIEW = { 1: 'book.html?view=the-watcher', 2: 'book.html?view=twin-judges' }
+    const CH_PREVIEW = { 1: 'book.html?view=the-watcher', 2: 'book.html?view=twin-judges', 3: 'book.html?view=the-echo-beast' }
 
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
@@ -1138,6 +1140,8 @@ window.showSysOverlay = showSysOverlay
 
       const thumbBg = ch.number === 2
         ? 'radial-gradient(ellipse at 50% 38%, #1a1620 0%, #0b0a10 60%, #050409 100%)'
+        : ch.number === 3
+        ? 'radial-gradient(ellipse at 50% 38%, #17102a 0%, #07060a 60%, #030206 100%)'
         : 'radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%)'
 
       const thumbInner = CH_COVERS[ch.number]
