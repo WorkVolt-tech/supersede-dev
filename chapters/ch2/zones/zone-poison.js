@@ -123,7 +123,53 @@ On the pharmacist's counter: a clean, sealed bag. A note in small handwriting: "
 
 Two Plague Crawlers block the stockroom entrance — crustacean-shaped venom elementals, moving low and fast. They spread DoT on contact. Everything they touch stays toxic.`,
     xp: 40,
-    choices: [{ label: 'Fight the Plague Crawlers', next: 'zone_poison_enemy_2' }],
+    choices: [
+      { label: 'Fight the Plague Crawlers', next: 'zone_poison_enemy_2' },
+      { label: 'A woman calling for help from the side office', sub: 'A chemist trapped by toxic vines — losing her antidote dose.', next: 'zone_poison_chemist' },
+    ],
+  },
+
+  // ── Side-quest: trapped chemist ──────────────────────────────────────
+  // Civilian encounter mirroring the Builders pattern in plant/water/earth.
+  // Moral choice: help her (she's running out of antidote), wait for her
+  // to die and loot, or walk away.
+  zone_poison_chemist: {
+    id: 'zone_poison_chemist', type: 'story',
+    text: `A woman in a stained lab coat, late thirties, ankle wrapped in a creeping toxic vine that's pulsing slow and deliberate. She has an empty antidote auto-injector in her hand. She's already used it once. The DoT is winning anyway.
+
+"I have a second dose in my bag. Two meters away. I can't reach it without spreading the vine further up my leg. If you cut it I can dose myself."
+
+A Spore Husk lurches in the corner of the office — drawn by the chemical leak. It's slow. It's also between her and the bag.`,
+    choices: [
+      { label: 'Kill the Husk, cut the vine, get her the dose', sub: 'Combat with the Husk', next: 'zone_poison_chemist_combat' },
+      { label: 'Wait. She has compound on her either way.', sub: 'Moral -10', next: 'zone_poison_chemist_loot', moral: -10 },
+      { label: 'Back out — too risky', sub: 'The System notes this', next: 'zone_poison_enemy_2', allianceTagRepeatable: 'cowardice' },
+    ],
+  },
+  zone_poison_chemist_combat: {
+    id: 'zone_poison_chemist_combat', type: 'combat',
+    text: `You move on the Husk first — it's the bottleneck. The chemist shouts the vine's pressure point at you mid-fight. "Lower third — the joint near the floor — go!"`,
+    enemy: { name: 'Spore Husk', icon: '☠️', hp: 105, atk: 17, def: 7, xp: 125,
+      loot: [{ itemKey: 'rune_venin', qty: 1 }] },
+    onWin: 'zone_poison_chemist_win', onLose: 'zone_poison_enemy_2',
+  },
+  zone_poison_chemist_win: {
+    id: 'zone_poison_chemist_win', type: 'story',
+    text: `The Husk drops. You cut the vine at the joint she pointed at — it shrivels back in one wet, fast motion. She gets to her bag, doses herself, and is breathing normally in under a minute.
+
+"Take this. I won't make it back to the workshop, but you might use it." She hands you a vial of venom compound. "It's stabilized. Won't degrade for a week."`,
+    rewards: [{ itemKey: 'venom_compound', qty: 1 }, { itemKey: 'rune_venin', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_poison_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+  },
+  zone_poison_chemist_loot: {
+    id: 'zone_poison_chemist_loot', type: 'story',
+    text: `You hold position in the doorway. The vine works. The Husk eventually wanders close enough to finish what the vine started.
+
+You walk in once the Husk is gone again. Her bag has what she said it had — the second dose, plus a vial labelled in careful pre-collapse handwriting.
+
+You don't read the label.`,
+    rewards: [{ itemKey: 'venom_compound', qty: 2 }, { itemKey: 'rune_venin', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'zone_poison_midpoint' }],
   },
 
   zone_poison_enemy_2: {
