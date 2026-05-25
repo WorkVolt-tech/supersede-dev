@@ -472,293 +472,34 @@
 </div>
 
 <script type="module">
-import { supabase } from '../supabase.js'
-
-// ── Admin config ─────────────────────────────────
-// Add your Supabase user ID here to get the cloaked admin appearance in the nav
-const ADMIN_USER_IDS = new Set([
-  'YOUR_USER_ID_HERE',  // ← replace with your actual Supabase user ID
-])
-
-// ── Nav rendering & UI helpers ──────────────────────────────
-// Was previously in components/nav.js. Inlined here because book.html is now
-// the single host for the nav — every page-level view lives as a module loaded
-// inside book.html via MODULE_ROUTES below. showToast and showSysOverlay are
-// exposed on window so dynamically-loaded modules can use them without imports.
-async function renderNav(containerId = 'nav') {
-  // ── Edge-safe session check ───────────────────────────────
-  // Edge delays restoring sessions from storage. We wait for
-  // onAuthStateChange to fire with the real session before acting.
-  const session = await new Promise(resolve => {
-    let resolved = false
-    const done = (s) => { if (!resolved) { resolved = true; resolve(s) } }
-
-    // Immediate check — works in Chrome/Firefox
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) done(data.session)
-      else {
-        // Wait up to 2.5s for Edge to restore session from storage
-        const timer = setTimeout(() => done(null), 2500)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, s) => {
-          if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-            clearTimeout(timer)
-            subscription.unsubscribe()
-            done(s)
-          }
-        })
-      }
-    })
-  })
-
-  if (!session) { location.href = '../pages/auth.html'; return null }
-
-  const { data: player } = await supabase
-    .from('players').select('*').eq('user_id', session.user.id).single()
-
-  if (!player) { location.href = '../pages/auth.html'; return null }
-
-  const badgeColors = { neutral:'#c8b96e', red:'#e05555', green:'#5ec45e', elite:'#a07de0', unknown:'#666' }
-  const color = badgeColors[player.badge] || badgeColors.neutral
-
-  const root = document.getElementById(containerId)
-  if (!root) return player
-
-  // Detect if we're in pages/ subfolder
-  const inPages = location.pathname.includes('/pages/')
-  const base = inPages ? '../' : ''
-
-  const adminImg = ADMIN_USER_IDS.has(player.user_id)
-    ? `<img src="${base}assets/mysterious_cloaked_player.png" alt="Admin" style="width:22px;height:22px;border-radius:50%;object-fit:cover;object-position:top;border:1px solid #00ffe7;box-shadow:0 0 6px #00ffe750;vertical-align:middle;margin-right:4px;">`
-    : ''
-
-  const currentPage = location.pathname.split('/').pop()
-  const currentView = new URLSearchParams(location.search).get('view') || 'chapters'
-
-  root.innerHTML = `
-    <style>
-      /* ── Nav isolation — always wins over page CSS ── */
-      .bm-logo, .bm-player, .bm-link, .bm-signout, .bm-sep, .bm-dot,
-      .bm-top-row, .bm-mid-row, .bm-bottom-row, .bm-links, .bm-content,
-      .bm-wrap, .bm-img {
-        all: revert;
-        box-sizing: border-box;
-      }
-      .bm-wrap {
-        position: relative;
-        width: 770px;
-        height: 330px;
-        margin: 0 auto;
-        user-select: none;
-      }
-      @media (max-width: 800px) {
-        .bm-wrap {
-          width: 100%;
-          height: auto;
-          aspect-ratio: 1680 / 720;
-        }
-      }
-      .bm-img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: fill;
-        pointer-events: none;
-      }
-      .bm-content {
-        position: absolute;
-        inset: 0;
-        z-index: 10;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding-top: 0px;
-        gap: 6px;
-        pointer-events: none;
-      }
-      .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
-      .bm-top-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .bm-mid-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-      .bm-bottom-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-      }
-      .bm-logo {
-        font-family: 'Cinzel', serif;
-        font-size: 12px;
-        letter-spacing: .28em;
-        text-transform: uppercase;
-        color: #3a2a14;
-        text-decoration: none;
-        flex-shrink: 0;
-        margin-right: 14px;
-      }
-      .bm-player {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .08em;
-        color: #4a3820;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex: 1;
-        white-space: nowrap;
-        overflow: hidden;
-      }
-      .bm-dot {
-        display: inline-block;
-        width: 5px; height: 5px;
-        border-radius: 50%;
-        background: ${color};
-        flex-shrink: 0;
-      }
-      .bm-links {
-        display: flex;
-        align-items: center;
-        gap: 0;
-        flex-shrink: 0;
-      }
-      .bm-link {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .18em;
-        text-transform: uppercase;
-        color: #4a3820;
-        text-decoration: none;
-        padding: 3px 7px;
-        transition: color .2s;
-        white-space: nowrap;
-      }
-      .bm-link:hover { color: #1a0e04; }
-      .bm-link.active { color: #1a0e04; font-weight: 700; }
-      .bm-sep {
-        color: #8a7050;
-        font-size: 8px;
-        opacity: .4;
-      }
-      .bm-signout {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 7px;
-        letter-spacing: .15em;
-        text-transform: uppercase;
-        color: #7a5030;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 3px 5px;
-        transition: color .2s;
-        margin-left: 4px;
-        white-space: nowrap;
-      }
-      .bm-signout:hover { color: #1a0e04; }
-      @media (max-width: 800px) {
-        .bm-logo { font-size: 8px; }
-        .bm-player { font-size: 6px; }
-        .bm-link { font-size: 5.5px; padding: 2px 4px; }
-        .bm-signout { font-size: 5.5px; }
-        .bm-content { gap: 3px; padding-top: 0; }
-      }
-    </style>
-    <div class="bm-wrap">
-      <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
-      <div class="bm-content">
-        <div class="bm-top-row">
-          <a href="${base}index.html" class="bm-logo">SuperSede</a>
-        </div>
-        <div class="bm-mid-row">
-          <span class="bm-player">
-            ${adminImg}<span class="bm-dot"></span>
-            ${player.username} · Lvl ${player.level} · ◈ ${player.gold}
-          </span>
-        </div>
-        <div class="bm-bottom-row">
-          <nav class="bm-links">
-            ${[
-              { href: `${base}pages/book.html`,                label: 'Chapters',  view: 'chapters'  },
-              { href: `${base}pages/book.html?view=inventory`, label: 'Inventory', view: 'inventory' },
-              { href: `${base}pages/book.html?view=skills`,    label: 'Skills',    view: 'skills'    },
-              { href: `${base}pages/book.html?view=trader`,    label: 'Trader',    view: 'trader'    },
-              { href: `${base}pages/book.html?view=lobby`,     label: 'Lobby',     view: 'lobby'     },
-              { href: `${base}pages/book.html?view=badges`,    label: 'Badges',    view: 'badges'    },
-            ].map((l, i, arr) => {
-              const active = currentPage === 'book.html'
-                ? currentView === l.view
-                : l.href.includes(currentPage) && currentPage !== 'index.html'
-              return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
-            }).join('')}
-            <button class="bm-signout" onclick="signOut()">Sign Out</button>
-          </nav>
-        </div>
-      </div>
-    </div>
-  `
-
-  window.signOut = async () => {
-    await supabase.auth.signOut()
-    location.href = base + 'index.html'
-  }
-
-  return player
-}
-
-function showToast(msg, isErr = false) {
-  let t = document.getElementById('toast')
-  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; document.body.appendChild(t) }
-  t.textContent = msg
-  t.className = 'toast show' + (isErr ? ' err' : '')
-  clearTimeout(t._timer)
-  t._timer = setTimeout(() => t.className = 'toast', 2200)
-}
-
-function showSysOverlay(msg, variant = 'warn') {
-  let el = document.getElementById('sys-overlay')
-  if (!el) { el = document.createElement('div'); el.id = 'sys-overlay'; document.body.appendChild(el) }
-  el.className = 'sys-overlay' + (variant === 'info' ? ' info' : '')
-  el.innerHTML = `<span>⚠</span><span>${msg}</span>`
-  clearTimeout(el._timer)
-  el._timer = setTimeout(() => el.remove(), 5000)
-}
-
-// Expose on window so dynamically-loaded modules can use these without imports.
-window.renderNav     = renderNav
-window.showToast     = showToast
-window.showSysOverlay = showSysOverlay
+import { renderNav } from '../components/nav.js'
 
   const CHAPTERS = [
     { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
     { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
-    { number: 3, title: 'Signal Hunters',         sub: 'A signal pulses from the deep. The System is listening.' },
   ]
 
   // ── Book module router ──────────────────────────────
-  const MODULE_VERSION = '2026-05-14-echo-beast-preview'
+  const MODULE_VERSION = '2026-05-12-skill-tree-selection-v2'
   const MODULE_ROUTES = {
-    ch1:          () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
-    ch2:          () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
-    ch3:          () => import(`../chapters/ch3/index.js?v=${MODULE_VERSION}`),
-    inventory:    () => import(`./inventory.js?v=${MODULE_VERSION}`),
-    skills:       () => import(`./skills.js?v=${MODULE_VERSION}`),
-    trader:       () => import(`./trader.js?v=${MODULE_VERSION}`),
-    lobby:        () => import(`./lobby.js?v=${MODULE_VERSION}`),
-    badges:       () => import(`./badges.js?v=${MODULE_VERSION}`),
-    crafting:     () => import(`./crafting.js?v=${MODULE_VERSION}`),
-    garage:       () => import(`./garage.js?v=${MODULE_VERSION}`),
-    vehicle:      () => import(`./vehicle.js?v=${MODULE_VERSION}`),
-    'the-watcher': () => import(`./the-watcher.js?v=${MODULE_VERSION}`),
-    'twin-judges': () => import(`./twin-judges.js?v=${MODULE_VERSION}`),
-    'the-echo-beast': () => import(`./the-echo-beast.js?v=${MODULE_VERSION}`),
+    ch1:       () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
+    ch2:       () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
+    inventory: () => import(`./inventory.js?v=${MODULE_VERSION}`),
+    skills:    () => import(`./skills.js?v=${MODULE_VERSION}`),
+    trader:    () => import(`./trader.js?v=${MODULE_VERSION}`),
+    lobby:     () => import(`./lobby.js?v=${MODULE_VERSION}`),
+    badges:    () => import(`./badges.js?v=${MODULE_VERSION}`),
+    crafting:  () => import(`./crafting.js?v=${MODULE_VERSION}`),
+    garage:    () => import(`./garage.js?v=${MODULE_VERSION}`),
+    // The drive game. The Ch1→Ch2 drive uses the original vehicle.js with
+    // Eye-themed enemies. The Ch2→Ch3 drive uses vehicle2.js — same engine
+    // but with Hunter-themed enemies and a Hunter Captain mini-boss at
+    // wave 5. The dest=N URL param decides which file loads.
+    vehicle:   () => {
+      const dest = new URLSearchParams(location.search).get('dest')
+      if (dest === '3') return import(`./vehicle2.js?v=${MODULE_VERSION}`)
+      return import(`./vehicle.js?v=${MODULE_VERSION}`)
+    },
   }
 
   let activeModule = null
@@ -785,9 +526,6 @@ window.showSysOverlay = showSysOverlay
       'crafting.html': 'crafting',
       'garage.html': 'garage',
       'vehicle.html': 'vehicle',
-      'The_Watcher.html': 'the-watcher',
-      'Twin_Judges.html': 'twin-judges',
-      'The_Echo_Beast.html': 'the-echo-beast',
       'book.html': 'chapters',
     }
 
@@ -1105,230 +843,7 @@ window.showSysOverlay = showSysOverlay
     <ellipse cx="400" cy="205" rx="220" ry="32" fill="none" stroke="#f4c45a" stroke-width="0.6" stroke-dasharray="1 6" opacity="0.55"/>
   </svg>`
 
-  const ECHO_BEAST_SVG = `<svg viewBox="0 0 800 880" xmlns="http://www.w3.org/2000/svg" aria-label="The Echo Beast">
-            <defs>
-              <radialGradient id="eb-maw" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"  stop-color="#ffe8a8"/>
-                <stop offset="35%" stop-color="#ff8844"/>
-                <stop offset="75%" stop-color="#6a1a20"/>
-                <stop offset="100%" stop-color="#1a0206"/>
-              </radialGradient>
-              <radialGradient id="eb-sonar" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"  stop-color="#b6ffe0"/>
-                <stop offset="50%" stop-color="#6affc8"/>
-                <stop offset="100%" stop-color="#0a2a20"/>
-              </radialGradient>
-              <radialGradient id="eb-sig" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"  stop-color="#e4a9ff"/>
-                <stop offset="50%" stop-color="#c86bff"/>
-                <stop offset="100%" stop-color="#2a0a48"/>
-              </radialGradient>
-              <radialGradient id="eb-bodyFog" cx="50%" cy="50%" r="50%">
-                <stop offset="0%"  stop-color="#c86bff" stop-opacity="0.24"/>
-                <stop offset="60%" stop-color="#3a1a4a" stop-opacity="0.14"/>
-                <stop offset="100%" stop-color="#0a0612" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="eb-tendril" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"  stop-color="#c86bff" stop-opacity="0.7"/>
-                <stop offset="100%" stop-color="#2a0a48" stop-opacity="0"/>
-              </linearGradient>
-            </defs>
-
-            <!-- body aura -->
-            <ellipse cx="400" cy="420" rx="340" ry="360" fill="url(#eb-bodyFog)"/>
-
-            <!-- concentric sonar rings emanating from center -->
-            <g fill="none" stroke="#c86bff" stroke-width="1.2">
-              <circle class="ring-pulse"    cx="400" cy="420" r="120" opacity="0.6"/>
-              <circle class="ring-pulse d2" cx="400" cy="420" r="120" opacity="0.5"/>
-              <circle class="ring-pulse d3" cx="400" cy="420" r="120" opacity="0.4"/>
-            </g>
-
-            <g class="breath">
-
-              <!-- shapeless body -- a mass of twisted speakers and throats -->
-              <path d="
-                M 400 180
-                C 260 200, 180 320, 200 460
-                C 180 560, 200 680, 240 780
-                C 260 830, 300 860, 340 870
-                L 460 870
-                C 500 860, 540 830, 560 780
-                C 600 680, 620 560, 600 460
-                C 620 320, 540 200, 400 180 Z"
-                fill="#150820" stroke="#3a1a4a" stroke-opacity="0.8" stroke-width="1"/>
-
-              <!-- flowing violet tendrils (sound waves frozen) -->
-              <g stroke="#c86bff" stroke-opacity="0.4" stroke-width="1.2" fill="none">
-                <path d="M 260 300 C 240 420, 260 600, 320 820"/>
-                <path d="M 340 270 C 330 420, 340 600, 370 830"/>
-                <path d="M 400 250 C 402 420, 398 620, 400 830"/>
-                <path d="M 460 270 C 470 420, 460 600, 430 830"/>
-                <path d="M 540 300 C 560 420, 540 600, 480 820"/>
-              </g>
-              <g stroke="#6affc8" stroke-opacity="0.28" stroke-width="0.8" fill="none">
-                <path d="M 220 360 C 200 500, 210 650, 260 800"/>
-                <path d="M 580 360 C 600 500, 590 650, 540 800"/>
-              </g>
-
-              <!-- sparkle speckle -->
-              <g fill="#e4a9ff" opacity="0.75">
-                <circle cx="290" cy="380" r="1.4"/>
-                <circle cx="350" cy="500" r="1.1"/>
-                <circle cx="430" cy="460" r="1.3"/>
-                <circle cx="480" cy="560" r="1.2"/>
-                <circle cx="320" cy="620" r="1.4"/>
-                <circle cx="510" cy="680" r="1.1"/>
-                <circle cx="400" cy="720" r="1.2"/>
-              </g>
-
-              <!-- MANY MOUTHS — different sizes, each mimicking a voice -->
-
-              <!-- big central maw (mid-scream) -->
-              <g>
-                <ellipse cx="400" cy="430" rx="96" ry="70" fill="#0a0206" stroke="#ff8844" stroke-width="2"/>
-                <ellipse class="mouth-a" cx="400" cy="430" rx="86" ry="58" fill="url(#eb-maw)"/>
-                <!-- teeth as sound bars -->
-                <g fill="#3a0a10">
-                  <rect x="330" y="418" width="6" height="24"/>
-                  <rect x="346" y="412" width="6" height="36"/>
-                  <rect x="362" y="416" width="6" height="28"/>
-                  <rect x="378" y="410" width="6" height="40"/>
-                  <rect x="394" y="414" width="6" height="32"/>
-                  <rect x="410" y="410" width="6" height="40"/>
-                  <rect x="426" y="416" width="6" height="28"/>
-                  <rect x="442" y="412" width="6" height="36"/>
-                  <rect x="458" y="418" width="6" height="24"/>
-                </g>
-                <!-- glow throat -->
-                <ellipse cx="400" cy="432" rx="24" ry="10" fill="#ffe8a8" opacity="0.6"/>
-              </g>
-
-              <!-- upper-left mouth (speaking) -->
-              <g>
-                <ellipse cx="290" cy="320" rx="42" ry="30" fill="#0a0206" stroke="#c86bff" stroke-width="1.5"/>
-                <ellipse class="mouth-b" cx="290" cy="320" rx="34" ry="22" fill="url(#eb-sig)"/>
-                <g fill="#2a0a48">
-                  <rect x="264" y="312" width="4" height="16"/>
-                  <rect x="274" y="308" width="4" height="24"/>
-                  <rect x="284" y="312" width="4" height="16"/>
-                  <rect x="294" y="308" width="4" height="24"/>
-                  <rect x="304" y="312" width="4" height="16"/>
-                  <rect x="314" y="310" width="4" height="20"/>
-                </g>
-              </g>
-
-              <!-- upper-right mouth -->
-              <g>
-                <ellipse cx="510" cy="320" rx="42" ry="30" fill="#0a0206" stroke="#c86bff" stroke-width="1.5"/>
-                <ellipse class="mouth-c" cx="510" cy="320" rx="34" ry="22" fill="url(#eb-sig)"/>
-                <g fill="#2a0a48">
-                  <rect x="484" y="310" width="4" height="20"/>
-                  <rect x="494" y="312" width="4" height="16"/>
-                  <rect x="504" y="308" width="4" height="24"/>
-                  <rect x="514" y="312" width="4" height="16"/>
-                  <rect x="524" y="308" width="4" height="24"/>
-                  <rect x="534" y="312" width="4" height="16"/>
-                </g>
-              </g>
-
-              <!-- mid-left small mouth (green / sonar – mimicking -->
-              <g>
-                <ellipse cx="240" cy="460" rx="28" ry="20" fill="#0a0206" stroke="#6affc8" stroke-width="1.4"/>
-                <ellipse class="mouth-b" cx="240" cy="460" rx="22" ry="14" fill="url(#eb-sonar)"/>
-                <g fill="#0a2a20">
-                  <rect x="224" y="456" width="3" height="10"/>
-                  <rect x="231" y="454" width="3" height="14"/>
-                  <rect x="238" y="456" width="3" height="10"/>
-                  <rect x="245" y="452" width="3" height="16"/>
-                  <rect x="252" y="456" width="3" height="10"/>
-                </g>
-              </g>
-
-              <!-- mid-right small mouth -->
-              <g>
-                <ellipse cx="560" cy="460" rx="28" ry="20" fill="#0a0206" stroke="#6affc8" stroke-width="1.4"/>
-                <ellipse class="mouth-c" cx="560" cy="460" rx="22" ry="14" fill="url(#eb-sonar)"/>
-                <g fill="#0a2a20">
-                  <rect x="544" y="456" width="3" height="10"/>
-                  <rect x="551" y="452" width="3" height="16"/>
-                  <rect x="558" y="456" width="3" height="10"/>
-                  <rect x="565" y="454" width="3" height="14"/>
-                  <rect x="572" y="456" width="3" height="10"/>
-                </g>
-              </g>
-
-              <!-- lower mouths (several) -->
-              <g>
-                <ellipse cx="340" cy="600" rx="36" ry="24" fill="#0a0206" stroke="#c86bff" stroke-width="1.4"/>
-                <ellipse class="mouth-a" cx="340" cy="600" rx="28" ry="16" fill="url(#eb-sig)" opacity="0.85"/>
-              </g>
-              <g>
-                <ellipse cx="460" cy="620" rx="32" ry="22" fill="#0a0206" stroke="#c86bff" stroke-width="1.4"/>
-                <ellipse class="mouth-c" cx="460" cy="620" rx="24" ry="14" fill="url(#eb-sig)" opacity="0.85"/>
-              </g>
-              <g>
-                <ellipse cx="400" cy="720" rx="26" ry="18" fill="#0a0206" stroke="#6affc8" stroke-width="1.2"/>
-                <ellipse class="mouth-b" cx="400" cy="720" rx="20" ry="12" fill="url(#eb-sonar)" opacity="0.9"/>
-              </g>
-
-              <!-- a few closed-eye slits (listens more than watches) -->
-              <g fill="#2a0a48" opacity="0.9">
-                <path d="M 320 230 Q 340 222, 360 230 Q 340 240, 320 230 Z"/>
-                <path d="M 440 230 Q 460 222, 480 230 Q 460 240, 440 230 Z"/>
-                <path d="M 250 400 Q 270 392, 290 400 Q 270 410, 250 400 Z"/>
-                <path d="M 510 400 Q 530 392, 550 400 Q 530 410, 510 400 Z"/>
-              </g>
-              <!-- stitching on those slits (sewn shut — it's not meant to see, only hear) -->
-              <g stroke="#1a0628" stroke-width="0.8">
-                <path d="M 324 230 L 322 226 M 332 232 L 330 236 M 340 230 L 338 226 M 348 232 L 346 236 M 356 230 L 354 226"/>
-                <path d="M 444 230 L 442 226 M 452 232 L 450 236 M 460 230 L 458 226 M 468 232 L 466 236 M 476 230 L 474 226"/>
-              </g>
-
-              <!-- waveform ribbons weaving out of the mouths -->
-              <g opacity="0.8">
-                <path d="M 400 500 C 350 520, 450 540, 400 560 C 350 580, 450 600, 400 620"
-                  stroke="#c86bff" stroke-width="1.4" fill="none" opacity="0.6"/>
-                <path d="M 290 360 C 250 380, 330 400, 290 420"
-                  stroke="#6affc8" stroke-width="1.2" fill="none" opacity="0.6"/>
-                <path d="M 510 360 C 550 380, 470 400, 510 420"
-                  stroke="#6affc8" stroke-width="1.2" fill="none" opacity="0.6"/>
-              </g>
-
-              <!-- tattered hem -->
-              <g>
-                <path d="
-                  M 280 800
-                  Q 290 850, 280 880
-                  Q 305 845, 315 830
-                  Q 325 870, 335 880
-                  Q 350 850, 360 830
-                  Q 370 875, 380 880
-                  Q 395 850, 405 830
-                  Q 415 875, 425 880
-                  Q 440 850, 450 830
-                  Q 460 870, 475 880
-                  Q 490 850, 500 830
-                  Q 510 870, 525 880
-                  L 525 800 Z"
-                  fill="url(#eb-tendril)" opacity="0.85"/>
-              </g>
-            </g>
-
-            <!-- reticle around central maw -->
-            <g opacity="0.35" stroke="#c86bff" stroke-width="0.6" fill="none">
-              <circle cx="400" cy="430" r="130" stroke-dasharray="2 6"/>
-              <circle cx="400" cy="430" r="170" stroke-dasharray="1 10"/>
-              <line x1="210" y1="430" x2="250" y2="430"/>
-              <line x1="550" y1="430" x2="590" y2="430"/>
-              <line x1="400" y1="250" x2="400" y2="290"/>
-              <line x1="400" y1="570" x2="400" y2="610"/>
-            </g>
-
-          </svg>`
-
-
-  const CH_COVERS = { 1: WATCHER_SVG, 2: TWIN_JUDGES_SVG, 3: ECHO_BEAST_SVG }
+  const CH_COVERS = { 1: WATCHER_SVG, 2: TWIN_JUDGES_SVG }
 
   ;(async () => {
     const player = await renderNav('nav')
@@ -1354,7 +869,7 @@ window.showSysOverlay = showSysOverlay
     }).join('')
 
     // Chapter preview pages map (add entries as chapters get preview pages)
-    const CH_PREVIEW = { 1: 'book.html?view=the-watcher', 2: 'book.html?view=twin-judges', 3: 'book.html?view=the-echo-beast' }
+    const CH_PREVIEW = { 1: 'The_Watcher.html', 2: 'Twin_Judges.html' }
 
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
@@ -1363,8 +878,6 @@ window.showSysOverlay = showSysOverlay
 
       const thumbBg = ch.number === 2
         ? 'radial-gradient(ellipse at 50% 38%, #1a1620 0%, #0b0a10 60%, #050409 100%)'
-        : ch.number === 3
-        ? 'radial-gradient(ellipse at 50% 38%, #17102a 0%, #07060a 60%, #030206 100%)'
         : 'radial-gradient(ellipse at 50% 38%, #0e2030 0%, #04080e 60%, #020305 100%)'
 
       const thumbInner = CH_COVERS[ch.number]
