@@ -3556,9 +3556,10 @@ You walk back out.`
         if (enemy.loot) for(const l of enemy.loot) await addItem(l.itemKey,l.qty)
 
         if (isBoss) {
-          // Twin Judges only — chapter unlock + per-form SP
-          const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
-          updates.chapters_unlocked=uls
+          // Twin Judges only — chapter unlock now handled by drive arrival
+          // (pages/vehicle.js pushes to chapters_unlocked on successful drive),
+          // so players must complete the drive before Ch3's Enter button
+          // activates. Boss-kill itself just grants SP/loot.
           // ── Per-form SP ──
           // Form key matches the canonical Judge forms from world design:
           //   verdict     — Verdict (Final Judge of Humanity)
