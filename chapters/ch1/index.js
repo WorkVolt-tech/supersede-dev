@@ -1833,12 +1833,8 @@ export async function mountChapter1(__mountOptions = {}) {
           }
 
           if (isBoss) {
-            // ── Chapter unlock is now handled by the DRIVE ARRIVAL, not by
-            // boss-kill. This forces players to complete the drive before
-            // the next chapter's "Enter" button becomes active. The drive
-            // is currently in pages/vehicle.js — it pushes to
-            // chapters_unlocked on successful arrival.
-            //
+            const unlocked = player.chapters_unlocked || [1]
+            if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
             // ── 1 SP for boss kill — only once ever ──
             const spKey = 'watcher_sp_claimed'
             const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
