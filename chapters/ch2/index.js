@@ -34,6 +34,7 @@ import ZONE_WIND      from './zones/zone-wind.js'
 import ZONE_PLANT     from './zones/zone-plant.js'
 import ZONE_METAL     from './zones/zone-metal.js'
 import ZONE_POISON    from './zones/zone-poison.js'
+import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -68,7 +69,8 @@ export async function mountChapter2(__mountOptions = {}) {
     ...ZONE_WIND,
     ...ZONE_PLANT,
     ...ZONE_METAL,
-    ...ZONE_POISON,  // ═══════════════════════════════
+    ...ZONE_POISON,
+    ...ZONE_FARMING,  // ═══════════════════════════════
     // OPENING — ARRIVAL
     // ═══════════════════════════════
     opening: {
@@ -1870,6 +1872,15 @@ The Judges are already there.`,
       }
     }
 
+    // ── Farming Grounds: regenerate waves on every entry ───────────
+    // The farming_grounds_hub is a repeatable encounter. We re-pick 5
+    // random enemies from the pool each time the player enters the hub
+    // so consecutive runs feel different. The picks mutate the wave
+    // node `enemy` fields in place; engine reads them as normal combat.
+    if (nextId === 'farming_grounds_hub') {
+      randomizeFarmingWaves()
+    }
+
     // ── District clock + NPC interrupts on hub entry (#1 #2 #3 #23) ──
     // When the player heads to district_hub, decide whether to redirect them
     // through a one-time event first, and fire any milestone sysMsgs the
@@ -2661,6 +2672,10 @@ You walk back out.`
       <div data-go="trader_intro" style="border:.5px solid rgba(200,184,128,.2);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(0,0,0,.05);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#c8b96e;margin:0">🏪 Pell's Shop</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Neutral trader — open for business</p>
+      </div>
+      <div data-go="farming_grounds_hub" style="border:.5px solid rgba(94,196,94,.3);border-radius:5px;padding:.45rem .6rem;cursor:pointer;margin-bottom:5px;background:rgba(94,196,94,.06);transition:all .2s">
+        <p style="font-family:'Cinzel',serif;font-size:.76rem;color:#5ec45e;margin:0">⚔ Farming Grounds</p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">Repeatable wave combat · 5 random elementals · XP only</p>
       </div>
       <div data-go="pre_boss_gate" style="border:.5px solid ${judgeReady?'#5ec45e44':'rgba(200,81,42,.4)'};border-radius:5px;padding:.45rem .6rem;cursor:pointer;background:rgba(200,81,42,.06);transition:all .2s">
         <p style="font-family:'Cinzel',serif;font-size:.76rem;color:${judgeReady?'#5ec45e':'#c8512a'};margin:0">⚖️ The Twin Judges</p>
