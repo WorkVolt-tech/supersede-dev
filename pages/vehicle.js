@@ -1,8 +1,9 @@
 import { supabase } from '../supabase.js'
+import { renderNav } from '../components/nav.js'
 
 const MODULE_STYLE_ID = 'book-module-style-vehicle'
-const MODULE_MARKUP = "<canvas id=\"game-canvas\"></canvas>\n<div id=\"hud\">\n  <div class=\"hud-block\">\n    <div class=\"hud-lbl\">HULL</div>\n    <div class=\"hud-val\" id=\"hud-hp\">100</div>\n    <div class=\"hud-bar-wrap\"><div class=\"hud-bar\" id=\"bar-hp\" style=\"background:#5ec45e;width:100%\"></div></div>\n  </div>\n  <div class=\"hud-block center\">\n    <div class=\"hud-wave\" id=\"hud-wave\">WAVE 1</div>\n    <div style=\"font-size:.45rem;color:#c8b96e;letter-spacing:.08em\" id=\"hud-dest\">---</div>\n    <div style=\"font-size:.48rem;color:#ffcc00;letter-spacing:.04em\" id=\"hud-combo\"></div>\n  </div>\n  <div class=\"hud-block right\">\n    <div class=\"hud-lbl\">EYES DOWN</div>\n    <div class=\"hud-val\" id=\"hud-eyes\">0</div>\n    <div style=\"font-size:.44rem;color:#b06eff;letter-spacing:.04em\" id=\"hud-score\">SCORE 0</div>\n  </div>\n</div>\n<div id=\"wave-banner\">WAVE 1</div>\n<div id=\"combo-display\"></div>\n<div id=\"special-bar\"></div>\n<div id=\"screen-flash\"></div>\n<div id=\"joystick-outer\"><div id=\"joystick-inner\" style=\"position:absolute\"></div></div>\n<button id=\"shoot-btn\" style=\"display:none\">\ud83d\udd25</button>\n<button id=\"special-btn-touch\" style=\"display:none\">\u26a1</button>\n<div id=\"chapter-select\">\n  <h1>\ud83d\udce1 SELECT DESTINATION</h1>\n  <p style=\"font-size:.6rem;color:#c8b96e;text-align:center;max-width:300px\">Survive the road. Destroy the Eyes. Reach the chapter.</p>\n  <div class=\"chapter-grid\" id=\"chapter-grid\"></div>\n  <button class=\"back-btn\" id=\"back-btn\">\u2190 Back to Garage</button>\n</div>\n<div id=\"end-overlay\">\n  <div id=\"end-title\"></div>\n  <div id=\"end-sub\"></div>\n  <div id=\"end-stats-row\" class=\"end-stats\"></div>\n  <button class=\"end-btn\" id=\"end-primary\" onclick=\"handleEndPrimary()\">Continue</button>\n  <button class=\"end-btn secondary\" onclick=\"window.bookNavigate('garage.html')\">\u2190 Garage</button>\n</div>"
-const MODULE_STYLES = "\n    *{margin:0;padding:0;box-sizing:border-box;}\n    body{background:#000;overflow:hidden;font-family:'Share Tech Mono',monospace;touch-action:none;user-select:none;}\n    #game-canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}\n    #hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:.5rem .75rem;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;}\n    .hud-block{display:flex;flex-direction:column;gap:3px;min-width:80px;}\n    .hud-block.center{align-items:center;flex:1;}\n    .hud-block.right{align-items:flex-end;}\n    .hud-lbl{font-size:.4rem;color:#c8b96e;letter-spacing:.1em;}\n    .hud-val{font-family:'Orbitron',monospace;font-size:.72rem;font-weight:700;color:#ffffff;line-height:1;}\n    .hud-bar-wrap{width:90px;height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;}\n    .hud-bar{height:100%;border-radius:3px;transition:width .15s,background .3s;}\n    .hud-wave{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:800;color:#ff8855;letter-spacing:.15em;}\n    #wave-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#ff8855;letter-spacing:.25em;pointer-events:none;z-index:25;opacity:0;transition:opacity .4s;text-shadow:0 0 40px rgba(200,81,42,.9);}\n    #wave-banner.show{opacity:1;}\n    #combo-display{position:fixed;top:50%;left:50%;transform:translate(-50%,-80px);font-family:'Orbitron',monospace;font-size:1rem;font-weight:800;color:#ffcc00;pointer-events:none;z-index:25;opacity:0;transition:opacity .3s;text-shadow:0 0 20px rgba(255,204,0,.8);}\n    #special-bar{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:8px;pointer-events:none;}\n    .spec-slot{width:40px;height:40px;border-radius:50%;border:2px solid rgba(200,184,128,.4);display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(0,0,0,.6);position:relative;transition:border-color .2s;}\n    .spec-slot.ready{border-color:#c8512a;box-shadow:0 0 12px rgba(200,81,42,.5);}\n    .spec-slot.active{border-color:#ffcc00;box-shadow:0 0 16px rgba(255,204,0,.7);}\n    .spec-cd{position:absolute;inset:0;border-radius:50%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:.38rem;color:#ffffff;}\n    .spec-cd-ring{position:absolute;inset:0;border-radius:50%;}\n    #chapter-select{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1.5rem;}\n    #chapter-select h1{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:800;color:#ff8855;letter-spacing:.15em;text-align:center;}\n    .chapter-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;width:100%;max-width:360px;}\n    .ch-btn{aspect-ratio:1;border-radius:5px;border:1.5px solid;font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}\n    .ch-btn.unlocked{border-color:rgba(200,81,42,.8);color:#ffffff;background:rgba(200,81,42,.15);}\n    .ch-btn.unlocked:hover{border-color:#ff8855;background:rgba(200,81,42,.3);color:#ffcc00;}\n    .ch-btn.locked{border-color:rgba(200,184,128,.2);color:#666;background:rgba(0,0,0,.3);cursor:not-allowed;}\n    .ch-current{border-color:#ffcc00 !important;background:rgba(255,204,0,.15) !important;color:#ffcc00 !important;}\n    .back-btn{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#c8b96e;background:none;border:1px solid rgba(200,184,128,.5);padding:.4rem .8rem;border-radius:3px;cursor:pointer;}\n    .back-btn:hover{color:#fff;border-color:#fff;}\n    .loot-pop{position:fixed;z-index:30;font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#ffffff;background:rgba(0,0,0,.85);border:.5px solid rgba(200,184,128,.5);padding:3px 8px;border-radius:10px;pointer-events:none;animation:lootFloat 1.8s ease-out forwards;}\n    @keyframes lootFloat{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-60px);}}\n    #end-overlay{position:fixed;inset:0;z-index:60;display:none;background:rgba(0,0,0,.93);flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;}\n    #end-overlay.show{display:flex;}\n    #end-title{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:800;letter-spacing:.2em;}\n    #end-sub{font-size:.7rem;color:#c8b96e;letter-spacing:.06em;max-width:300px;text-align:center;line-height:1.7;}\n    .end-stats{display:flex;gap:1.5rem;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#c8b96e;text-align:center;}\n    .end-stat-val{display:block;font-family:'Orbitron',monospace;font-size:.9rem;color:#ffffff;font-weight:700;}\n    .end-btn{font-family:'Orbitron',monospace;font-size:.75rem;font-weight:700;letter-spacing:.1em;padding:.7rem 1.8rem;border-radius:4px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#7a1500,#c8512a);border:2px solid #ff8855;color:#ffffff;text-shadow:0 1px 3px rgba(0,0,0,.5);}\n    .end-btn:hover{box-shadow:0 0 24px rgba(200,81,42,.7);background:linear-gradient(135deg,#9a2000,#e06030);}\n    .end-btn.secondary{background:rgba(255,255,255,.08);border:2px solid rgba(200,184,128,.6);color:#ffffff;}\n    .end-btn.secondary:hover{background:rgba(255,255,255,.15);border-color:#ffffff;}\n    #screen-flash{position:fixed;inset:0;z-index:18;pointer-events:none;opacity:0;transition:opacity .06s;}\n    #shoot-btn{position:fixed;right:20px;bottom:20px;width:72px;height:72px;border-radius:50%;background:rgba(200,81,42,.4);border:2px solid #ff8855;z-index:20;display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 0 20px rgba(200,81,42,.4);}\n    #shoot-btn.firing{background:rgba(200,81,42,.7);box-shadow:0 0 30px rgba(200,81,42,.9);}\n    #special-btn-touch{position:fixed;right:104px;bottom:28px;width:54px;height:54px;border-radius:50%;background:rgba(176,110,255,.25);border:2px solid rgba(176,110,255,.6);z-index:20;display:flex;align-items:center;justify-content:center;font-size:1.2rem;}\n    #special-btn-touch.ready{background:rgba(176,110,255,.5);border-color:#b06eff;box-shadow:0 0 16px rgba(176,110,255,.6);}\n    #joystick-outer{position:fixed;width:100px;height:100px;border-radius:50%;border:2px solid rgba(200,184,128,.4);background:rgba(0,0,0,.3);display:none;pointer-events:none;z-index:20;}\n    #joystick-inner{position:fixed;width:44px;height:44px;border-radius:50%;background:rgba(200,184,128,.5);border:2px solid rgba(200,184,128,.8);display:none;pointer-events:none;z-index:21;}\n  "
+const MODULE_MARKUP = "<canvas id=\"game-canvas\"></canvas>\n<div id=\"hud\">\n  <div class=\"hud-block\">\n    <div class=\"hud-lbl\">HULL</div>\n    <div class=\"hud-val\" id=\"hud-hp\">100</div>\n    <div class=\"hud-bar-wrap\"><div class=\"hud-bar\" id=\"bar-hp\" style=\"background:#5ec45e;width:100%\"></div></div>\n  </div>\n  <div class=\"hud-block center\">\n    <div class=\"hud-wave\" id=\"hud-wave\">WAVE 1</div>\n    <div style=\"font-size:.45rem;color:#7a6435;letter-spacing:.08em\" id=\"hud-dest\">---</div>\n    <div style=\"font-size:.48rem;color:#ffcc00;letter-spacing:.04em\" id=\"hud-combo\"></div>\n  </div>\n  <div class=\"hud-block right\">\n    <div class=\"hud-lbl\">EYES DOWN</div>\n    <div class=\"hud-val\" id=\"hud-eyes\">0</div>\n    <div style=\"font-size:.44rem;color:#b06eff;letter-spacing:.04em\" id=\"hud-score\">SCORE 0</div>\n  </div>\n</div>\n<div id=\"wave-banner\">WAVE 1</div>\n<div id=\"combo-display\"></div>\n<div id=\"special-bar\"></div>\n<div id=\"screen-flash\"></div>\n<div id=\"joystick-outer\"><div id=\"joystick-inner\" style=\"position:absolute\"></div></div>\n<button id=\"shoot-btn\" style=\"display:none\">\ud83d\udd25</button>\n<button id=\"special-btn-touch\" style=\"display:none\">\u26a1</button>\n<div id=\"chapter-select\">\n  <h1>\ud83d\udce1 SELECT DESTINATION</h1>\n  <p style=\"font-size:.6rem;color:#7a6435;text-align:center;max-width:300px\">Survive the road. Destroy the Eyes. Reach the chapter.</p>\n  <div class=\"chapter-grid\" id=\"chapter-grid\"></div>\n  <button class=\"back-btn\" id=\"back-btn\">\u2190 Back to Garage</button>\n</div>\n<div id=\"end-overlay\">\n  <div id=\"end-title\"></div>\n  <div id=\"end-sub\"></div>\n  <div id=\"end-stats-row\" class=\"end-stats\"></div>\n  <button class=\"end-btn\" id=\"end-primary\" onclick=\"handleEndPrimary()\">Continue</button>\n  <button class=\"end-btn secondary\" onclick=\"window.bookNavigate('garage.html')\">\u2190 Garage</button>\n</div>"
+const MODULE_STYLES = "\n    *{margin:0;padding:0;box-sizing:border-box;}\n    body{background:#000;overflow:hidden;font-family:'Share Tech Mono',monospace;touch-action:none;user-select:none;}\n    #game-canvas{display:block;position:fixed;inset:0;width:100%;height:100%;}\n    #hud{position:fixed;top:0;left:0;right:0;z-index:20;padding:.5rem .75rem;background:linear-gradient(180deg,rgba(0,0,0,.9),transparent);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;}\n    .hud-block{display:flex;flex-direction:column;gap:3px;min-width:80px;}\n    .hud-block.center{align-items:center;flex:1;}\n    .hud-block.right{align-items:flex-end;}\n    .hud-lbl{font-size:.4rem;color:#7a6435;letter-spacing:.1em;}\n    .hud-val{font-family:'Orbitron',monospace;font-size:.72rem;font-weight:700;color:#c8b96e;line-height:1;}\n    .hud-bar-wrap{width:90px;height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;}\n    .hud-bar{height:100%;border-radius:3px;transition:width .15s,background .3s;}\n    .hud-wave{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:800;color:#c8512a;letter-spacing:.15em;}\n    #wave-banner{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:#c8512a;letter-spacing:.25em;pointer-events:none;z-index:25;opacity:0;transition:opacity .4s;text-shadow:0 0 40px rgba(200,81,42,.9);}\n    #wave-banner.show{opacity:1;}\n    #combo-display{position:fixed;top:50%;left:50%;transform:translate(-50%,-80px);font-family:'Orbitron',monospace;font-size:1rem;font-weight:800;color:#ffcc00;pointer-events:none;z-index:25;opacity:0;transition:opacity .3s;text-shadow:0 0 20px rgba(255,204,0,.8);}\n    #special-bar{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:8px;pointer-events:none;}\n    .spec-slot{width:40px;height:40px;border-radius:50%;border:2px solid rgba(200,184,128,.25);display:flex;align-items:center;justify-content:center;font-size:1.1rem;background:rgba(0,0,0,.5);position:relative;transition:border-color .2s;}\n    .spec-slot.ready{border-color:#c8512a;box-shadow:0 0 12px rgba(200,81,42,.5);}\n    .spec-slot.active{border-color:#ffcc00;box-shadow:0 0 16px rgba(255,204,0,.7);}\n    .spec-cd{position:absolute;inset:0;border-radius:50%;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;font-size:.38rem;color:#c8b96e;}\n    .spec-cd-ring{position:absolute;inset:0;border-radius:50%;}\n    #chapter-select{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;padding:1.5rem;}\n    #chapter-select h1{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:800;color:#c8512a;letter-spacing:.15em;text-align:center;}\n    .chapter-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;width:100%;max-width:360px;}\n    .ch-btn{aspect-ratio:1;border-radius:5px;border:1.5px solid;font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;}\n    .ch-btn.unlocked{border-color:rgba(200,81,42,.6);color:#c8b96e;background:rgba(200,81,42,.08);}\n    .ch-btn.unlocked:hover{border-color:#c8512a;background:rgba(200,81,42,.18);}\n    .ch-btn.locked{border-color:rgba(200,184,128,.1);color:#3a2808;background:rgba(0,0,0,.3);cursor:not-allowed;}\n    .ch-current{border-color:#c8b96e !important;background:rgba(200,184,128,.1) !important;}\n    .back-btn{font-family:'Share Tech Mono',monospace;font-size:.6rem;color:#7a6435;background:none;border:.5px solid rgba(200,184,128,.2);padding:.4rem .8rem;border-radius:3px;cursor:pointer;}\n    .loot-pop{position:fixed;z-index:30;font-family:'Share Tech Mono',monospace;font-size:.58rem;color:#c8b96e;background:rgba(0,0,0,.8);border:.5px solid rgba(200,184,128,.3);padding:3px 8px;border-radius:10px;pointer-events:none;animation:lootFloat 1.8s ease-out forwards;}\n    @keyframes lootFloat{0%{opacity:1;transform:translateY(0);}100%{opacity:0;transform:translateY(-60px);}}\n    #end-overlay{position:fixed;inset:0;z-index:60;display:none;background:rgba(0,0,0,.9);flex-direction:column;align-items:center;justify-content:center;gap:1rem;}\n    #end-overlay.show{display:flex;}\n    #end-title{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:800;letter-spacing:.2em;}\n    #end-sub{font-size:.62rem;color:#7a6435;letter-spacing:.08em;max-width:280px;text-align:center;line-height:1.6;}\n    .end-stats{display:flex;gap:1.5rem;font-family:'Share Tech Mono',monospace;font-size:.52rem;color:#9a8050;text-align:center;}\n    .end-stat-val{display:block;font-family:'Orbitron',monospace;font-size:.9rem;color:#c8b96e;font-weight:700;}\n    .end-btn{font-family:'Orbitron',monospace;font-size:.7rem;font-weight:600;letter-spacing:.1em;padding:.65rem 1.5rem;border-radius:4px;cursor:pointer;transition:all .2s;background:linear-gradient(135deg,#5a1000,#c8512a);border:1px solid #c8512a;color:#fff;}\n    .end-btn:hover{box-shadow:0 0 20px rgba(200,81,42,.5);}\n    .end-btn.secondary{background:none;border:.5px solid rgba(200,184,128,.3);color:#9a8050;}\n    #screen-flash{position:fixed;inset:0;z-index:18;pointer-events:none;opacity:0;transition:opacity .06s;}\n    #shoot-btn{position:fixed;right:20px;bottom:20px;width:72px;height:72px;border-radius:50%;background:rgba(200,81,42,.3);border:2px solid #c8512a;z-index:20;display:flex;align-items:center;justify-content:center;font-size:1.5rem;box-shadow:0 0 20px rgba(200,81,42,.4);}\n    #shoot-btn.firing{background:rgba(200,81,42,.6);box-shadow:0 0 30px rgba(200,81,42,.8);}\n    #special-btn-touch{position:fixed;right:104px;bottom:28px;width:54px;height:54px;border-radius:50%;background:rgba(176,110,255,.2);border:2px solid rgba(176,110,255,.4);z-index:20;display:flex;align-items:center;justify-content:center;font-size:1.2rem;}\n    #special-btn-touch.ready{background:rgba(176,110,255,.4);border-color:#b06eff;box-shadow:0 0 16px rgba(176,110,255,.5);}\n    #joystick-outer{position:fixed;width:100px;height:100px;border-radius:50%;border:2px solid rgba(200,184,128,.25);background:rgba(0,0,0,.25);display:none;pointer-events:none;z-index:20;}\n    #joystick-inner{position:fixed;width:44px;height:44px;border-radius:50%;background:rgba(200,184,128,.35);border:2px solid rgba(200,184,128,.6);display:none;pointer-events:none;z-index:21;}\n  "
 
 function installModuleStyle() {
   document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
@@ -18,7 +19,7 @@ export async function mountVehicle(__mountOptions = {}) {
   installModuleStyle()
   host.innerHTML = MODULE_MARKUP
 
-  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
+  let player = __mountOptions.player || await renderNav(__mountOptions.navId || 'nav')
   if(!player){window.bookNavigate('book.html');throw 0}
   document.getElementById('nav')?.remove()
 
@@ -171,56 +172,22 @@ export async function mountVehicle(__mountOptions = {}) {
   const ETYPES=[
     {name:'Scout',  hp:1,spd:1.6,atk:6, sz:16,col:'#b06eff',score:50, pat:'straight'},
     {name:'Watcher',hp:2,spd:1.2,atk:10,sz:24,col:'#e05555',score:100,pat:'zigzag'},
-    {name:'Drone',  hp:1,spd:2.8,atk:5, sz:18,col:'#5eaee0',score:75, pat:'dive'},
-    {name:'Cluster',hp:6,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
-    {name:'Sniper', hp:3,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
-    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:18,col:'#ff88ff',score:30, pat:'swarm'},
-    {name:'Boss',   hp:10,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
+    {name:'Drone',  hp:1,spd:2.8,atk:5, sz:13,col:'#5eaee0',score:75, pat:'dive'},
+    {name:'Cluster',hp:4,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
+    {name:'Sniper', hp:2,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
+    {name:'Swarm',  hp:1,spd:2.5,atk:4, sz:10,col:'#ff88ff',score:30, pat:'swarm'},
   ]
-  // Wave spawn pools — Swarm included from wave 3 so it shows up regularly
-  function getPool(){
-    if(G.wave<=2) return ETYPES.slice(0,2)           // Scout, Watcher
-    if(G.wave<=3) return ETYPES.slice(0,3)           // + Drone
-    if(G.wave<=4) return [...ETYPES.slice(0,3), ETYPES[5]] // + Swarm (no boss/cluster/sniper yet)
-    return ETYPES.slice(0,6)                          // all except boss (boss is manual)
-  }
   function spawnEye(forced){
     const rx=ROAD_X(),rw=ROAD_W()
-    const pool=getPool()
+    const pool=G.wave<=2?ETYPES.slice(0,2):G.wave<=4?ETYPES.slice(0,4):ETYPES
     const t=forced||pool[Math.floor(Math.random()*pool.length)]
-    const isBoss=!!t.isBoss
-    eyes.push({
-      x:isBoss?canvas.width/2:rx+t.sz+Math.random()*(rw-t.sz*2),
-      y:isBoss?canvas.height*.08:-40,
-      vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,
-      hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,
-      name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,isBoss,
-      sTimer:isBoss?40:60+Math.random()*60,
-      zt:0,zd:1,pulse:0,dead:false,
-      // spider sweep state
-      spiderDir:1,spiderTimer:0,spiderLeg:0
-    })
+    eyes.push({x:rx+t.sz+Math.random()*(rw-t.sz*2),y:-40,vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,sTimer:60+Math.random()*60,zt:0,zd:1,pulse:0,dead:false})
   }
   function splitEye(e){for(let i=0;i<3;i++){spawnEye(ETYPES[0]);const ne=eyes[eyes.length-1];ne.x=e.x+(Math.random()-.5)*30;ne.y=e.y;ne.vx=(Math.random()-.5)*4}}
-
-  // Boss alive tracker
-  let bossAlive=false
-  function spawnBoss(){
-    if(bossAlive)return
-    bossAlive=true
-    spawnEye(ETYPES[6])
-    waveBanner('⚠ BOSS APPROACHING',2200)
-    flash('#ff660033')
-  }
 
   // Combo
   function addKill(e){
     G.eyesKilled++;G.waveKills++;G.combo++;comboTimer=130
-    if(e.isBoss){
-      bossAlive=false
-      // Boss killed — trigger arrival after a short celebration delay
-      setTimeout(()=>{G.progress=100;G.finished=true;G.running=false;onArrival()},1800)
-    }
     if(G.combo>G.maxCombo)G.maxCombo=G.combo
     const mult=Math.min(G.combo,10),pts=e.score*mult
     G.score+=pts
@@ -233,7 +200,7 @@ export async function mountVehicle(__mountOptions = {}) {
   // Loot
   const LTBL=['scrap_metal','flashlight','energy_drink','rune_lux','rune_umbra','scrap_blade']
   const LIC={scrap_metal:'⚙️',flashlight:'🔦',energy_drink:'🥤',rune_lux:'✨',rune_umbra:'🌑',scrap_blade:'🗡️'}
-  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.0,k,life:480,collected:false})}
+  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.4,k,life:200,collected:false})}
   async function collectLoot(l){
     l.collected=true
     const {data:ex}=await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',l.k).maybeSingle()
@@ -269,11 +236,7 @@ export async function mountVehicle(__mountOptions = {}) {
     spawnRate=Math.max(50,110-G.wave*8)
     waveTransition=false;document.getElementById('hud-wave').textContent='WAVE '+G.wave
     waveBanner('WAVE '+G.wave)
-    if(G.wave===5){
-      // Wave 5: stop regular spawns, spawn boss only
-      spawnRate=99999
-      setTimeout(spawnBoss,2000)
-    }
+    if(G.wave===5){setTimeout(()=>{spawnEye(ETYPES[3]);spawnEye(ETYPES[4])},1500)}
   }
 
   // Fire
@@ -317,14 +280,14 @@ export async function mountVehicle(__mountOptions = {}) {
     ctx.strokeStyle='rgba(200,81,42,.65)';ctx.lineWidth=3
     ctx.beginPath();ctx.moveTo(rx,0);ctx.lineTo(rx,H);ctx.stroke()
     ctx.beginPath();ctx.moveTo(rx+rw,0);ctx.lineTo(rx+rw,H);ctx.stroke()
-    // Center dash — longer dashes with bigger gaps for real road feel
-    ctx.strokeStyle='rgba(200,184,128,.18)';ctx.lineWidth=2;ctx.setLineDash([32,52])
+    // Center dash
+    ctx.strokeStyle='rgba(200,184,128,.12)';ctx.lineWidth=1.5;ctx.setLineDash([22,18])
     ctx.beginPath();ctx.moveTo(rx+rw/2,0);ctx.lineTo(rx+rw/2,H);ctx.stroke();ctx.setLineDash([])
-    // Lane markers — spaced far apart like real lane dividers
+    // Lane markers
     roadLines.forEach(l=>{
       const lx=rx+(l.lane+.5)*(rw/3)
-      ctx.strokeStyle=`rgba(255,255,255,${l.alpha*.6+.03})`;ctx.lineWidth=1.5;ctx.setLineDash([28,60])
-      ctx.beginPath();ctx.moveTo(lx,l.y);ctx.lineTo(lx,l.y+28);ctx.stroke();ctx.setLineDash([])
+      ctx.strokeStyle=`rgba(255,255,255,${l.alpha*.8+.04})`;ctx.lineWidth=1;ctx.setLineDash([16,24])
+      ctx.beginPath();ctx.moveTo(lx,l.y);ctx.lineTo(lx,l.y+18);ctx.stroke();ctx.setLineDash([])
     })
     // Debris
     sideDebris.forEach(d=>{
@@ -337,27 +300,6 @@ export async function mountVehicle(__mountOptions = {}) {
   // Preload top-view vehicle images
   const VTOP_IMGS={}
   ;['motorcycle','car','van'].forEach(t=>{const img=new Image();img.src=`../assets/ride/top_${t}.webp`;VTOP_IMGS[t]=img})
-
-  // Preload enemy eye images.
-  // EYE_FILES maps enemy.name.toLowerCase() → the actual filename in
-  // /assets/ride/enemy/. The keys must match e.name.toLowerCase() used at
-  // draw time. Add an entry here for each asset you have.
-  // Entries without a matching file (e.g. 'cluster') are simply absent —
-  // drawEye falls back to the geometric eyeball render for missing images.
-  const EYE_FILES = {
-    scout:   'scout.webp',
-    watcher: 'watcher.webp',
-    drone:   'drone.webp',
-    sniper:  'sniper.webp',
-    swarm:   'swarm.webp',
-    boss:    'boss_eye.webp',
-  }
-  const EYE_IMGS = {}
-  Object.entries(EYE_FILES).forEach(([key, file]) => {
-    const img = new Image()
-    img.src = `../assets/ride/enemy/${file}`
-    EYE_IMGS[key] = img
-  })
 
   // Draw vehicle
   const VCOL={motorcycle:'#e05555',car:'#5eaee0',van:'#5ec45e'}
@@ -406,55 +348,19 @@ export async function mountVehicle(__mountOptions = {}) {
     }
   }
 
-  // Fixed draw sizes per enemy type — completely independent of sz hitbox
-  const SPRITE_SIZE={Boss:280,Swarm:120,Drone:100,Scout:64,Watcher:80,Sniper:72,Cluster:110}
-
-  // Draw eye — uses custom sprite if available, falls back to canvas drawing
+  // Draw eye
   function drawEye(e){
     ctx.save();ctx.translate(e.x,e.y);e.pulse+=.1
-    const ps=1+Math.sin(e.pulse)*.12
-    const sz=e.sz*ps
-    const img=EYE_IMGS[e.name.toLowerCase()]
-    if(img&&img.complete&&img.naturalWidth>0){
-      // Hard pixel size — never derived from sz
-      const d=(SPRITE_SIZE[e.name]||80)*ps
-      const half=d/2
-      // Rectangular glow
-      ctx.shadowColor=e.col;ctx.shadowBlur=32
-      ctx.fillStyle=e.col+'15'
-      ctx.fillRect(-half,-half,d,d)
-      ctx.shadowBlur=0
-      // Draw full sprite — rectangle, no clipping whatsoever
-      ctx.drawImage(img,-half,-half,d,d)
-      // HP bar below sprite
-      if(e.mhp>1){
-        const bw=d*.85
-        const by=half+6
-        const bh=e.isBoss?8:5
-        ctx.fillStyle='rgba(0,0,0,.75)';ctx.fillRect(-bw/2,by,bw,bh)
-        ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555'
-        ctx.fillRect(-bw/2,by,bw*(e.hp/e.mhp),bh)
-        if(e.isBoss){ctx.strokeStyle='rgba(255,102,0,.7)';ctx.lineWidth=1;ctx.strokeRect(-bw/2,by,bw,bh)}
-      }
-      // Label
-      if(e.isBoss||e.sz>=20){
-        ctx.fillStyle=e.isBoss?'#ff6600':'rgba(200,184,128,.8)'
-        ctx.font=e.isBoss?'bold 11px Share Tech Mono,monospace':'9px Share Tech Mono,monospace'
-        ctx.textAlign='center'
-        ctx.fillText(e.isBoss?'⚠ BOSS ⚠':e.name,0,half+(e.isBoss?24:16))
-      }
-    } else {
-      // Canvas fallback (Cluster until cluster.webp is added)
-      ctx.shadowColor=e.col;ctx.shadowBlur=28
-      ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,sz*1.35,0,Math.PI*2);ctx.stroke()
-      ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,sz,0,Math.PI*2);ctx.stroke()
-      ctx.fillStyle='rgba(238,228,218,.9)';ctx.beginPath();ctx.ellipse(0,0,sz*.6,sz*.42,0,0,Math.PI*2);ctx.fill()
-      ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,sz*.32,0,Math.PI*2);ctx.fill()
-      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,sz*.15,0,Math.PI*2);ctx.fill()
-      ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-sz*.1,-sz*.1,sz*.07,0,Math.PI*2);ctx.fill()
-      if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':e.hp/e.mhp>.25?'#c8b96e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
-      if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='9px Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
-    }
+    const ps=1+Math.sin(e.pulse)*.2
+    ctx.shadowColor=e.col;ctx.shadowBlur=28
+    ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,e.sz*ps*1.35,0,Math.PI*2);ctx.stroke()
+    ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,e.sz*ps,0,Math.PI*2);ctx.stroke()
+    ctx.fillStyle='rgba(238,228,218,.9)';ctx.beginPath();ctx.ellipse(0,0,e.sz*.6*ps,e.sz*.42*ps,0,0,Math.PI*2);ctx.fill()
+    ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,e.sz*.32*ps,0,Math.PI*2);ctx.fill()
+    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,e.sz*.15*ps,0,Math.PI*2);ctx.fill()
+    ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-e.sz*.1,-e.sz*.1,e.sz*.07,0,Math.PI*2);ctx.fill()
+    if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
+    if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
     ctx.restore()
   }
 
@@ -469,11 +375,7 @@ export async function mountVehicle(__mountOptions = {}) {
 
   // Draw loot
   function drawLoot(l){
-    ctx.save();ctx.translate(l.x,l.y)
-    // Fade out as it approaches bottom of screen
-    const bottomFade=Math.max(0,Math.min(1,(canvas.height-l.y-30)/120))
-    const lifeFade=Math.min(1,l.life/30)
-    ctx.globalAlpha=Math.min(bottomFade,lifeFade)
+    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/40)
     ctx.shadowColor='#c8b96e';ctx.shadowBlur=10
     ctx.fillStyle='rgba(200,184,128,.18)';ctx.strokeStyle='rgba(200,184,128,.7)';ctx.lineWidth=1.5
     ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke()
@@ -619,27 +521,8 @@ export async function mountVehicle(__mountOptions = {}) {
       if(e.pat==='zigzag'){e.zt++;if(e.zt>28){e.zd*=-1;e.zt=0}e.x+=e.vx+e.zd*2.2}
       else if(e.pat==='dive'){const dx=PV.x-e.x,dy=PV.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;e.vx+=dx/d*.12;e.vy+=dy/d*.04;e.x+=e.vx}
       else if(e.pat==='swarm'){e.x+=Math.sin(e.pulse*2)*2.5;e.x+=e.vx}
-      else if(e.pat==='spider'){
-        // Spider: wide sweeping side-to-side, stays in top 28% of screen, occasional lunge
-        const rx=ROAD_X(),rw=ROAD_W()
-        e.spiderTimer++
-        // Sweep left/right across full road width
-        e.x+=e.spiderDir*3.2+Math.sin(e.spiderTimer*.04)*1.5
-        if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.spiderDir=-1}
-        if(e.x<rx+e.sz){e.x=rx+e.sz;e.spiderDir=1}
-        // Stays near top — drift back up if crept too low
-        const bossYMax=canvas.height*.28
-        if(e.y>bossYMax)e.y-=1.2
-        else e.y+=Math.sin(e.spiderTimer*.06)*0.8
-        e.y=Math.max(canvas.height*.05,e.y)
-        // Occasional lunge downward then snap back
-        if(e.spiderTimer%240===0){e.vy=4}
-        if(e.spiderTimer%240>0&&e.spiderTimer%240<30){e.y+=e.vy;e.vy*=.85}
-        else{e.vy=0}
-      }
       else{e.x+=e.vx}
-      if(e.pat!=='spider'){e.y+=e.vy}
-      e.pulse+=.1
+      e.y+=e.vy;e.pulse+=.1
       if(e.x<rx+e.sz){e.x=rx+e.sz;e.vx=Math.abs(e.vx)}
       if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.vx=-Math.abs(e.vx)}
 
@@ -688,12 +571,10 @@ export async function mountVehicle(__mountOptions = {}) {
       return true
     })
 
-    // Loot — gentle fall, fades as it approaches bottom
+    // Loot
     lootDrops=lootDrops.filter(l=>{
-      l.vy=Math.min(l.vy+0.02, 2.2) // gentle gravity
-      l.y+=l.vy+G.speed*0.15         // slight road scroll feel, much slower
-      l.life--
-      if(l.life<=0||l.collected||l.y>canvas.height+10)return false
+      l.y+=l.vy;l.life--
+      if(l.life<=0||l.collected||l.y>canvas.height+20)return false
       drawLoot(l)
       if(Math.abs(l.x-PV.x)<PV.w+8&&Math.abs(l.y-PV.y)<PV.h+8){collectLoot(l);return false}
       return true
@@ -715,15 +596,15 @@ export async function mountVehicle(__mountOptions = {}) {
 
     if(G.waveKills>=G.waveTarget&&!waveTransition){
       waveTransition=true
-      if(G.wave<5) setTimeout(nextWave,2000)
-      // Wave 5 arrival is triggered by boss kill in addKill, not here
+      if(G.wave>=5){G.progress=100;G.finished=true;G.running=false;onArrival()}
+      else setTimeout(nextWave,2000)
     }
     if(G.hp<=0&&!G.finished){G.hp=0;G.running=false;G.finished=true;onDeath()}
   }
 
   function startGame(){
     Object.assign(G,{running:true,hp:VS.hp,maxHp:VS.hp,progress:0,wave:1,waveKills:0,waveTarget:9,eyesKilled:0,score:0,combo:0,maxCombo:0,finished:false,shake:0,speed:VS.speed,lootDropped:[]})
-    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[];bossAlive=false
+    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[]
     SPECIALS.forEach(s=>{s.cd=0;s.active=0})
     resetPV();initWorld()
     document.getElementById('wave-banner').classList.remove('show')
@@ -752,7 +633,7 @@ export async function mountVehicle(__mountOptions = {}) {
   }
 
   window.handleEndPrimary=()=>{
-    if(document.getElementById('end-title').textContent.includes('ARRIVED'))window.bookNavigate(`chapter${destination}.html`)
+    if(document.getElementById('end-title').textContent.includes('ARRIVED'))window.bookNavigate(`book.html?chapter=${destination}`)
     else{document.getElementById('end-overlay').classList.remove('show');G.finished=false;startGame()}
   }
 
