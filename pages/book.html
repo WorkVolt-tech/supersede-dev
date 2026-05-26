@@ -472,7 +472,13 @@
 </div>
 
 <script type="module">
-import { renderNav } from '../components/nav.js'
+import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+
+// Ch2 (and other chapter modules) call these via window.* — expose them
+// globally here so chapter code can call them without re-importing.
+window.renderNav      = renderNav
+window.showToast      = showToast
+window.showSysOverlay = showSysOverlay
 
   const CHAPTERS = [
     { number: 1, title: 'System Initialization', sub: 'The world stops. The game begins.' },
