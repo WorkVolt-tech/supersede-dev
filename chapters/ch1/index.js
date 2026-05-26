@@ -11,6 +11,7 @@ import {
   applyMoralChange,
   getBadgeShiftLabel,
 } from '../../data/reputation.js'
+import { renderReputationBadge } from '../../data/avatar.js'
 // Cache-bust enemyAI.js by hardcoding the version in the import path.
 // When enemyAI.js changes, bump the ?v= here AND in book.html. Without
 // this, browsers cache enemyAI.js indefinitely because book.html only
@@ -134,7 +135,7 @@ export async function mountChapter1(__mountOptions = {}) {
 
     document.getElementById('hud').innerHTML = `
       <div class="hud-badge-row">
-        <span class="hud-seal">${tier.seal}</span>
+        ${renderReputationBadge(player.moral_score, { size: 46 })}
         <div>
           <p class="hud-seal-label" style="color:${tier.color}">${tier.label}</p>
           <p class="hud-chapter">Chapter ${player.current_chapter||1} · Lvl ${lvl}</p>
