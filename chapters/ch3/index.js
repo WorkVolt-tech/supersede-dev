@@ -20,7 +20,9 @@ import {
   getMoralBarPct,
   applyMoralChange,
 } from '../../data/reputation.js'
-import { runRiddle, runSequence } from '../../data/puzzles.js'
+import { runRiddle }     from '../../data/puzzle-riddle.js'
+import { runSequence }   from '../../data/puzzle-sequence.js'
+import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
 import { META, signalTier } from './config.js'
 import { NODES } from './nodes.js'
 
@@ -145,6 +147,26 @@ async function mountCh3(__mountOptions = {}) {
       updates.xp = player.xp
     }
 
+    // Node-level entry effects. Used by failure/success nodes that need
+    // to apply consequences regardless of HOW the player arrived (e.g.
+    // voice-gate failure docks HP; chapter-ending unlocks Ch4).
+    if (node.onEnter) {
+      if (typeof node.onEnter.hp === 'number') {
+        const newHp = Math.max(0, (player.hp || 100) + node.onEnter.hp)
+        player.hp = newHp
+        updates.hp = newHp
+      }
+      if (typeof node.onEnter.unlockChapter === 'number') {
+        const unl = player.chapters_unlocked || [1]
+        const n   = node.onEnter.unlockChapter
+        if (!unl.includes(n)) {
+          const merged = [...unl, n]
+          player.chapters_unlocked = merged
+          updates.chapters_unlocked = merged
+        }
+      }
+    }
+
     // Save before rendering so a reload picks up here. Use upsert via
     // update — Ch3 fields are added to the existing players row.
     try {
@@ -155,6 +177,16 @@ async function mountCh3(__mountOptions = {}) {
 
     player.current_node_ch3 = nodeId
     renderHUD()
+
+    // Terminal node — chapter is over. Navigate back to book TOC. The
+    // chapters_unlocked update already happened at the previous node's
+    // onEnter (ch3_ending), so the player will see Ch4 unlocked.
+    if (node.type === 'complete') {
+      if (window.bookNavigate) window.bookNavigate('book.html')
+      else location.href = './book.html'
+      return
+    }
+
     renderNode(node, nodeId)
   }
 
@@ -165,7 +197,10 @@ async function mountCh3(__mountOptions = {}) {
       // Delegate. The chapter doesn't know what the puzzle DOES — only
       // that it resolves. Win/lose route to onWin/onLose nodes.
       const cfg = node.puzzleConfig || {}
-      const fn  = node.puzzleType === 'sequence' ? runSequence : runRiddle
+      let fn
+      if      (node.puzzleType === 'voice')    fn = runVoiceDiscrimination
+      else if (node.puzzleType === 'sequence') fn = runSequence
+      else                                     fn = runRiddle
       fn(panel, cfg,
          () => goTo(node.onWin,  node.winChoice  || {}),
          () => goTo(node.onLose, node.loseChoice || {}))
