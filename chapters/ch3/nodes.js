@@ -364,7 +364,7 @@ The Echo looks up. It smiles with your mouth. It says, in your voice:
     type: 'puzzle',
     puzzleType: 'voice',
     puzzleConfig: {
-      prompt: 'The Echo speaks with your voice — and the voices of the people it has collected. Each round, three samples will appear. One is genuinely you, recorded earlier. The other two are the Echo\\'s impression. Pick yours.',
+      prompt: 'The Echo speaks with your voice — and the voices of the people it has collected. Each round, three samples will appear. One is genuinely you, recorded earlier. The other two are the Echo\'s impression. Pick yours.',
       headerText: 'ECHO // VOICE DISCRIMINATION',
       rounds: 3,
       voices: [
@@ -385,7 +385,7 @@ The Echo looks up. It smiles with your mouth. It says, in your voice:
         {
           options: [
             { text: '"This is the last time I come down here."',  real: false },
-            { text: '"This is the last time I\\'m coming down here."', real: true },
+            { text: '"This is the last time I\'m coming down here."', real: true },
             { text: '"This is the last time I came down here."',  real: false },
           ],
         },
