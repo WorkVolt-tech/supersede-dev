@@ -205,6 +205,27 @@ async function mountCh3(__mountOptions = {}) {
     const signal = player.signal_strength || 0
     const sigTier = signalTier ? signalTier(signal) : { label: '', color: '#8a7050' }
 
+    // ── Fable-style moral alignment (matches Ch1) ─────────
+    const moral = player.moral_score || 0
+    const moralPct  = Math.round((moral + 100) / 2)
+    const moralCol  = moral >= 60 ? '#1e5a8a'
+      : moral >= 20  ? '#2f7a2f'
+      : moral >= -20 ? '#8b6a20'
+      : moral >= -60 ? '#a04a18'
+      :                '#a02020'
+    const moralLabel = moral >= 70  ? 'HERO'
+      : moral >= 30   ? 'GOOD'
+      : moral >= -10  ? 'NEUTRAL'
+      : moral >= -40  ? 'RUTHLESS'
+      : moral >= -70  ? 'CORRUPT'
+      :                 'VILLAIN'
+    const dotLeft = Math.max(2, Math.min(94, moralPct))
+
+    // Stats — Ch3 doesn't have calcATK/calcDEF helpers, so inline base
+    // calculations. Same shape as Ch1 (level scaling + small stat add).
+    const atk = Math.round(10 + (lvl-1)*3 + (player.power||0)*0.6 + (player.speed||0)*0.2)
+    const def = Math.round(5  + (lvl-1)*2 + (player.toughness||0)*0.5)
+
     $('hud').innerHTML = `
       <div class="hud-badge-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <span class="hud-seal" style="font-size:1.6rem">${tier.seal||'◆'}</span>
@@ -213,20 +234,39 @@ async function mountCh3(__mountOptions = {}) {
           <p class="hud-chapter" style="margin:0">Chapter ${META.number} · Lvl ${lvl}</p>
         </div>
       </div>
-      <div class="stat-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div class="stat-row">
         <span class="stat-key">HP</span>
-        <div class="stat-bar-wrap" style="flex:1;height:5px;overflow:hidden"><div class="stat-bar" style="width:${hpPct}%;height:100%;background:${hpCol};transition:width .4s"></div></div>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${hpPct}%;background:${hpCol};transition:width .4s,background .4s"></div></div>
         <span class="stat-val">${hp}/${mhp}</span>
       </div>
-      <div class="stat-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div class="stat-row">
         <span class="stat-key">XP</span>
-        <div class="stat-bar-wrap" style="flex:1;height:5px;overflow:hidden"><div class="stat-bar" style="width:${xpPct}%;height:100%;background:#c8a050;transition:width .4s"></div></div>
-        <span class="stat-val">${xp}/${xpNeeded}</span>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${xpPct}%;background:#a07de0;transition:width .4s"></div></div>
+        <span class="stat-val" style="font-size:.52rem;min-width:60px;text-align:right">${xp}/${xpNeeded}</span>
       </div>
-      <div class="stat-row" style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+      <div style="margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:.55rem;color:var(--ink);font-weight:600;letter-spacing:.14em">REPUTATION</span>
+          <span style="font-family:'Cinzel',serif;font-size:.5rem;font-weight:600;color:${moralCol};letter-spacing:.06em">${moralLabel}</span>
+        </div>
+        <div style="position:relative;height:5px;background:linear-gradient(to right,#e05555,#e07a40,#c8b96e,#c8e8a0,#a0d0ff);border-radius:3px">
+          <div style="position:absolute;top:-2px;left:${dotLeft}%;width:9px;height:9px;background:${moralCol};border-radius:50%;transform:translateX(-50%);border:1px solid rgba(0,0,0,.3);transition:left .5s,background .5s"></div>
+        </div>
+      </div>
+      <div class="stat-row" style="margin-bottom:5px">
         <span class="stat-key">SIG</span>
-        <div class="stat-bar-wrap" style="flex:1;height:5px;overflow:hidden"><div class="stat-bar" style="width:${signal}%;height:100%;background:${sigTier.color};transition:width .4s"></div></div>
+        <div class="stat-bar-wrap"><div class="stat-bar" style="width:${signal}%;background:${sigTier.color};transition:width .4s"></div></div>
         <span class="stat-val" style="color:${sigTier.color}">${signal}</span>
+      </div>
+      ${(player.skill_points||0)>0?`<div onclick="window.bookNavigate('skills.html')" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
+      <div class="stat-grid">
+        <div class="stat-box"><span class="stat-box-key">ATK</span><span class="stat-box-val">${atk}</span></div>
+        <div class="stat-box"><span class="stat-box-key">DEF</span><span class="stat-box-val">${def}</span></div>
+        <div class="stat-box"><span class="stat-box-key">GOLD</span><span class="stat-box-val">${player.gold||0}</span></div>
+      </div>
+      <div style="display:flex;gap:4px;margin-top:6px">
+        <button onclick="window.openStatWindow && window.openStatWindow()" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(200,184,128,.2);border:.5px solid rgba(139,106,32,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">📊 STATS</button>
+        <button onclick="window.bookNavigate('skills.html')" style="flex:1;font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);background:rgba(160,125,224,.2);border:.5px solid rgba(160,125,224,.4);border-radius:2px;padding:3px 0;cursor:pointer;letter-spacing:.06em">⬡ SKILLS</button>
       </div>
       <div class="signal-feed">
         <div class="signal-feed-title">// Signal Feed</div>
