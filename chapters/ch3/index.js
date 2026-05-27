@@ -42,8 +42,32 @@ export async function mount(__mountOptions = {}) {
 }
 
 async function mountCh3(__mountOptions = {}) {
+  const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
   const player = __mountOptions.player || await window.renderNav('nav')
   if (!player) throw new Error('Ch3 mount: no player')
+
+  // Inject the page DOM. Same layout shape as Ch1/Ch2 (two-page book
+  // with HUD on the right, story on the left). The renderHUD and
+  // renderNode functions below target #hud and #story-panel by id.
+  host.innerHTML = `
+    <div class="book-wrap">
+      <div class="book animate-in" style="position:relative;">
+        <div class="page-left parchment">
+          <div class="page-inner">
+            <p class="chapter-label">Chapter ${META.number} — ${META.title}</p>
+            <p class="chapter-sub">${META.sub || ''}</p>
+            <hr class="ink-divider">
+            <div id="story-panel"></div>
+          </div>
+        </div>
+        <div class="page-right parchment">
+          <div class="page-inner">
+            <div class="hud" id="hud"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
 
   // First-visit bootstrap: if the player has no Ch3 progress, plant them
   // at the entry node. signal_strength defaults to 0.
