@@ -183,13 +183,13 @@ export async function mountVehicle(__mountOptions = {}) {
   // Hunter Captain — Voss's lieutenant. Larger, slower, takes more hits
   // than regular enemies. Acts as the climactic encounter on this drive.
   const MINIBOSS = {
-    name:'Hunter Captain', hp:8, spd:0.7, atk:20, sz:46, col:'#a02020', score:1000, pat:'zigzag'
+    name:'Hunter Captain', hp:8, spd:0.7, atk:20, sz:46, col:'#a02020', score:1000, pat:'zigzag', isBoss:true
   }
   function spawnEye(forced){
     const rx=ROAD_X(),rw=ROAD_W()
     const pool=G.wave<=2?ETYPES.slice(0,2):G.wave<=4?ETYPES.slice(0,4):ETYPES
     const t=forced||pool[Math.floor(Math.random()*pool.length)]
-    eyes.push({x:rx+t.sz+Math.random()*(rw-t.sz*2),y:-40,vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,sTimer:60+Math.random()*60,zt:0,zd:1,pulse:0,dead:false})
+    eyes.push({x:rx+t.sz+Math.random()*(rw-t.sz*2),y:-40,vx:(Math.random()-.5)*2,vy:t.spd+G.wave*.25,hp:t.hp,mhp:t.hp,atk:t.atk,sz:t.sz,col:t.col,score:t.score,name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,isBoss:!!t.isBoss,sTimer:60+Math.random()*60,zt:0,zd:1,pulse:0,dead:false})
   }
   function splitEye(e){for(let i=0;i<3;i++){spawnEye(ETYPES[0]);const ne=eyes[eyes.length-1];ne.x=e.x+(Math.random()-.5)*30;ne.y=e.y;ne.vx=(Math.random()-.5)*4}}
 
@@ -360,19 +360,155 @@ export async function mountVehicle(__mountOptions = {}) {
   }
 
   // Draw eye
-  function drawEye(e){
-    ctx.save();ctx.translate(e.x,e.y);e.pulse+=.1
-    const ps=1+Math.sin(e.pulse)*.2
-    ctx.shadowColor=e.col;ctx.shadowBlur=28
-    ctx.strokeStyle=e.col+'77';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,e.sz*ps*1.35,0,Math.PI*2);ctx.stroke()
-    ctx.strokeStyle=e.col;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(0,0,e.sz*ps,0,Math.PI*2);ctx.stroke()
-    ctx.fillStyle='rgba(238,228,218,.9)';ctx.beginPath();ctx.ellipse(0,0,e.sz*.6*ps,e.sz*.42*ps,0,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle=e.col;ctx.beginPath();ctx.arc(0,0,e.sz*.32*ps,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,e.sz*.15*ps,0,Math.PI*2);ctx.fill()
-    ctx.fillStyle='rgba(255,255,255,.65)';ctx.beginPath();ctx.arc(-e.sz*.1,-e.sz*.1,e.sz*.07,0,Math.PI*2);ctx.fill()
-    if(e.mhp>1){const bw=e.sz*2.4;ctx.fillStyle='rgba(0,0,0,.6)';ctx.fillRect(-bw/2,e.sz+5,bw,4);ctx.fillStyle=e.hp/e.mhp>.5?'#5ec45e':'#e05555';ctx.fillRect(-bw/2,e.sz+5,bw*(e.hp/e.mhp),4)}
-    if(e.sz>=22){ctx.shadowBlur=0;ctx.fillStyle='rgba(200,184,128,.75)';ctx.font='.28rem Share Tech Mono,monospace';ctx.textAlign='center';ctx.fillText(e.name,0,e.sz+17)}
+  // Draw a regular enemy vehicle — programmatic top-down car.
+  // `e.sz` = width in pixels. Length is derived as sz * 1.6 (cars are
+  // taller than wide from above). Color from e.col. Adds windshield,
+  // taillights, hood line, and an HP bar + name plate like drawEye did.
+  function drawCar(e){
+    ctx.save();ctx.translate(e.x,e.y);e.pulse+=.08
+    const W = e.sz                  // car width
+    const L = e.sz * 1.6            // car length
+    const pulseBlur = 12 + Math.sin(e.pulse) * 4
+    ctx.shadowColor = e.col
+    ctx.shadowBlur  = pulseBlur
+
+    // Car body — main chassis. Slightly rounded via stroke + fill.
+    ctx.fillStyle   = e.col
+    ctx.strokeStyle = e.col + 'cc'
+    ctx.lineWidth   = 1.5
+    const x = -W/2, y = -L/2
+    ctx.beginPath()
+    ctx.roundRect ? ctx.roundRect(x, y, W, L, 4) : ctx.rect(x, y, W, L)
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.shadowBlur = 0
+
+    // Windshield (front-facing — top of sprite, since enemies come at player)
+    ctx.fillStyle = 'rgba(20,30,50,.85)'
+    ctx.beginPath()
+    ctx.roundRect ? ctx.roundRect(x + W*.18, y + L*.18, W*.64, L*.22, 2) : ctx.rect(x + W*.18, y + L*.18, W*.64, L*.22)
+    ctx.fill()
+
+    // Hood line — thin darker stripe separating hood from cabin
+    ctx.fillStyle = 'rgba(0,0,0,.45)'
+    ctx.fillRect(x + W*.1, y + L*.4, W*.8, 1)
+
+    // Rear windshield
+    ctx.fillStyle = 'rgba(20,30,50,.7)'
+    ctx.beginPath()
+    ctx.roundRect ? ctx.roundRect(x + W*.22, y + L*.55, W*.56, L*.18, 2) : ctx.rect(x + W*.22, y + L*.55, W*.56, L*.18)
+    ctx.fill()
+
+    // Taillights — two small red dots at the back (bottom of sprite,
+    // since the enemy is FACING the player they drive down toward us)
+    ctx.fillStyle = '#ff4040'
+    ctx.shadowColor = '#ff4040'
+    ctx.shadowBlur  = 6
+    ctx.fillRect(x + W*.12, y + L*.86, W*.14, 3)
+    ctx.fillRect(x + W*.74, y + L*.86, W*.14, 3)
+    ctx.shadowBlur = 0
+
+    // HP bar — same logic as drawEye
+    if (e.mhp > 1) {
+      const bw = W * 1.5
+      ctx.fillStyle = 'rgba(0,0,0,.6)'
+      ctx.fillRect(-bw/2, L/2 + 6, bw, 4)
+      ctx.fillStyle = e.hp/e.mhp > .5 ? '#5ec45e' : '#e05555'
+      ctx.fillRect(-bw/2, L/2 + 6, bw * (e.hp/e.mhp), 4)
+    }
+
+    // Name plate — only on larger enemies so the screen doesn't clutter
+    if (W >= 22) {
+      ctx.fillStyle = 'rgba(200,184,128,.75)'
+      ctx.font      = '.28rem Share Tech Mono, monospace'
+      ctx.textAlign = 'center'
+      ctx.fillText(e.name, 0, L/2 + 17)
+    }
     ctx.restore()
+  }
+
+  // Draw the BOSS vehicle — bigger, wider, distinctly different
+  // silhouette so the player reads it as the climactic threat.
+  // Truck/SUV shape: wider body, roof rack with armor plating, dual
+  // headlights, twin exhaust glow at rear.
+  function drawBoss(e){
+    ctx.save();ctx.translate(e.x,e.y);e.pulse+=.08
+    const W = e.sz * 1.1            // wider than a regular car
+    const L = e.sz * 1.8            // and longer
+    const pulseBlur = 22 + Math.sin(e.pulse) * 8
+    ctx.shadowColor = e.col
+    ctx.shadowBlur  = pulseBlur
+
+    // Main body — dark armored truck
+    ctx.fillStyle   = e.col
+    ctx.strokeStyle = '#ffaaaa'
+    ctx.lineWidth   = 2
+    const x = -W/2, y = -L/2
+    ctx.beginPath()
+    ctx.roundRect ? ctx.roundRect(x, y, W, L, 5) : ctx.rect(x, y, W, L)
+    ctx.fill()
+    ctx.stroke()
+
+    ctx.shadowBlur = 0
+
+    // Roof rack / armor plating across the top
+    ctx.fillStyle = '#3a0a0a'
+    ctx.fillRect(x + W*.1,  y + L*.05, W*.8, L*.08)
+    ctx.fillRect(x + W*.15, y + L*.02, W*.7, 2)
+
+    // Front windshield — narrow, slit-like (armored)
+    ctx.fillStyle = 'rgba(15,25,45,.9)'
+    ctx.beginPath()
+    ctx.roundRect ? ctx.roundRect(x + W*.2, y + L*.2, W*.6, L*.16, 2) : ctx.rect(x + W*.2, y + L*.2, W*.6, L*.16)
+    ctx.fill()
+
+    // Cabin / cargo divider — line across middle showing it's a truck
+    ctx.fillStyle = 'rgba(0,0,0,.6)'
+    ctx.fillRect(x + W*.05, y + L*.45, W*.9, 2)
+
+    // Cargo bed — slightly recessed look
+    ctx.fillStyle = 'rgba(0,0,0,.25)'
+    ctx.fillRect(x + W*.1, y + L*.5, W*.8, L*.35)
+
+    // Twin headlights at the front — menacing white-amber
+    ctx.fillStyle  = '#ffeeaa'
+    ctx.shadowColor = '#ffeeaa'
+    ctx.shadowBlur  = 10
+    ctx.fillRect(x + W*.16, y + L*.08, W*.16, 4)
+    ctx.fillRect(x + W*.68, y + L*.08, W*.16, 4)
+    ctx.shadowBlur = 0
+
+    // Twin taillights / exhaust glow at the rear
+    ctx.fillStyle  = '#ff3030'
+    ctx.shadowColor = '#ff3030'
+    ctx.shadowBlur  = 12
+    ctx.fillRect(x + W*.1,  y + L*.92, W*.18, 4)
+    ctx.fillRect(x + W*.72, y + L*.92, W*.18, 4)
+    ctx.shadowBlur = 0
+
+    // HP bar
+    if (e.mhp > 1) {
+      const bw = W * 1.6
+      ctx.fillStyle = 'rgba(0,0,0,.7)'
+      ctx.fillRect(-bw/2, L/2 + 8, bw, 5)
+      ctx.fillStyle = e.hp/e.mhp > .5 ? '#5ec45e' : '#e05555'
+      ctx.fillRect(-bw/2, L/2 + 8, bw * (e.hp/e.mhp), 5)
+    }
+
+    // Name plate — always shown on boss
+    ctx.fillStyle = 'rgba(255,180,180,.95)'
+    ctx.font      = 'bold .32rem Share Tech Mono, monospace'
+    ctx.textAlign = 'center'
+    ctx.fillText(e.name.toUpperCase(), 0, L/2 + 22)
+    ctx.restore()
+  }
+
+  // Dispatch — boss enemies get the truck render, everything else the
+  // regular car render. Keeps the existing call-site code unchanged.
+  function drawEye(e){
+    if (e.isBoss) drawBoss(e)
+    else          drawCar(e)
   }
 
   // Draw bullet
