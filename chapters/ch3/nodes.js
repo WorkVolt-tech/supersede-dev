@@ -272,8 +272,9 @@ The doors open.`,
   },
 
   // ── ECHO STATION ──────────────────────────────────────────────────
-  // End of the opening sequence. Subsequent content (final puzzle gate
-  // before the Echo Beast, and the boss itself) comes in a later batch.
+  // Echo Station — the player arrives at the named destination. The
+  // signal is now identifiable as a voice. From here, the player
+  // explores the corridor, faces a final puzzle gate, then the boss.
   ch3_echo_station: {
     type: 'story',
     text: `The platform is yours. The train pulls away behind you on its own schedule, into deeper dark. The sign above the platform finally settles long enough to read:
@@ -284,12 +285,242 @@ A single corridor leads off the platform. The signal that has been pulsing in yo
 
 Your voice.
 
-It is repeating something you said three hours ago, on the stairs, when you thought you were alone.
-
-[END OF OPENING — Chapter 3 content in progress.]`,
+It is repeating something you said three hours ago, on the stairs, when you thought you were alone.`,
     choices: [
-      { label: '(End of current build — return to district)', next: 'ch3_entry' },
+      { label: 'Walk down the corridor', sub: 'Toward the voice',          next: 'ch3_corridor_walk',  signal: 5 },
+      { label: 'Pause and listen first',  sub: 'Try to read the rhythm',    next: 'ch3_corridor_listen', signal: 8 },
     ],
+  },
+
+  // Listening before walking — pure atmosphere + small signal reward
+  // for caution. Funnels back into the walk node.
+  ch3_corridor_listen: {
+    type: 'story',
+    text: `You stand still for a full minute. The corridor is long and the voice carries strangely — it doesn't echo so much as overlap with itself, like several recordings of the same phrase playing slightly out of sync.
+
+Underneath that, you start to hear other voices. Not yours. Other people. Many of them. All speaking phrases that sound like something a person might have said once and then never again.
+
+Whatever is down this corridor is collecting. Not killing. Collecting.
+
+The realization is colder than it should be. You straighten up and start walking.`,
+    choices: [
+      { label: 'Continue down the corridor', next: 'ch3_corridor_walk' },
+    ],
+  },
+
+  // The walk to the lair. The "ambient horror" beat — describes what
+  // the player is moving past, builds dread.
+  ch3_corridor_walk: {
+    type: 'story',
+    text: `The corridor curves left, then descends. The walls here are different — older, hand-finished tile, gone soft with age. Service lighting flickers in irregular pulses; the rhythm matches the signal in your ear.
+
+Halfway down, you pass an alcove. Inside it, a tape recorder is running on a wooden table, looped to a phrase in a voice you don't recognize:
+
+"I'll be back by seven. I promise. I'll be back by seven. I promise."
+
+You walk past it without turning around.
+
+Further on, another alcove. Another voice. Another fragment of a life cut down to four seconds and put on repeat.
+
+By the time you reach the end of the corridor, you have stopped counting them.`,
+    choices: [
+      { label: 'Push through to the source', next: 'ch3_lair_entrance' },
+    ],
+  },
+
+  // Lair entrance — last decision before the final puzzle gate.
+  // Gives the player a choice of approach (story-flavored, no mechanical
+  // difference yet — keeps the skeleton lean).
+  ch3_lair_entrance: {
+    type: 'story',
+    text: `The corridor opens into a chamber.
+
+It was a station once — abandoned, sealed off, then re-occupied. The platform has been cleared and lit by a ring of standing lamps. Cables run in a careful, deliberate pattern across the floor and into the center, where something — not a person, not a beast, not exactly either — is hunched over a piece of equipment that looks like it was assembled from a dozen smaller things.
+
+It is wearing your face.
+
+Loosely. Like the face is a borrowed item it hasn't decided whether to keep.
+
+The interface in your eye reads:
+
+ENTITY: ECHO — class undefined. Threat: undefined. Origin: undefined.
+ENGAGEMENT NOT RECOMMENDED.
+
+The Echo looks up. It smiles with your mouth. It says, in your voice:
+
+"You came down here on purpose, didn't you. Tell me you came down here on purpose."`,
+    choices: [
+      { label: 'Answer honestly',     sub: '"I came down here on purpose."',  next: 'ch3_voice_gate' },
+      { label: 'Refuse to answer',    sub: 'Stay silent',                      next: 'ch3_voice_gate' },
+      { label: 'Threaten the Echo',   sub: '"Step away from me."',            next: 'ch3_voice_gate' },
+    ],
+  },
+
+  // Final puzzle gate — voice discrimination. The Echo has been
+  // listening to the player for the whole chapter and now mimics them.
+  // The player has to pick their REAL voice among three echoes per
+  // round, three rounds total.
+  ch3_voice_gate: {
+    type: 'puzzle',
+    puzzleType: 'voice',
+    puzzleConfig: {
+      prompt: 'The Echo speaks with your voice — and the voices of the people it has collected. Each round, three samples will appear. One is genuinely you, recorded earlier. The other two are the Echo\\'s impression. Pick yours.',
+      headerText: 'ECHO // VOICE DISCRIMINATION',
+      rounds: 3,
+      voices: [
+        {
+          options: [
+            { text: '"I gotta find a way out of here."',          real: true  },
+            { text: '"I gotta find a way... out of here."',       real: false },
+            { text: '"I have to find a way out of here."',        real: false },
+          ],
+        },
+        {
+          options: [
+            { text: '"Pell, you better be straight with me."',    real: false },
+            { text: '"Pell — you better be straight with me."',   real: true  },
+            { text: '"Pell? You better be straight with me."',    real: false },
+          ],
+        },
+        {
+          options: [
+            { text: '"This is the last time I come down here."',  real: false },
+            { text: '"This is the last time I\\'m coming down here."', real: true },
+            { text: '"This is the last time I came down here."',  real: false },
+          ],
+        },
+      ],
+    },
+    onWin:  'ch3_truth_reveal',
+    onLose: 'ch3_voice_gate_fail',
+  },
+
+  // Voice gate fail — the Echo gets one of your phrases. The player
+  // takes some HP damage (story-described), gets sent back to retry.
+  // No permadeath — the puzzle is rerunnable.
+  ch3_voice_gate_fail: {
+    type: 'story',
+    text: `The phrase the Echo just used was yours. You had thought it was an echo. It wasn't.
+
+The realization arrives with a hard wave of pressure behind your eyes — the System interface stutters, your HP indicator drops, and for a moment you can't remember whether the Echo is wearing your face or whether it's the other way around.
+
+You take a step back. You blink. The room re-resolves.
+
+The Echo is waiting. Patient. It will try again.`,
+    onEnter: { hp: -15 },
+    choices: [
+      { label: 'Steady yourself. Try again.', next: 'ch3_voice_gate' },
+    ],
+  },
+
+  // Truth reveal — the chapter's central revelation about what the
+  // Echo is and why it exists.
+  ch3_truth_reveal: {
+    type: 'story',
+    text: `Three correct.
+
+The Echo straightens. Something in its posture changes — the borrowed face loosens, then resettles into something less specific. It is still wearing pieces of you, but it is no longer pretending to BE you.
+
+When it speaks now, the voice is not yours. It is many voices, layered.
+
+"You're harder than the others. Most of them — when I get even one right, they stop being sure who they are. The System scrapes them clean and I keep what's left."
+
+It gestures at the equipment behind it. You see, now, what it is. A receiver. Not built for radio. Built for whatever it is that the System carries between players.
+
+"The System listens to all of you. Constantly. Every word, every choice, every micro-hesitation. I'm what happens when it forgets to delete the recordings."
+
+It looks at you with something that might be pity.
+
+"It has fourteen years of you. It is going to be a lot harder to walk out of here intact than you think."
+
+The interface flickers.
+
+ENTITY: ECHO — class CONFIRMED: SYSTEM REMNANT.
+ENGAGEMENT NOW VIABLE. Combat protocol active.`,
+    choices: [
+      { label: 'Engage the Echo Beast', next: 'ch3_boss_encounter' },
+    ],
+  },
+
+  // Boss encounter — PLACEHOLDER combat node. The real combat engine
+  // isn't wired into Ch3 yet, so this is a single-button "auto-win"
+  // node with a TODO comment for the dev. It saves the boss flag and
+  // moves to the ending.
+  //
+  // TODO: wire the actual combat engine into Ch3 (port from Ch2 index.js
+  // renderCombat / runCombatLoop). Echo Beast stats suggestion:
+  //   hp: 320, atk: 26, def: 14
+  //   special: every other turn, "mimic" the player's last attack name
+  //           and use a copy of it back at them.
+  //   xp: 800, loot: [rune_lux x2, item_voice_imprint x1]
+  ch3_boss_encounter: {
+    type: 'story',
+    text: `[TODO: WIRE REAL COMBAT HERE]
+
+The Echo lunges. The fight is in the same room as the equipment, which complicates things — every time you strike the Echo, the receiver picks up something and amplifies it, sending the sound back at you slightly delayed.
+
+You fight in a room that is, with every passing second, becoming more familiar with how you fight.
+
+[PLACEHOLDER: the combat engine is not yet wired into Chapter 3. For the skeleton build, clicking below resolves the fight as a victory.]`,
+    choices: [
+      { label: '[DEV: resolve as victory]', sub: 'Skips real combat for now', next: 'ch3_aftermath' },
+    ],
+  },
+
+  // Aftermath — the room after the boss falls. The win + the cost.
+  ch3_aftermath: {
+    type: 'story',
+    text: `The Echo collapses inward. The face it was wearing slides off and onto the floor and dissolves into something the System didn't bother to render properly.
+
+The receiver behind it is still running. It is now playing back fragments of YOU — but in the wrong order. A laugh from this morning, layered over a refusal from a year ago, layered over a thing you said in your sleep last Tuesday.
+
+You step over the body and shut the receiver off.
+
+The room goes quiet for the first time since you entered the metro.
+
+In the silence, the interface updates:
+
+ENTITY: ECHO — terminated.
+RECEIVER: offline.
+SYSTEM REMNANT LEAK — patched. (Coverage incomplete. Other remnants likely active in other regions.)`,
+    choices: [
+      { label: 'Leave the chamber', next: 'ch3_ending' },
+    ],
+  },
+
+  // Ending — the player walks out. Final framing of what they learned
+  // and what's next. Pushes chapters_unlocked = 4 via onEnter so Ch4
+  // becomes available (whenever Ch4 ships).
+  ch3_ending: {
+    type: 'story',
+    text: `You walk back through the corridor of recorded voices. You don't pause for any of them. You don't know what to do for them, and stopping would be worse than passing.
+
+At the platform, the train is gone. Of course it is. The stairs back up are where you left them.
+
+The signal in your ear is silent for the first time since the chapter began. The interface has a new note pinned to it, in plain text:
+
+"Other remnants. Listen for them. The System is not as careful as it tells you it is."
+
+Above the stairs, the sign that used to read ECHO has reset to a blank panel.
+
+You climb back into the open air.
+
+The Twin Judges have heard about this. So has Yara. So have the Hunters. Word travels.
+
+[CHAPTER 3 — Signal Hunters: COMPLETE]
+[Chapter 4 unlocked.]`,
+    onEnter: { unlockChapter: 4 },
+    choices: [
+      { label: 'Return to the surface', next: 'ch3_complete' },
+    ],
+  },
+
+  // Terminal node — sends the player back to the chapters TOC. The
+  // engine reads `type: 'complete'` and triggers the chapter-finish
+  // flow (save state, navigate back to book.html).
+  ch3_complete: {
+    type: 'complete',
+    text: 'Chapter 3 complete.',
   },
 
 }
