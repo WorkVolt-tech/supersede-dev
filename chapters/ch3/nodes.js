@@ -35,10 +35,27 @@ The stairs go down further than they should. Forty steps, then a landing. Forty 
 A signal pulses in your ear. Not a sound — a pressure. Three short, one long. Pause. Three short, one long.
 
 The System has never broadcast before. It receives.`,
+    signals: [
+      { text: 'three short one long. three short one long.', real: true },
+      { text: 'come down. come, come down.', real: false },
+    ],
     choices: [
       { label: 'Descend further — track the signal', sub: 'Signal +5', next: 'ch3_platform', signal: 5 },
       { label: 'Stop. Listen. Record the pattern first.', sub: 'XP +30 · Moral +5', next: 'ch3_record_pattern', moral: 5, xp: 30 },
     ],
+    // Very-early cache — appears at any signal_strength (5+) which the
+    // player hits the moment they descend. Encourages exploration on
+    // re-enter and rewards anyone who actually descends with the signal.
+    cache: {
+      id: 'ch3_cache_entry',
+      reqSignal: 5,
+      itemKey: 'medical_pack', qty: 1,
+      label: 'Check the second landing',
+      sub: 'A faint resonance behind the stairwell wall',
+      foundText: `You stop at the second landing and put a hand on the wall. The pressure of the signal is stronger here — concentrated in a few square feet of plaster. Behind a loose access panel: someone left a sealed med kit. Recent. The seal hasn't yellowed.
+
+The signal carries on past you. It wasn't pointing at the kit. The kit was just on the way.`,
+    },
   },
 
   ch3_record_pattern: {
@@ -50,6 +67,10 @@ It isn't morse — too even. Not a heartbeat — too geometric. It pulses on a c
 Whatever is broadcasting is not improvising. It is repeating a known sequence.
 
 Your interface logs it cleanly: 0001000. Seven beats.`,
+    signals: [
+      { text: '[pulse] 0001000. [pulse] 0001000.', real: true },
+      { text: 'pattern recorded. pattern recorded. recorded.', real: false },
+    ],
     choices: [
       { label: 'Descend with the pattern in hand', sub: 'Signal +5', next: 'ch3_platform', signal: 5 },
     ],
@@ -65,6 +86,11 @@ The signal is louder here. So is the silence under it.
 Two ways forward. The tunnel mouth on the left disappears into proper dark. The maintenance corridor on the right is lit — sodium yellow, full of insects that shouldn't survive at this depth.
 
 A panel beside the tunnel mouth has a keypad. Above the keypad, a plate: WORKER ACCESS — VERIFY.`,
+    signals: [
+      { text: '...verify... worker access... verify...', real: true },
+      { text: "it's calm down here. calm. it's calm.", real: false },
+      { text: '[low hum, descending]', real: true },
+    ],
     choices: [
       { label: 'Try the keypad', sub: 'Solve the cipher', next: 'ch3_keypad_puzzle' },
       { label: 'Take the maintenance corridor', sub: 'Avoid the puzzle, signal goes quieter', next: 'ch3_corridor', signal: -3 },
@@ -107,6 +133,10 @@ A panel beside the tunnel mouth has a keypad. Above the keypad, a plate: WORKER 
 The panel hisses, drops two inches, and slides into the wall. Behind it, a service hatch. Clean inside. Lit. A maintenance access ladder going down further.
 
 The signal sharpens — you've moved closer to its source. Or it's moved closer to you. The pulse is the same. The pressure isn't.`,
+    signals: [
+      { text: '[pulse sharpens. tone unchanged.]', real: true },
+      { text: 'access. access. access granted.', real: false },
+    ],
     rewards: [{ itemKey: 'rune_lux', qty: 1 }],
     choices: [
       { label: 'Climb down the service ladder', sub: 'Signal +10', next: 'ch3_subplatform', signal: 10 },
@@ -120,6 +150,10 @@ The signal sharpens — you've moved closer to its source. Or it's moved closer 
 You step back from the panel.
 
 The maintenance corridor is still lit. The tunnel mouth is darker than it was.`,
+    signals: [
+      { text: '[distant service door — single close.]', real: true },
+      { text: 'try again. try. try again, try.', real: false },
+    ],
     choices: [
       { label: 'Take the maintenance corridor anyway', next: 'ch3_corridor' },
     ],
@@ -137,9 +171,37 @@ They ignore you. Whatever they're doing, you are not part of it.
 The corridor bends. At the bend, a maintenance cart sits against the wall, full of tools you don't recognize and a logbook with the cover ripped off. The first intact page reads: "Day 41. Whatever is in the deep tunnel is louder. Day 42. We're not going back."
 
 The corridor continues. Below the floor grating, you hear running water. A long way down.`,
+    signals: [
+      { text: "it's calm. calm. it's calm down here.", real: false },
+      { text: '[running water — distant, below grate.]', real: true },
+      { text: 'over here, friend. over, over here.', real: false },
+    ],
     choices: [
       { label: 'Take the tools you can use, keep moving', sub: 'XP +30', next: 'ch3_subplatform', xp: 30 },
       { label: 'Read the rest of the logbook', sub: 'XP +50 · Moral +3', next: 'ch3_corridor_read', xp: 50, moral: 3 },
+      // Echo trap — a voice "from the deep tunnel" the logbook warned about.
+      // Mirrors the day-42 voice from the journal; an attentive player will
+      // distrust it.
+      { label: 'Follow the voice from the deep tunnel', sub: 'Someone calling — sounds calm, sounds calm, sounds calm', next: 'ch3_misdirect_corridor', signal: -5, echoTrap: true },
+    ],
+  },
+
+  // Echo misdirect — corridor. Player follows the false voice into the
+  // sub-tunnel; gets nothing for it and has to backtrack.
+  ch3_misdirect_corridor: {
+    type: 'story',
+    text: `The voice is calm. You follow it down a side branch you didn't notice on the first pass — narrower, lower, the insects thinner here.
+
+The voice keeps repeating the same calm phrase. The same intonation. The same breath.
+
+You reach the end of the branch. A dead service shaft, half-collapsed, water at the bottom. Nothing else. No one.
+
+The voice is still speaking when you turn around. It has not noticed you stopped walking toward it.
+
+You walk back. The maintenance corridor is still where you left it.`,
+    onEnter: { hp: -5 },
+    choices: [
+      { label: 'Return to the corridor', sub: 'You know better now', next: 'ch3_corridor' },
     ],
   },
 
@@ -152,6 +214,10 @@ The corridor continues. Below the floor grating, you hear running water. A long 
 You close the book. Slide it back where you found it.
 
 The signal pulses overhead. Three short, one long.`,
+    signals: [
+      { text: '[pulse overhead — three short, one long.]', real: true },
+      { text: "open the hatch. open. open the hatch.", real: false },
+    ],
     choices: [
       { label: 'Continue down the corridor', sub: 'Signal +5', next: 'ch3_subplatform', signal: 5 },
     ],
@@ -168,6 +234,9 @@ There are footprints on the platform. Wet. Recent. Going into the train, not out
     choices: [
       { label: 'Board the train', sub: 'Follow the footprints', next: 'ch3_train_interior' },
       { label: 'Check the destination board first', sub: 'XP +20', next: 'ch3_destination', xp: 20 },
+      // Echo trap — a "second train" the player thinks they hear arriving.
+      // Tell: the wet footprints all go IN, not out. There is only one train.
+      { label: 'Wait — another train is approaching', sub: 'You hear it. You hear it. You hear it.', next: 'ch3_misdirect_subplatform', signal: -5, echoTrap: true },
     ],
   },
 
@@ -299,6 +368,45 @@ It is repeating something you said three hours ago, on the stairs, when you thou
     choices: [
       { label: 'Walk down the corridor', sub: 'Toward the voice',          next: 'ch3_corridor_walk',  signal: 5 },
       { label: 'Pause and listen first',  sub: 'Try to read the rhythm',    next: 'ch3_corridor_listen', signal: 8 },
+      // Echo trap — late game. The Echo Beast is mimicking the player's
+      // own voice; following it back toward the train is following the
+      // copy, not the source. Tell: the voice tells you to LEAVE, when
+      // every real instinct says push forward.
+      { label: 'Follow the voice back toward the train', sub: 'It says to leave. To leave. To leave now.', next: 'ch3_misdirect_echo_station', signal: -8, echoTrap: true },
+    ],
+  },
+
+  // Echo misdirect — subplatform. Player waits for a non-existent train.
+  ch3_misdirect_subplatform: {
+    type: 'story',
+    text: `You wait at the platform edge. The voice keeps insisting another train is coming. It says it the same way three times.
+
+After several minutes you realize the wind in the tunnel hasn't changed. There's no displaced air. No light at the end. Trains move air. Nothing here has moved air for a long time.
+
+You look down at the footprints again. All of them lead INTO the train that is already here. None lead away.
+
+The voice is still saying another train is coming.`,
+    choices: [
+      { label: 'Return to the subplatform', sub: 'The one train is still here', next: 'ch3_subplatform' },
+    ],
+  },
+
+  // Echo misdirect — echo station. The Beast is closer here, the mimicry
+  // sharper. Following it backward costs more.
+  ch3_misdirect_echo_station: {
+    type: 'story',
+    text: `You walk back toward where the train pulled away. The tunnel mouth is closer than it should be. The platform is smaller than you remember leaving it.
+
+The voice is still telling you to leave.
+
+You keep walking. The tunnel mouth doesn't get any closer.
+
+You stop. You look back. The corridor with the real voice in it is exactly where you turned away from. It hasn't moved. Only the platform geometry was wrong, and only for a few minutes, and only because something wanted it to be.
+
+The voice telling you to leave has stopped. Whatever was using your voice this time wasn't a very good copy.`,
+    onEnter: { hp: -8 },
+    choices: [
+      { label: 'Return to the platform', sub: 'You won\'t be fooled twice', next: 'ch3_echo_station' },
     ],
   },
 
