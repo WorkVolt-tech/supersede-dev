@@ -25,7 +25,7 @@ import { runSequence }   from '../../data/puzzle-sequence.js'
 import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
 import { initEnemyState, resolveEnemyTurn } from '../../data/enemyAI.js'
 import { ITEM_IMAGES } from './items.js'
-import { META, signalTier } from './config.js'
+import { META, signalTier, signalTierMeta } from './config.js'
 import { NODES } from './nodes.js'
 
 const $ = (id) => document.getElementById(id)
@@ -154,6 +154,10 @@ async function mountCh3(__mountOptions = {}) {
     player.signal_strength  = 0
   }
 
+  // Ensure caches_found exists in memory (DB column may or may not be
+  // present; the cache code guards on the in-memory array regardless).
+  if (!Array.isArray(player.caches_found)) player.caches_found = []
+
   // ── Signal feed state ───────────────────────────────────────────
   // We keep a rolling buffer of the last N signals so the player can
   // still scan recent context when they enter a new node. Each entry:
@@ -206,7 +210,7 @@ async function mountCh3(__mountOptions = {}) {
     const hpCol = hpPct > 60 ? '#5ec45e' : hpPct > 30 ? '#c8b96e' : '#e05555'
     const tier = getMoralTier(player.moral_score || 0)
     const signal = player.signal_strength || 0
-    const sigTier = signalTier ? signalTier(signal) : { label: '', color: '#8a7050' }
+    const sigTier = signalTierMeta(signal)
 
     // ── Fable-style moral alignment (matches Ch1) ─────────
     const moral = player.moral_score || 0
@@ -259,7 +263,7 @@ async function mountCh3(__mountOptions = {}) {
       <div class="stat-row" style="margin-bottom:5px">
         <span class="stat-key">SIG</span>
         <div class="stat-bar-wrap"><div class="stat-bar" style="width:${signal}%;background:${sigTier.color};transition:width .4s"></div></div>
-        <span class="stat-val" style="color:${sigTier.color}">${signal}</span>
+        <span class="stat-val" style="color:${sigTier.color}">${signal} · ${sigTier.label}</span>
       </div>
       ${(player.skill_points||0)>0?`<div onclick="window.bookNavigate('skills.html')" style="background:rgba(160,125,224,.25);border:1px solid rgba(160,125,224,.5);border-radius:3px;padding:4px 8px;margin-bottom:6px;font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--ink);cursor:pointer;text-align:center">⬡ ${player.skill_points} SKILL POINTS — tap to spend</div>`:''}
       <div class="stat-grid">
@@ -279,6 +283,51 @@ async function mountCh3(__mountOptions = {}) {
     renderSignalFeed()
   }
 
+  // ── Hidden caches (signal_strength-gated) ───────────────────────
+  // A story node may carry an optional `cache` descriptor:
+  //   cache: {
+  //     id:        'ch3_cache_platform',   // unique; tracked in player.caches_found
+  //     reqSignal: 30,                     // min signal_strength to reveal
+  //     itemKey:   'rune_lux', qty: 1,     // loot granted on search
+  //     label:     'Trace the buried signal',   // optional choice label
+  //     sub:       'Signal strong enough to localize a cache',
+  //     foundText: 'You dig out a sealed cache...',  // optional story text on grab
+  //   }
+  // The choice only appears when signal_strength >= reqSignal AND the
+  // cache id is not yet in player.caches_found. One-time per player.
+  function cacheCollected(id) {
+    return (player.caches_found || []).includes(id)
+  }
+  function isCacheAvailable(node) {
+    const c = node && node.cache
+    if (!c || !c.id) return false
+    if (cacheCollected(c.id)) return false
+    return (player.signal_strength || 0) >= (c.reqSignal || 0)
+  }
+  async function grabCache(node, nodeId) {
+    const c = node.cache
+    if (!c || cacheCollected(c.id)) return
+    // Mark found (in-memory guard prevents double-grab even if the DB
+    // column is missing).
+    const found = [...(player.caches_found || [])]
+    found.push(c.id)
+    player.caches_found = found
+    if (c.itemKey) { await addItem(c.itemKey, c.qty || 1) }
+    // Best-effort persist. caches_found requires a jsonb/text[] column on
+    // the players table; if it doesn't exist yet, this update silently
+    // no-ops on that field and the rest still saves.
+    try {
+      await supabase.from('players').update({ caches_found: found }).eq('id', player.id)
+    } catch (e) {
+      console.warn('[ch3 cache] caches_found not persisted (add column?):', e?.message)
+    }
+    // Show the grab feedback in story text, then re-render the node so the
+    // cache choice disappears and normal choices remain.
+    if (c.foundText) $('story-text').textContent = c.foundText
+    renderHUD()
+    renderStoryNode(node, nodeId)
+  }
+
   // ── Story node render ──────────────────────────────────────────
   // Story text goes on the LEFT page. Choices render in the RIGHT
   // panel below the HUD. This mirrors Ch1's layout exactly.
@@ -286,13 +335,24 @@ async function mountCh3(__mountOptions = {}) {
     $('story-text').textContent = node.text || ''
 
     const choices = node.choices || []
-    if (!choices.length) {
+    const cacheReady = isCacheAvailable(node)
+    if (!choices.length && !cacheReady) {
       $('right-panel').innerHTML = '<p style="font-style:italic;color:var(--ink-dim)">— no choices —</p>'
       return
     }
+    const cacheBtn = cacheReady ? `
+      <button class="choice" data-cache="1" style="border-color:rgba(94,196,94,.5)">
+        <span class="choice-arrow" style="color:#5ec45e">⬡</span>
+        <span class="choice-body">
+          <span>${node.cache.label || 'Search the signal source'}</span>
+          <span class="choice-sub">${node.cache.sub || 'A hidden cache — your signal is strong enough to find it'}</span>
+        </span>
+      </button>
+    ` : ''
     $('right-panel').innerHTML = `
       <div class="choices-label">Choices</div>
       <div class="choices">
+        ${cacheBtn}
         ${choices.map((c, i) => `
           <button class="choice" data-i="${i}">
             <span class="choice-arrow">›</span>
@@ -306,6 +366,7 @@ async function mountCh3(__mountOptions = {}) {
     `
     $('right-panel').querySelectorAll('.choice').forEach((btn) => {
       btn.addEventListener('click', () => {
+        if (btn.dataset.cache) { grabCache(node, nodeId); return }
         const c = choices[Number(btn.dataset.i)]
         goTo(c.next, c)
       })
