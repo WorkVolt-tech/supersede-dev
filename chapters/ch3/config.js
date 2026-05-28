@@ -20,3 +20,16 @@ export function signalTier(strength) {
   if (s >= 21) return 'present'
   return 'faint'
 }
+
+// Display metadata for each tier — { key, label, color }. Single source
+// of truth for the HUD signal readout AND hidden-cache gating. Colors are
+// chosen to stay readable on the dark signal box (no near-black greys).
+export function signalTierMeta(strength) {
+  const key = signalTier(strength)
+  switch (key) {
+    case 'lock':    return { key, label: 'LOCKED',  color: '#5ec45e' } // source found — green
+    case 'strong':  return { key, label: 'STRONG',  color: '#c8a050' } // gold
+    case 'present': return { key, label: 'PRESENT', color: '#8a7050' } // tan
+    default:        return { key, label: 'FAINT',   color: '#9a9a9a' } // readable grey
+  }
+}
