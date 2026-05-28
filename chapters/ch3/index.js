@@ -104,7 +104,7 @@ async function mountCh3(__mountOptions = {}) {
         font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
         line-height: 1.5;
-        color: #d4b48a;
+        color: #d4b48a !important;
         max-height: 180px;
         overflow-y: auto;
       }
@@ -112,7 +112,7 @@ async function mountCh3(__mountOptions = {}) {
         font-size: 8.5px;
         letter-spacing: .28em;
         text-transform: uppercase;
-        color: #8a7050;
+        color: #8a7050 !important;
         margin-bottom: 6px;
         padding-bottom: 4px;
         border-bottom: 1px solid rgba(138,91,68,.25);
@@ -121,11 +121,12 @@ async function mountCh3(__mountOptions = {}) {
         padding: 4px 0;
         animation: signalIn .35s ease-out;
         opacity: .92;
+        color: #d4b48a !important;
       }
-      .signal-msg.new { color: #f0e0a0; opacity: 1; }
-      .signal-msg.fading { opacity: .45; }
+      .signal-msg.new { color: #f0e0a0 !important; opacity: 1; }
+      .signal-msg.fading { color: #d4b48a !important; opacity: .45; }
       .signal-msg-prefix {
-        color: #7a5030;
+        color: #7a5030 !important;
         margin-right: 6px;
         font-size: 9px;
       }
