@@ -225,6 +225,7 @@ export function initEnemyState(enemy) {
     watcherEyeCount: 0,           // Watcher: eyes spawned this battle
     rotationIndex:   0,           // bosses with strict rotations
     enragedAt:       null,        // turn enrage triggered (phase 2)
+    echoLastPlayerMove: null,     // Ch3 Echo Beast: {name,dmg} of player's last attack, for mimic
   }
 }
 
@@ -270,6 +271,9 @@ export function resolveEnemyTurn(enemy, ctx) {
   }
   if (name.includes('Unseen')) {
     return _boss_unseen(enemy, ctx, hpPct)
+  }
+  if (name.includes('Echo Beast')) {
+    return _boss_echoBeast(enemy, ctx, hpPct)
   }
   if (name.includes("Watcher's Eye Swarm")) {
     return _enemy_eyeSwarm(enemy, ctx, hpPct)
@@ -2228,4 +2232,95 @@ function _boss_twinJudges(enemy, ctx, hpPct) {
 
   // ── Fallback — should never be reached, but safe ────────────────────────────
   return _genericEnemy(enemy, ctx, hpPct)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ECHO BEAST — Chapter 3 final boss
+// ─────────────────────────────────────────────────────────────────────────────
+// Theme: a System remnant that scrapes other players' data. In combat it
+// learns what the player just did and throws it back at them.
+//
+// ENGINE CONTRACT
+//   The chapter combat engine MUST write the player's last attack into
+//   enemyState.echoLastPlayerMove after each player ATTACK turn:
+//       enemyState.echoLastPlayerMove = { name: 'Strike', dmg: 28 }
+//   Defend / item / skip turns do NOT update this field — if the player
+//   just defended, the previous record persists. (Narratively correct: the
+//   Echo can only mimic data it actually has.)
+//
+// MECHANIC
+//   • Every 2nd enemy turn (turnCount % 2 === 0): MIMIC.
+//       Uses recorded move name; damage = recorded dmg × phase mult
+//       (1.0 phase 1, 1.25 phase 2) ± 3 variance, floored at 1.
+//   • Other turns: weighted pool — static_screech / feedback_loop / phantom_echo.
+//   • Phase 2 triggers at 50% HP — the Echo has "studied" the player.
+//   • If no player move recorded yet, mimic falls back to a distortion wave
+//     so the Echo never wastes a turn.
+function _boss_echoBeast(enemy, ctx, hpPct) {
+  const { enemyState, messages, triggerAnimation, onEnemyDmgPlayer, playerDEF, defending, statusEffects: se } = ctx
+
+  // Phase transition at 50%
+  if (hpPct < 0.50 && enemyState.phase === 1) {
+    enemyState.phase = 2
+    messages.push(`📡 <strong>The Echo has heard enough.</strong> It is no longer just listening — it is responding.`)
+    triggerAnimation(ANIM.VOID)
+  }
+
+  // ── Mimic turn ─────────────────────────────────────────────────────
+  if (enemyState.turnCount % 2 === 0) {
+    const last = enemyState.echoLastPlayerMove
+    if (last && last.dmg > 0) {
+      const mult = enemyState.phase === 2 ? 1.25 : 1.0
+      const dmg = Math.max(1, Math.round(last.dmg * mult) + Math.floor(Math.random() * 7) - 3)
+      onEnemyDmgPlayer(dmg)
+      messages.push(`📡 <strong>"${last.name}"</strong> — the Echo throws it back at you. <strong>${dmg}</strong>.`)
+      triggerAnimation(ANIM.PULSE)
+      return { anim: ANIM.PULSE }
+    }
+    const dmg = baseDmg(enemy.atk, playerDEF, se, defending, 3)
+    onEnemyDmgPlayer(dmg)
+    messages.push(`📡 <em>Distortion wave</em> — nothing to copy, so the receiver howls. <strong>${dmg}</strong>.`)
+    triggerAnimation(ANIM.FLASH)
+    return { anim: ANIM.FLASH }
+  }
+
+  // ── Non-mimic turn: weighted move pool ─────────────────────────────
+  const moves = [
+    {
+      key: 'static_screech', weight: 3,
+      exec() {
+        const dmg = baseDmg(enemy.atk, playerDEF, se, defending, 3)
+        onEnemyDmgPlayer(dmg)
+        messages.push(`📡 <em>Static screech</em> — the room rings. <strong>${dmg}</strong>.`)
+        triggerAnimation(ANIM.SHAKE)
+        return ANIM.SHAKE
+      },
+    },
+    {
+      key: 'feedback_loop', weight: 2,
+      exec() {
+        const dmg = baseDmg(enemy.atk * 0.7, playerDEF, se, defending, 2)
+        onEnemyDmgPlayer(dmg)
+        applySlow(se, 1, messages)
+        messages.push(`📡 <em>Feedback loop</em> — your tempo lags. <strong>${dmg}</strong>.`)
+        triggerAnimation(ANIM.VOID)
+        return ANIM.VOID
+      },
+    },
+    {
+      key: 'phantom_echo', weight: 1,
+      exec() {
+        const dmg = baseDmg(enemy.atk * 1.3, playerDEF, se, defending, 4)
+        onEnemyDmgPlayer(dmg)
+        messages.push(`📡 <em>Phantom echo</em> — a voice you don't recognise speaks your name. <strong>${dmg}</strong>!`)
+        triggerAnimation(ANIM.FLASH)
+        return ANIM.FLASH
+      },
+    },
+  ]
+
+  const move = pickWeighted(moves, [enemyState.lastMove])
+  enemyState.lastMove = move.key
+  const anim = move.exec()
+  return { anim }
 }
