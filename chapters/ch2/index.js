@@ -1559,7 +1559,7 @@ The Judges are already there.`,
         atk: 22,
         def: 14,
         xp: 600,
-        img: '../assets/boss/twin_judges.png',
+        img: '../assets/boss/equilibrium.webp',
         loot: [{ itemKey: 'judges_seal', qty: 1 }, { itemKey: 'rune_lux', qty: 1 }],
       },
       bossKey: 'twin_judges',
@@ -2552,9 +2552,10 @@ You walk back out.`
     const judgeNodes=['pre_boss_ch2','judges_verdict','boss_judges']
     const judgeImg=document.getElementById('judge-img')
     if (judgeNodes.includes(nodeId)) {
+      const judgeSrc = judgeImgFromForm(composeJudgesForm(player, node.enemy || { hp:380, atk:22, def:14 }).canonForm)
       if (!judgeImg) {
         const img=document.createElement('img');img.id='judge-img'
-        img.src='../assets/boss/twin_judges.png';img.alt='The Twin Judges'
+        img.src=judgeSrc;img.alt='The Twin Judges'
         img.style.cssText='width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:'+(nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)')
         stEl.insertAdjacentElement('afterend',img);setTimeout(()=>img.style.opacity='1',100)
       } else { judgeImg.style.filter=nodeId==='boss_judges'?'none':'brightness(.6) saturate(0.5)';judgeImg.style.opacity='1' }
@@ -2740,6 +2741,23 @@ You walk back out.`
     return                'COLD WAR — Hunters mobilizing'
   }
 
+  // Twin Judges — per-form battle art. Each of the 7 canonical forms has
+  // its own webp in /assets/boss/. canonForm comes from composeJudgesForm
+  // (single source of truth), so the picture always matches the form the
+  // player is actually facing.
+  const JUDGE_FORM_FILES = {
+    verdict:     'verdict.webp',
+    dominion:    'dominion.webp',
+    absolution:  'absolution.webp',
+    ruin:        'ruin.webp',
+    equilibrium: 'equilibrium.webp',
+    mercy:       'mercy.webp',
+    wrath:       'wrath.webp',
+  }
+  function judgeImgFromForm(canonForm) {
+    return '../assets/boss/' + (JUDGE_FORM_FILES[canonForm] || JUDGE_FORM_FILES.equilibrium)
+  }
+
   function composeJudgesForm(p, baseEnemy) {
     const moral       = p.moral_score || 0
     const log         = p.alliance_log || []
@@ -2888,6 +2906,7 @@ You walk back out.`
       enemy.hp  = composed.hp
       enemy.atk = composed.atk
       enemy.def = composed.def
+      enemy.img = judgeImgFromForm(composed.canonForm)
       enemy.name = composed.form === 'mercy' ? 'Mercy (leading) · Wrath (silent)'
                  : composed.form === 'wrath' ? 'Wrath (leading) · Mercy (silent)'
                  : 'The Twin Judges'
