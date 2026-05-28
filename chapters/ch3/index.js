@@ -23,6 +23,8 @@ import {
 import { runRiddle }     from '../../data/puzzle-riddle.js'
 import { runSequence }   from '../../data/puzzle-sequence.js'
 import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
+import { initEnemyState, resolveEnemyTurn } from '../../data/enemyAI.js'
+import { ITEM_IMAGES } from './items.js'
 import { META, signalTier } from './config.js'
 import { NODES } from './nodes.js'
 
@@ -353,8 +355,264 @@ async function mountCh3(__mountOptions = {}) {
       return
     }
 
+    if (node.type === 'combat' || node.type === 'boss') {
+      // Story text on the left; combat UI mounts in the right panel.
+      $('story-text').textContent = node.text || ''
+      renderCombat(node)
+      return
+    }
+
     // Default: story node
     renderStoryNode(node, nodeId)
+  }
+
+  // ── Inventory grant ─────────────────────────────────────────────
+  // Mirrors Ch2's addItem schema so loot lands in the same `inventory`
+  // table with the columns the inventory/skills pages expect. Only the
+  // items Ch3 can actually award are defined; anything else falls back
+  // to a generic material so a typo never throws.
+  async function addItem(itemKey, qty) {
+    try {
+      const { data: ex } = await supabase.from('inventory')
+        .select('id,quantity').eq('player_id', player.id).eq('item_key', itemKey).maybeSingle()
+      if (ex) {
+        await supabase.from('inventory').update({ quantity: ex.quantity + qty }).eq('id', ex.id)
+        return
+      }
+      const ITEM_DEF = {
+        rune_lux:          { name: 'Lux Rune',      item_type: 'material',  rarity: 'uncommon',  icon: '✨' },
+        item_voice_imprint:{ name: 'Voice Imprint', item_type: 'accessory', rarity: 'legendary', icon: '📡' },
+      }
+      const def = ITEM_DEF[itemKey] || { name: itemKey, item_type: 'material', rarity: 'common', icon: '📦' }
+      const { error } = await supabase.from('inventory').insert({
+        player_id: player.id, item_key: itemKey, quantity: qty,
+        name: def.name, item_type: def.item_type, rarity: def.rarity, icon: def.icon,
+        element: 'none', hp_restore: 0, atk_bonus: 0, def_bonus: 0, power_bonus: 0,
+        guard_bonus: 0, speed_bonus: 0, control_bonus: 0, insight_bonus: 0, luck_bonus: 0,
+        agility_bonus: 0, max_hp_bonus: 0, two_handed: false,
+        sockets_total: 0, sockets_used: 0, socketed_runes: [],
+      })
+      if (error) console.error('[ch3 addItem]', itemKey, error.message)
+    } catch (e) {
+      console.error('[ch3 addItem] failed', itemKey, e)
+    }
+  }
+
+  // ── Combat ──────────────────────────────────────────────────────
+  // Minimal player-first turn loop wired to data/enemyAI.js. The player
+  // acts first each round (Attack or Defend), the enemy responds via
+  // resolveEnemyTurn. For the Echo Beast this ordering matters: the boss
+  // mimics the player's LAST attack, so the player must move first for
+  // there to be something to copy.
+  //
+  // NOTE: class skills/items-in-combat are NOT wired here yet — that is a
+  // separate, larger task (Ch2's skill registry is ~1600 lines). This is
+  // the core boss loop: Attack / Defend, status effects, loot, xp.
+  function renderCombat(node) {
+    const enemy = node.enemy || { name: 'Unknown', hp: 100, atk: 10, def: 5, xp: 0, icon: '❓' }
+
+    // Mirror renderHUD's stat formulas exactly so combat numbers match
+    // the HUD the player just saw.
+    const lvl     = player.level || 1
+    const atkStat = Math.round(10 + (lvl - 1) * 3 + (player.power || 0) * 0.6 + (player.speed || 0) * 0.2)
+    const defStat = Math.round(5  + (lvl - 1) * 2 + (player.toughness || 0) * 0.5)
+
+    let enemyHp     = enemy.hp
+    const maxEnemyHp = enemy.hp
+    let currentHp   = player.hp || 100
+    const maxPlayerHp = player.max_hp || 100
+    let defending   = false
+    let over        = false
+
+    const enemyState = initEnemyState(enemy)
+    const se = {
+      playerSlowTurns: 0, playerDEFBonus: 0,
+      playerDefShredTurns: 0, playerDefShredAmt: 0,
+      playerBleedTurns: 0, playerBleedDmg: 0,
+      playerPoisonTurns: 0, playerPoisonDmg: 0,
+      playerStunTurns: 0, playerTerrorTurns: 0,
+    }
+
+    const playerDEF = () => defStat
+    const panel = $('right-panel')
+
+    const enemyImg = enemy.img
+      ? `<img src="${enemy.img}" alt="${enemy.name}" style="width:54px;height:54px;object-fit:cover;border:1px solid rgba(138,91,68,.4)" onerror="this.style.display='none'">`
+      : `<span class="combat-enemy-icon">${enemy.icon || '❓'}</span>`
+
+    panel.innerHTML = `
+      <div class="combat-panel" id="ch3-cb">
+        <div class="combat-enemy-row">
+          ${enemyImg}
+          <div>
+            <div class="combat-enemy-name">${enemy.name}</div>
+            <div class="stat-row" style="margin-top:6px;min-width:180px">
+              <span class="stat-key">FOE</span>
+              <div class="stat-bar-wrap"><div class="stat-bar" id="ch3-cb-ehp" style="width:100%;background:#a02020"></div></div>
+              <span class="stat-val" id="ch3-cb-ehp-val">${enemyHp}/${maxEnemyHp}</span>
+            </div>
+          </div>
+        </div>
+        <div class="combat-log" id="ch3-cb-log"><em>${enemy.combatIntro || 'The fight begins.'}</em></div>
+        <div class="stat-row">
+          <span class="stat-key">YOU</span>
+          <div class="stat-bar-wrap"><div class="stat-bar" id="ch3-cb-php" style="width:${Math.round(currentHp/maxPlayerHp*100)}%;background:#5ec45e"></div></div>
+          <span class="stat-val" id="ch3-cb-php-val">${currentHp}/${maxPlayerHp}</span>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px" id="ch3-cb-actions">
+          <button class="combat-btn" id="ch3-cb-attack" style="flex:1">⚔ ATTACK</button>
+          <button class="combat-btn" id="ch3-cb-defend" style="flex:1">🛡 DEFEND</button>
+        </div>
+      </div>
+    `
+
+    const logEl   = panel.querySelector('#ch3-cb-log')
+    const ehpEl   = panel.querySelector('#ch3-cb-ehp')
+    const ehpVal  = panel.querySelector('#ch3-cb-ehp-val')
+    const phpEl   = panel.querySelector('#ch3-cb-php')
+    const phpVal  = panel.querySelector('#ch3-cb-php-val')
+    const frame   = panel.querySelector('#ch3-cb')
+
+    function refreshBars() {
+      const ep = Math.max(0, Math.round(enemyHp / maxEnemyHp * 100))
+      const pp = Math.max(0, Math.round(currentHp / maxPlayerHp * 100))
+      ehpEl.style.width = ep + '%'
+      ehpVal.textContent = `${Math.max(0, enemyHp)}/${maxEnemyHp}`
+      phpEl.style.width = pp + '%'
+      phpEl.style.background = pp > 60 ? '#5ec45e' : pp > 30 ? '#c8b96e' : '#e05555'
+      phpVal.textContent = `${Math.max(0, currentHp)}/${maxPlayerHp}`
+    }
+
+    function log(html) { logEl.innerHTML = html }
+    const triggerAnimation = () => {
+      frame.classList.remove('animate-shake')
+      void frame.offsetWidth
+      frame.classList.add('animate-shake')
+    }
+
+    function tickPlayerDots(messages) {
+      if (se.playerBleedTurns > 0) {
+        currentHp = Math.max(0, currentHp - se.playerBleedDmg)
+        messages.push(`🩸 Bleed — <strong>${se.playerBleedDmg}</strong>.`)
+        se.playerBleedTurns--
+      }
+      if (se.playerPoisonTurns > 0) {
+        currentHp = Math.max(0, currentHp - se.playerPoisonDmg)
+        messages.push(`☠ Poison — <strong>${se.playerPoisonDmg}</strong>.`)
+        se.playerPoisonTurns--
+      }
+      if (se.playerSlowTurns > 0)      se.playerSlowTurns--
+      if (se.playerDefShredTurns > 0)  se.playerDefShredTurns--
+      if (se.playerStunTurns > 0)      se.playerStunTurns--
+      if (se.playerTerrorTurns > 0)    se.playerTerrorTurns--
+    }
+
+    function enemyTurn(prefixMsgs) {
+      const messages = prefixMsgs || []
+      const ctx = {
+        enemyState, enemyHp, maxEnemyHp, currentHp, maxPlayerHp,
+        playerDEF, defending, statusEffects: se, yara: null, messages,
+        triggerAnimation,
+        onEnemyDmgPlayer: (d) => { currentHp = Math.max(0, currentHp - d) },
+        onEnemyHealSelf:  (h) => { enemyHp = Math.min(maxEnemyHp, enemyHp + h) },
+      }
+      resolveEnemyTurn(enemy, ctx)
+      defending = false
+      tickPlayerDots(messages)
+      log(messages.join('<br>'))
+      refreshBars()
+      if (currentHp <= 0) { endCombat(false) }
+    }
+
+    function playerAttack() {
+      if (over) return
+      const messages = []
+      if (se.playerStunTurns > 0) {
+        messages.push('⚡ <em>Stunned — you lose your action.</em>')
+        enemyTurn(messages)
+        return
+      }
+      const roll = Math.floor(Math.random() * 6)
+      const dmg  = Math.max(1, atkStat + roll - (enemy.def || 0))
+      enemyHp = Math.max(0, enemyHp - dmg)
+      enemyState.echoLastPlayerMove = { name: 'Strike', dmg }
+      messages.push(`⚔ You strike for <strong>${dmg}</strong>.`)
+      refreshBars()
+      if (enemyHp <= 0) { log(messages.join('<br>')); endCombat(true); return }
+      enemyTurn(messages)
+    }
+
+    function playerDefend() {
+      if (over) return
+      defending = true
+      enemyTurn(['🛡 <em>You brace. Defense doubled this turn.</em>'])
+    }
+
+    panel.querySelector('#ch3-cb-attack').addEventListener('click', playerAttack)
+    panel.querySelector('#ch3-cb-defend').addEventListener('click', playerDefend)
+
+    async function endCombat(won) {
+      if (over) return
+      over = true
+      const actions = panel.querySelector('#ch3-cb-actions')
+      if (actions) actions.remove()
+
+      const updates = {}
+      if (won) {
+        // XP (no auto-level-up in Ch3 yet — mirrors how goTo handles choice.xp)
+        const gainedXp = enemy.xp || 0
+        player.xp = (player.xp || 0) + gainedXp
+        updates.xp = player.xp
+        // Persist surviving HP
+        player.hp = currentHp
+        updates.hp = currentHp
+        // Loot
+        const loot = enemy.loot || []
+        for (const l of loot) { await addItem(l.itemKey, l.qty || 1) }
+        try { await supabase.from('players').update(updates).eq('id', player.id) } catch (e) { console.error('[ch3] win save', e) }
+
+        const lootHtml = loot.length
+          ? loot.map(l => {
+              const img = ITEM_IMAGES[l.itemKey]
+              const thumb = img ? `<img src="${img}" onerror="this.style.display='none'" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:4px">` : ''
+              return `<div style="font-size:13px;color:var(--ink)">${thumb}${l.itemKey.replace(/_/g,' ')} ×${l.qty || 1}</div>`
+            }).join('')
+          : '<div style="font-size:13px;color:var(--ink-dim)">— no loot —</div>'
+
+        panel.querySelector('.combat-panel').insertAdjacentHTML('beforeend', `
+          <div class="end-box" id="ch3-cb-over" style="margin-top:12px">
+            <div class="end-title">VICTORY</div>
+            <div class="end-sub">${enemy.defeatText || 'The receiver goes silent.'}</div>
+            <div style="margin:10px 0">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--ink-dim);margin-bottom:4px">REWARDS</div>
+              <div style="font-size:13px;color:var(--ink)">✦ ${gainedXp} XP</div>
+              ${lootHtml}
+            </div>
+            <button class="end-btn" id="ch3-cb-continue">Continue ›</button>
+          </div>
+        `)
+        panel.querySelector('#ch3-cb-continue').addEventListener('click', () => {
+          renderHUD()
+          goTo(node.onWin, node.winChoice || {})
+        })
+      } else {
+        // Defeat — restore to full so the retry is playable, route to onLose.
+        player.hp = maxPlayerHp
+        updates.hp = maxPlayerHp
+        try { await supabase.from('players').update(updates).eq('id', player.id) } catch (e) { console.error('[ch3] lose save', e) }
+        panel.querySelector('.combat-panel').insertAdjacentHTML('beforeend', `
+          <div class="end-box" id="ch3-cb-over" style="margin-top:12px">
+            <div class="end-title" style="color:var(--warn)">DEFEATED</div>
+            <div class="end-sub">${enemy.loseText || 'The signal swallows you. You pull back to regroup.'}</div>
+            <button class="end-btn" id="ch3-cb-retry">Regroup ›</button>
+          </div>
+        `)
+        panel.querySelector('#ch3-cb-retry').addEventListener('click', () => {
+          renderHUD()
+          goTo(node.onLose, node.loseChoice || {})
+        })
+      }
+    }
   }
 
   // ── Navigation + side effects ───────────────────────────────────
