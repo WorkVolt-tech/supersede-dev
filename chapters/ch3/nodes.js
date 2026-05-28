@@ -69,6 +69,16 @@ A panel beside the tunnel mouth has a keypad. Above the keypad, a plate: WORKER 
       { label: 'Try the keypad', sub: 'Solve the cipher', next: 'ch3_keypad_puzzle' },
       { label: 'Take the maintenance corridor', sub: 'Avoid the puzzle, signal goes quieter', next: 'ch3_corridor', signal: -3 },
     ],
+    // Hidden cache — only appears once signal_strength >= 30 ('present').
+    // One-time grab, tracked in player.caches_found.
+    cache: {
+      id: 'ch3_cache_platform',
+      reqSignal: 30,
+      itemKey: 'rune_lux', qty: 1,
+      label: 'Trace the signal to the bench',
+      sub: 'PRESENT signal — something is buried in the old line',
+      foundText: `You follow the signal to the third bench. The maintenance hatch beneath it is unlocked — someone left it that way. Inside: a sealed cache, dry despite the depth.\n\nThe signal hum drops for a moment, like it was guiding you here and is satisfied now that you've arrived.`,
+    },
   },
 
   // ── PUZZLE 1: keypad cipher ───────────────────────────────────────
