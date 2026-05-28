@@ -442,29 +442,36 @@ ENGAGEMENT NOW VIABLE. Combat protocol active.`,
     ],
   },
 
-  // Boss encounter — PLACEHOLDER combat node. The real combat engine
-  // isn't wired into Ch3 yet, so this is a single-button "auto-win"
-  // node with a TODO comment for the dev. It saves the boss flag and
-  // moves to the ending.
-  //
-  // TODO: wire the actual combat engine into Ch3 (port from Ch2 index.js
-  // renderCombat / runCombatLoop). Echo Beast stats suggestion:
-  //   hp: 320, atk: 26, def: 14
-  //   special: every other turn, "mimic" the player's last attack name
-  //           and use a copy of it back at them.
-  //   xp: 800, loot: [rune_lux x2, item_voice_imprint x1]
+  // Boss encounter — Echo Beast. Real combat, resolved by the Ch3
+  // combat engine (renderCombat in index.js → data/enemyAI.js).
+  // The Echo's signature mechanic: every other enemy turn it MIMICS the
+  // player's last attack, throwing copied damage back at them. The engine
+  // routes on enemy.name including "Echo Beast" (see resolveEnemyTurn).
   ch3_boss_encounter: {
-    type: 'story',
-    text: `[TODO: WIRE REAL COMBAT HERE]
+    type: 'combat',
+    text: `The Echo lunges. The fight is in the same room as the equipment, which complicates things — every time you strike the Echo, the receiver picks up something and amplifies it, sending the sound back at you slightly delayed.
 
-The Echo lunges. The fight is in the same room as the equipment, which complicates things — every time you strike the Echo, the receiver picks up something and amplifies it, sending the sound back at you slightly delayed.
-
-You fight in a room that is, with every passing second, becoming more familiar with how you fight.
-
-[PLACEHOLDER: the combat engine is not yet wired into Chapter 3. For the skeleton build, clicking below resolves the fight as a victory.]`,
-    choices: [
-      { label: '[DEV: resolve as victory]', sub: 'Skips real combat for now', next: 'ch3_aftermath' },
-    ],
+You fight in a room that is, with every passing second, becoming more familiar with how you fight.`,
+    enemy: {
+      name: 'The Echo Beast',
+      icon: '📡',
+      hp:  320,
+      atk: 26,
+      def: 14,
+      spd: 24,
+      xp:  800,
+      img: '../assets/boss/echo_beast.png',
+      combatIntro: 'The receiver hums. It has been listening the whole time.',
+      defeatText: 'The receiver chokes on its own feedback and goes dark. Whatever it scraped from the others — it can\'t replay it anymore.',
+      loseText: 'Your own moves come back faster than you can answer them. You break contact and fall back up the tunnel.',
+      loot: [
+        { itemKey: 'rune_lux', qty: 2 },
+        { itemKey: 'item_voice_imprint', qty: 1 },
+      ],
+    },
+    bossKey: 'echo_beast',
+    onWin:  'ch3_aftermath',
+    onLose: 'ch3_lair_entrance',
   },
 
   // Aftermath — the room after the boss falls. The win + the cost.
