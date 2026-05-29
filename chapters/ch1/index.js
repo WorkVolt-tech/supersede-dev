@@ -474,16 +474,26 @@ export async function mountChapter1(__mountOptions = {}) {
           color: rgba(200,184,128,.3) !important;
           border-color: rgba(200,184,128,.1) !important;
         }
-        #eye-encounter-overlay #skill-slots-row p,
-        #eye-encounter-overlay #skill-slots-row span {
+        #eye-encounter-overlay [id$="-skill-slots-row"] p,
+        #eye-encounter-overlay [id$="-skill-slots-row"] span,
+        #eye-encounter-overlay [id$="-skill-slots-row"] div {
           color: #c8b96e !important;
         }
-        #eye-encounter-overlay #items-panel {
+        #eye-encounter-overlay [id$="-skill-slots-row"] button {
+          color: #c8b96e !important;
+          background: rgba(200,184,128,.08) !important;
+          border: 1px solid rgba(200,184,128,.25) !important;
+        }
+        #eye-encounter-overlay [id$="-items-panel"] {
           background: rgba(15,12,8,.95) !important;
           border-color: rgba(200,184,128,.3) !important;
         }
-        #eye-encounter-overlay #items-panel p,
-        #eye-encounter-overlay #items-panel span {
+        #eye-encounter-overlay [id$="-items-panel"] p,
+        #eye-encounter-overlay [id$="-items-panel"] span,
+        #eye-encounter-overlay [id$="-items-panel"] div {
+          color: #c8b96e !important;
+        }
+        #eye-encounter-overlay [id$="-items-panel"] button {
           color: #c8b96e !important;
         }
         #eye-encounter-overlay #combat-over {
@@ -498,6 +508,38 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-combat-phase > p {
           color: #c8b96e !important;
         }
+        /* ─────────────────────────────────────────────────────────────
+           ESCAPE PARCHMENT GLOBALS
+           The page-level "p, li, span { color: var(--ink) !important }"
+           rule was darkening every <p> inside this dark overlay (the
+           alert lines, the "You have no choice" subtitle, anything
+           inline-styled). The next rules undo that scoped to the overlay
+           ONLY — parchment pages are unaffected.
+           ─────────────────────────────────────────────────────────── */
+        #eye-encounter-overlay p,
+        #eye-encounter-overlay li,
+        #eye-encounter-overlay span {
+          color: inherit !important;
+        }
+        /* Re-establish the alert-phase colours, since `inherit` above
+           reset them. These match the original inline-style intent. */
+        #eye-alert-phase { color: #c8b96e; }
+        #eye-alert-lines p {
+          color: #c8b96e !important;
+          opacity: 0;
+          animation: eyeTextIn .35s ease forwards;
+        }
+        #eye-alert-lines p:nth-child(4) {
+          color: #e05555 !important;
+          font-weight: bold;
+          letter-spacing: .1em;
+        }
+        #eye-alert-lines p:nth-child(5) {
+          color: #a08858 !important;
+        }
+        #eye-engage-btn-wrap p { color: #a08858 !important; }
+        /* Make the ENGAGE button text bullet-proof too */
+        #eye-engage-btn { color: #0d0b08 !important; }
       </style>
 
       <!-- Alert phase -->
