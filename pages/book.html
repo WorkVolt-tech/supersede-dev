@@ -473,6 +473,7 @@
 
 <script type="module">
 import { renderNav, showToast, showSysOverlay } from '../components/nav.js'
+import { supabase } from '../supabase.js'
 
 // Chapter modules (Ch1, Ch2, Ch3) call these via window.* — expose them
 // globally here so chapter code can use them without re-importing.
@@ -485,6 +486,44 @@ window.showSysOverlay = showSysOverlay
     { number: 2, title: 'Broken Alliances',       sub: 'Groups form. Groups break. The System watches both.' },
     { number: 3, title: 'Signal Hunters',         sub: 'A signal pulses from the deep. The System is listening.' },
   ]
+
+  // ── Replay system ───────────────────────────────────
+  // Each entry lists the player columns wiped when that chapter is replayed.
+  // Cross-chapter fields (inventory, level, xp, gold, moral_score, badge,
+  // alliance_log, defeated_bosses, sp_claimed, skill_points, classes) are
+  // deliberately NOT in this map — they persist across runs.
+  // To support a new chapter, add an entry like: 4: ['current_node_ch4', ...]
+  const CHAPTER_REPLAY_RESET = {
+    1: { current_node: null },
+    2: { current_node: null },
+    3: { current_node_ch3: null, signal_strength: 0, caches_found: [] },
+  }
+
+  async function replayChapter(chNumber) {
+    const ok = window.confirm(`Reset Chapter ${chNumber} progress and start it from the beginning?\n\nYour inventory, level, gold, skill points and reputation are kept. Only this chapter's progress is reset.`)
+    if (!ok) return
+    const resetFields = CHAPTER_REPLAY_RESET[chNumber]
+    if (!resetFields) {
+      console.warn('[replay] no reset config for chapter', chNumber)
+      return
+    }
+    // Always also point current_chapter at this one so the loader goes here.
+    const updates = { ...resetFields, current_chapter: chNumber }
+    try {
+      const { error } = await supabase.from('players').update(updates).eq('id', currentPlayer.id)
+      if (error) throw error
+      Object.assign(currentPlayer, updates)
+    } catch (e) {
+      console.error('[replay] save failed', e)
+      alert('Could not reset this chapter. Try again, or refresh the page.')
+      return
+    }
+    // Navigate to the chapter route — the chapter engine will bootstrap from
+    // its entry node since current_node_chN is null.
+    bookNavigate(`book.html?chapter=${chNumber}`)
+  }
+  // Exposed for inline onclick handlers in chapter cards
+  window.replayChapter = replayChapter
 
   // ── Book module router ──────────────────────────────
   const MODULE_VERSION = '2026-05-12-skill-tree-selection-v2'
@@ -1085,6 +1124,7 @@ window.showSysOverlay = showSysOverlay
     currentPlayer = player
 
     const unlocked = player.chapters_unlocked || [1]
+    const completed = player.chapters_completed || []
 
     document.getElementById('rec-username').textContent = player.username
     document.getElementById('rec-stats').innerHTML = [
@@ -1142,12 +1182,15 @@ window.showSysOverlay = showSysOverlay
       const isCh1       = ch.number === 1
       const alreadyIn   = (player.current_node || '').startsWith(`ch${ch.number}_`)
       const chUnlocked  = unlocked.includes(ch.number)
-      const isReplay    = unlocked.includes(ch.number + 1)
+      const isReplay    = completed.includes(ch.number)
 
       // Ch1 — single button only
       if (isCh1) {
         const href  = 'book.html?chapter=1'
         const label = player.current_chapter === 1 || alreadyIn ? 'Continue ›' : isReplay ? 'Replay ›' : 'Enter ›'
+        const onclickAttr = isReplay
+          ? `event.preventDefault();replayChapter(1)`
+          : `event.preventDefault();bookNavigate('${href}')`
         return `<div class="chapter-entry">
           ${thumbHtml}
           <div class="ch-info">
@@ -1156,7 +1199,7 @@ window.showSysOverlay = showSysOverlay
             <div class="ch-sub">${ch.sub}</div>
           </div>
           <a href="${href}" class="ch-btn ${player.current_chapter===1?'active':''}"
-             onclick="event.preventDefault();bookNavigate('${href}')">${label}</a>
+             onclick="${onclickAttr}">${label}</a>
         </div>`
       }
 
@@ -1166,6 +1209,9 @@ window.showSysOverlay = showSysOverlay
                        : isReplay ? 'Replay ›' : 'Enter ›'
       const chHref     = `book.html?chapter=${ch.number}`
       const chDisabled = !chUnlocked
+      const chOnclick = isReplay
+        ? `event.preventDefault();replayChapter(${ch.number})`
+        : `event.preventDefault();bookNavigate('${chHref}')`
 
       return `<div class="chapter-entry">
         ${thumbHtml}
@@ -1180,7 +1226,7 @@ window.showSysOverlay = showSysOverlay
           ${chDisabled
             ? `<span class="ch-btn" style="opacity:.35;cursor:not-allowed;pointer-events:none" title="Complete the drive to unlock">🔒 Chapter</span>`
             : `<a href="${chHref}" class="ch-btn ${player.current_chapter===ch.number?'active':''}"
-                 onclick="event.preventDefault();bookNavigate('${chHref}')">${chLabel}</a>`
+                 onclick="${chOnclick}">${chLabel}</a>`
           }
         </div>
       </div>`
