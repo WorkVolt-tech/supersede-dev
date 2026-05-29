@@ -2861,19 +2861,34 @@ You walk back out.`
     }
 
     // ── Canonical 7-form name ────────────────────────────────────────────
-    // The fight composition uses a simpler mercy/wrath/both classification
-    // for stat scaling. But the player-facing label should reveal which of
-    // the 7 canonical forms they're actually facing (same logic as the
-    // win-screen formKey computation). This lets the player learn the
-    // world's vocabulary through play.
+    // canonForm is the single source of truth — form (stat scaling) is
+    // derived from it below so the two can never contradict each other.
+    //
+    // Priority order:
+    //   1. Verdict     — 5 or more zone bosses cleared, regardless of moral
+    //   2. Dominion    — moral neutral (< ±40) AND 2+ elements invested
+    //   3. Absolution  — moral positive (≥ 40) AND 2+ elements invested
+    //   4. Ruin        — moral negative (≤ -40) AND 2+ elements invested
+    //   5. Equilibrium — moral neutral (< ±40), single/no element
+    //   6. Mercy       — moral positive (≥ 40), single/no element
+    //   7. Wrath       — moral negative (≤ -40), single/no element
+    const zoneBossesCleared = (p.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
+
     let canonForm
-    if      (Math.abs(moral) >= 70 && elementCount >= 3) canonForm = 'verdict'
+    if      (zoneBossesCleared >= 5)                      canonForm = 'verdict'
     else if (Math.abs(moral) < 40 && elementCount >= 2)  canonForm = 'dominion'
-    else if (moral >= 40 && elementCount >= 2)           canonForm = 'absolution'
-    else if (moral <= -40 && elementCount >= 2)          canonForm = 'ruin'
-    else if (Math.abs(moral) < 40)                       canonForm = 'equilibrium'
-    else if (moral >= 40)                                canonForm = 'mercy'
-    else                                                 canonForm = 'wrath'
+    else if (moral >= 40 && elementCount >= 2)            canonForm = 'absolution'
+    else if (moral <= -40 && elementCount >= 2)           canonForm = 'ruin'
+    else if (Math.abs(moral) < 40)                        canonForm = 'equilibrium'
+    else if (moral >= 40)                                 canonForm = 'mercy'
+    else                                                  canonForm = 'wrath'
+
+    // Sync `form` (stat scaling bucket) from canonForm so they are never
+    // out of step. mercy/absolution → mercy scaling. wrath/ruin → wrath
+    // scaling. Everything else (verdict/dominion/equilibrium) → both.
+    if      (canonForm === 'mercy' || canonForm === 'absolution') form = 'mercy'
+    else if (canonForm === 'wrath' || canonForm === 'ruin')       form = 'wrath'
+    else                                                           form = 'both'
 
     // Form labels — canonical Judge titles. Player-facing.
     const FORM_LABELS = {
@@ -2907,9 +2922,15 @@ You walk back out.`
       enemy.atk = composed.atk
       enemy.def = composed.def
       enemy.img = judgeImgFromForm(composed.canonForm)
-      enemy.name = composed.form === 'mercy' ? 'Mercy (leading) · Wrath (silent)'
-                 : composed.form === 'wrath' ? 'Wrath (leading) · Mercy (silent)'
-                 : 'The Twin Judges'
+      enemy.name = {
+        verdict:     'The Twin Judges — Verdict',
+        dominion:    'The Twin Judges — Dominion',
+        absolution:  'Judge Mercy — Absolution',
+        ruin:        'Judge Wrath — Ruin',
+        equilibrium: 'The Twin Judges — Equilibrium',
+        mercy:       'Judge Mercy',
+        wrath:       'Judge Wrath',
+      }[composed.canonForm] || 'The Twin Judges'
       judgesForm = composed
     } else {
       // Standard zone-boss scaling — level-based first, then per-kill escalation.
