@@ -521,7 +521,7 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay span {
           color: inherit !important;
         }
-        /* Re-establish the alert-phase colours, since `inherit` above
+        /* Re-establish the alert-phase colours, since 'inherit' above
            reset them. These match the original inline-style intent. */
         #eye-alert-phase { color: #c8b96e; }
         #eye-alert-lines p {
