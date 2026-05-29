@@ -3897,6 +3897,26 @@ You walk back out.`
                     animation:sysAnomalyScanline 1.2s linear infinite;
                   }
                   #sys-anomaly-popup .frame > * { position:relative; z-index:1; }
+                  /* ────────────────────────────────────────────────────
+                     ESCAPE PARCHMENT GLOBALS
+                     The page-level "p, li, span { color: var(--ink) !important }"
+                     rule was darkening every <p>/<span> inside this dark
+                     overlay (System messages, button text, badge labels).
+                     The next rules undo that scoped to the popup ONLY —
+                     parchment pages are unaffected.
+                     ──────────────────────────────────────────────────── */
+                  #sys-anomaly-popup p,
+                  #sys-anomaly-popup li,
+                  #sys-anomaly-popup span,
+                  #sys-anomaly-popup div { color: inherit !important; }
+                  /* Re-establish the intended colors with !important so they
+                     win over any other late-bound parchment overrides. */
+                  #sys-anomaly-popup .sys-header        { color:#c8a8ff !important; }
+                  #sys-anomaly-popup .sys-header .badge { color:#ff9090 !important; }
+                  #sys-anomaly-popup .sys-title         { color:#d4b4ff !important; }
+                  #sys-anomaly-popup .sys-msg           { color:#d8c8a8 !important; }
+                  #sys-anomaly-popup .sys-msg em        { color:#c8a8ff !important; }
+                  #sys-anomaly-popup .sys-btn           { color:#e8dcc2 !important; }
                   #sys-anomaly-popup .sys-header {
                     display:flex;justify-content:space-between;align-items:center;
                     padding:8px 14px;
