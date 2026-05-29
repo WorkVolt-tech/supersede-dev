@@ -89,7 +89,7 @@ export async function mountVehicle(__mountOptions = {}) {
   const ROAD_X=()=>(canvas.width-ROAD_W())/2
 
   // Entities
-  let bullets=[],eyeBullets=[],eyes=[],particles=[],lootDrops=[]
+  let bullets=[],eyeBullets=[],eyes=[],particles=[],lootDrops=[],scanBeams=[]
   let shootCD=0,waveShowTimer=0,waveTransition=false,spawnTimer=0,spawnRate=80
   let comboTimer=0,droneAngle=0
 
@@ -169,13 +169,13 @@ export async function mountVehicle(__mountOptions = {}) {
 
   // Eye types
   const ETYPES=[
-    {name:'Scout',  hp:1,spd:1.6,atk:6, sz:16,col:'#b06eff',score:50, pat:'straight'},
+    {name:'Scout',  hp:1,spd:1.6,atk:6, sz:12,col:'#b06eff',score:50, pat:'straight'},
     {name:'Watcher',hp:2,spd:1.2,atk:10,sz:24,col:'#e05555',score:100,pat:'zigzag'},
     {name:'Drone',  hp:1,spd:2.8,atk:5, sz:18,col:'#5eaee0',score:75, pat:'dive'},
     {name:'Cluster',hp:6,spd:0.9,atk:16,sz:32,col:'#c8512a',score:200,pat:'straight',splits:true},
     {name:'Sniper', hp:3,spd:1.0,atk:14,sz:20,col:'#ffcc00',score:150,pat:'straight',shoots:true},
-    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:18,col:'#ff88ff',score:30, pat:'swarm'},
-    {name:'Boss',   hp:10,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
+    {name:'Swarm',  hp:3,spd:2.5,atk:4, sz:18,col:'#ff88ff',score:30, pat:'swarm',splits:true},
+    {name:'Boss',   hp:100,spd:0.7,atk:20,sz:52,col:'#ff6600',score:1000,pat:'spider',shoots:true,isBoss:true},
   ]
   // Wave spawn pools — Swarm included from wave 3 so it shows up regularly
   function getPool(){
@@ -197,7 +197,12 @@ export async function mountVehicle(__mountOptions = {}) {
       name:t.name,pat:t.pat,shoots:!!t.shoots,splits:!!t.splits,isBoss,
       sTimer:isBoss?40:60+Math.random()*60,
       zt:0,zd:1,pulse:0,dead:false,
-      // spider sweep state
+      // spider boss state machine: 'walk' → 'stop' → 'scan' → 'walk'
+      spiderPhase:'walk', spiderPhaseTimer:0,
+      spiderTargetX:0, spiderTargetY:0,
+      spiderStepPhase:0,   // for leg-cycle animation feel
+      scanAngle:0, scanSweepDir:1,
+      // legacy fields (kept so nothing else breaks)
       spiderDir:1,spiderTimer:0,spiderLeg:0
     })
   }
@@ -209,6 +214,11 @@ export async function mountVehicle(__mountOptions = {}) {
     if(bossAlive)return
     bossAlive=true
     spawnEye(ETYPES[6])
+    // Initial walk target for the spider state machine
+    const b=eyes[eyes.length-1]
+    const rx=ROAD_X(),rw=ROAD_W()
+    b.spiderTargetX=rx+b.sz+Math.random()*(rw-b.sz*2)
+    b.spiderTargetY=canvas.height*.15+Math.random()*canvas.height*.10
     waveBanner('⚠ BOSS APPROACHING',2200)
     flash('#ff660033')
   }
@@ -408,7 +418,7 @@ export async function mountVehicle(__mountOptions = {}) {
   }
 
   // Fixed draw sizes per enemy type — completely independent of sz hitbox
-  const SPRITE_SIZE={Boss:280,Swarm:120,Drone:100,Scout:64,Watcher:80,Sniper:72,Cluster:110}
+  const SPRITE_SIZE={Boss:280,Swarm:120,Drone:100,Scout:48,Watcher:80,Sniper:72,Cluster:110}
 
   // Draw eye — uses custom sprite if available, falls back to canvas drawing
   function drawEye(e){
@@ -621,22 +631,70 @@ export async function mountVehicle(__mountOptions = {}) {
       else if(e.pat==='dive'){const dx=PV.x-e.x,dy=PV.y-e.y,d=Math.sqrt(dx*dx+dy*dy)||1;e.vx+=dx/d*.12;e.vy+=dy/d*.04;e.x+=e.vx}
       else if(e.pat==='swarm'){e.x+=Math.sin(e.pulse*2)*2.5;e.x+=e.vx}
       else if(e.pat==='spider'){
-        // Spider: wide sweeping side-to-side, stays in top 28% of screen, occasional lunge
+        // ── Spider boss state machine ──────────────────────────────
+        // walk: move toward a chosen target point with spider-leg jitter
+        // stop: brief settle before scanning
+        // scan: spawn a telegraphed beam that sweeps toward the player
+        //       and damages on hit; lasts ~90 frames
+        // After scan finishes, pick a new target and walk again.
         const rx=ROAD_X(),rw=ROAD_W()
-        e.spiderTimer++
-        // Sweep left/right across full road width
-        e.x+=e.spiderDir*3.2+Math.sin(e.spiderTimer*.04)*1.5
-        if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.spiderDir=-1}
-        if(e.x<rx+e.sz){e.x=rx+e.sz;e.spiderDir=1}
-        // Stays near top — drift back up if crept too low
-        const bossYMax=canvas.height*.28
-        if(e.y>bossYMax)e.y-=1.2
-        else e.y+=Math.sin(e.spiderTimer*.06)*0.8
-        e.y=Math.max(canvas.height*.05,e.y)
-        // Occasional lunge downward then snap back
-        if(e.spiderTimer%240===0){e.vy=4}
-        if(e.spiderTimer%240>0&&e.spiderTimer%240<30){e.y+=e.vy;e.vy*=.85}
-        else{e.vy=0}
+        const topY=canvas.height*.08
+        const bottomY=canvas.height*.30
+        e.spiderPhaseTimer++
+        e.spiderStepPhase+=0.18
+
+        if(e.spiderPhase==='walk'){
+          // Move toward target with spider-leg twitch
+          const dx=e.spiderTargetX-e.x, dy=e.spiderTargetY-e.y
+          const d=Math.sqrt(dx*dx+dy*dy)||1
+          // 1.4 px/frame base + leg-twitch wobble for that scuttly feel
+          const speed=1.4
+          e.x+=(dx/d)*speed+Math.sin(e.spiderStepPhase*2.0)*0.7
+          e.y+=(dy/d)*speed+Math.cos(e.spiderStepPhase*2.0)*0.4
+          // Reached target (or timed out) → stop and prepare scan
+          if(d<10||e.spiderPhaseTimer>180){
+            e.spiderPhase='stop'
+            e.spiderPhaseTimer=0
+          }
+        }
+        else if(e.spiderPhase==='stop'){
+          // Brief settle, then begin scan
+          if(e.spiderPhaseTimer>=24){
+            e.spiderPhase='scan'
+            e.spiderPhaseTimer=0
+            // Start scan aimed roughly at the player's current X
+            e.scanAngle=Math.atan2(PV.y-e.y,PV.x-e.x)
+            e.scanSweepDir=PV.x<e.x?-1:1
+            scanBeams.push({
+              ownerId: e, // weak ref
+              x:e.x, y:e.y,
+              angle:e.scanAngle,
+              charge:0,            // 0..1 charge-up, then fires
+              chargeMax:48,        // ~0.8s telegraph at 60fps
+              fireFrames:0,        // active-damage frames after charge
+              fireMax:42,          // ~0.7s of active beam
+              sweepSpeed:0.012*e.scanSweepDir,
+              len:Math.max(canvas.width,canvas.height),
+              dead:false,
+            })
+          }
+        }
+        else if(e.spiderPhase==='scan'){
+          // Track player slowly even while scanning, to keep beam aimed
+          // (the scanBeam itself reads its own angle/sweep)
+          if(e.spiderPhaseTimer>=(48+42+12)){ // charge + fire + small recovery
+            // Pick a new walk target somewhere on the boss strip
+            e.spiderTargetX=rx+e.sz+Math.random()*(rw-e.sz*2)
+            e.spiderTargetY=topY+Math.random()*(bottomY-topY)
+            e.spiderPhase='walk'
+            e.spiderPhaseTimer=0
+          }
+        }
+        // Clamp to road and top-band
+        if(e.x>rx+rw-e.sz)e.x=rx+rw-e.sz
+        if(e.x<rx+e.sz)e.x=rx+e.sz
+        if(e.y<canvas.height*.05)e.y=canvas.height*.05
+        if(e.y>bottomY+10)e.y=bottomY+10
       }
       else{e.x+=e.vx}
       if(e.pat!=='spider'){e.y+=e.vy}
@@ -645,15 +703,17 @@ export async function mountVehicle(__mountOptions = {}) {
       if(e.x>rx+rw-e.sz){e.x=rx+rw-e.sz;e.vx=-Math.abs(e.vx)}
 
       // Enemy shooting — less frequent
-      if(e.shoots){e.sTimer--;if(e.sTimer<=0){e.sTimer=80+Math.random()*100;eyeBullets.push({x:e.x,y:e.y+e.sz,vx:(PV.x-e.x)*.008,vy:3.5})}}
+      // Boss only fires regular bullets during 'walk' (scan replaces firing in stop/scan)
+      const shootOk = e.shoots && !(e.isBoss && (e.spiderPhase==='scan'||e.spiderPhase==='stop'))
+      if(shootOk){e.sTimer--;if(e.sTimer<=0){e.sTimer=80+Math.random()*100;eyeBullets.push({x:e.x,y:e.y+e.sz,vx:(PV.x-e.x)*.008,vy:3.5})}}
 
-      // Bullet hit — GENEROUS hitbox: eye radius + bullet half-width + extra padding
+      // Bullet hit — CIRCULAR hitbox: distance check against eye radius + bullet padding
       bullets=bullets.filter(b=>{
         if(e.dead)return true
         const dx=b.x-e.x, dy=b.y-e.y
         // Hitbox = eye size + generous padding so shots feel responsive
         const hitR=e.sz+(b.t==='cannon'?10:b.t==='beam'?8:6)
-        if(Math.abs(dx)<hitR&&Math.abs(dy)<hitR){
+        if(dx*dx+dy*dy<hitR*hitR){
           const dm=b.t==='cannon'?2:b.t==='beam'?3:1
           e.hp-=dm
           spark(b.x,b.y,'#ffcc00')
@@ -663,11 +723,13 @@ export async function mountVehicle(__mountOptions = {}) {
         return true
       })
 
-      // Eye reaches bottom — only damages if it actually overlaps player position
+      // Eye reaches bottom — CIRCULAR overlap test against player center
       if(!e.dead&&e.y>canvas.height-80){
-        const dx=Math.abs(e.x-PV.x), dy=Math.abs(e.y-PV.y)
-        const hitW=e.sz+PV.w/2, hitH=e.sz+PV.h/2
-        if(PV.inv===0&&dx<hitW&&dy<hitH){
+        const dx=e.x-PV.x, dy=e.y-PV.y
+        // Use the smaller of player's half-width/height as effective radius
+        const playerR=Math.min(PV.w,PV.h)/2
+        const hitR=e.sz+playerR
+        if(PV.inv===0&&dx*dx+dy*dy<hitR*hitR){
           G.hp-=e.atk;shake(e.sz/2);flash();G.combo=0
         }
         e.dead=true;explode(e.x,e.y,e.col,10)
@@ -684,8 +746,73 @@ export async function mountVehicle(__mountOptions = {}) {
       // Eye bullets only hit if player is on road
       if(PV.inv===0&&onRoad){
         const dx=b.x-PV.x,dy=b.y-PV.y
-        if(Math.abs(dx)<PV.w/2+4&&Math.abs(dy)<PV.h/2+4){G.hp-=8;shake(5);flash();G.combo=0;return false}
+        const hitR=Math.min(PV.w,PV.h)/2+4
+        if(dx*dx+dy*dy<hitR*hitR){G.hp-=8;shake(5);flash();G.combo=0;return false}
       }
+      return true
+    })
+
+    // Scan beams (spider boss telegraphed attack)
+    scanBeams=scanBeams.filter(sb=>{
+      // Beam follows boss position
+      if(sb.ownerId && !sb.ownerId.dead){ sb.x=sb.ownerId.x; sb.y=sb.ownerId.y }
+      else if(sb.ownerId && sb.ownerId.dead){ return false }
+      // Sweep the angle
+      sb.angle+=sb.sweepSpeed
+      // Update state
+      if(sb.charge<sb.chargeMax){
+        sb.charge++
+      } else {
+        sb.fireFrames++
+        if(sb.fireFrames>sb.fireMax) return false
+      }
+      // Draw — thin telegraph during charge, thick red beam when firing
+      const charging = sb.charge<sb.chargeMax
+      const t = charging ? (sb.charge/sb.chargeMax) : 1
+      const x2=sb.x+Math.cos(sb.angle)*sb.len
+      const y2=sb.y+Math.sin(sb.angle)*sb.len
+      ctx.save()
+      if(charging){
+        // Thin dashed warning line that gets brighter
+        ctx.strokeStyle=`rgba(255,80,80,${0.25+0.55*t})`
+        ctx.lineWidth=2
+        ctx.setLineDash([10,8])
+        ctx.beginPath();ctx.moveTo(sb.x,sb.y);ctx.lineTo(x2,y2);ctx.stroke()
+        ctx.setLineDash([])
+      } else {
+        // Active beam — thicker, glowing, damages
+        const pulse = 1 + Math.sin(sb.fireFrames*0.4)*0.15
+        ctx.shadowColor='#ff3030'
+        ctx.shadowBlur=24
+        ctx.strokeStyle='rgba(255,60,60,0.95)'
+        ctx.lineWidth=6*pulse
+        ctx.beginPath();ctx.moveTo(sb.x,sb.y);ctx.lineTo(x2,y2);ctx.stroke()
+        // Inner bright core
+        ctx.shadowBlur=0
+        ctx.strokeStyle='rgba(255,220,220,0.9)'
+        ctx.lineWidth=2*pulse
+        ctx.beginPath();ctx.moveTo(sb.x,sb.y);ctx.lineTo(x2,y2);ctx.stroke()
+        // Damage check — point-to-line distance from player
+        if(PV.inv===0){
+          const vx=Math.cos(sb.angle), vy=Math.sin(sb.angle)
+          const px=PV.x-sb.x, py=PV.y-sb.y
+          // Project player onto beam direction
+          const proj=px*vx+py*vy
+          if(proj>0){
+            const perp=Math.abs(px*(-vy)+py*vx)
+            const beamHalfWidth=8+3*pulse
+            const playerR=Math.min(PV.w,PV.h)/2
+            if(perp < beamHalfWidth+playerR){
+              // Damage once every 12 frames while in beam
+              if(!sb._lastHitTick || (sb.fireFrames-sb._lastHitTick)>=12){
+                sb._lastHitTick=sb.fireFrames
+                G.hp-=4;shake(3);G.combo=0
+              }
+            }
+          }
+        }
+      }
+      ctx.restore()
       return true
     })
 
@@ -724,7 +851,7 @@ export async function mountVehicle(__mountOptions = {}) {
 
   function startGame(){
     Object.assign(G,{running:true,hp:VS.hp,maxHp:VS.hp,progress:0,wave:1,waveKills:0,waveTarget:9,eyesKilled:0,score:0,combo:0,maxCombo:0,finished:false,shake:0,speed:VS.speed,lootDropped:[]})
-    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[];bossAlive=false
+    spawnRate=110;bullets=[];eyeBullets=[];eyes=[];particles=[];lootDrops=[];scanBeams=[];bossAlive=false
     SPECIALS.forEach(s=>{s.cd=0;s.active=0})
     resetPV();initWorld()
     document.getElementById('wave-banner').classList.remove('show')
