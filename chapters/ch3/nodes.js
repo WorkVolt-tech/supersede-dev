@@ -231,6 +231,11 @@ The signal pulses overhead. Three short, one long.`,
 The signal is loud enough now that you can feel it in your sternum.
 
 There are footprints on the platform. Wet. Recent. Going into the train, not out of it.`,
+    signals: [
+      { text: '[signal — chest-level resonance, steady.]', real: true },
+      { text: 'another train. another. one more train.', real: false },
+      { text: '[no air movement in tunnel.]', real: true },
+    ],
     choices: [
       { label: 'Board the train', sub: 'Follow the footprints', next: 'ch3_train_interior' },
       { label: 'Check the destination board first', sub: 'XP +20', next: 'ch3_destination', xp: 20 },
@@ -251,9 +256,29 @@ Not a station name you know. Not a station name you've ever heard. The board scr
 You count thirty seconds. The board updates. ECHO.
 
 The train doors are still open.`,
+    signals: [
+      { text: '[board update — t+30s — "ECHO"]', real: true },
+      { text: 'echo. echo. echo.', real: false },
+      { text: '[low resonance, locked phase.]', real: true },
+    ],
     choices: [
       { label: 'Board the train', sub: 'Signal +5', next: 'ch3_train_interior', signal: 5 },
     ],
+    // Cache for the player who paused to read the board AND has been
+    // accumulating signal. The maintenance bay behind the board is only
+    // reachable when your signal can localize through the platform walls.
+    cache: {
+      id: 'ch3_cache_destination',
+      reqSignal: 35,
+      itemKey: 'rune_lux', qty: 2,
+      label: 'Trace the resonance past the board',
+      sub: 'STRONG signal — the board hides a maintenance recess behind it',
+      foundText: `You step closer to the destination board and the signal sharpens against your right ear. There's a seam in the wall paint behind the scroller — a maintenance recess, never meant to be opened by the public.
+
+The catch gives easily. Inside, someone left a small cache with intent: two compressed Lux runes wrapped in a square of clean cloth, sitting on top of a folded note.
+
+The note says: "If you're hearing it clearly, you're close. Don't trust the voice that knows your name."`,
+    },
   },
 
   // ── TRAIN INTERIOR ────────────────────────────────────────────────
@@ -266,6 +291,11 @@ At the far end of the car, an emergency control panel is exposed. Three switches
 The doors close behind you. Not violently. Just — close.
 
 The signal is no longer pulsing. It's holding.`,
+    signals: [
+      { text: '[signal — hold tone, no pulse.]', real: true },
+      { text: 'you came. you came down. you came.', real: false },
+      { text: '[carriage hum, separate frequency from signal.]', real: true },
+    ],
     choices: [
       { label: 'Engage the departure sequence', sub: 'Watch the pattern, then repeat', next: 'ch3_train_sequence' },
       { label: 'Try to force the doors back open', sub: 'Moral -5 · uncertain outcome', next: 'ch3_train_force', moral: -5 },
@@ -294,6 +324,10 @@ The signal is no longer pulsing. It's holding.`,
     text: `The switches register your sequence. Both indicators turn green. The train shifts — softly, with the inertia of something heavy that hasn't moved in a long time — and starts to roll forward, into a tunnel that has no schedule and no other passengers.
 
 The signal locks tighter. Not louder. More specific. Like it's no longer searching for you.`,
+    signals: [
+      { text: '[signal phase lock. zero drift.]', real: true },
+      { text: 'good. good. you did it.', real: false },
+    ],
     choices: [
       { label: 'Sit. Watch the tunnel.', next: 'ch3_train_descent' },
     ],
@@ -310,6 +344,11 @@ The train does not move.
 You wait. After a long time, the panel resets. Three switches, two lights. SEQUENCE TO DEPART.
 
 You try again — but the air in the car has changed. It feels watched.`,
+    signals: [
+      { text: '[hum: half-tone drop. sustained.]', real: true },
+      { text: 'try again. try. try again, try.', real: false },
+      { text: 'i am patient. i am. patient.', real: false },
+    ],
     choices: [
       { label: 'Try the sequence again, more carefully', sub: 'Signal +5 if you succeed', next: 'ch3_train_sequence', signal: 5 },
     ],
@@ -324,6 +363,10 @@ The handle is not connected to anything. It was a prop.
 You stand there holding it for a long second. Then you set it carefully on a seat — like you don't want to disrespect whoever was meant to find it — and walk back to the control panel.
 
 The sequence is the only way out.`,
+    signals: [
+      { text: '[material analysis — plastic, painted to look forged.]', real: true },
+      { text: 'good. take care of it. take care.', real: false },
+    ],
     choices: [
       { label: 'Engage the departure sequence', next: 'ch3_train_sequence' },
     ],
@@ -345,9 +388,29 @@ When you look back at the window, the reflection is gone too.
 The train slows. A station materializes out of the dark — single platform, single sign that you cannot read because the letters keep rearranging themselves.
 
 The doors open.`,
+    signals: [
+      { text: '[two heat signatures detected. one is yours.]', real: true },
+      { text: "i was waiting. i waited. i'm here.", real: false },
+      { text: '[descent angle: 11 degrees. consistent.]', real: true },
+    ],
     choices: [
       { label: 'Step out onto the platform', sub: 'Signal +10', next: 'ch3_echo_station', signal: 10 },
     ],
+    // STRONG-tier cache — a maintenance kit under the seat where the
+    // "reflection" was sitting. Only findable when signal is sharp enough
+    // to localize through the cushion.
+    cache: {
+      id: 'ch3_cache_descent',
+      reqSignal: 55,
+      itemKey: 'item_voice_imprint', qty: 1,
+      label: 'Search the seat opposite',
+      sub: 'STRONG signal — something small, dense, under the cushion',
+      foundText: `You cross the car and slide your hand under the seat opposite — where the reflection sat reading. There's nothing on top. But under the cushion, taped to the underside in a way that suggests someone with time and intent, is a small resin block. A waveform sealed inside it.
+
+A voice imprint. Older than this train. Captured by someone before the Echo had a chance to copy it.
+
+The signal hums softer for a moment — like it noticed you took something it didn't want you to take.`,
+    },
   },
 
   // ── ECHO STATION ──────────────────────────────────────────────────
