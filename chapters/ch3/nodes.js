@@ -428,6 +428,11 @@ A single corridor leads off the platform. The signal that has been pulsing in yo
 Your voice.
 
 It is repeating something you said three hours ago, on the stairs, when you thought you were alone.`,
+    signals: [
+      { text: '[voice match: 94% subject-id.]', real: true },
+      { text: "i gotta find a way out. i gotta find. a way out.", real: false },
+      { text: '[corridor — source bearing: 270°, 14m.]', real: true },
+    ],
     choices: [
       { label: 'Walk down the corridor', sub: 'Toward the voice',          next: 'ch3_corridor_walk',  signal: 5 },
       { label: 'Pause and listen first',  sub: 'Try to read the rhythm',    next: 'ch3_corridor_listen', signal: 8 },
@@ -484,6 +489,11 @@ Underneath that, you start to hear other voices. Not yours. Other people. Many o
 Whatever is down this corridor is collecting. Not killing. Collecting.
 
 The realization is colder than it should be. You straighten up and start walking.`,
+    signals: [
+      { text: '[multi-source — at least 40 distinct voice signatures.]', real: true },
+      { text: 'tell mom i love her. tell her. tell mom.', real: false },
+      { text: 'i meant to call you back. i meant. i meant to.', real: false },
+    ],
     choices: [
       { label: 'Continue down the corridor', next: 'ch3_corridor_walk' },
     ],
@@ -504,6 +514,11 @@ You walk past it without turning around.
 Further on, another alcove. Another voice. Another fragment of a life cut down to four seconds and put on repeat.
 
 By the time you reach the end of the corridor, you have stopped counting them.`,
+    signals: [
+      { text: "[alcove 1 — voice: f, 30s. loop length: 4.2s.]", real: true },
+      { text: "[alcove 2 — voice: m, 70s. loop length: 3.8s.]", real: true },
+      { text: 'you stopped counting. you stopped. you stopped.', real: false },
+    ],
     choices: [
       { label: 'Push through to the source', next: 'ch3_lair_entrance' },
     ],
@@ -530,6 +545,11 @@ ENGAGEMENT NOT RECOMMENDED.
 The Echo looks up. It smiles with your mouth. It says, in your voice:
 
 "You came down here on purpose, didn't you. Tell me you came down here on purpose."`,
+    signals: [
+      { text: '[face match — subject-id, 98%. anomaly: not subject.]', real: true },
+      { text: 'tell me you came down here on purpose.', real: false },
+      { text: '[entity classification: pending.]', real: true },
+    ],
     choices: [
       { label: 'Answer honestly',     sub: '"I came down here on purpose."',  next: 'ch3_voice_gate' },
       { label: 'Refuse to answer',    sub: 'Stay silent',                      next: 'ch3_voice_gate' },
@@ -588,6 +608,10 @@ The realization arrives with a hard wave of pressure behind your eyes — the Sy
 You take a step back. You blink. The room re-resolves.
 
 The Echo is waiting. Patient. It will try again.`,
+    signals: [
+      { text: '[sample captured. catalog +1.]', real: true },
+      { text: 'thank you. thank you for that one.', real: false },
+    ],
     onEnter: { hp: -15 },
     choices: [
       { label: 'Steady yourself. Try again.', next: 'ch3_voice_gate' },
@@ -618,6 +642,10 @@ The interface flickers.
 
 ENTITY: ECHO — class CONFIRMED: SYSTEM REMNANT.
 ENGAGEMENT NOW VIABLE. Combat protocol active.`,
+    signals: [
+      { text: '[entity reclassified: system_remnant.]', real: true },
+      { text: '[layered voiceprints — count: indeterminate.]', real: true },
+    ],
     choices: [
       { label: 'Engage the Echo Beast', next: 'ch3_boss_encounter' },
     ],
@@ -671,6 +699,11 @@ In the silence, the interface updates:
 ENTITY: ECHO — terminated.
 RECEIVER: offline.
 SYSTEM REMNANT LEAK — patched. (Coverage incomplete. Other remnants likely active in other regions.)`,
+    signals: [
+      { text: '[playback — fragmented. timestamps disordered.]', real: true },
+      { text: 'last tuesday. tuesday. tuesday last.', real: false },
+      { text: '[receiver: offline. signal: null.]', real: true },
+    ],
     choices: [
       { label: 'Leave the chamber', next: 'ch3_ending' },
     ],
@@ -697,6 +730,10 @@ The Twin Judges have heard about this. So has Yara. So have the Hunters. Word tr
 
 [CHAPTER 3 — Signal Hunters: COMPLETE]
 [Chapter 4 unlocked.]`,
+    signals: [
+      { text: '[signal: null. baseline restored.]', real: true },
+      { text: '[note pinned to interface — source: unverified.]', real: true },
+    ],
     onEnter: { unlockChapter: 4 },
     choices: [
       { label: 'Return to the surface', next: 'ch3_complete' },
