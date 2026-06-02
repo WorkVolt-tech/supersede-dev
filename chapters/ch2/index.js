@@ -2796,6 +2796,14 @@ You walk back out.`
     let atk = (baseEnemy.atk || 22)  + Math.floor(lvl * 1.5)
     let def = (baseEnemy.def || 14)
 
+    // NOTE: hp/atk/def above are now PLACEHOLDERS — they get overwritten
+    // at the end of this function by the per-form table (see "Apply
+    // fixed per-form stat targets" block below). All the form/finale/
+    // builder/backstab/element modifier code that follows is kept ONLY
+    // for the flavor strings it pushes into `modifiers`; the math no
+    // longer affects the final stats. Player choices still get
+    // acknowledged narratively, but Verdict always has 2054 HP, etc.
+
     const modifiers = []
     if (form === 'mercy') {
       hp  = Math.round(hp  * 1.25)  // longer fight
@@ -2901,6 +2909,35 @@ You walk back out.`
       wrath:       'WRATH — Judge of Ruin',
     }
     const label = FORM_LABELS[canonForm]
+
+    // ── Apply fixed per-form stat targets ──────────────────────────────
+    // Designer-tuned. Modifiers above stay as flavor only (they push
+    // strings into `modifiers` so the fight intro still acknowledges
+    // builder helps, backstabs, element focus, etc.) but the final
+    // hp/atk/def numbers come straight from this table, NOT from the
+    // accumulated math above.
+    //
+    // Form table (HP / ATK / DEF):
+    //   Wrath       527  / 50 / 13  — Fast and brutal
+    //   Mercy       775  / 34 / 15  — Long and grinding
+    //   Ruin        658  / 58 / 13  — Wrath but sharper
+    //   Absolution  899  / 36 / 17  — Mercy but tougher
+    //   Equilibrium 1682 / 44 / 15  — Balanced above both bases
+    //   Dominion    1037 / 56 / 18  — Aggressive balance, punishes waiting
+    //   Verdict     2054 / 66 / 20  — Nothing compromised, hardest fight
+    const FORM_STATS = {
+      wrath:       { hp: 527,  atk: 50, def: 13 },
+      mercy:       { hp: 775,  atk: 34, def: 15 },
+      ruin:        { hp: 658,  atk: 58, def: 13 },
+      absolution:  { hp: 899,  atk: 36, def: 17 },
+      equilibrium: { hp: 1682, atk: 44, def: 15 },
+      dominion:    { hp: 1037, atk: 56, def: 18 },
+      verdict:     { hp: 2054, atk: 66, def: 20 },
+    }
+    const fixed = FORM_STATS[canonForm] || FORM_STATS.equilibrium
+    hp  = fixed.hp
+    atk = fixed.atk
+    def = fixed.def
 
     return { form, canonForm, label, hp, atk, def, modifiers, cowardice }
   }
