@@ -8,6 +8,7 @@ import {
   pickClass,
 } from '../../data/classes.js'
 import * as ClsCombat from '../../data/class_combat.js'
+import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
 import {
   getMoralTier,
   getMoralBarPct,
@@ -3077,79 +3078,13 @@ You walk back out.`
     function enemySPD()  { return enemy.spd||5 }
     const eqLuck = player.luck||0
 
-    // ── SKILL DEFINITIONS ────────────────────────────────────────────────────
-    const BATTLE_SKILLS = {
-      darkness_passive_backstab:      {label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff'},
-      darkness_skill_shadow_step:     {label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores DEF',         fn:'shadowStep'},
-      darkness_ultimate_void_zone:    {label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',       fn:'voidZone'},
-      earth_passive_damage_reduction: {label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c'},
-      earth_skill_rock_armor:         {label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',              fn:'rockArmor'},
-      earth_ultimate_earthquake:      {label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',      fn:'earthquake'},
-      fire_passive_burn:              {label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500'},
-      fire_skill_fire_blast:          {label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',     fn:'fireBlast'},
-      fire_ultimate_inferno_zone:     {label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',          fn:'infernoZone'},
-      light_passive_boost_allies:     {label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700'},
-      light_skill_heal_pulse:         {label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                    fn:'healPulse'},
-      light_ultimate_divine_barrier:  {label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',    fn:'divineBarrier'},
-      lightning_passive_chain_damage: {label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff'},
-      lightning_skill_lightning_strike:{label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',          fn:'lightningStrike'},
-      lightning_ultimate_thunderstorm:{label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',              fn:'thunderstorm'},
-      metal_passive_reflect:          {label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0'},
-      metal_skill_blade_form:         {label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK+20, SPD+5 for 2 turns',        fn:'bladeForm'},
-      metal_ultimate_iron_domain:     {label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',          fn:'ironDomain'},
-      plant_passive_heal_still:       {label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e'},
-      plant_skill_root_trap:          {label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',          fn:'rootTrap'},
-      plant_ultimate_nature_overgrowth:{label:'Overgrowth',    type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',             fn:'overgrowth'},
-      water_passive_regen:            {label:'Flow',           type:'passive',  el:'water',     color:'#0088ff'},
-      water_skill_water_shield:       {label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',            fn:'waterShield'},
-      water_ultimate_tsunami:         {label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',       fn:'tsunami'},
-      wind_passive_dodge:             {label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea'},
-      wind_skill_dash_strike:         {label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',        fn:'dashStrike'},
-      wind_ultimate_tornado_field:    {label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, SPD×2',             fn:'tornadoField'},
-    }
-    const NOTABLE_SKILLS = {
-      ofn1:{label:'Warbound',      type:'active',  branch:'offense',color:'#e05555',desc:'ATK +15% this turn.',                                 fn:'warbound'},
-      ofn2:{label:'Amplifier',     type:'passive', branch:'offense',color:'#992222',desc:'Power contributes ×0.4 extra ATK.'},
-      ofn3:{label:'Spellblade',    type:'passive', branch:'offense',color:'#e05555',desc:'15% chance to poison on Strike.'},
-      ofn4:{label:'Executioner',   type:'active',  branch:'offense',color:'#e05555',desc:'+25% dmg to enemies below 30% HP.',                  fn:'embersEnd'},
-      ofn5:{label:'Hex Cannon',    type:'active',  branch:'offense',color:'#992222',desc:'Heavy Strike poisons: 5 dmg/turn × 3 turns.',        fn:'venomLance'},
-      ofn6:{label:'Predator',      type:'active',  branch:'offense',color:'#e05555',desc:'Gain +20 ATK for 2 turns.',                          fn:'predator'},
-      of_ks1:{label:'Bloodthirst', type:'active',  branch:'offense',color:'#c8512a',desc:'On kill: +20% HP & +10 ATK for 2 turns.',            fn:'bloodthirst'},
-      of_ks2:{label:'Spell Surge', type:'active',  branch:'offense',color:'#b06eff',desc:'Next skill: ×1.5 dmg, ignores 50% DEF.',             fn:'spellSurge'},
-      dfn1:{label:'Iron Tide',     type:'passive', branch:'defense',color:'#5ec45e',desc:'First time below 50% HP: +20 DEF for 2 turns.'},
-      dfn2:{label:'Absorption',    type:'passive', branch:'defense',color:'#3db89a',desc:'Every 3 hits taken: Defend heals 15 HP.'},
-      dfn3:{label:'Thorns',        type:'passive', branch:'defense',color:'#5ec45e',desc:'20% chance to stun enemy when hit.'},
-      dfn4:{label:'Fortress',      type:'active',  branch:'defense',color:'#5ec45e',desc:'Below 30% HP: +20 DEF & +15 dmg.',                  fn:'pressureWave'},
-      dfn5:{label:'Retaliation',   type:'passive', branch:'defense',color:'#3db89a',desc:'After 3 hits in a row: auto counter 50% ATK.'},
-      dfn6:{label:'Bulwark',       type:'active',  branch:'defense',color:'#5ec45e',desc:'DEF doubled next turn.',                             fn:'chargedStance'},
-      df_ks1:{label:'Deep Current',type:'active',  branch:'defense',color:'#3db89a',desc:'+30 DEF 2 turns, absorb next hit.',                  fn:'deepCurrent'},
-      df_ks2:{label:'Iron Mirror', type:'active',  branch:'defense',color:'#5ec45e',desc:'Reflect 40% of next hit, +15 DEF.',                  fn:'ironMirror'},
-      fln1:{label:'Razor Tempo',   type:'passive', branch:'flow',   color:'#5eaee0',desc:'Strike always goes first.'},
-      fln2:{label:'Ghost Step',    type:'passive', branch:'flow',   color:'#5eaee0',desc:'15% dodge; on dodge, free counter.'},
-      fln3:{label:'Lockdown',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Reduce enemy SPD by 6.',                             fn:'heavyGround'},
-      fln4:{label:'Flicker',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'After dodging: next Strike deals ×2 dmg.'},
-      fln5:{label:'Stagger',       type:'passive', branch:'flow',   color:'#5eaee0',desc:'20% chance per turn: enemy misses.'},
-      fln6:{label:'Momentum',      type:'active',  branch:'flow',   color:'#5eaee0',desc:'Ground spike: 20 dmg, ignores 30% DEF.',             fn:'earthSpike'},
-      fl_ks1:{label:'Phantom Step',type:'active',  branch:'flow',   color:'#5eaee0',desc:'Untargetable 1 turn + guaranteed crit.',             fn:'phantomStep'},
-      fl_ks2:{label:'Time Lock',   type:'active',  branch:'flow',   color:'#88ccff',desc:'Freeze enemy 1 turn, next attack ×2.',               fn:'timeLock'},
-      arn1:{label:'Sharp Mind',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight +1 ATK per 3 pts.'},
-      arn2:{label:'Hex Weave',     type:'active',  branch:'arcane', color:'#b06eff',desc:'Reduce incoming dmg 90% this turn.',                 fn:'foresight'},
-      arn3:{label:'Wild Proc',     type:'passive', branch:'arcane', color:'#d4a843',desc:'Each Luck pt +0.5% crit dmg.'},
-      arn4:{label:'Prescience',    type:'passive', branch:'arcane', color:'#b06eff',desc:'Insight reduces enemy crit chance.'},
-      arn5:{label:'Ricochet',      type:'passive', branch:'arcane', color:'#d4a843',desc:'20% chance attacks hit twice (40% dmg).'},
-      arn6:{label:'Mind Pierce',   type:'active',  branch:'arcane', color:'#b06eff',desc:'Next attack crits ×1.75.',                           fn:'preciseStrike'},
-      ar_ks1:{label:'Sixth Sense', type:'active',  branch:'arcane', color:'#b06eff',desc:'Know enemy move, -80% dmg if correct.',              fn:'sixthSense'},
-      ar_ks2:{label:'Chaos Engine',type:'active',  branch:'arcane', color:'#d4a843',desc:'Random powerful effect.',                            fn:'chaosEngine'},
-      dcn1:{label:'Nightshroud',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'First turn free dodge + 50% ATK counter.',          fn:'nightshroud'},
-      dcn2:{label:'Umbral Veil',   type:'passive', branch:'decay',  color:'#9a6fd8',desc:'15% dodge; on dodge, 50% ATK counter.'},
-      dcn3:{label:'Thornwall',     type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Defend reflects 15% dmg as thorns.',                fn:'thornwall'},
-      dcn4:{label:'Shade Walk',    type:'passive', branch:'decay',  color:'#9a6fd8',desc:'+5 SPD, +4 Power. On kill +15 SPD.'},
-      dcn5:{label:'Enduring Root', type:'passive', branch:'decay',  color:'#9a6fd8',desc:'Cannot be stunned or rooted.'},
-      dcn6:{label:'Dread Pulse',   type:'active',  branch:'decay',  color:'#9a6fd8',desc:'Each hit reduces enemy ATK by 2 (×3 max).',        fn:'dreadPulse'},
-      dc_ks1:{label:'Reaper Form', type:'active',  branch:'decay',  color:'#9a6fd8',desc:'ATK ×1.5, ignore DEF for 2 turns.',                 fn:'reaperForm'},
-      dc_ks2:{label:'Ancient Root',type:'active',  branch:'decay',  color:'#5ec45e',desc:'Shield 20% max HP at battle start.',                fn:'ancientRoot'},
-    }
-    Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
+    // ── SKILL DEFINITIONS — sourced from shared registry ────────────
+
+    // See data/skills_registry.js. Spread copies so combat code can
+
+    // mutate the merged table without polluting the shared module.
+
+    const BATTLE_SKILLS = { ...BATTLE_SKILLS_REGISTRY, ...NOTABLE_SKILLS_REGISTRY }
 
     const battleSkillKeys = player.battle_skills || []
 
@@ -4943,7 +4878,17 @@ You walk back out.`
   }
 
   // ── Init ──────────────────────────────────────────
-  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
+  // Always call renderNav so the bookmark re-paints on every mount.
+  // When book.html hosts us, __mountOptions.player IS set — the old
+  // `||` short-circuit was skipping renderNav entirely in that case,
+  // which left the nav blank if anything had cleared <div id="nav">
+  // between book.html's init paint and our mount.
+  let player = __mountOptions.player
+  if (player) {
+    window.renderNav(__mountOptions.navId || 'nav').catch(e => console.warn('[ch2] nav render failed', e))
+  } else {
+    player = await window.renderNav(__mountOptions.navId || 'nav')
+  }
   if (!player) throw new Error('no player')
 
   let currentHp = player.hp || 100
