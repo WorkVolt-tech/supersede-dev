@@ -1,5 +1,10 @@
 import { supabase } from '../supabase.js'
 import {
+  ELEMENT_TREES,
+  isElementUnlocked,
+  SHARD_COSTS,
+} from '../data/elements_tree.js'
+import {
   CLASSES,
   shouldShowClassTab,
   getRevealedClasses,
@@ -2061,16 +2066,52 @@ export async function mountSkills(__mountOptions = {}) {
     poison_dec_k:{el:'poison',branch:'dec',type:'keystone',label:'Death Bloom',  stat:'+3 Luck · kill = explosion',     cost:5,col:'luck',val:3},
   }
 
-  // ── ESP State ─────────────────────────────────────────────────────────────────
+  // ── ELEMENT TREE State ────────────────────────────────────────────
+  // NEW system — replaces the old ESP/esp_tree system. Currency is
+  // Resonance Shards (player.resonance_shards). Unlocked element nodes
+  // are stored in player.elemental_unlocked as an array of node IDs.
+  //
+  // The old `espBalance` / `espTree` variables and the `player.esp` /
+  // `player.esp_tree` fields are migrated in initESP() below — old
+  // balance converts 1-for-1 to shards, old unlocks are wiped (because
+  // node IDs in the new tree don't match the old ones).
+  let shards = 0           // player.resonance_shards
+  let elUnlocked = []      // player.elemental_unlocked
+  // Legacy vars kept so all the old ESP UI code can still reference them
+  // until we delete it. They alias the new state. Will be cleaned up in
+  // a future pass.
   let espBalance, espTree, espActiveEl = null, espPendingSlot = null
 
   function initESP() {
-    espBalance = player.esp || 0
-    espTree    = player.esp_tree || {}
+    // ── Migration: old ESP → new Resonance Shards ────────
+    // First-time-see-new-system check: if resonance_shards is undefined
+    // on the player record, we haven't migrated yet. Convert the old
+    // balance and wipe unlocks (their node IDs no longer exist).
+    if (typeof player.resonance_shards === 'undefined') {
+      shards = player.esp || 0
+      elUnlocked = []
+      player.resonance_shards = shards
+      player.elemental_unlocked = []
+      // Old fields stay on the record but stop being read; we'll purge
+      // them in a future cleanup pass once the new system is proven.
+      // Persist the migration so next load is a no-op.
+      supabase.from('players').update({
+        resonance_shards: shards,
+        elemental_unlocked: [],
+      }).eq('id', player.id).then(() => {
+        console.info('[elements] Migrated ESP → Resonance Shards. Balance:', shards)
+      }).catch(e => console.warn('[elements] migration save failed:', e))
+    } else {
+      shards = player.resonance_shards || 0
+      elUnlocked = Array.isArray(player.elemental_unlocked) ? player.elemental_unlocked : []
+    }
+    // Aliases so legacy ESP rendering code still works during transition
+    espBalance = shards
+    espTree    = player.esp_tree || { base:[], slots:{}, collected:[] }
     if (!espTree.base)      espTree.base      = []
     if (!espTree.slots)     espTree.slots     = {}
     if (!espTree.collected) espTree.collected = []
-    document.getElementById('esp-display').textContent = espBalance
+    document.getElementById('esp-display').textContent = shards
     updateESPBadge()
     renderESPSummary()
     renderESPElTabs()
