@@ -4,6 +4,7 @@ import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
 import * as ClsCombat from '../../data/class_combat.js'
+import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
 import {
   getMoralTier,
   getMoralBarPct,
@@ -49,7 +50,15 @@ export async function mountChapter1(__mountOptions = {}) {
   }
 
   // ── App state ────────────────────────────────────
-  let player = __mountOptions.player || await window.renderNav(__mountOptions.navId || 'nav')
+  // Always call renderNav so the bookmark re-paints on every mount.
+  // (Same fix as ch2/garage — fire-and-forget when host already passed
+  // us the player object; await it otherwise so we still get a player.)
+  let player = __mountOptions.player
+  if (player) {
+    window.renderNav(__mountOptions.navId || 'nav').catch(e => console.warn('[ch1] nav render failed', e))
+  } else {
+    player = await window.renderNav(__mountOptions.navId || 'nav')
+  }
   if (!player) throw new Error('no player')
 
   let currentHp = player.hp || 100
@@ -2022,131 +2031,15 @@ export async function mountChapter1(__mountOptions = {}) {
 
     // ── Battle skills from player ────────────────────────────
     const battleSkillKeys = player.battle_skills || []
+    // BATTLE_SKILLS sourced from shared registry — see data/skills_registry.js
+    // Local spread copy: the Object.assign below will mutate this with
+    // NOTABLE_SKILLS (which itself gets OLD_KEY_MAP backfilled in). Using
+    // a local copy keeps the shared module unmutated across engines.
+    const BATTLE_SKILLS = { ...BATTLE_SKILLS_REGISTRY }
 
-    // Inline skill definitions (mirrored from skills.html)
-    const BATTLE_SKILLS = {
-      darkness_passive_backstab:      { label:'Backstab',       type:'passive',  el:'dark',      color:'#b06eff' },
-      darkness_skill_shadow_step:     { label:'Shadow Step',    type:'active',   el:'dark',      color:'#b06eff', desc:'Next attack ignores enemy DEF', fn:'shadowStep' },
-      darkness_ultimate_void_zone:    { label:'Void Zone',      type:'ultimate', el:'dark',      color:'#b06eff', desc:'Enemy ATK -30% for 3 turns',    fn:'voidZone' },
-      earth_passive_damage_reduction: { label:'Stone Skin',     type:'passive',  el:'earth',     color:'#8b5e3c' },
-      earth_skill_rock_armor:         { label:'Rock Armor',     type:'active',   el:'earth',     color:'#8b5e3c', desc:'+20 DEF for 2 turns',           fn:'rockArmor' },
-      earth_ultimate_earthquake:      { label:'Earthquake',     type:'ultimate', el:'earth',     color:'#8b5e3c', desc:'Massive damage, stun 1 turn',   fn:'earthquake' },
-      fire_passive_burn:              { label:'Burn',           type:'passive',  el:'fire',      color:'#ff5500' },
-      fire_skill_fire_blast:          { label:'Fire Blast',     type:'active',   el:'fire',      color:'#ff5500', desc:'25 fire dmg, ignores 50% DEF',  fn:'fireBlast' },
-      fire_ultimate_inferno_zone:     { label:'Inferno Zone',   type:'ultimate', el:'fire',      color:'#ff5500', desc:'40 dmg/turn for 3 turns',       fn:'infernoZone' },
-      light_passive_boost_allies:     { label:'Radiance',       type:'passive',  el:'light',     color:'#ffd700' },
-      light_skill_heal_pulse:         { label:'Heal Pulse',     type:'active',   el:'light',     color:'#ffd700', desc:'Restore 25 HP',                 fn:'healPulse' },
-      light_ultimate_divine_barrier:  { label:'Divine Barrier', type:'ultimate', el:'light',     color:'#ffd700', desc:'Invulnerable 1 turn + reflect',  fn:'divineBarrier' },
-      lightning_passive_chain_damage: { label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff' },
-      lightning_skill_lightning_strike:{ label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',       fn:'lightningStrike' },
-      lightning_ultimate_thunderstorm:{ label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',           fn:'thunderstorm' },
-      metal_passive_reflect:          { label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0' },
-      metal_skill_blade_form:         { label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK +20, SPD +5 for 2 turns',   fn:'bladeForm' },
-      metal_ultimate_iron_domain:     { label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',       fn:'ironDomain' },
-      plant_passive_heal_still:       { label:'Regrowth',       type:'passive',  el:'plant',     color:'#5ec45e' },
-      plant_skill_root_trap:          { label:'Root Trap',      type:'active',   el:'plant',     color:'#5ec45e', desc:'Enemy skips next attack',       fn:'rootTrap' },
-      plant_ultimate_nature_overgrowth:{ label:'Overgrowth',   type:'ultimate', el:'plant',     color:'#5ec45e', desc:'+40 HP and 30 damage',           fn:'overgrowth' },
-      water_passive_regen:            { label:'Flow',           type:'passive',  el:'water',     color:'#0088ff' },
-      water_skill_water_shield:       { label:'Water Shield',   type:'active',   el:'water',     color:'#0088ff', desc:'Absorb next 30 damage',         fn:'waterShield' },
-      water_ultimate_tsunami:         { label:'Tsunami',        type:'ultimate', el:'water',     color:'#0088ff', desc:'50 damage, skip enemy turn',    fn:'tsunami' },
-      wind_passive_dodge:             { label:'Gust',           type:'passive',  el:'wind',      color:'#a8d8ea' },
-      wind_skill_dash_strike:         { label:'Dash Strike',    type:'active',   el:'wind',      color:'#a8d8ea', desc:'ATK×2, go first next turn',     fn:'dashStrike' },
-      wind_ultimate_tornado_field:    { label:'Tornado Field',  type:'ultimate', el:'wind',      color:'#a8d8ea', desc:'Enemy ATK -10, your SPD ×2',    fn:'tornadoField' },
-    }
-
-    // ── Skill-tree notable nodes usable as battle skills ────────────
-    // Keys match the node IDs stored in player.battle_skills
-    // type: 'active' = usable each turn (2-turn cooldown)
-    //       'passive' = always-on effect applied at battle start / on hit
-    // ── NOTABLE_SKILLS keyed by NEW skill-tree node IDs ──────
-    // These match what skills.html saves into player.battle_skills
-    const NOTABLE_SKILLS = {
-      // ── OFFENSE branch ──
-      ofn1: { label:'Warbound',      type:'active',  branch:'offense', color:'#e05555',
-              desc:'Your attacks deal +15% ATK as bonus damage this turn.', fn:'warbound' },
-      ofn2: { label:'Amplifier',     type:'passive', branch:'offense', color:'#992222',
-              desc:'Power contributes an extra ×0.4 to ATK.' },
-      ofn3: { label:'Spellblade',    type:'passive', branch:'offense', color:'#e05555',
-              desc:'Strike has 15% chance to poison (3 dmg/turn, 2 turns).' },
-      ofn4: { label:'Executioner',   type:'active',  branch:'offense', color:'#e05555',
-              desc:'Deal +25% damage to enemies below 30% HP.', fn:'embersEnd' },
-      ofn5: { label:'Hex Cannon',    type:'active',  branch:'offense', color:'#992222',
-              desc:'Heavy Strike poisons enemy: 5 dmg/turn for 3 turns.', fn:'venomLance' },
-      ofn6: { label:'Predator',      type:'active',  branch:'offense', color:'#e05555',
-              desc:'Gain +20 ATK for 2 turns.', fn:'predator' },
-      of_ks1:{ label:'Bloodthirst',  type:'active',  branch:'offense', color:'#c8512a',
-              desc:'On kill: restore 20% max HP and gain +10 ATK for 2 turns.', fn:'bloodthirst' },
-      of_ks2:{ label:'Spell Surge',  type:'active',  branch:'offense', color:'#b06eff',
-              desc:'Next skill used deals ×1.5 damage and ignores 50% DEF.', fn:'spellSurge' },
-      // ── DEFENSE branch ──
-      dfn1: { label:'Iron Tide',     type:'passive', branch:'defense', color:'#5ec45e',
-              desc:'First time below 50% HP: gain +20 DEF for 2 turns.' },
-      dfn2: { label:'Absorption',    type:'passive', branch:'defense', color:'#3db89a',
-              desc:'Every 3 hits taken: next Defend heals 15 HP.' },
-      dfn3: { label:'Thorns',        type:'passive', branch:'defense', color:'#5ec45e',
-              desc:'When hit: 20% chance to stun enemy 1 turn.' },
-      dfn4: { label:'Fortress',      type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'Below 30% HP: gain +20 DEF and deal +15 damage this turn.', fn:'pressureWave' },
-      dfn5: { label:'Retaliation',   type:'passive', branch:'defense', color:'#3db89a',
-              desc:'After 3 hits in a row: auto strike back for 50% ATK.' },
-      dfn6: { label:'Bulwark',       type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'After 2 consecutive hits: DEF doubled next turn.', fn:'chargedStance' },
-      df_ks1:{ label:'Deep Current', type:'active',  branch:'defense', color:'#3db89a',
-              desc:'Gain +30 DEF for 2 turns. Absorb next hit entirely.', fn:'deepCurrent' },
-      df_ks2:{ label:'Iron Mirror',  type:'active',  branch:'defense', color:'#5ec45e',
-              desc:'Reflect 40% of next hit back. +15 DEF for 1 turn.', fn:'ironMirror' },
-      // ── FLOW branch ──
-      fln1: { label:'Razor Tempo',   type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'Strike always goes first regardless of enemy speed.' },
-      fln2: { label:'Ghost Step',    type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'15% chance to dodge. On dodge, deal a free counter hit.' },
-      fln3: { label:'Lockdown',      type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Reduce enemy SPD by 6 for this battle.', fn:'heavyGround' },
-      fln4: { label:'Flicker',       type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'After dodging: next Strike deals double damage.' },
-      fln5: { label:'Stagger',       type:'passive', branch:'flow',    color:'#5eaee0',
-              desc:'20% chance each turn to stagger enemy (they miss their attack).' },
-      fln6: { label:'Momentum',      type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Launch ground spike: 20 damage, ignores 30% DEF.', fn:'earthSpike' },
-      fl_ks1:{ label:'Phantom Step', type:'active',  branch:'flow',    color:'#5eaee0',
-              desc:'Become untargetable for 1 turn. Follow up with a guaranteed crit.', fn:'phantomStep' },
-      fl_ks2:{ label:'Time Lock',    type:'active',  branch:'flow',    color:'#88ccff',
-              desc:'Freeze enemy for 1 turn. Your next attack deals ×2 damage.', fn:'timeLock' },
-      // ── ARCANE branch ──
-      arn1: { label:'Sharp Mind',    type:'passive', branch:'arcane',  color:'#b06eff',
-              desc:'Insight grants +1 ATK per 3 Insight points.' },
-      arn2: { label:'Hex Weave',     type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Predict next attack — reduce incoming damage by 90% this turn.', fn:'foresight' },
-      arn3: { label:'Wild Proc',     type:'passive', branch:'arcane',  color:'#d4a843',
-              desc:'Each Luck point increases crit damage by 0.5%.' },
-      arn4: { label:'Prescience',    type:'passive', branch:'arcane',  color:'#b06eff',
-              desc:'Insight reduces enemy crit chance by 2% per point.' },
-      arn5: { label:'Ricochet',      type:'passive', branch:'arcane',  color:'#d4a843',
-              desc:'20% chance attacks bounce — hit twice, second at 40% ATK.' },
-      arn6: { label:'Mind Pierce',   type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Next attack crits for ×1.75 damage.', fn:'preciseStrike' },
-      ar_ks1:{ label:'Sixth Sense',  type:'active',  branch:'arcane',  color:'#b06eff',
-              desc:'Read enemy — know their next move. Reduce damage by 80% if correct.', fn:'sixthSense' },
-      ar_ks2:{ label:'Chaos Engine', type:'active',  branch:'arcane',  color:'#d4a843',
-              desc:'Unleash chaos: random powerful effect each use.', fn:'chaosEngine' },
-      // ── DECAY branch ──
-      dcn1: { label:'Nightshroud',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'First turn: free dodge. On dodge, counter for 50% ATK.', fn:'nightshroud' },
-      dcn2: { label:'Umbral Veil',   type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'15% dodge chance. On dodge, counter for 50% ATK.' },
-      dcn3: { label:'Thornwall',     type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Defend reflects 15% of absorbed damage back as thorns.', fn:'thornwall' },
-      dcn4: { label:'Shade Walk',    type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'+5 SPD, +4 Power. On kill: +15 SPD for 2 turns.' },
-      dcn5: { label:'Enduring Root', type:'passive', branch:'decay',   color:'#9a6fd8',
-              desc:'Cannot be stunned or rooted by enemy skills.' },
-      dcn6: { label:'Dread Pulse',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Each hit reduces enemy ATK by 2 (stacks up to 3×).', fn:'dreadPulse' },
-      dc_ks1:{ label:'Soul Sever',   type:'active',  branch:'decay',   color:'#9a6fd8',
-              desc:'Sever enemy soul: they lose 15% max HP permanently this battle.', fn:'soulSever' },
-      dc_ks2:{ label:'Ancient Root', type:'passive', branch:'decay',   color:'#5ec45e',
-              desc:'Cannot be stunned. At battle start: gain shield = 20% max HP.' },
-    }
+    // NOTABLE_SKILLS sourced from shared registry — see data/skills_registry.js
+    // Local spread copy; OLD_KEY_MAP below mutates this for backward compat.
+    const NOTABLE_SKILLS = { ...NOTABLE_SKILLS_REGISTRY }
     // Backward compat — old keys still work if any saved data uses them
     const OLD_KEY_MAP = { an1:'ofn1',an2:'ofn2',an3:'ofn3',an4:'ofn4',an5:'ofn5',an6:'ofn6',
       dn1:'dfn1',dn2:'dfn2',dn3:'dfn3',dn4:'dfn4',dn5:'dfn5',dn6:'dfn6',
@@ -3041,12 +2934,16 @@ export async function mountChapter1(__mountOptions = {}) {
               messages.push('🌀 Chaos Engine — CHAOS SHIELD: invulnerable 1 turn!')
             }
 
-          } else if (sk.fn === 'soulSever') {
-            const sevPct  = Math.round(15 * sc)
-            const sevDmg  = Math.round(maxEnemyHp * sevPct / 100)
-            maxEnemyHp    = Math.max(1, maxEnemyHp - sevDmg)
-            enemyHp       = Math.min(enemyHp, maxEnemyHp)
-            messages.push('💜 Soul Sever — enemy max HP -' + sevPct + '% (' + sevDmg + ' severed)!')
+          } else if (sk.fn === 'reaperForm') {
+            // Mirrors Ch2 implementation: persistent +50% ATK plus a
+            // one-shot ignore-DEF on the next attack. Both engines reset
+            // ignoreEnemyDEF after one attack, so the "rest of fight"
+            // wording only applies to the ATK boost; the DEF-ignore is
+            // a single-attack window.
+            const atkBoost = Math.round(playerATK() * 0.5 * sc)
+            statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + atkBoost
+            statusEffects.ignoreEnemyDEF = true
+            messages.push('☠ Reaper Form — ATK +' + atkBoost + ', next attack ignores DEF!')
           }
         }
       }
