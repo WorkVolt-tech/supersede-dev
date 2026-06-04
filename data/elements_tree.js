@@ -82,15 +82,15 @@ function buildElementTree(elKey, sig) {
   const N = sig.names, S = sig.stats
 
   // Diagonal arm positions (relative to root). Spaced ~85px center-to-
-  // center so 90px-wide labels don't overlap. Same proportional shape as
-  // the user's SVG (4 even steps, then 2 flatter steps at the tip).
+  // center so 90px-wide labels don't overlap. All 6 steps equal (85,-85)
+  // for clean straight 45° diagonals — no flattening at the tip.
   const RIGHT = [
     { x:  85, y:  -85 },   // _1
     { x: 170, y: -170 },   // _2
     { x: 255, y: -255 },   // _3
     { x: 340, y: -340 },   // _4
-    { x: 425, y: -380 },   // _5 (flatter step)
-    { x: 510, y: -420 },   // _ks (flatter step)
+    { x: 425, y: -425 },   // _5
+    { x: 510, y: -510 },   // _ks
   ]
   const LEFT = RIGHT.map(p => ({ x: -p.x, y: p.y }))
   // Utility goes straight down; nodes 110px apart for label clearance.
