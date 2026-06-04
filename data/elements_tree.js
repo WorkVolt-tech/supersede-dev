@@ -55,159 +55,169 @@ export const SHARD_COSTS = {
 // Root at (0, 0). Aggressive arm goes up-right, Defensive up-left, Utility down.
 // ──────────────────────────────────────────────────────────────────
 
-// Per-element node generator — produces an upright Y with the root at the
-// BOTTOM. Matches the structure spec'd by the user:
+// Per-element node generator — matches the user-provided SVG exactly:
 //
-//                L6 ◌                            ◌ R6      ← branch tips
-//                  ◌                          ◌
-//                    ◌                      ◌
-//                      ◌                  ◌
-//                        ◌              ◌
-//                          ◌   FORK   ◌            ← branches start here
-//                              ◌                   ← top of trunk (util_ks)
-//                              ◌
-//                              ◌
-//                              ◌
-//                              ◌
-//                              ◌
-//                              S (root)            ← bottom of trunk
+//        L6                                            R6   ← keystone tips
+//          ◌                                      ◌
+//            ◌                                  ◌
+//              ◌                              ◌
+//                ◌                          ◌
+//                  ◌                      ◌
+//                            ★                       ← center start (root)
+//                            ◌
+//                            ◌
+//                            ◌                       ← Utility arm
+//                            ◌
+//                            ◌
+//                            ◌  ← Util keystone
 //
-// Trunk = Utility arm (6 nodes) — root → util_1 → ... → util_ks
-// Right branch = Aggressive (6 nodes) — util_ks → aggr_1 → ... → aggr_ks
-// Left  branch = Defensive  (6 nodes) — util_ks → def_1  → ... → def_ks
-//
-// IMPORTANT: aggr_1 and def_1 require util_ks (top of trunk). This means
-// the trunk (utility arm) becomes a required progression path before
-// specializing into aggressive or defensive. Matches the visual Y AND
-// gives the tree a meaningful "walk up the trunk, then choose a branch"
-// shape. Bypass this by changing aggr_1.requires and def_1.requires back
-// to [root] if you want the three arms fully independent (lines will
-// cross diagonally though).
+// • Root at CENTER. Three independent arms radiate outward.
+// • Right (Aggressive): 6 nodes up-and-right. Steps +60,-60 four times,
+//   then +60,-30 twice — the diagonal flattens near the tip (per the SVG).
+// • Left  (Defensive):  mirror of right.
+// • Down  (Utility):    6 nodes straight down, 80px apart.
+// • All three arms chain from root → no trunk-as-prereq.
 function buildElementTree(elKey, sig) {
   const NX = 0, NY = 0
   const N = sig.names, S = sig.stats
-  // Trunk step: 60px vertical between trunk nodes
-  const TRUNK_STEP = 60
-  // Branch step: per-node displacement once a branch starts (45° outward)
-  const BR_DX = 45, BR_DY = 45
-  // Branches start above the top of the trunk
-  const TRUNK_TOP_Y = -TRUNK_STEP * 6      // -360 — util_ks position
-  const BRANCH_START_Y = TRUNK_TOP_Y - 40   // -400 — first branch node Y
+
+  // Diagonal arm positions (relative to root). Spaced ~85px center-to-
+  // center so 90px-wide labels don't overlap. Same proportional shape as
+  // the user's SVG (4 even steps, then 2 flatter steps at the tip).
+  const RIGHT = [
+    { x:  85, y:  -85 },   // _1
+    { x: 170, y: -170 },   // _2
+    { x: 255, y: -255 },   // _3
+    { x: 340, y: -340 },   // _4
+    { x: 425, y: -380 },   // _5 (flatter step)
+    { x: 510, y: -420 },   // _ks (flatter step)
+  ]
+  const LEFT = RIGHT.map(p => ({ x: -p.x, y: p.y }))
+  // Utility goes straight down; nodes 110px apart for label clearance.
+  const DOWN = [
+    { x: 0, y: 110 },
+    { x: 0, y: 220 },
+    { x: 0, y: 330 },
+    { x: 0, y: 440 },
+    { x: 0, y: 550 },
+    { x: 0, y: 660 },
+  ]
+
   return [
-    // ── ROOT (S) ─ bottom of trunk ──────────────────────────
+    // ── ROOT (★ CENTER) ─────────────────────────────────────
     { id: `${elKey}_root`, label: N.root, type: 'start',
       element: elKey, branch: `${elKey}_root`,
       x: NX, y: NY, cost: 0, requires: [],
       desc: S.root_desc },
 
-    // ── TRUNK (Utility) — going UP from root ────────────────
-    { id: `${elKey}_util_1`, label: N.util_1, type: 'small',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*1, cost: SHARD_COSTS.small,
-      stat: 'crit_chance_pct', val: 3, requires: [`${elKey}_root`],
-      desc: S.util_1_desc },
-    { id: `${elKey}_util_2`, label: N.util_2, type: 'small',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*2, cost: SHARD_COSTS.small,
-      stat: 'crit_dmg_pct', val: 8, requires: [`${elKey}_util_1`],
-      desc: S.util_2_desc },
-    { id: `${elKey}_util_3`, label: N.util_3, type: 'notable',
-      battleType: 'passive',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*3, cost: SHARD_COSTS.notable,
-      procChance: 0.20, procEffect: S.proc_util_effect,
-      procDuration: S.proc_util_dur,
-      requires: [`${elKey}_util_2`],
-      desc: S.util_3_desc },
-    { id: `${elKey}_util_4`, label: N.util_4, type: 'small',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*4, cost: SHARD_COSTS.small,
-      stat: 'mp_max_bonus', val: 5, requires: [`${elKey}_util_3`],
-      desc: S.util_4_desc },
-    { id: `${elKey}_util_5`, label: N.util_5, type: 'small',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*5, cost: SHARD_COSTS.small,
-      stat: 'mp_regen_combat', val: 2, requires: [`${elKey}_util_4`],
-      desc: S.util_5_desc },
-    { id: `${elKey}_util_ks`, label: N.util_ks, type: 'keystone',
-      battleType: 'active',
-      element: elKey, branch: `${elKey}_utility`,
-      x: NX, y: NY - TRUNK_STEP*6, cost: SHARD_COSTS.active,
-      fn: S.fn_util,
-      requires: [`${elKey}_util_5`],
-      desc: S.util_ks_desc },
-
-    // ── RIGHT BRANCH (Aggressive) — forks from util_ks ──────
+    // ── RIGHT BRANCH (Aggressive) — chains from root ────────
     { id: `${elKey}_aggr_1`, label: N.aggr_1, type: 'small',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*1, y: BRANCH_START_Y - BR_DY*0, cost: SHARD_COSTS.small,
-      stat: S.aggr_stat, val: 3, requires: [`${elKey}_util_ks`],
+      x: NX + RIGHT[0].x, y: NY + RIGHT[0].y, cost: SHARD_COSTS.small,
+      stat: S.aggr_stat, val: 3, requires: [`${elKey}_root`],
       desc: S.aggr_1_desc },
     { id: `${elKey}_aggr_2`, label: N.aggr_2, type: 'small',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*2, y: BRANCH_START_Y - BR_DY*1, cost: SHARD_COSTS.small,
+      x: NX + RIGHT[1].x, y: NY + RIGHT[1].y, cost: SHARD_COSTS.small,
       stat: S.aggr_stat, val: 4, requires: [`${elKey}_aggr_1`],
       desc: S.aggr_2_desc },
     { id: `${elKey}_aggr_3`, label: N.aggr_3, type: 'notable',
       battleType: 'passive',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*3, y: BRANCH_START_Y - BR_DY*2, cost: SHARD_COSTS.notable,
+      x: NX + RIGHT[2].x, y: NY + RIGHT[2].y, cost: SHARD_COSTS.notable,
       procChance: 0.15, procEffect: S.proc_aggr_effect,
       procDuration: S.proc_aggr_dur, procStacks: S.proc_aggr_stacks,
       requires: [`${elKey}_aggr_2`],
       desc: S.aggr_3_desc },
     { id: `${elKey}_aggr_4`, label: N.aggr_4, type: 'small',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*4, y: BRANCH_START_Y - BR_DY*3, cost: SHARD_COSTS.small,
+      x: NX + RIGHT[3].x, y: NY + RIGHT[3].y, cost: SHARD_COSTS.small,
       stat: S.aggr_4_stat, val: 10, requires: [`${elKey}_aggr_3`],
       desc: S.aggr_4_desc },
     { id: `${elKey}_aggr_5`, label: N.aggr_5, type: 'small',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*5, y: BRANCH_START_Y - BR_DY*4, cost: SHARD_COSTS.small,
+      x: NX + RIGHT[4].x, y: NY + RIGHT[4].y, cost: SHARD_COSTS.small,
       stat: S.aggr_5_stat, val: 2, requires: [`${elKey}_aggr_4`],
       desc: S.aggr_5_desc },
     { id: `${elKey}_aggr_ks`, label: N.aggr_ks, type: 'keystone',
       battleType: 'active',
       element: elKey, branch: `${elKey}_aggressive`,
-      x: NX + BR_DX*6, y: BRANCH_START_Y - BR_DY*5, cost: SHARD_COSTS.active,
+      x: NX + RIGHT[5].x, y: NY + RIGHT[5].y, cost: SHARD_COSTS.active,
       fn: S.fn_aggr,
       requires: [`${elKey}_aggr_5`],
       desc: S.aggr_ks_desc },
 
-    // ── LEFT BRANCH (Defensive) — forks from util_ks ────────
+    // ── LEFT BRANCH (Defensive) — chains from root ──────────
     { id: `${elKey}_def_1`, label: N.def_1, type: 'small',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*1, y: BRANCH_START_Y - BR_DY*0, cost: SHARD_COSTS.small,
-      stat: S.def_stat, val: 5, requires: [`${elKey}_util_ks`],
+      x: NX + LEFT[0].x, y: NY + LEFT[0].y, cost: SHARD_COSTS.small,
+      stat: S.def_stat, val: 5, requires: [`${elKey}_root`],
       desc: S.def_1_desc },
     { id: `${elKey}_def_2`, label: N.def_2, type: 'small',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*2, y: BRANCH_START_Y - BR_DY*1, cost: SHARD_COSTS.small,
+      x: NX + LEFT[1].x, y: NY + LEFT[1].y, cost: SHARD_COSTS.small,
       stat: S.def_stat, val: 5, requires: [`${elKey}_def_1`],
       desc: S.def_2_desc },
     { id: `${elKey}_def_3`, label: N.def_3, type: 'notable',
       battleType: 'passive',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*3, y: BRANCH_START_Y - BR_DY*2, cost: SHARD_COSTS.notable,
+      x: NX + LEFT[2].x, y: NY + LEFT[2].y, cost: SHARD_COSTS.notable,
       stat: S.def_3_stat, val: 25, requires: [`${elKey}_def_2`],
       desc: S.def_3_desc },
     { id: `${elKey}_def_4`, label: N.def_4, type: 'small',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*4, y: BRANCH_START_Y - BR_DY*3, cost: SHARD_COSTS.small,
+      x: NX + LEFT[3].x, y: NY + LEFT[3].y, cost: SHARD_COSTS.small,
       stat: S.def_4_stat, val: 8, requires: [`${elKey}_def_3`],
       desc: S.def_4_desc },
     { id: `${elKey}_def_5`, label: N.def_5, type: 'small',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*5, y: BRANCH_START_Y - BR_DY*4, cost: SHARD_COSTS.small,
+      x: NX + LEFT[4].x, y: NY + LEFT[4].y, cost: SHARD_COSTS.small,
       stat: S.def_5_stat, val: 3, requires: [`${elKey}_def_4`],
       desc: S.def_5_desc },
     { id: `${elKey}_def_ks`, label: N.def_ks, type: 'keystone',
       battleType: 'active',
       element: elKey, branch: `${elKey}_defensive`,
-      x: NX - BR_DX*6, y: BRANCH_START_Y - BR_DY*5, cost: SHARD_COSTS.active,
+      x: NX + LEFT[5].x, y: NY + LEFT[5].y, cost: SHARD_COSTS.active,
       fn: S.fn_def,
       requires: [`${elKey}_def_5`],
       desc: S.def_ks_desc },
+
+    // ── DOWN BRANCH (Utility) — chains from root ────────────
+    { id: `${elKey}_util_1`, label: N.util_1, type: 'small',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[0].x, y: NY + DOWN[0].y, cost: SHARD_COSTS.small,
+      stat: 'crit_chance_pct', val: 3, requires: [`${elKey}_root`],
+      desc: S.util_1_desc },
+    { id: `${elKey}_util_2`, label: N.util_2, type: 'small',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[1].x, y: NY + DOWN[1].y, cost: SHARD_COSTS.small,
+      stat: 'crit_dmg_pct', val: 8, requires: [`${elKey}_util_1`],
+      desc: S.util_2_desc },
+    { id: `${elKey}_util_3`, label: N.util_3, type: 'notable',
+      battleType: 'passive',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[2].x, y: NY + DOWN[2].y, cost: SHARD_COSTS.notable,
+      procChance: 0.20, procEffect: S.proc_util_effect,
+      procDuration: S.proc_util_dur,
+      requires: [`${elKey}_util_2`],
+      desc: S.util_3_desc },
+    { id: `${elKey}_util_4`, label: N.util_4, type: 'small',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[3].x, y: NY + DOWN[3].y, cost: SHARD_COSTS.small,
+      stat: 'mp_max_bonus', val: 5, requires: [`${elKey}_util_3`],
+      desc: S.util_4_desc },
+    { id: `${elKey}_util_5`, label: N.util_5, type: 'small',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[4].x, y: NY + DOWN[4].y, cost: SHARD_COSTS.small,
+      stat: 'mp_regen_combat', val: 2, requires: [`${elKey}_util_4`],
+      desc: S.util_5_desc },
+    { id: `${elKey}_util_ks`, label: N.util_ks, type: 'keystone',
+      battleType: 'active',
+      element: elKey, branch: `${elKey}_utility`,
+      x: NX + DOWN[5].x, y: NY + DOWN[5].y, cost: SHARD_COSTS.active,
+      fn: S.fn_util,
+      requires: [`${elKey}_util_5`],
+      desc: S.util_ks_desc },
   ]
 }
 
