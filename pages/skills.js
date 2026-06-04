@@ -2218,9 +2218,9 @@ export async function mountSkills(__mountOptions = {}) {
       '</p>'
 
     // Compute canvas offsets: nodes use centered coords (root at origin).
-    // Spaced-out geometry: arms reach ±510 in x; span y from -420 (diag
-    // tips) to +660 (utility keystone). Padding adds label clearance.
-    const PAD_X = 600, PAD_Y = 500
+    // Straight diagonal arms reach ±510 in both x and y; down arm reaches
+    // +660. PAD_Y must fit both the +660 below and the -510 above the root.
+    const PAD_X = 600, PAD_Y = 580
     // Render connector lines first (SVG behind nodes). Dotted to match
     // the existing main-tree connector style.
     let lines = ''
