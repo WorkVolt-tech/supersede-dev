@@ -2219,11 +2219,10 @@ export async function mountSkills(__mountOptions = {}) {
 
     // Compute canvas offsets: nodes use centered coords (0,0 = root).
     // Translate to canvas with padding so negatives become positive.
-    // Linear Y-shape spans x:±570 y:±330; padding adds visual breathing room.
-    const PAD_X = 640, PAD_Y = 400
-    // Render connector lines first (SVG behind nodes).
-    // Lines are bolder + solid (not dotted) to mirror the class tree look
-    // and read clearly against the dark canvas background.
+    // Arms reach ±420 in both x and y at 45°; padding adds breathing room.
+    const PAD_X = 500, PAD_Y = 480
+    // Render connector lines first (SVG behind nodes). Dotted to match
+    // the existing main-tree connector style.
     let lines = ''
     tree.nodes.forEach(nd => {
       if (!nd.requires || nd.requires.length === 0) return
@@ -2233,13 +2232,12 @@ export async function mountSkills(__mountOptions = {}) {
         const lit = isElementNodeUnlocked(nd.id) && isElementNodeUnlocked(reqId)
         const x1 = par.x + PAD_X, y1 = par.y + PAD_Y
         const x2 = nd.x + PAD_X,  y2 = nd.y + PAD_Y
-        // Bright + opaque enough to read clearly even when unlit
-        const col = lit ? tree.color : 'rgba(176,140,80,.55)'
-        const sw  = lit ? 3.0 : 2.0
+        const col = lit ? tree.color : 'rgba(176,140,80,.5)'
+        const sw  = lit ? 2.4 : 1.6
         lines += '<line x1="' + x1 + '" y1="' + y1 +
                  '" x2="' + x2 + '" y2="' + y2 +
                  '" stroke="' + col + '" stroke-width="' + sw +
-                 '" stroke-linecap="round"/>'
+                 '" stroke-linecap="round" stroke-dasharray="3 5"/>'
       })
     })
     svg.setAttribute('width',  PAD_X*2)
