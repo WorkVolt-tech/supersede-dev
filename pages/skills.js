@@ -2218,12 +2218,9 @@ export async function mountSkills(__mountOptions = {}) {
       '</p>'
 
     // Compute canvas offsets: nodes use centered coords (root at origin).
-    // Tree geometry: root (S) at bottom; trunk goes UP to y≈-360; branches
-    // fork outward from there reaching to (±295, -625) at the tips.
-    // PAD_X needs to fit ±295; PAD_Y needs to fit ~80px above the tip
-    // (which is at y=-625, so canvas y of the tip = PAD_Y - 625) AND
-    // some room below the root.
-    const PAD_X = 380, PAD_Y = 700
+    // Spaced-out geometry: arms reach ±510 in x; span y from -420 (diag
+    // tips) to +660 (utility keystone). Padding adds label clearance.
+    const PAD_X = 600, PAD_Y = 500
     // Render connector lines first (SVG behind nodes). Dotted to match
     // the existing main-tree connector style.
     let lines = ''
