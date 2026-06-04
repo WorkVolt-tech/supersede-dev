@@ -2217,10 +2217,13 @@ export async function mountSkills(__mountOptions = {}) {
           : 'Not attuned. Tree still works at base values.') +
       '</p>'
 
-    // Compute canvas offsets: nodes use centered coords (0,0 = root).
-    // Translate to canvas with padding so negatives become positive.
-    // Arms reach ±420 in both x and y at 45°; padding adds breathing room.
-    const PAD_X = 500, PAD_Y = 480
+    // Compute canvas offsets: nodes use centered coords (root at origin).
+    // Tree geometry: root (S) at bottom; trunk goes UP to y≈-360; branches
+    // fork outward from there reaching to (±295, -625) at the tips.
+    // PAD_X needs to fit ±295; PAD_Y needs to fit ~80px above the tip
+    // (which is at y=-625, so canvas y of the tip = PAD_Y - 625) AND
+    // some room below the root.
+    const PAD_X = 380, PAD_Y = 700
     // Render connector lines first (SVG behind nodes). Dotted to match
     // the existing main-tree connector style.
     let lines = ''
