@@ -176,8 +176,8 @@ export async function mountChapter2(__mountOptions = {}) {
 
   Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
       choices: [
-        { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +10',   next: 'meet_builders',  moral: 10 },
-        { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -5',        next: 'meet_hunters',   moral: -5 },
+        { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +5',   next: 'meet_builders',  moral: 5 },
+        { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -3',        next: 'meet_hunters',   moral: -3 },
         { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
         { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
       ],
@@ -260,8 +260,8 @@ export async function mountChapter2(__mountOptions = {}) {
   Not a question.`,
       choices: [
         { label: '"I finished Chapter 1."',          sub: 'Straightforward — neutral response', next: 'faction_talk_honest' },
-        { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -5 },
-        { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 10 },
+        { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -3 },
+        { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 5 },
       ],
     },
 
@@ -323,7 +323,7 @@ export async function mountChapter2(__mountOptions = {}) {
 
   She means it. No negotiation in her voice. Just information, offered without leverage.`,
       choices: [
-        { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 10 },
+        { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 5 },
         { label: 'Ask about the elemental zones',    next: 'ghosts_deep' },
         { label: 'Explore the district first',       next: 'district_hub' },
       ],
@@ -349,7 +349,7 @@ export async function mountChapter2(__mountOptions = {}) {
   She doesn't say anything else. She lets you think.`,
       xp: 50,
       choices: [
-        { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +15',  next: 'builders_alliance', moral: 15 },
+        { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +8',  next: 'builders_alliance', moral: 8 },
         { label: "Ask what you'd get out of it",  sub: 'Practical question',              next: 'builders_negotiation' },
         { label: 'Keep your options open',        sub: 'Non-committal',                   next: 'district_hub' },
       ],
@@ -369,7 +369,7 @@ export async function mountChapter2(__mountOptions = {}) {
 
   "I'm not trying to scare you into it. I'm telling you what I know. You can decide what that's worth."`,
       choices: [
-        { label: 'Sign the alliance',  sub: 'moral +15', next: 'builders_alliance', moral: 15 },
+        { label: 'Sign the alliance',  sub: 'moral +8', next: 'builders_alliance', moral: 8 },
         { label: 'Decline, stay free', sub: 'Keep all options',  next: 'district_hub' },
       ],
     },
@@ -517,9 +517,9 @@ She watches you, patient.
 
 "Take this as the favor it is. Not an obligation. The Builders don't trade in obligations."`,
       choices: [
-        { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +10 · Builder credit', next: 'sera_gave', moral: 10, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
+        { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +5 · Builder credit', next: 'sera_gave', moral: 5, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
         { label: '"I don\'t have any to spare."', sub: 'Honest — no penalty', next: 'sera_declined', allianceTag: 'sera_met' },
-        { label: 'Walk past her without speaking', sub: 'Moral -5 · the System notes the silence', next: 'sera_ignored', moral: -5, allianceTag: 'sera_met' },
+        { label: 'Walk past her without speaking', sub: 'Moral -3 · the System notes the silence', next: 'sera_ignored', moral: -3, allianceTag: 'sera_met' },
       ],
     },
     sera_gave: {
@@ -559,8 +559,8 @@ A small pause. Voss doesn't smile.
 
 "I'm not asking you to pull a trigger. I'm telling you there's an option. Information has value. You don't even have to act on it."`,
       choices: [
-        { label: '"Tell me where." (intercept the runner)', sub: 'Moral -15 · gear loot · Voss credit', next: 'voss_intercept', moral: -15, allianceTag: 'voss_met' },
-        { label: '"Tell me where." (warn the runner)', sub: 'Moral +10 · Builder credit', next: 'voss_warned', moral: 10, allianceTag: 'voss_met' },
+        { label: '"Tell me where." (intercept the runner)', sub: 'Moral -8 · gear loot · Voss credit', next: 'voss_intercept', moral: -8, allianceTag: 'voss_met' },
+        { label: '"Tell me where." (warn the runner)', sub: 'Moral +5 · Builder credit', next: 'voss_warned', moral: 5, allianceTag: 'voss_met' },
         { label: '"Not interested."', sub: 'No change', next: 'voss_declined', allianceTag: 'voss_met' },
       ],
     },
@@ -723,9 +723,9 @@ They go back to the map.
 
   "Could you stay? Or — I don't know. Whatever you can do."`,
       choices: [
-        { label: 'Help bandage the leg',     sub: 'Stay — moral +5, Builder credit',                              next: 'tam_wounded_help',    moral: 5, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
-        { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical_pack — moral +8, deeper Builder credit',       next: 'tam_wounded_medpack', moral: 8, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
-        { label: '"I have to keep moving."', sub: 'Walk on — moral -3, Tam notes the choice',                     next: 'tam_wounded_left',    moral: -3, allianceTag: 'tam_walked_past' },
+        { label: 'Help bandage the leg',     sub: 'Stay — moral +3, Builder credit',                              next: 'tam_wounded_help',    moral: 3, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
+        { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical_pack — moral +4, deeper Builder credit',       next: 'tam_wounded_medpack', moral: 4, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
+        { label: '"I have to keep moving."', sub: 'Walk on — moral -2, Tam notes the choice',                     next: 'tam_wounded_left',    moral: -2, allianceTag: 'tam_walked_past' },
       ],
     },
 
@@ -790,9 +790,9 @@ They go back to the map.
 
   The Voss runner watches you, waiting.`,
       choices: [
-        { label: '"Walk away from them, Tam."',         sub: 'Tell Tam to stay loyal — Builder credit',                       next: 'tam_xroads_loyal',   moral: 5,  allianceTag: 'tam_stayed_builder', allianceTagRepeatable: 'builders_helped' },
+        { label: '"Walk away from them, Tam."',         sub: 'Tell Tam to stay loyal — Builder credit',                       next: 'tam_xroads_loyal',   moral: 3,  allianceTag: 'tam_stayed_builder', allianceTagRepeatable: 'builders_helped' },
         { label: '"Tam, you decide. I won\'t."',         sub: 'Respect the kid\'s agency — no faction shift',                  next: 'tam_xroads_neutral', allianceTag: 'tam_chose_own' },
-        { label: '"The Voss runner has a point."',      sub: 'Push Tam toward Voss — Hunter credit + Tam uncertain',          next: 'tam_xroads_voss',    moral: -5, allianceTag: 'tam_uncertain' },
+        { label: '"The Voss runner has a point."',      sub: 'Push Tam toward Voss — Hunter credit + Tam uncertain',          next: 'tam_xroads_voss',    moral: -3, allianceTag: 'tam_uncertain' },
         { label: 'Confront the Voss runner',            sub: 'Combat — they\'re a humanoid',                                    next: 'tam_xroads_fight',   allianceTag: 'tam_defended' },
       ],
     },
@@ -873,8 +873,8 @@ They go back to the map.
 
   The recruiter is alive but out of the fight. The blade is gone, the leg won't hold. They look up at you — that same dry, professional look — and wait.`,
       choices: [
-        { label: 'Spare them',   sub: 'Moral +5',                next: 'tam_xroads_fight_spare',   moral: 5,  allianceTag: 'spared_humanoid' },
-        { label: 'Finish them',  sub: 'Moral -5, executed flag', next: 'tam_xroads_fight_execute', moral: -5, allianceTag: 'executed_humanoid' },
+        { label: 'Spare them',   sub: 'Moral +3',                next: 'tam_xroads_fight_spare',   moral: 3,  allianceTag: 'spared_humanoid' },
+        { label: 'Finish them',  sub: 'Moral -3, executed flag', next: 'tam_xroads_fight_execute', moral: -3, allianceTag: 'executed_humanoid' },
       ],
     },
 
@@ -940,8 +940,8 @@ Tam — the kid with the bandaged hand — steps from behind Sera. They're holdi
 The fight is going to happen in about ten seconds. The only question is who you stand next to when it does.`,
       sysMsg: 'THE SWEEP — district alignment is forcing a clash. Choose carefully.',
       choices: [
-        { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +15', next: 'sweep_defend_combat', moral: 15, allianceTag: 'sweep_builders' },
-        { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -15', next: 'sweep_join_combat', moral: -15, allianceTag: 'sweep_hunters' },
+        { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +8', next: 'sweep_defend_combat', moral: 8, allianceTag: 'sweep_builders' },
+        { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -8', next: 'sweep_join_combat', moral: -8, allianceTag: 'sweep_hunters' },
         { label: 'Leave the plaza',         sub: 'Let them sort it out · cowardice noted', next: 'sweep_escape', allianceTag: 'sweep_walked' },
       ],
     },
@@ -1036,7 +1036,7 @@ Behind her, the other Builders are taking positions. A dozen of them. Not many. 
 "This isn't required. You can walk past us right now and the Judges will still come for you. The fight just won't have us in it."`,
       sysMsg: 'HERO TRACK UNLOCKED — defend the plaza with the Builders before facing the Judges.',
       choices: [
-        { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +10', next: 'hero_finale_combat', moral: 10, allianceTag: 'hero_finale_done' },
+        { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +5', next: 'hero_finale_combat', moral: 5, allianceTag: 'hero_finale_done' },
         { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
       ],
     },
@@ -1088,7 +1088,7 @@ A pause. They're watching your face.
 The corridor is dark. The Judges are coming. Voss isn't going to ask twice.`,
       sysMsg: 'VILLAIN TRACK UNLOCKED — finish the district before facing the Judges.',
       choices: [
-        { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -10', next: 'villain_finale_combat', moral: -10, allianceTag: 'villain_finale_done' },
+        { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -5', next: 'villain_finale_combat', moral: -5, allianceTag: 'villain_finale_done' },
         { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
       ],
     },
@@ -1245,9 +1245,9 @@ The Judges are already there.`,
 
   They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
       choices: [
-        { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5, allianceTag: 'cache_seen' },
-        { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10, allianceTag: 'cache_seen' },
-        { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20, allianceTag: 'cache_seen' },
+        { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -3, allianceTag: 'cache_seen' },
+        { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +5', next: 'cache_refused', moral: 5, allianceTag: 'cache_seen' },
+        { label: 'Report the offer to Sera',           sub: 'Build trust — moral +10',    next: 'cache_reported', moral: 10, allianceTag: 'cache_seen' },
       ],
     },
 
@@ -1267,8 +1267,8 @@ The Judges are already there.`,
 
   Two paths forward from here — take, or stand.`,
       choices: [
-        { label: 'Take nothing — stand with the Builders', sub: 'moral +15, full alliance maintained', next: 'cache_stood', moral: 15 },
-        { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -40. Recorded permanently.', next: 'cache_betrayed', moral: -40 },
+        { label: 'Take nothing — stand with the Builders', sub: 'moral +8, full alliance maintained', next: 'cache_stood', moral: 8 },
+        { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -20. Recorded permanently.', next: 'cache_betrayed', moral: -20 },
       ],
     },
 
@@ -1359,7 +1359,7 @@ The Judges are already there.`,
 
   Sera's team completes the opening cleanly. Your share is full, plus a bonus Sera calls "trustworthy conduct." Tam high-fives you. You let them.
 
-  Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Mercy weight +8. Moral +20. Permanent flag: "Can be trusted under pressure."`,
+  Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Mercy weight +8. Moral +10. Permanent flag: "Can be trusted under pressure."`,
       xp: 150,
       rewards: [{ itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_metal', qty: 5 }],
       choices: [
@@ -3682,11 +3682,11 @@ You walk back out.`
             <div style="display:flex;flex-direction:column;gap:8px">
               <button class="choice" data-spare>
                 <span class="choice-arrow">✦</span>
-                <span class="choice-body">Spare them<span class="choice-sub">Moral +5 · the System notes mercy</span></span>
+                <span class="choice-body">Spare them<span class="choice-sub">Moral +3 · the System notes mercy</span></span>
               </button>
               <button class="choice danger" data-execute>
                 <span class="choice-arrow">✖</span>
-                <span class="choice-body">Execute<span class="choice-sub">Moral -5 · the System notes the kill</span></span>
+                <span class="choice-body">Execute<span class="choice-sub">Moral -3 · the System notes the kill</span></span>
               </button>
             </div>`
           // Shared helper: apply moral delta + recompute badge + show feedback.
@@ -3710,7 +3710,7 @@ You walk back out.`
           }
           const handleSpare = async () => {
             const log = [...(player.alliance_log||[]), 'spared_humanoid']
-            const upd = applyMoralWithFeedback(5, { alliance_log: log })
+            const upd = applyMoralWithFeedback(3, { alliance_log: log })
             player.alliance_log = log
 
             // ── Mourning King — spare bonuses ─────────────────────────
@@ -3751,7 +3751,7 @@ You walk back out.`
           const handleExecute = async () => {
             const log = [...(player.alliance_log||[]), 'executed_humanoid']
             const newPvp = (player.pvp_kills||0) + 1
-            const upd = applyMoralWithFeedback(-5, { alliance_log: log, pvp_kills: newPvp })
+            const upd = applyMoralWithFeedback(-3, { alliance_log: log, pvp_kills: newPvp })
             player.alliance_log = log; player.pvp_kills = newPvp
             await save(upd)
             // Optional extra loot for executing — node author opts in via `executeLoot`
