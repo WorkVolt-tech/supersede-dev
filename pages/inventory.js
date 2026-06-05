@@ -212,7 +212,7 @@ export async function mountInventory(__mountOptions = {}) {
         const bonus = SET_BONUSES[Math.min(equippedWatcher.length, 4)]
         panel.innerHTML = `
           <div style="padding:.5rem .65rem;background:rgba(94,174,224,.06);border:.5px solid rgba(94,174,224,.2);border-radius:4px">
-            <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#5eaee0;letter-spacing:.08em;margin-bottom:2px">
+            <p style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:#1a4a8a;letter-spacing:.08em;margin-bottom:2px">
               👁 WATCHER SET (${equippedWatcher.length}/4) — ${bonus.label}
             </p>
             <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.68rem;color:var(--ink-dim);line-height:1.4;margin:0">${bonus.effect}</p>
@@ -348,14 +348,14 @@ export async function mountInventory(__mountOptions = {}) {
       const ins  =     eq.reduce((s,i)=>s+(i.insight_bonus||0),0)
       const lck  =     eq.reduce((s,i)=>s+(i.luck_bonus||0),0)
       document.getElementById('total-stats').innerHTML = `
-        <span>ATK <strong style="color:#e05555">${atk}</strong></span>
-        <span>DEF <strong style="color:#5ec45e">${def}</strong></span>
-        ${pwr?`<span>PWR <strong style="color:#ff5500">${pwr}</strong></span>`:''}
-        ${ctr?`<span>CTR <strong style="color:#0088ff">${ctr}</strong></span>`:''}
+        <span>ATK <strong style="color:#8a2020">${atk}</strong></span>
+        <span>DEF <strong style="color:#1a6020">${def}</strong></span>
+        ${pwr?`<span>PWR <strong style="color:#8a2a00">${pwr}</strong></span>`:''}
+        ${ctr?`<span>CTR <strong style="color:#1a3a8a">${ctr}</strong></span>`:''}
         ${grd?`<span>GRD <strong style="color:#8b5e3c">${grd}</strong></span>`:''}
-        ${spd?`<span>SPD <strong style="color:#a8d8ea">${spd}</strong></span>`:''}
-        ${ins?`<span>INS <strong style="color:#ffd700">${ins}</strong></span>`:''}
-        ${lck?`<span>LCK <strong style="color:#b06eff">${lck}</strong></span>`:''}
+        ${spd?`<span>SPD <strong style="color:#2a6890">${spd}</strong></span>`:''}
+        ${ins?`<span>INS <strong style="color:#8a6020">${ins}</strong></span>`:''}
+        ${lck?`<span>LCK <strong style="color:#5a2090">${lck}</strong></span>`:''}
       `
     }
 
@@ -370,7 +370,7 @@ export async function mountInventory(__mountOptions = {}) {
       const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
 
       const wrap = document.createElement('div')
-      Object.assign(wrap.style, {border:'.5px solid rgba(200,168,74,.2)', borderRadius:'4px', padding:'.75rem', marginTop:'.5rem', background:'rgba(0,0,0,.25)'})
+      Object.assign(wrap.style, {border:'.5px solid rgba(200,168,74,.2)', borderRadius:'4px', padding:'.75rem', marginTop:'.5rem', background:'rgba(43,29,22,.04)'})
 
       // ── Header: image + name + close ──
       const header = document.createElement('div')
@@ -395,7 +395,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const subEl = document.createElement('div')
       subEl.textContent = `${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}`
-      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.06em', textTransform:'uppercase'})
+      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#2b1d16', letterSpacing:'.06em', textTransform:'uppercase'})
       nameBlock.appendChild(subEl)
       header.appendChild(nameBlock)
 
@@ -405,7 +405,7 @@ export async function mountInventory(__mountOptions = {}) {
       Object.assign(closeBtn.style, {
         flexShrink:'0', marginLeft:'.4rem',
         background:'rgba(255,255,255,.07)', border:'1px solid rgba(200,168,74,.25)',
-        color:'#e8dfc8', fontSize:'.85rem', cursor:'pointer',
+        color:'#2b1d16', fontSize:'.85rem', cursor:'pointer',
         padding:'3px 8px', borderRadius:'3px',
         fontFamily:"'JetBrains Mono',monospace", lineHeight:'1'
       })
@@ -417,15 +417,15 @@ export async function mountInventory(__mountOptions = {}) {
       const statRow = document.createElement('div')
       statRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;margin-bottom:.6rem'
       const statDefs = [
-        [item.atk_bonus,    'ATK', '#e05555'],
-        [item.def_bonus,    'DEF', '#5ec45e'],
-        [item.power_bonus,  'PWR', '#ff5500'],
-        [item.guard_bonus,  'GRD', '#5eaee0'],
-        [item.speed_bonus,  'SPD', '#a8d8ea'],
-        [item.control_bonus,'CTR', '#0088ff'],
-        [item.insight_bonus,'INS', '#ffd700'],
-        [item.luck_bonus,   'LCK', '#b06eff'],
-        [item.hp_restore,   '+HP', '#5eaee0'],
+        [item.atk_bonus,    'ATK', '#8a2020'],
+        [item.def_bonus,    'DEF', '#1a6020'],
+        [item.power_bonus,  'PWR', '#8a2a00'],
+        [item.guard_bonus,  'GRD', '#1a4a8a'],
+        [item.speed_bonus,  'SPD', '#2a6890'],
+        [item.control_bonus,'CTR', '#1a3a8a'],
+        [item.insight_bonus,'INS', '#8a6020'],
+        [item.luck_bonus,   'LCK', '#5a2090'],
+        [item.hp_restore,   '+HP', '#1a4a8a'],
       ]
       let anyStats = false
       statDefs.forEach(([val, label, col]) => {
@@ -439,7 +439,7 @@ export async function mountInventory(__mountOptions = {}) {
       if (!anyStats) {
         const util = document.createElement('div')
         util.textContent = 'Utility item'
-        Object.assign(util.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:'#ffffff'})
+        Object.assign(util.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:'#2b1d16'})
         statRow.appendChild(util)
       }
       wrap.appendChild(statRow)
@@ -450,10 +450,10 @@ export async function mountInventory(__mountOptions = {}) {
         Object.assign(fxBox.style, {marginBottom:'.6rem', padding:'5px 8px', background:'rgba(94,174,224,.08)', border:'.5px solid rgba(94,174,224,.3)', borderRadius:'3px'})
         const fxLabel = document.createElement('div')
         fxLabel.textContent = 'SET EFFECT'
-        Object.assign(fxLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.48rem', color:'#5eaee0', letterSpacing:'.08em', marginBottom:'2px'})
+        Object.assign(fxLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.48rem', color:'#1a4a8a', letterSpacing:'.08em', marginBottom:'2px'})
         const fxText = document.createElement('div')
         fxText.textContent = item.special_effect
-        Object.assign(fxText.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.68rem', color:'#ffffff', lineHeight:'1.4'})
+        Object.assign(fxText.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.68rem', color:'#2b1d16', lineHeight:'1.4'})
         fxBox.appendChild(fxLabel)
         fxBox.appendChild(fxText)
         wrap.appendChild(fxBox)
@@ -466,7 +466,7 @@ export async function mountInventory(__mountOptions = {}) {
 
         const sockLabel = document.createElement('div')
         sockLabel.textContent = `SOCKETS ${item.sockets_used||0}/${item.sockets_total}`
-        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#c090ff', letterSpacing:'.07em', marginBottom:'5px'})
+        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#5a2090', letterSpacing:'.07em', marginBottom:'5px'})
         sockWrap.appendChild(sockLabel)
 
         const sockRow = document.createElement('div')
@@ -485,7 +485,7 @@ export async function mountInventory(__mountOptions = {}) {
           } else {
             const empty = document.createElement('div')
             empty.textContent = '○'
-            Object.assign(empty.style, {color:'#c090ff', fontSize:'.75rem'})
+            Object.assign(empty.style, {color:'#5a2090', fontSize:'.75rem'})
             dot.appendChild(empty)
           }
           sockRow.appendChild(dot)
@@ -498,12 +498,12 @@ export async function mountInventory(__mountOptions = {}) {
           Object.assign(rwBox.style, {padding:'4px 6px', background:'rgba(160,125,224,.12)', border:'.5px solid rgba(160,125,224,.3)', borderRadius:'3px', marginBottom:'4px'})
           const rwName = document.createElement('div')
           rwName.textContent = '✦ ' + item.runeword_name
-          Object.assign(rwName.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#c090ff', marginBottom:'2px'})
+          Object.assign(rwName.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#5a2090', marginBottom:'2px'})
           rwBox.appendChild(rwName)
           if (item.runeword_effect) {
             const rwFx = document.createElement('div')
             rwFx.textContent = item.runeword_effect
-            Object.assign(rwFx.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.65rem', color:'#e8dfc8', marginBottom:'2px'})
+            Object.assign(rwFx.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.65rem', color:'#2b1d16', marginBottom:'2px'})
             rwBox.appendChild(rwFx)
           }
           const rwStats = [['power_bonus','PWR'],['control_bonus','CTR'],['guard_bonus','GRD'],['speed_bonus','SPD'],['insight_bonus','INS'],['luck_bonus','LCK'],['atk_bonus','ATK'],['def_bonus','DEF']]
@@ -511,7 +511,7 @@ export async function mountInventory(__mountOptions = {}) {
           if (rwStats) {
             const rwSt = document.createElement('div')
             rwSt.textContent = rwStats
-            Object.assign(rwSt.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#ffffff'})
+            Object.assign(rwSt.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#2b1d16'})
             rwBox.appendChild(rwSt)
           }
           sockWrap.appendChild(rwBox)
@@ -523,14 +523,14 @@ export async function mountInventory(__mountOptions = {}) {
         if ((item.sockets_used||0) < (item.sockets_total||0)) {
           const addBtn = document.createElement('button')
           addBtn.textContent = '✦ Add Rune'
-          Object.assign(addBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#c090ff', background:'rgba(160,125,224,.15)', border:'.5px solid rgba(160,125,224,.45)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
+          Object.assign(addBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#5a2090', background:'rgba(160,125,224,.15)', border:'.5px solid rgba(160,125,224,.45)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
           addBtn.addEventListener('click', () => openRunePicker(item.id, item.item_type))
           sockBtnRow.appendChild(addBtn)
         }
         if ((item.sockets_used||0) > 0) {
           const remBtn = document.createElement('button')
           remBtn.textContent = 'Remove Runes'
-          Object.assign(remBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#ffffff', background:'rgba(200,168,74,.08)', border:'.5px solid rgba(200,168,74,.25)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
+          Object.assign(remBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#2b1d16', background:'rgba(200,168,74,.08)', border:'.5px solid rgba(200,168,74,.25)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
           remBtn.addEventListener('click', () => removeRunes(item.id))
           sockBtnRow.appendChild(remBtn)
         }
@@ -631,22 +631,22 @@ export async function mountInventory(__mountOptions = {}) {
 
       const subEl = document.createElement('div')
       subEl.textContent = `${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}`
-      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'5px'})
+      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#2b1d16', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'5px'})
       nameBlock.appendChild(subEl)
 
       // Stat pills
       const statRow = document.createElement('div')
       statRow.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px'
       const statDefs = [
-        [item.atk_bonus,    'ATK', '#e05555'],
-        [item.def_bonus,    'DEF', '#5ec45e'],
+        [item.atk_bonus,    'ATK', '#8a2020'],
+        [item.def_bonus,    'DEF', '#1a6020'],
         [item.power_bonus,  'PWR', '#ff6622'],
-        [item.guard_bonus,  'GRD', '#5eaee0'],
-        [item.speed_bonus,  'SPD', '#a8d8ea'],
+        [item.guard_bonus,  'GRD', '#1a4a8a'],
+        [item.speed_bonus,  'SPD', '#2a6890'],
         [item.control_bonus,'CTR', '#0099ff'],
-        [item.insight_bonus,'INS', '#ffd700'],
+        [item.insight_bonus,'INS', '#8a6020'],
         [item.luck_bonus,   'LCK', '#c090ff'],
-        [item.hp_restore,   '+HP', '#5eaee0'],
+        [item.hp_restore,   '+HP', '#1a4a8a'],
       ]
       statDefs.forEach(([val, label, col]) => {
         if (!val || val <= 0) return
@@ -663,7 +663,7 @@ export async function mountInventory(__mountOptions = {}) {
       closeBtn.textContent = '✕'
       Object.assign(closeBtn.style, {
         background:'rgba(255,255,255,.06)', border:'1px solid rgba(200,168,74,.2)',
-        color:'#e8dfc8', fontSize:'.85rem', cursor:'pointer', padding:'4px 8px',
+        color:'#2b1d16', fontSize:'.85rem', cursor:'pointer', padding:'4px 8px',
         lineHeight:'1', flexShrink:'0', borderRadius:'3px',
         fontFamily:"'JetBrains Mono',monospace"
       })
@@ -678,7 +678,7 @@ export async function mountInventory(__mountOptions = {}) {
 
         const sockLabel = document.createElement('div')
         sockLabel.textContent = `SOCKETS ${used}/${sockets}`
-        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.1em', marginBottom:'7px'})
+        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#2b1d16', letterSpacing:'.1em', marginBottom:'7px'})
         sockWrap.appendChild(sockLabel)
 
         const sockRow = document.createElement('div')
@@ -697,7 +697,7 @@ export async function mountInventory(__mountOptions = {}) {
           } else {
             const empty = document.createElement('div')
             empty.textContent = '○'
-            Object.assign(empty.style, {color:'#ffffff', fontSize:'.8rem'})
+            Object.assign(empty.style, {color:'#2b1d16', fontSize:'.8rem'})
             dot.appendChild(empty)
           }
           sockRow.appendChild(dot)
@@ -711,13 +711,13 @@ export async function mountInventory(__mountOptions = {}) {
 
           const rwName = document.createElement('div')
           rwName.textContent = '✦ ' + item.runeword_name
-          Object.assign(rwName.style, {fontFamily:"'Cinzel',serif", fontSize:'.72rem', color:'#c090ff', marginBottom:'2px'})
+          Object.assign(rwName.style, {fontFamily:"'Cinzel',serif", fontSize:'.72rem', color:'#5a2090', marginBottom:'2px'})
           rwBox.appendChild(rwName)
 
           if (item.runeword_effect) {
             const rwFx = document.createElement('div')
             rwFx.textContent = item.runeword_effect
-            Object.assign(rwFx.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.66rem', color:'#e8dfc8', marginBottom:'3px'})
+            Object.assign(rwFx.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.66rem', color:'#2b1d16', marginBottom:'3px'})
             rwBox.appendChild(rwFx)
           }
 
@@ -726,7 +726,7 @@ export async function mountInventory(__mountOptions = {}) {
           if (rwStats) {
             const rwStatEl = document.createElement('div')
             rwStatEl.textContent = rwStats
-            Object.assign(rwStatEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff'})
+            Object.assign(rwStatEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#2b1d16'})
             rwBox.appendChild(rwStatEl)
           }
           sockWrap.appendChild(rwBox)
@@ -785,7 +785,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const pickerEl = document.createElement('div')
       pickerEl.id = 'modal-rune-picker'
-      Object.assign(pickerEl.style, {marginTop:'8px', padding:'8px', background:'rgba(0,0,0,.25)', borderRadius:'4px', border:'.5px solid rgba(160,125,224,.3)'})
+      Object.assign(pickerEl.style, {marginTop:'8px', padding:'8px', background:'rgba(43,29,22,.04)', borderRadius:'4px', border:'.5px solid rgba(160,125,224,.3)'})
 
       const { data: runeItems } = await supabase.from('inventory')
         .select('*').eq('player_id', player.id).like('item_key','rune_%').gt('quantity',0)
@@ -797,12 +797,12 @@ export async function mountInventory(__mountOptions = {}) {
       if (!runeItems || !runeItems.length) {
         const msg = document.createElement('div')
         msg.textContent = 'No runes in inventory.'
-        Object.assign(msg.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.8rem', color:'#e8dfc8'})
+        Object.assign(msg.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.8rem', color:'#2b1d16'})
         pickerEl.appendChild(msg)
       } else {
         const label = document.createElement('div')
         label.textContent = 'SELECT RUNE'
-        Object.assign(label.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.1em', marginBottom:'7px'})
+        Object.assign(label.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#2b1d16', letterSpacing:'.1em', marginBottom:'7px'})
         pickerEl.appendChild(label)
 
         const grid = document.createElement('div')
@@ -830,7 +830,7 @@ export async function mountInventory(__mountOptions = {}) {
 
           const qtyEl = document.createElement('div')
           qtyEl.textContent = '×' + r.quantity
-          Object.assign(qtyEl.style, {color:'#ffffff', fontSize:'.5rem'})
+          Object.assign(qtyEl.style, {color:'#2b1d16', fontSize:'.5rem'})
 
           btn.appendChild(ri)
           btn.appendChild(nameEl)
