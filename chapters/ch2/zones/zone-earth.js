@@ -194,7 +194,7 @@ A rune sits in the rubble, warm to the touch.`,
 One of them sees you on the level above. Doesn't shout. Just raises a hand. Steady. Patient. Bleeding from the temple.`,
     choices: [
       { label: 'Drop down and engage', sub: 'Builders support — easier combat', next: 'zone_earth_builders_combat' },
-      { label: 'Wait it out. Take the gear after', sub: 'Moral -10', next: 'zone_earth_builders_loot', moral: -10 },
+      { label: 'Wait it out. Take the gear after', sub: 'Moral -5', next: 'zone_earth_builders_loot', moral: -5 },
       { label: 'Move on — not your fight', sub: 'The System notes this', next: 'zone_earth_explore_1', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -211,7 +211,7 @@ One of them sees you on the level above. Doesn't shout. Just raises a hand. Stea
 
 Your comm chirps. "I see you. Keep going."`,
     rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'rare_component', qty: 1 }],
-    choices: [{ label: 'Continue', next: 'zone_earth_explore_2', moral: 10, allianceTagRepeatable: 'builders_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_earth_explore_2', moral: 5, allianceTagRepeatable: 'builders_helped' }],
   },
   zone_earth_builders_loot: {
     id: 'zone_earth_builders_loot', type: 'story',
