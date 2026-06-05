@@ -395,7 +395,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const subEl = document.createElement('div')
       subEl.textContent = `${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}`
-      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#d4b878', letterSpacing:'.06em', textTransform:'uppercase'})
+      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.06em', textTransform:'uppercase'})
       nameBlock.appendChild(subEl)
       header.appendChild(nameBlock)
 
@@ -439,7 +439,7 @@ export async function mountInventory(__mountOptions = {}) {
       if (!anyStats) {
         const util = document.createElement('div')
         util.textContent = 'Utility item'
-        Object.assign(util.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:'#c8a878'})
+        Object.assign(util.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.6rem', color:'#ffffff'})
         statRow.appendChild(util)
       }
       wrap.appendChild(statRow)
@@ -453,7 +453,7 @@ export async function mountInventory(__mountOptions = {}) {
         Object.assign(fxLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.48rem', color:'#5eaee0', letterSpacing:'.08em', marginBottom:'2px'})
         const fxText = document.createElement('div')
         fxText.textContent = item.special_effect
-        Object.assign(fxText.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.68rem', color:'#f5e8c8', lineHeight:'1.4'})
+        Object.assign(fxText.style, {fontFamily:"'IM Fell English',serif", fontStyle:'italic', fontSize:'.68rem', color:'#ffffff', lineHeight:'1.4'})
         fxBox.appendChild(fxLabel)
         fxBox.appendChild(fxText)
         wrap.appendChild(fxBox)
@@ -511,7 +511,7 @@ export async function mountInventory(__mountOptions = {}) {
           if (rwStats) {
             const rwSt = document.createElement('div')
             rwSt.textContent = rwStats
-            Object.assign(rwSt.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#dec890'})
+            Object.assign(rwSt.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.52rem', color:'#ffffff'})
             rwBox.appendChild(rwSt)
           }
           sockWrap.appendChild(rwBox)
@@ -530,7 +530,7 @@ export async function mountInventory(__mountOptions = {}) {
         if ((item.sockets_used||0) > 0) {
           const remBtn = document.createElement('button')
           remBtn.textContent = 'Remove Runes'
-          Object.assign(remBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#dec890', background:'rgba(200,168,74,.08)', border:'.5px solid rgba(200,168,74,.25)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
+          Object.assign(remBtn.style, {fontFamily:"'Cinzel',serif", fontSize:'.68rem', color:'#ffffff', background:'rgba(200,168,74,.08)', border:'.5px solid rgba(200,168,74,.25)', borderRadius:'3px', padding:'3px 10px', cursor:'pointer'})
           remBtn.addEventListener('click', () => removeRunes(item.id))
           sockBtnRow.appendChild(remBtn)
         }
@@ -631,7 +631,7 @@ export async function mountInventory(__mountOptions = {}) {
 
       const subEl = document.createElement('div')
       subEl.textContent = `${item.rarity} · ${item.subtype||item.item_type}${item.two_handed?' · 2H':''}`
-      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#d4b878', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'5px'})
+      Object.assign(subEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.08em', textTransform:'uppercase', marginBottom:'5px'})
       nameBlock.appendChild(subEl)
 
       // Stat pills
@@ -678,7 +678,7 @@ export async function mountInventory(__mountOptions = {}) {
 
         const sockLabel = document.createElement('div')
         sockLabel.textContent = `SOCKETS ${used}/${sockets}`
-        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#d4b878', letterSpacing:'.1em', marginBottom:'7px'})
+        Object.assign(sockLabel.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.1em', marginBottom:'7px'})
         sockWrap.appendChild(sockLabel)
 
         const sockRow = document.createElement('div')
@@ -697,7 +697,7 @@ export async function mountInventory(__mountOptions = {}) {
           } else {
             const empty = document.createElement('div')
             empty.textContent = '○'
-            Object.assign(empty.style, {color:'#a89070', fontSize:'.8rem'})
+            Object.assign(empty.style, {color:'#ffffff', fontSize:'.8rem'})
             dot.appendChild(empty)
           }
           sockRow.appendChild(dot)
@@ -726,7 +726,7 @@ export async function mountInventory(__mountOptions = {}) {
           if (rwStats) {
             const rwStatEl = document.createElement('div')
             rwStatEl.textContent = rwStats
-            Object.assign(rwStatEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#dec890'})
+            Object.assign(rwStatEl.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff'})
             rwBox.appendChild(rwStatEl)
           }
           sockWrap.appendChild(rwBox)
@@ -802,7 +802,7 @@ export async function mountInventory(__mountOptions = {}) {
       } else {
         const label = document.createElement('div')
         label.textContent = 'SELECT RUNE'
-        Object.assign(label.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#d4b878', letterSpacing:'.1em', marginBottom:'7px'})
+        Object.assign(label.style, {fontFamily:"'JetBrains Mono',monospace", fontSize:'.5rem', color:'#ffffff', letterSpacing:'.1em', marginBottom:'7px'})
         pickerEl.appendChild(label)
 
         const grid = document.createElement('div')
@@ -830,7 +830,7 @@ export async function mountInventory(__mountOptions = {}) {
 
           const qtyEl = document.createElement('div')
           qtyEl.textContent = '×' + r.quantity
-          Object.assign(qtyEl.style, {color:'#c8a878', fontSize:'.5rem'})
+          Object.assign(qtyEl.style, {color:'#ffffff', fontSize:'.5rem'})
 
           btn.appendChild(ri)
           btn.appendChild(nameEl)
