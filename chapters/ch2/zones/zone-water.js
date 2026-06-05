@@ -12,8 +12,8 @@ Midway through: a wedged door, waterlogged, swollen shut. Someone is behind it �
 AQUA SKILL TREE — UNLOCKED.`,
     xp: 120,
     choices: [
-      { label: 'Force the door. Get them out.', sub: 'Costs HP — Moral +15.', next: 'zone_water_rescue', moral: 15 },
-      { label: 'Take the pack and leave the door.', sub: 'Full resources. Moral -10.', next: 'zone_water_take', moral: -10 },
+      { label: 'Force the door. Get them out.', sub: 'Costs HP — Moral +8.', next: 'zone_water_rescue', moral: 8 },
+      { label: 'Take the pack and leave the door.', sub: 'Full resources. Moral -5.', next: 'zone_water_take', moral: -5 },
       { label: 'Leave both. Move forward.', next: 'zone_water_unlock' },
     ],
   },
@@ -210,7 +210,7 @@ A rune rises to the surface near where she stood.`,
 The Wraiths are closing.`,
     choices: [
       { label: 'Wade in and fight beside them', sub: 'Builders support — easier combat', next: 'zone_water_builders_combat' },
-      { label: 'Hang back. Wait. Take their gear after', sub: 'Moral -10', next: 'zone_water_builders_loot', moral: -10 },
+      { label: 'Hang back. Wait. Take their gear after', sub: 'Moral -5', next: 'zone_water_builders_loot', moral: -5 },
       { label: 'Retreat — too risky', sub: 'The System notes this', next: 'zone_water_explore_1', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -227,7 +227,7 @@ The Wraiths are closing.`,
 
 Your comm chirps once. Sera's voice, brief: "I see you."`,
     rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
-    choices: [{ label: 'Continue', next: 'zone_water_explore_2', moral: 10, allianceTagRepeatable: 'builders_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_water_explore_2', moral: 5, allianceTagRepeatable: 'builders_helped' }],
   },
   zone_water_builders_loot: {
     id: 'zone_water_builders_loot', type: 'story',
