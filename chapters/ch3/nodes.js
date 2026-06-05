@@ -41,7 +41,7 @@ The System has never broadcast before. It receives.`,
     ],
     choices: [
       { label: 'Descend further — track the signal', sub: 'Signal +5', next: 'ch3_platform', signal: 5 },
-      { label: 'Stop. Listen. Record the pattern first.', sub: 'XP +30 · Moral +5', next: 'ch3_record_pattern', moral: 5, xp: 30 },
+      { label: 'Stop. Listen. Record the pattern first.', sub: 'XP +30 · Moral +3', next: 'ch3_record_pattern', moral: 3, xp: 30 },
     ],
     // Very-early cache — appears at any signal_strength (5+) which the
     // player hits the moment they descend. Encourages exploration on
@@ -178,7 +178,7 @@ The corridor continues. Below the floor grating, you hear running water. A long 
     ],
     choices: [
       { label: 'Take the tools you can use, keep moving', sub: 'XP +30', next: 'ch3_subplatform', xp: 30 },
-      { label: 'Read the rest of the logbook', sub: 'XP +50 · Moral +3', next: 'ch3_corridor_read', xp: 50, moral: 3 },
+      { label: 'Read the rest of the logbook', sub: 'XP +50 · Moral +2', next: 'ch3_corridor_read', xp: 50, moral: 2 },
       // Echo trap — a voice "from the deep tunnel" the logbook warned about.
       // Mirrors the day-42 voice from the journal; an attentive player will
       // distrust it.
@@ -298,7 +298,7 @@ The signal is no longer pulsing. It's holding.`,
     ],
     choices: [
       { label: 'Engage the departure sequence', sub: 'Watch the pattern, then repeat', next: 'ch3_train_sequence' },
-      { label: 'Try to force the doors back open', sub: 'Moral -5 · uncertain outcome', next: 'ch3_train_force', moral: -5 },
+      { label: 'Try to force the doors back open', sub: 'Moral -3 · uncertain outcome', next: 'ch3_train_force', moral: -3 },
     ],
   },
 
@@ -316,7 +316,7 @@ The signal is no longer pulsing. It's holding.`,
     onWin:  'ch3_train_depart',
     onLose: 'ch3_train_lockout',
     winChoice:  { signal: 15, xp: 60 },
-    loseChoice: { signal: -10, moral: -5 },
+    loseChoice: { signal: -10, moral: -3 },
   },
 
   ch3_train_depart: {
