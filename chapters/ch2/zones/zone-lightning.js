@@ -14,8 +14,8 @@ They mean it. They're not lying.
 VOLT SKILL TREE — UNLOCKED.`,
     xp: 120,
     choices: [
-      { label: 'Wait. Let them finish. Split it.', sub: 'Moral +10.', next: 'zone_lightning_wait', moral: 10 },
-      { label: 'Channel through the junction yourself now.', sub: 'Faster — releases a pulse hurting district players.', next: 'zone_lightning_pulse', moral: -10 },
+      { label: 'Wait. Let them finish. Split it.', sub: 'Moral +5.', next: 'zone_lightning_wait', moral: 5 },
+      { label: 'Channel through the junction yourself now.', sub: 'Faster — releases a pulse hurting district players.', next: 'zone_lightning_pulse', moral: -5 },
       { label: 'Discharge it safely through yourself.', sub: 'Costs 20% max HP — they get nothing.', next: 'zone_lightning_unlock' },
     ],
   },
