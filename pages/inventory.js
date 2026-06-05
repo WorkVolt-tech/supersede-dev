@@ -370,7 +370,7 @@ export async function mountInventory(__mountOptions = {}) {
       const RUNE_ICONS  = {ignis:'🔥',aqua:'💧',terra:'🪨',aero:'💨',umbra:'🌑',lux:'✨',venin:'☠️',ferro:'⚙️',flora:'🌿',volt:'⚡'}
 
       const wrap = document.createElement('div')
-      Object.assign(wrap.style, {border:'.5px solid rgba(200,168,74,.2)', borderRadius:'4px', padding:'.75rem', marginTop:'.5rem', background:'rgba(18,15,12,.94)'})
+      Object.assign(wrap.style, {border:'.5px solid rgba(200,168,74,.2)', borderRadius:'4px', padding:'.75rem', marginTop:'.5rem', background:'rgba(0,0,0,.25)'})
 
       // ── Header: image + name + close ──
       const header = document.createElement('div')
