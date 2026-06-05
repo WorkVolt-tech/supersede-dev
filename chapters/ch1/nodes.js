@@ -120,7 +120,7 @@ The young player doesn't look up. Their interface has gone dark. They don't see 
 You do.`,
     sysMsg: '⚠ THE WATCHER SEES ALL — Observation event triggered.',
     choices: [
-      { id: 'enc_team',    label: 'Sit with them a moment',  sub: 'Listen — gain Awareness XP',        next: 'search_team',    outcome: 'team',   moral: +15 },
+      { id: 'enc_team',    label: 'Sit with them a moment',  sub: 'Listen — gain Awareness XP',        next: 'search_team',    outcome: 'team',   moral: 8 },
       { id: 'enc_attack',  label: 'Take their supplies',     sub: 'Easy loot. Reputation shifts red.',  next: 'search_attack',  outcome: 'attack', variant: 'danger' },
       { id: 'enc_observe', label: 'Say nothing and move on', sub: 'Keep your distance — observe',       next: 'search_observe', outcome: 'observe', insightRequired: 2 },
     ],
@@ -222,7 +222,7 @@ The runner looks up and sees you watching. Not asking for help exactly. Just ack
 You have about ten seconds before it escalates.`,
     xp: 25,
     choices: [
-      { label: 'Step in — draw their attention', sub: 'Help the runner escape', next: 'street_rescue', variant: 'danger', moral: +15 },
+      { label: 'Step in — draw their attention', sub: 'Help the runner escape', next: 'street_rescue', variant: 'danger', moral: 8 },
       { label: 'Stay hidden and watch',           sub: 'See what happens',      next: 'street_watch2', insightRequired: 3 },
     ],
   },
@@ -426,7 +426,7 @@ They turn. Badge: NEUTRAL. Expression: amused. Name: Kai.
 They share a location pin. A supply stash and a spawn point where System entities are clustered together. Easy XP if you move now.`,
     xp: 35,
     choices: [
-      { label: 'Hit the spawn point with Kai', sub: 'Team hunt — bonus XP',         next: 'fight_with_kai', moral: +8 },
+      { label: 'Hit the spawn point with Kai', sub: 'Team hunt — bonus XP',         next: 'fight_with_kai', moral: 4 },
       { label: 'Go to the plaza now',          sub: 'Skip the extra grind',          next: 'street_midpoint' },
     ],
   },
@@ -624,9 +624,9 @@ She looks at you with the expression of someone who has been waiting a long time
 You have about ninety seconds to decide.`,
     sysMsg: '⚠ Boss entity countdown initiated. 90 seconds.',
     choices: [
-      { label: 'Fight together',                     sub: 'A green ally — shared damage',    next: 'pre_boss_team',   moral: +10 },
+      { label: 'Fight together',                     sub: 'A green ally — shared damage',    next: 'pre_boss_team',   moral: 5 },
       { label: 'Tell her to run — you handle it',   sub: 'Face it alone. Your choice.',     next: 'pre_boss_solo' },
-      { label: 'Use her as bait and set an ambush', sub: 'Cold. Effective. Dangerous.',     next: 'pre_boss_betray', variant: 'danger', moral: -25 },
+      { label: 'Use her as bait and set an ambush', sub: 'Cold. Effective. Dangerous.',     next: 'pre_boss_betray', variant: 'danger', moral: -13 },
     ],
   },
 
@@ -1066,8 +1066,8 @@ He holds up his arm. The badge flickers. NEUTRAL. UNKNOWN. NEUTRAL.
 He pauses. "I can come with you. Or I can stay here. Either way, it's going to notice you soon."`,
     sysMsg: '⚠ Unknown badge detected — player status unclassified.',
     choices: [
-      { label: 'Take Marcus with you', sub: 'He knows the layout. Risky — his badge is unstable.', next: 'garage_b2_together', moral: +12 },
-      { label: 'Leave him here — move alone', sub: 'Safer. Faster. Less complicated.', next: 'garage_b2_alone', moral: -5 },
+      { label: 'Take Marcus with you', sub: 'He knows the layout. Risky — his badge is unstable.', next: 'garage_b2_together', moral: 6 },
+      { label: 'Leave him here — move alone', sub: 'Safer. Faster. Less complicated.', next: 'garage_b2_alone', moral: -3 },
     ],
   },
 
@@ -1161,8 +1161,8 @@ They hold up a hand. Open. Empty.
 "I'm not looking for a fight. I'm looking for someone strong enough to get past what's waiting at the top. And I think that might be you."`,
     sysMsg: '⚠ RED player detected — HIGH THREAT rating. Proceed with caution.',
     choices: [
-      { label: 'Hear Dorian out', sub: 'He might know something useful. He might be lying.', next: 'garage_b3_dorian_talk', moral: +5 },
-      { label: 'Attack before he can', sub: 'RED badge. Extensive history. Trust nothing.', next: 'garage_b3_dorian_fight', variant: 'danger', moral: -10 },
+      { label: 'Hear Dorian out', sub: 'He might know something useful. He might be lying.', next: 'garage_b3_dorian_talk', moral: 3 },
+      { label: 'Attack before he can', sub: 'RED badge. Extensive history. Trust nothing.', next: 'garage_b3_dorian_fight', variant: 'danger', moral: -5 },
       { label: 'Walk past him — say nothing', sub: 'Keep moving. Don\'t engage.', next: 'garage_b3_dorian_ignore' },
     ],
   },
@@ -1188,7 +1188,7 @@ His badge pulses. RED. Something in his history the System won't let you unsee.
 
 There's a long silence.`,
     choices: [
-      { label: 'Take the deal — work together to level four', sub: 'Uneasy alliance. He knows the layout.', next: 'garage_b3_alliance', moral: +8 },
+      { label: 'Take the deal — work together to level four', sub: 'Uneasy alliance. He knows the layout.', next: 'garage_b3_alliance', moral: 4 },
       { label: 'Refuse — you don\'t trust RED badges', sub: 'Go it alone from here.', next: 'garage_b3_dorian_ignore' },
     ],
   },
@@ -1338,7 +1338,7 @@ Dorian is stepping back toward the ramp.`,
     sysMsg: '⚠ VOID SENTINEL — ADAPTIVE AI. Attack pattern changes every round.',
     choices: [
       { label: 'Fight the Void Sentinel — deal with Dorian after', sub: 'Focus on the threat in front of you', next: 'garage_b4_sentinel_fight', variant: 'danger' },
-      { label: 'Turn on Dorian before the fight starts', sub: 'He was never going to hold the deal', next: 'garage_b4_dorian_turn', variant: 'danger', moral: -8 },
+      { label: 'Turn on Dorian before the fight starts', sub: 'He was never going to hold the deal', next: 'garage_b4_dorian_turn', variant: 'danger', moral: -4 },
     ],
   },
 
@@ -1452,8 +1452,8 @@ You have a choice.`,
     xp: 50,
     rewards: [{ itemKey:'medkit',qty:1 }],
     choices: [
-      { label: 'Attack him — finish this now', sub: 'He hit first. Fair game.', next: 'garage_b4_dorian_final_fight', variant: 'danger', moral: -5 },
-      { label: 'Let it go — tell him to leave', sub: 'You have bigger things ahead.', next: 'garage_b4_dorian_let_go', moral: +8 },
+      { label: 'Attack him — finish this now', sub: 'He hit first. Fair game.', next: 'garage_b4_dorian_final_fight', variant: 'danger', moral: -3 },
+      { label: 'Let it go — tell him to leave', sub: 'You have bigger things ahead.', next: 'garage_b4_dorian_let_go', moral: 4 },
     ],
   },
 
@@ -1766,8 +1766,8 @@ Something shifts in your interface. The SYSTEM NOTE field — usually blank — 
 BEHAVIOR LOGGED.`,
     sysMsg: '⚠ SYSTEM NOTE: Complex moral event recorded. Watcher awareness elevated.',
     choices: [
-      { label: 'Tell Lena she should have prevented it', next: 'market_b2_confront', moral: +10 },
-      { label: 'Ask Lena to help you get through the market', next: 'market_b2_ally', moral: +5 },
+      { label: 'Tell Lena she should have prevented it', next: 'market_b2_confront', moral: 5 },
+      { label: 'Ask Lena to help you get through the market', next: 'market_b2_ally', moral: 3 },
       { label: 'Say nothing and move on', next: 'market_b2_push', insightRequired: 3 },
     ],
   },
@@ -1943,9 +1943,9 @@ Like a measuring instrument. Counting.
 CLICK. CLICK. CLICK.`,
     sysMsg: '⚠ BOUNDARY DETECTED — System entities refuse to enter. Unknown classification ahead.',
     choices: [
-      { label: 'Cross the boundary with Lena', sub: 'She came this far. Let her finish it.', next: 'market_b4_crossing', moral: +12 },
+      { label: 'Cross the boundary with Lena', sub: 'She came this far. Let her finish it.', next: 'market_b4_crossing', moral: 6 },
       { label: 'Tell Lena to guard the boundary', sub: 'Keep the creatures from flooding back in.', next: 'market_b4_solo_cross' },
-      { label: 'Ask Gio to come instead', sub: 'Unexpected choice. His badge is still NEUTRAL.', next: 'market_b4_gio_cross', moral: +15 },
+      { label: 'Ask Gio to come instead', sub: 'Unexpected choice. His badge is still NEUTRAL.', next: 'market_b4_gio_cross', moral: 8 },
     ],
   },
 
@@ -2259,8 +2259,8 @@ They look at you specifically.
 "Including you. Since floor one."`,
     choices: [
       { label: 'Ask Rhen what they\'ve learned', next: 'tower_b2_rhen_info' },
-      { label: 'Ask Rhen to come with you', next: 'tower_b2_rhen_invite', moral: +10 },
-      { label: 'You don\'t trust a DARK badge — leave', next: 'tower_b2_rhen_leave', moral: -5 },
+      { label: 'Ask Rhen to come with you', next: 'tower_b2_rhen_invite', moral: 5 },
+      { label: 'You don\'t trust a DARK badge — leave', next: 'tower_b2_rhen_leave', moral: -3 },
     ],
   },
 
@@ -2307,7 +2307,7 @@ They look at you.
 "That's why you're interesting."`,
     xp: 40,
     choices: [
-      { label: 'Ask Rhen to come with you', next: 'tower_b2_rhen_invite', moral: +10 },
+      { label: 'Ask Rhen to come with you', next: 'tower_b2_rhen_invite', moral: 5 },
       { label: 'Thank them and continue ascending', next: 'tower_b3_midfloors' },
     ],
   },
@@ -2412,8 +2412,8 @@ The corridor ahead shows a single heat signature. Moving. Slow.
 
 The Unseen is walking toward you.`,
     choices: [
-      { label: 'Tell it you\'ll fight it like what it is — unknown', sub: 'Acknowledge its nature. See what it does.', next: 'tower_b4_respect', moral: +15 },
-      { label: 'Tell it the distinction doesn\'t matter — you\'ll fight it like anything else', next: 'tower_b4_direct', moral: -5 },
+      { label: 'Tell it you\'ll fight it like what it is — unknown', sub: 'Acknowledge its nature. See what it does.', next: 'tower_b4_respect', moral: 8 },
+      { label: 'Tell it the distinction doesn\'t matter — you\'ll fight it like anything else', next: 'tower_b4_direct', moral: -3 },
     ],
   },
 
