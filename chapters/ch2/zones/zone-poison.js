@@ -142,7 +142,7 @@ Two Plague Crawlers block the stockroom entrance — crustacean-shaped venom ele
 A Spore Husk lurches in the corner of the office — drawn by the chemical leak. It's slow. It's also between her and the bag.`,
     choices: [
       { label: 'Kill the Husk, cut the vine, get her the dose', sub: 'Combat with the Husk', next: 'zone_poison_chemist_combat' },
-      { label: 'Wait. She has compound on her either way.', sub: 'Moral -10', next: 'zone_poison_chemist_loot', moral: -10 },
+      { label: 'Wait. She has compound on her either way.', sub: 'Moral -5', next: 'zone_poison_chemist_loot', moral: -5 },
       { label: 'Back out — too risky', sub: 'The System notes this', next: 'zone_poison_enemy_2', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -159,7 +159,7 @@ A Spore Husk lurches in the corner of the office — drawn by the chemical leak.
 
 "Take this. I won't make it back to the workshop, but you might use it." She hands you a vial of venom compound. "It's stabilized. Won't degrade for a week."`,
     rewards: [{ itemKey: 'venom_compound', qty: 1 }, { itemKey: 'rune_venin', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
-    choices: [{ label: 'Continue', next: 'zone_poison_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_poison_midpoint', moral: 5, allianceTagRepeatable: 'civilian_helped' }],
   },
   zone_poison_chemist_loot: {
     id: 'zone_poison_chemist_loot', type: 'story',
