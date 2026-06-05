@@ -217,7 +217,7 @@ A rune sits at the base of the sapling, wrapped in a single small vine.`,
 She doesn't ask. She just looks at you, then at the Stalkers, then back at you.`,
     choices: [
       { label: 'Move in and fight beside them', sub: 'Builders support — easier combat', next: 'zone_plant_builders_combat' },
-      { label: 'Stay back. Take their gear when it\'s over', sub: 'Moral -10', next: 'zone_plant_builders_loot', moral: -10 },
+      { label: 'Stay back. Take their gear when it\'s over', sub: 'Moral -5', next: 'zone_plant_builders_loot', moral: -5 },
       { label: 'Back out quietly', sub: 'The System notes this', next: 'zone_plant_explore_1', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -234,7 +234,7 @@ She doesn't ask. She just looks at you, then at the Stalkers, then back at you.`
 
 Your comm chirps: Sera. "Logged. Thank you."`,
     rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
-    choices: [{ label: 'Continue', next: 'zone_plant_explore_2', moral: 10, allianceTagRepeatable: 'builders_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_plant_explore_2', moral: 5, allianceTagRepeatable: 'builders_helped' }],
   },
   zone_plant_builders_loot: {
     id: 'zone_plant_builders_loot', type: 'story',
