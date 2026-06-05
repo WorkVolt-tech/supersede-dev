@@ -14,7 +14,7 @@ A collapsed player nearby — Hunter faction colors, unconscious. Not a threat r
 ARCANE SKILL TREE — UNLOCKED.`,
     xp: 120,
     choices: [
-      { label: 'Assist them. Use your items.', sub: 'Costs a med pack — Moral +10.', next: 'zone_arcane_assist', moral: 10 },
+      { label: 'Assist them. Use your items.', sub: 'Costs a med pack — Moral +5.', next: 'zone_arcane_assist', moral: 5 },
       { label: 'Leave them and unlock the tree.', next: 'zone_arcane_unlock' },
     ],
   },
@@ -81,7 +81,7 @@ Your interface tags a small arcane formation in the corner — stable, low-level
 The notes include a warning at the bottom: "The Archivist sees everything you take."`,
     xp: 60,
     choices: [
-      { label: 'Take the notes and harvest the formation', sub: 'Moral -5 — the Archivist will know', next: 'zone_arcane_take', moral: -5 },
+      { label: 'Take the notes and harvest the formation', sub: 'Moral -3 — the Archivist will know', next: 'zone_arcane_take', moral: -3 },
       { label: 'Take only the notes', next: 'zone_arcane_notes' },
       { label: 'Leave both — the warning feels real', next: 'zone_arcane_corridor' },
     ],
@@ -133,7 +133,7 @@ A Glyph Sentinel paces the next aisle. It hasn't found him yet. It will.
 He sees you. Doesn't beg. Just says, quietly: "Lift from the left side. The pin is mostly the books."`,
     choices: [
       { label: 'Lift the beam, get him out, fight the Sentinel when it comes', sub: 'Sentinel ambush — easier with momentum', next: 'zone_arcane_scholar_combat' },
-      { label: 'Wait for the Sentinel to find him. Take what he has after.', sub: 'Moral -10', next: 'zone_arcane_scholar_loot', moral: -10 },
+      { label: 'Wait for the Sentinel to find him. Take what he has after.', sub: 'Moral -5', next: 'zone_arcane_scholar_loot', moral: -5 },
       { label: 'Back out quietly', sub: 'The System notes this', next: 'zone_arcane_enemy_2', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -150,7 +150,7 @@ He sees you. Doesn't beg. Just says, quietly: "Lift from the left side. The pin 
 
 He limps toward the front of the shop on his own.`,
     rewards: [{ itemKey: 'rune_lux', qty: 1 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
-    choices: [{ label: 'Continue', next: 'zone_arcane_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_arcane_midpoint', moral: 5, allianceTagRepeatable: 'civilian_helped' }],
   },
   zone_arcane_scholar_loot: {
     id: 'zone_arcane_scholar_loot', type: 'story',
