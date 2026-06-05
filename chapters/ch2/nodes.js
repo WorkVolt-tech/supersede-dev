@@ -114,8 +114,8 @@ Three different kinds of stares land on you at the same moment.
 
 Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
     choices: [
-      { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +10',   next: 'meet_builders',  moral: 10 },
-      { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -5',        next: 'meet_hunters',   moral: -5 },
+      { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +5',   next: 'meet_builders',  moral: 5 },
+      { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -3',        next: 'meet_hunters',   moral: -3 },
       { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
       { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
     ],
@@ -138,8 +138,8 @@ The Builder speaks first. "You came from the road. That means you were in Chapte
 Not a question.`,
     choices: [
       { label: '"I finished Chapter 1."',          sub: 'Straightforward — neutral response', next: 'faction_talk_honest' },
-      { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -5 },
-      { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 10 },
+      { label: '"I survived it."',                 sub: 'Evasive — Hunters will like it',     next: 'faction_talk_evasive', moral: -3 },
+      { label: '"I helped people along the way."', sub: 'Signal alignment — Builders respond', next: 'faction_talk_helper', moral: 5 },
     ],
   },
 
@@ -201,7 +201,7 @@ Sera speaks at a normal pace, like she has unlimited time: "We have four active 
 
 She means it. No negotiation in her voice. Just information, offered without leverage.`,
     choices: [
-      { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 10 },
+      { label: 'Agree to work with the Builders', next: 'builders_alliance', moral: 5 },
       { label: 'Ask about the elemental zones',    next: 'ghosts_deep' },
       { label: 'Explore the district first',       next: 'district_hub' },
     ],
@@ -227,7 +227,7 @@ She goes back to her tablet.
 She doesn't say anything else. She lets you think.`,
     xp: 50,
     choices: [
-      { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +15',  next: 'builders_alliance', moral: 15 },
+      { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +8',  next: 'builders_alliance', moral: 8 },
       { label: "Ask what you'd get out of it",  sub: 'Practical question',              next: 'builders_negotiation' },
       { label: 'Keep your options open',        sub: 'Non-committal',                   next: 'district_hub' },
     ],
@@ -247,7 +247,7 @@ She picks the tablet back up.
 
 "I'm not trying to scare you into it. I'm telling you what I know. You can decide what that's worth."`,
     choices: [
-      { label: 'Sign the alliance',  sub: 'moral +15', next: 'builders_alliance', moral: 15 },
+      { label: 'Sign the alliance',  sub: 'moral +8', next: 'builders_alliance', moral: 8 },
       { label: 'Decline, stay free', sub: 'Keep all options',  next: 'district_hub' },
     ],
   },
@@ -484,9 +484,9 @@ They stop walking.
 
 They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
     choices: [
-      { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -5 },
-      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +10', next: 'cache_refused', moral: 10 },
-      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +20',    next: 'cache_reported', moral: 20 },
+      { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -3 },
+      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +5', next: 'cache_refused', moral: 5 },
+      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +10',    next: 'cache_reported', moral: 10 },
     ],
   },
 
@@ -506,8 +506,8 @@ Your interface: MORAL DECISION POINT. This action will be recorded.
 
 Two paths forward from here — take, or stand.`,
     choices: [
-      { label: 'Take nothing — stand with the Builders', sub: 'moral +15, full alliance maintained', next: 'cache_stood', moral: 15 },
-      { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -40. Recorded permanently.', next: 'cache_betrayed', moral: -40 },
+      { label: 'Take nothing — stand with the Builders', sub: 'moral +8, full alliance maintained', next: 'cache_stood', moral: 8 },
+      { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -20. Recorded permanently.', next: 'cache_betrayed', moral: -20 },
     ],
   },
 
@@ -598,7 +598,7 @@ Then Voss nods — small, real — and leaves without a word.
 
 Sera's team completes the opening cleanly. Your share is full, plus a bonus Sera calls "trustworthy conduct." Tam high-fives you. You let them.
 
-Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Mercy weight +8. Moral +20. Permanent flag: "Can be trusted under pressure."`,
+Interface: TRUST EVENT RECORDED. Alliance: Builders — Reinforced. Mercy weight +8. Moral +10. Permanent flag: "Can be trusted under pressure."`,
     xp: 150,
     rewards: [{ itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_metal', qty: 5 }],
     choices: [
@@ -779,4 +779,3 @@ The fight begins.`,
 // ═══════════════════════════════════════════════════════════
 // ENGINE — mirrors chapter1 exactly
 // ═══════════════════════════════════════════════════════════
-
