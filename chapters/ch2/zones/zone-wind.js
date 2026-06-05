@@ -134,7 +134,7 @@ A Zephyr Wraith — a sharp, narrow wind elemental — is gliding the updraft to
 She sees you below. Yells over the wind: "Top of the stairs. The pulley. If you can hold it I can climb."`,
     choices: [
       { label: 'Take the stairs, kill the Wraith, hold the pulley', sub: 'Wraith combat — wind hits hard', next: 'zone_wind_salvager_combat' },
-      { label: 'Wait. The rope cuts itself eventually.', sub: 'Moral -10', next: 'zone_wind_salvager_loot', moral: -10 },
+      { label: 'Wait. The rope cuts itself eventually.', sub: 'Moral -5', next: 'zone_wind_salvager_loot', moral: -5 },
       { label: 'Back out — the climb is too exposed', sub: 'The System notes this', next: 'zone_wind_enemy_2', allianceTagRepeatable: 'cowardice' },
     ],
   },
@@ -153,7 +153,7 @@ On the balcony she unhooks the toolkit and hands you a section of it without cer
 
 She heads back down the stairs at a measured pace.`,
     rewards: [{ itemKey: 'rune_aero', qty: 1 }, { itemKey: 'district_map', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
-    choices: [{ label: 'Continue', next: 'zone_wind_midpoint', moral: 10, allianceTagRepeatable: 'civilian_helped' }],
+    choices: [{ label: 'Continue', next: 'zone_wind_midpoint', moral: 5, allianceTagRepeatable: 'civilian_helped' }],
   },
   zone_wind_salvager_loot: {
     id: 'zone_wind_salvager_loot', type: 'story',
