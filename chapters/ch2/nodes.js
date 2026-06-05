@@ -1,6 +1,20 @@
-export const NODES = {
+// chapters/ch2/nodes.js — Chapter 2 node graph (canonical source).
+// All narrative nodes live here. Zones are spread in from ./zones/*.js.
+// Moved out of index.js so narrative data has a single home.
 
-  // Zone nodes — each element is a separate file in ./zones/
+import ZONE_FIRE      from './zones/zone-fire.js'
+import ZONE_WATER     from './zones/zone-water.js'
+import ZONE_LIGHTNING from './zones/zone-lightning.js'
+import ZONE_ARCANE    from './zones/zone-arcane.js'
+import ZONE_SHADOW    from './zones/zone-shadow.js'
+import ZONE_EARTH     from './zones/zone-earth.js'
+import ZONE_WIND      from './zones/zone-wind.js'
+import ZONE_PLANT     from './zones/zone-plant.js'
+import ZONE_METAL     from './zones/zone-metal.js'
+import ZONE_POISON    from './zones/zone-poison.js'
+import ZONE_FARMING   from './zones/zone-farming.js'
+
+export const NODES = {
   ...ZONE_FIRE,
   ...ZONE_WATER,
   ...ZONE_LIGHTNING,
@@ -10,7 +24,8 @@ export const NODES = {
   ...ZONE_WIND,
   ...ZONE_PLANT,
   ...ZONE_METAL,
-  ...ZONE_POISON,  // ═══════════════════════════════
+  ...ZONE_POISON,
+  ...ZONE_FARMING,  // ═══════════════════════════════
   // OPENING — ARRIVAL
   // ═══════════════════════════════
   opening: {
@@ -88,8 +103,8 @@ Your interface marks all three positions. Your radar has been accurate so far.
 The question is where to go first.`,
     xp: 40,
     choices: [
-      { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders_first' },
-      { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts_first' },
+      { label: 'Approach the salvage crew',        sub: 'The Builders — they look organized', next: 'meet_builders' },
+      { label: 'Talk to the solo watcher',          sub: 'The Ghosts — quiet, hard to read',  next: 'meet_ghosts' },
       { label: 'Go to the intact shop',             sub: 'NPC trader — neutral ground',        next: 'trader_intro' },
       { label: 'Head to the main plaza',            sub: 'See what else is active',            next: 'plaza_arrival' },
     ],
@@ -118,6 +133,66 @@ Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
       { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -3',        next: 'meet_hunters',   moral: -3 },
       { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
       { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
+    ],
+  },
+
+  // ── Faction approach scenes ──────────────────────────────────────────
+  // Originally the four plaza choices linked here, but only plaza_center
+  // had ever been written. The other three now exist as short approach
+  // scenes that funnel into the same downstream alliance nodes the wait
+  // path uses (builders_alliance, hunters_voss_goal, ghosts_deep).
+  meet_builders: {
+    id: 'meet_builders', type: 'story',
+    text: `You walk toward the Builders directly. The reaction is immediate — the tall woman with the grey-streaked hair sets down whatever she was working on and gives you her full attention. The others don't stop what they're doing, but you can feel that they're listening.
+
+"You came over." She doesn't smile, but there's something approving in the way she says it. "Most people circle the plaza first. I respect that you didn't."
+
+She extends a hand. "Sera. I lead the Builders here. Salvage, stabilization, anything that needs hands and a plan. We've been waiting for someone from your chapter to come through. The Hunters have been waiting too, but for different reasons."
+
+Behind her, a kid with a carefully bandaged hand gives you a small nod. Not performative. Just acknowledgment.`,
+    choices: [
+      { label: '"What do you need?"',            sub: 'Ask what the work looks like', next: 'builders_deep' },
+      { label: '"Tell me about the alliance."',  sub: 'Cut to the offer',             next: 'builders_deep' },
+      { label: 'Hear out the Hunters first',     sub: 'Walk over to Voss',            next: 'meet_hunters' },
+    ],
+  },
+
+  meet_hunters: {
+    id: 'meet_hunters', type: 'story',
+    text: `You walk toward the Hunters. The smile under the cracked visor tilts up a degree. You can feel Sera's eyes on your back from across the plaza, but she doesn't call out. The Hunters didn't expect you, exactly — but they were ready for you.
+
+"Interesting." The Hunter with the visor pulls it up. The face underneath is younger than you expected, and very tired. "Voss. I run what the Builders call 'the destabilizing element' and what we call 'the people who get things done.'"
+
+Voss doesn't extend a hand. They tilt their head instead.
+
+"Three faction caches in this district. System-locked. We have the location on one of them. We're missing the people. You look like someone who's been keeping their options open — that's a compliment, where I come from."
+
+Behind them, the other Hunters watch you without pretending not to.`,
+    choices: [
+      { label: '"What\'s in it for me?"',         sub: 'Direct — Voss likes direct',     next: 'hunters_voss_goal' },
+      { label: '"Tell me about the cache."',      sub: 'Get to the offer',               next: 'hunters_voss_goal' },
+      { label: 'Hear out the Builders first',    sub: 'Walk over to Sera',              next: 'meet_builders' },
+    ],
+  },
+
+  meet_ghosts: {
+    id: 'meet_ghosts', type: 'story',
+    text: `You sit down on the planter beside the Ghosts. None of the three of them react immediately. After a moment, the one closest to you — faded jacket, soft posture — shifts so their shoulder isn't blocking the plaza.
+
+"Good spot," they say, like they're commenting on the weather. "Both factions can see you. Neither can pretend they don't see you. That's the only neutral move left in this district."
+
+They look at you sideways.
+
+"We're Rue. Some of us. I think most of us. The Ghosts aren't really a group — we're just people who decided the choice between Builder and Hunter isn't a choice we want to make. The district has nine elemental zones the System sealed when the alliances started fracturing. You don't need either faction to enter them — but they open differently depending on who you're walking with."
+
+Rue gestures toward the plaza without looking at it.
+
+"You can still pick a side. We're not going to stop you. We just want you to know that 'neither' is on the table."`,
+    choices: [
+      { label: '"Tell me more about the zones."', sub: 'Ask about the System',          next: 'ghosts_deep' },
+      { label: 'Stand up and approach Sera',     sub: 'Choose the Builders',           next: 'meet_builders' },
+      { label: 'Stand up and approach Voss',     sub: 'Choose the Hunters',            next: 'meet_hunters' },
+      { label: 'Stay where you are',              sub: 'Continue with Rue',             next: 'ghosts_deep' },
     ],
   },
 
@@ -241,7 +316,7 @@ She doesn't say anything else. She lets you think.`,
 
 You raise an eyebrow.
 
-"The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two evaluators — one looks at what you built, one looks at what you took. At the end of this chapter, everyone faces one of them, or both. I don't know exactly how it works. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
+"The Twin Judges — you haven't heard yet?" She sets the tablet down. "The System placed them here when the alliances fractured. Two Judges — Mercy, who looks at what you built, and Wrath, who looks at what you took. At the end of this chapter, everyone faces one of them, or both, or some combination that the System decides based on your record. I don't know exactly how the forms work. I know that the people who worked with us in Chapter 1 — I mean, people who helped others — they faced the less dangerous version."
 
 She picks the tablet back up.
 
@@ -279,9 +354,11 @@ Your interface updates: ALLIANCE LOG — Builders: Active. Cooperation credit re
 
 "I'll be straight with you," they say. Which is probably what they say to everyone, you think. But they continue: "The Builders are going to open that third cache. Eleven players, moral scores high, organized — they'll do it. The question is what happens in the four minutes after it opens before they've distributed everything."
 
-Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Mercy evaluates what you built and with whom. Judge Wrath evaluates what you took and how."
+Voss pulls up their interface. "The System is watching cooperation and betrayal in this district. Both. It's not punishing either one — it's measuring. The Judges at the end aren't punishment. They're evaluation. Judge Mercy — Judge of Salvation — evaluates what you built and with whom. Judge Wrath — Judge of Ruin — evaluates what you took and how."
 
-They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once." They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
+They look at you. "Most players will face one of them. The ones who split their choices — both cooperation and betrayal in the record — they face both at once. And from what I've gathered, when you push either record far enough, the Judge that matches you doesn't show up as themselves anymore. They show up as something more refined. Absolution. Ruin. There's a name for every form. I don't know all of them."
+
+They pause. "I've heard it's the hardest fight. I've also heard the rewards are different. The System gives you what matches what you are, not what you want."
 
 They lean against a broken shelf. "I'm not recruiting you to betray the Builders. I'm telling you the System doesn't care which path you pick. It just wants you to pick deliberately."`,
     xp: 50,
@@ -377,6 +454,643 @@ The district is yours to move through. When you've finished what you came here f
   },
 
   // ═══════════════════════════════
+  // NPC CHECK-INS (#1 / #2 / #3)
+  // Triggered by interrupt in _goToCore when player heads to district_hub.
+  // Each fires once; the marker (sera_met / voss_met / rue_met) is set
+  // when the player exits the node via any choice, so the encounter cannot
+  // re-fire if reloaded mid-conversation.
+  // ═══════════════════════════════
+  sera_checkin: {
+    id: 'sera_checkin', type: 'story',
+    text: `Sera intercepts you near the east edge of the plaza. Same composed posture, same precise way of moving — but she's covered in concrete dust and there's blood drying on one cuff.
+
+"You helped one of our teams. I owed you a conversation." She doesn't smile but her voice softens by a measured degree. "I'm short on field hands. The medical station two blocks over needs a resupply — two medical packs, anything you can spare. The team running it is good, but they're cut off until we can clear the lower corridor."
+
+She watches you, patient.
+
+"Take this as the favor it is. Not an obligation. The Builders don't trade in obligations."`,
+    choices: [
+      { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +5 · Builder credit', next: 'sera_gave', moral: 5, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
+      { label: '"I don\'t have any to spare."', sub: 'Honest — no penalty', next: 'sera_declined', allianceTag: 'sera_met' },
+      { label: 'Walk past her without speaking', sub: 'Moral -3 · the System notes the silence', next: 'sera_ignored', moral: -3, allianceTag: 'sera_met' },
+    ],
+  },
+  sera_gave: {
+    id: 'sera_gave', type: 'story',
+    text: `Sera takes the packs without ceremony. "Logged. Tam will know." She looks at you a beat longer than she needs to. "Some of us are keeping count of who shows up. I wanted you to know that's a thing."
+
+She turns back toward the corridor. Just before she rounds the corner: "Stay alive."`,
+    // Mechanically: 1 rare_component as a small thank-you. The "Builder's
+    // Mark" concept (#20 Judge scaling hook) is tracked via alliance_log
+    // flags, not a literal inventory item.
+    cost: [{ itemKey: 'medical_pack', qty: 2 }],
+    rewards: [{ itemKey: 'rare_component', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
+  },
+  sera_declined: {
+    id: 'sera_declined', type: 'story',
+    text: `Sera nods once — the nod of someone whose first instinct was to be insulted and whose second instinct caught the first. "Understood. Stay alive out there." She turns and goes.
+
+You hear her start running before she's even out of sight.`,
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+  sera_ignored: {
+    id: 'sera_ignored', type: 'story',
+    text: `You keep walking. Sera watches you pass. She doesn't follow. She doesn't say anything.
+
+Behind you, after a long pause, her boots scuff and head the other direction.`,
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+
+  voss_offer: {
+    id: 'voss_offer', type: 'story',
+    text: `Voss is leaning on a derelict ATM near the north corridor when you come back. They don't pretend to be doing anything else.
+
+"You're making good time. I noticed." They tilt their head. "There's a Builder runner due through the underpass in maybe ten minutes. Carrying salvage. Decent salvage — Sera's people inventory carefully. If they don't make it back, the salvage is yours and nobody on Sera's side knows for certain what happened."
+
+A small pause. Voss doesn't smile.
+
+"I'm not asking you to pull a trigger. I'm telling you there's an option. Information has value. You don't even have to act on it."`,
+    choices: [
+      { label: '"Tell me where." (intercept the runner)', sub: 'Moral -8 · gear loot · Voss credit', next: 'voss_intercept', moral: -8, allianceTag: 'voss_met' },
+      { label: '"Tell me where." (warn the runner)', sub: 'Moral +5 · Builder credit', next: 'voss_warned', moral: 5, allianceTag: 'voss_met' },
+      { label: '"Not interested."', sub: 'No change', next: 'voss_declined', allianceTag: 'voss_met' },
+    ],
+  },
+  voss_intercept: {
+    id: 'voss_intercept', type: 'story',
+    text: `You take Voss's directions. The underpass is dim, narrow, perfect for the work. The runner doesn't see you coming.
+
+It's the kid. The one with the bandaged hand, from the alliance scene. They look up at the last second. Their hand goes for a tool, not a weapon. They're not even sure how to do this part.
+
+You take what you came for. You don't look at the face for long.
+
+Voss is gone when you get back to the corridor. There's a single rune left on the wall where they were leaning. Bonus. Acknowledgment.`,
+    rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'rune_umbra', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'voss_aligned' }],
+  },
+  voss_warned: {
+    id: 'voss_warned', type: 'story',
+    text: `You take Voss's directions — and use them the other way. You catch the runner before the underpass, point out where the ambush would be, watch the kid's eyes get very wide.
+
+They press a small foil packet into your hand without breaking eye contact. "Sera will know." They take the long way back.
+
+When you return to the corridor, Voss is still leaning on the ATM. They've watched the whole thing on a salvaged security feed. They don't look angry. They look curious.
+
+"Interesting choice." That's all they say.`,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }],
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'builders_helped' }],
+  },
+  voss_declined: {
+    id: 'voss_declined', type: 'story',
+    text: `Voss watches you go without comment. They're still leaning on the ATM when you glance back over your shoulder.
+
+A few minutes later you hear the runner pass through the underpass uneventfully. Voss never moved.
+
+Information has value. Sometimes the value is knowing it was offered, and noting who offered.`,
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+
+  rue_intel: {
+    id: 'rue_intel', type: 'story',
+    text: `Rue is sitting cross-legged on a planter near the fountain, marking up their physical map with a pen that's about to die. They look up when you approach.
+
+"You've cleared two. The pattern's showing." They tap the map. "Hunter scouts have been moving on the zones you haven't hit yet. Voss is testing them. Testing you too, probably."
+
+They turn the map toward you.
+
+"Two of the remaining zones have a Hunter pair set up at the entry. I can tell you which ones. Walk in knowing where they are and you can avoid them clean, or hit them from an angle they're not expecting. Or — your choice — ignore this entirely."
+
+Rue waits. They have all the time in the world.`,
+    choices: [
+      { label: '"Tell me." (Hunter positions marked on your map)', sub: 'Future zones — clean approach available', next: 'rue_shared', allianceTag: 'rue_met' },
+      { label: '"I\'ll figure it out myself."', sub: 'No change', next: 'rue_declined', allianceTag: 'rue_met' },
+    ],
+  },
+  rue_shared: {
+    id: 'rue_shared', type: 'story',
+    text: `Rue marks two of the remaining zones with a small dot. "Hunters in the entry rooms. You'll see them before they see you if you remember." They roll the map up.
+
+"For what it's worth — they don't all take Voss's offers. Some of them just need the salvage. Up to you what you do when you meet them."
+
+They go back to their pen.`,
+    rewards: [{ itemKey: 'district_map', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'rue_aligned' }],
+  },
+  rue_declined: {
+    id: 'rue_declined', type: 'story',
+    text: `Rue shrugs — a small, neutral motion. "Suit yourself. I'm not going anywhere." They go back to the map.
+
+You leave them to it.`,
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+
+  // ═══════════════════════════════
+  // SPARE / EXECUTE REACTIONS
+  // ═══════════════════════════════
+  // After the player spares or executes a humanoid for the first time, the
+  // next time they hit the plaza hub a faction NPC acknowledges it. Each
+  // reaction sets a *_reaction_seen flag in alliance_log so it fires once.
+  // Sera reacts to spare (Builder-aligned approval, pragmatic).
+  // Voss reacts to execute (Hunter-aligned approval, interested).
+  // Rue reacts to either (neutral observer, weighs the choice).
+  // The interrupts only fire if the player has already met that NPC, so
+  // these land as follow-ups rather than introductions.
+
+  spare_reaction_sera: {
+    id: 'spare_reaction_sera', type: 'story',
+    text: `Sera catches you on the way past the salvage crew. Same dust-streaked sleeves, same controlled posture — but there's something different in her face today. Almost a softening, almost.
+
+"I heard about the scout." She doesn't elaborate on which scout, or which zone. Word travels in the district apparently, and faster than you'd think. "You had them. You didn't take the kill."
+
+She studies you for a moment.
+
+"That used to be the standard out here. Mercy. Before the System sealed the zones and everyone got hungrier." A pause. "I'm not going to thank you for doing the bare minimum. But I'll say — fewer of the Hunters out there think we're worth talking to because of choices like yours. So I'll count it."
+
+She makes a small mark in the notebook she carries everywhere.
+
+"Tam asked after you again, by the way. They keep asking. I keep telling them you're still alive."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'spare_reaction_seen' }],
+  },
+
+  execute_reaction_voss: {
+    id: 'execute_reaction_voss', type: 'story',
+    text: `Voss is in the plaza when you get there. Not waiting for you — they're never waiting for you, that would be too obvious — but they're close enough that this is happening on purpose.
+
+"You finished one of mine." Voss says it the way someone might note the weather. Cracked visor up, tired face. "Specifically — the scout near the third bend. We found them. Or what was left."
+
+They tilt their head, considering you.
+
+"I'm not angry. The scouts know the risks. What I am, is interested." Voss steps closer. "Most people who come through here freeze when it's a person. They hesitate. They negotiate. They convince themselves the situation isn't what it is. You didn't do that."
+
+A small, dry smile.
+
+"That's the part I wanted to acknowledge. Whatever else happens in this district — you and I are speaking the same dialect now."
+
+Voss steps back.
+
+"My door is open. Just so you know what's in it."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'execute_reaction_seen' }],
+  },
+
+  rue_action_reaction: {
+    id: 'rue_action_reaction', type: 'story',
+    text: `Rue is in their usual spot — the planter near the fountain, map across their knees. They don't look up when you approach, but they speak before you sit down.
+
+"You had a moment in one of the zones. The kind where the System pauses for a half-second before logging it." They smooth a wrinkle in the paper. "I felt it from here."
+
+Now they look at you. Not judging, not approving — just looking.
+
+"I'm not going to tell you which way you should have decided. I'm not the Judges. But I'll say this — the System keeps a different file on the people who hesitate from the people who don't. You're in one of those files now."
+
+They go back to the map.
+
+"I have no idea which one. That's the honest part."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'rue_action_reaction_seen' }],
+  },
+
+  // ═══════════════════════════════
+  // TAM — recurring Builder kid arc (#4)
+  // ═══════════════════════════════
+  // Tam is the bandaged-handed kid from the cache scene. After meeting
+  // the player there, they reappear twice in the mid-chapter: once
+  // wounded (mid-1), once at a crossroads being pressured by a Hunter
+  // runner (mid-2). Player choices in these scenes feed into how the
+  // finales feel — knowing Tam's history shifts the weight of seeing
+  // them in the line at the end (hero finale) or as the combat enemy
+  // (villain finale).
+
+  tam_wounded: {
+    id: 'tam_wounded', type: 'story',
+    text: `You're on your way to the next zone when you spot the bandaged hand. Tam is crouched next to a Builder runner you don't recognize — older, maybe early twenties — pressing a cloth against a leg wound that's bleeding through.
+
+Tam looks up when they see you. The kid's face does something complicated.
+
+"You're back." A pause. Then: "I— sorry. I keep doing that. I keep saying things like you've been gone. You haven't. You've just been in the zones."
+
+They go back to working on the bandage. Their hands are steady. The other runner is breathing through clenched teeth.
+
+"I'm running out of clean cloth," Tam says without looking up. "And we're not far from the medical station but I— this isn't the kind of bleeding you can walk through."
+
+They finally look at you again.
+
+"Could you stay? Or — I don't know. Whatever you can do."`,
+    choices: [
+      { label: 'Help bandage the leg',     sub: 'Stay — moral +3, Builder credit',                              next: 'tam_wounded_help',    moral: 3, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
+      { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical_pack — moral +4, deeper Builder credit',       next: 'tam_wounded_medpack', moral: 4, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
+      { label: '"I have to keep moving."', sub: 'Walk on — moral -2, Tam notes the choice',                     next: 'tam_wounded_left',    moral: -2, allianceTag: 'tam_walked_past' },
+    ],
+  },
+
+  tam_wounded_help: {
+    id: 'tam_wounded_help', type: 'story',
+    text: `You kneel down and take the bandage from Tam. The runner's leg is worse up close — a deep cut, edges already starting to inflame. You hold pressure while Tam tears strips from their own jacket.
+
+Neither of you talk for a while. The breathing of the wounded runner slows. After maybe ten minutes, the bleeding eases.
+
+Tam exhales for what feels like the first time.
+
+"Their name is Dov," Tam says. "They have a daughter in the medical station. She's going to be — okay. Because of you."
+
+The kid stands up. Their hand brushes yours, very brief, very deliberate. It's the kind of touch a kid gives someone they want to remember.
+
+"I'll get them moving. Thank you. Really."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+  },
+
+  tam_wounded_medpack: {
+    id: 'tam_wounded_medpack', type: 'story',
+    text: `You pull a medical pack from your kit and hand it over. Tam takes it carefully, the way you'd take something fragile.
+
+"You— okay. Okay. This is— this is way more than I was asking for."
+
+Tam tears the pack open. The proper bandage goes on cleanly. The wounded runner — Dov, you'll learn the name later — visibly relaxes.
+
+Tam looks up at you, holding the empty wrapper.
+
+"You didn't have to do that. You really, really didn't have to do that." They tuck the wrapper into a pocket like it means something. "I'm going to remember this. I know I say that a lot. I keep saying it. But I mean it every time."
+
+They go back to securing the bandage. The wound looks like it'll hold.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+  },
+
+  tam_wounded_left: {
+    id: 'tam_wounded_left', type: 'story',
+    text: `"Okay," Tam says quietly. Just that.
+
+You walk past. The kid doesn't watch you go — they go back to the bandage. The wounded runner — Dov, you'd have learned the name — makes a small sound that might be a thank-you to Tam.
+
+You keep moving toward the zone.
+
+You're not sure if what you just felt was guilt or hunger or the System logging something. Maybe all three.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid1_seen' }],
+  },
+
+  // ── Mid-2: Tam at a crossroads ─────────────────────────────────────
+  tam_at_crossroads: {
+    id: 'tam_at_crossroads', type: 'story',
+    text: `You hear the conversation before you see it — Tam's voice, lower than usual, and another voice you don't recognize. You round the corner and find them in a back alley near the plaza edge.
+
+Tam is talking to a Voss runner. Older, mid-twenties, scar across the jaw. The runner isn't being aggressive — they're being patient, which is somehow worse. Tam looks up when they see you and their face does several things at once.
+
+The Voss runner notices you too and turns, hands raised slightly.
+
+"Not what it looks like." The runner has a dry voice. "I'm just — having a conversation with our young friend here about options. The Builders are folding. Everyone in this district knows it. I'm telling them what happens to the kids when a faction folds."
+
+Tam looks at the ground. Then at you.
+
+"They've been talking to me for a week. About switching. About what Voss can — what Voss can offer me." The kid's voice is steady but quiet. "I haven't said yes. I haven't said no, either."
+
+The Voss runner watches you, waiting.`,
+    choices: [
+      { label: '"Walk away from them, Tam."',         sub: 'Tell Tam to stay loyal — Builder credit',                       next: 'tam_xroads_loyal',   moral: 3,  allianceTag: 'tam_stayed_builder', allianceTagRepeatable: 'builders_helped' },
+      { label: '"Tam, you decide. I won\'t."',         sub: 'Respect the kid\'s agency — no faction shift',                  next: 'tam_xroads_neutral', allianceTag: 'tam_chose_own' },
+      { label: '"The Voss runner has a point."',      sub: 'Push Tam toward Voss — Hunter credit + Tam uncertain',          next: 'tam_xroads_voss',    moral: -3, allianceTag: 'tam_uncertain' },
+      { label: 'Confront the Voss runner',            sub: 'Combat — they\'re a humanoid',                                    next: 'tam_xroads_fight',   allianceTag: 'tam_defended' },
+    ],
+  },
+
+  tam_xroads_loyal: {
+    id: 'tam_xroads_loyal', type: 'story',
+    text: `"Walk away from them, Tam." You don't take your eyes off the Voss runner when you say it.
+
+The runner sighs — a small, patient sigh — and tilts their head toward Tam. "Up to you, kid."
+
+Tam looks between you for maybe three seconds. Then, very deliberately, walks over and stands next to you. Not close enough to touch, but on your side of the alley.
+
+The Voss runner shrugs.
+
+"Fair." They turn and walk away. Slow, unhurried. Not defeated — just done.
+
+Tam exhales when the runner is out of earshot.
+
+"I was going to say no. I think. I'm — pretty sure I was going to say no. But I'm glad you came. It's easier with someone behind you."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  tam_xroads_neutral: {
+    id: 'tam_xroads_neutral', type: 'story',
+    text: `"Tam, you decide. I won't make this one for you."
+
+The kid looks at you for a long moment. Surprise — and something else, harder to read. Maybe respect. Maybe loneliness.
+
+Tam turns to the Voss runner.
+
+"I need more time."
+
+The runner nods. "That's fair. I'm here when you've thought about it."
+
+They leave. Tam stays where they are. After a while, they look at you again.
+
+"Most people would have told me what to do. The kind ones especially." A pause. "I don't know if what you did was kind. But it felt different from kindness. It felt like — being a person."
+
+They give you a small, complicated nod and walk back toward the plaza on their own.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  tam_xroads_voss: {
+    id: 'tam_xroads_voss', type: 'story',
+    text: `"The runner has a point. The Builders are losing, Tam. You should think about it seriously."
+
+Tam's face goes very still. The Voss runner is watching you now, not Tam, with a small, dry interest. Like noticing something they didn't expect.
+
+"Yeah," Tam says. Just that. The kid's voice has gone flat.
+
+The Voss runner looks at Tam. "We'll talk later, then."
+
+They nod to you — a brief, professional nod, the kind one professional gives another — and leave.
+
+Tam stays. They don't look at you for a long time.
+
+Eventually they say: "I thought you were my friend."
+
+And then they walk off, alone, toward nowhere in particular.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  tam_xroads_fight: {
+    id: 'tam_xroads_fight', type: 'combat',
+    text: `"Step away from the kid." You move between Tam and the Voss runner.
+
+The runner sighs. "I was being polite. I really was."
+
+They draw a blade.`,
+    enemy: { name: 'Voss Recruiter', icon: '🗡', hp: 130, atk: 18, def: 8, spd: 22, xp: 110, humanoid: true,
+      loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }] },
+    onWin: 'tam_xroads_fight_win', onLose: 'tam_xroads_fight_lose', onEscape: 'tam_xroads_fight_lose',
+  },
+
+  tam_xroads_fight_win: {
+    id: 'tam_xroads_fight_win', type: 'story',
+    text: `The Voss recruiter goes down. You stand over them. Tam is behind you, very quiet.
+
+The recruiter is alive but out of the fight. The blade is gone, the leg won't hold. They look up at you — that same dry, professional look — and wait.`,
+    choices: [
+      { label: 'Spare them',   sub: 'Moral +3',                next: 'tam_xroads_fight_spare',   moral: 3,  allianceTag: 'spared_humanoid' },
+      { label: 'Finish them',  sub: 'Moral -3, executed flag', next: 'tam_xroads_fight_execute', moral: -3, allianceTag: 'executed_humanoid' },
+    ],
+  },
+
+  tam_xroads_fight_spare: {
+    id: 'tam_xroads_fight_spare', type: 'story',
+    text: `You step back. The recruiter watches you for a beat, then nods — the slightest nod, recognition between people who could have killed each other and didn't.
+
+They drag themselves up against the wall and stay there.
+
+Tam is staring at you.
+
+"You— you didn't have to fight them at all. But you did. For me."
+
+The kid looks at the recruiter, then back at you.
+
+"Thank you. I'm — I won't forget this."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  tam_xroads_fight_execute: {
+    id: 'tam_xroads_fight_execute', type: 'story',
+    text: `You don't pause. The recruiter doesn't make a sound.
+
+Tam does. A small, sharp inhale. Not a scream — a child realizing what they just watched.
+
+You wipe the blade. When you look up, Tam is still there but they have stepped back several paces. Their hand is pressed against the wall like they need it to hold them up.
+
+"Okay." Tam's voice is very even. "Okay. I— I'm going to go now. I'm going to — yeah."
+
+They walk away. They don't look back.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  tam_xroads_fight_lose: {
+    id: 'tam_xroads_fight_lose', type: 'story',
+    text: `The Voss recruiter steps over you, calmly. They tap Tam on the shoulder, conversational.
+
+"We'll talk later, kid."
+
+Then they walk away. Tam crouches next to you, panicked, until you can stand.
+
+"I'm sorry," Tam whispers. "I'm so sorry."`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTag: 'tam_mid2_seen' }],
+  },
+
+  // ═══════════════════════════════
+  // THE SWEEP (#11) — forced plaza encounter
+  // Fires from the hub interrupt when tension >= 35 and !sweep_fired.
+  // Player has cleared at least 3 zones by definition (cache must have
+  // resolved first, which sets cache_seen). The Sweep is a single major
+  // alignment choice — defend, join, or escape — and never re-fires.
+  // ═══════════════════════════════
+  sweep_arrival: {
+    id: 'sweep_arrival', type: 'story',
+    text: `You're cutting through the central plaza when you hear it — voices raised, then the wet crack of a fist on a face, then shouting. Builders and Hunters have squared up by the fountain. Eight, maybe ten people total. Sera is in front of her crew, hand up, trying to make the moment hold. Voss is across from her, hands open and empty, smiling the way someone smiles before they tell you something is your fault.
+
+The plaza has been waiting for this. The district has too.
+
+A Hunter on Voss's left pulls a knife — slowly, openly, the way you pull a knife when you want to be sure it gets counted.
+
+Tam — the kid with the bandaged hand — steps from behind Sera. They're holding a length of rebar. Their face is white.
+
+The fight is going to happen in about ten seconds. The only question is who you stand next to when it does.`,
+    sysMsg: 'THE SWEEP — district alignment is forcing a clash. Choose carefully.',
+    choices: [
+      { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +8', next: 'sweep_defend_combat', moral: 8, allianceTag: 'sweep_builders' },
+      { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -8', next: 'sweep_join_combat', moral: -8, allianceTag: 'sweep_hunters' },
+      { label: 'Leave the plaza',         sub: 'Let them sort it out · cowardice noted', next: 'sweep_escape', allianceTag: 'sweep_walked' },
+    ],
+  },
+  sweep_defend_combat: {
+    id: 'sweep_defend_combat', type: 'combat',
+    text: `You move to Sera's flank. She doesn't look at you — but her stance shifts, recalibrating around the new line. Tam slides in behind you. The Hunter on Voss's left lunges first.`,
+    enemy: {
+      name: 'Hunter Strike Team', icon: '⚔️',
+      hp: 180, atk: 24, def: 10, xp: 240,
+      // Deliberately NOT humanoid: this is a faction set-piece, not a
+      // post-combat mercy beat. The moral choice happens in sweep_arrival.
+      loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_blade', qty: 1 }],
+    },
+    onWin: 'sweep_defend_win', onLose: 'district_hub',
+  },
+  sweep_defend_win: {
+    id: 'sweep_defend_win', type: 'story',
+    text: `The Hunters break. Two of them are down. The rest drag the wounded away — including Voss, who walks out under their own power, blood on their cheek and that same small smile fixed in place.
+
+Sera lowers her hands slowly. The plaza is loud with breathing.
+
+"You picked a side, then." She doesn't say thank you. She nods once.
+
+Tam is staring at you. They look — not impressed. Steady. Like they're memorizing your face for later. They give a small nod and step back behind Sera.
+
+Your interface registers a quiet update: ALLIANCE LOG — Builders: Sweep defended. The System has logged the moment.`,
+    rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+  sweep_join_combat: {
+    id: 'sweep_join_combat', type: 'combat',
+    text: `You step across the line. Voss's smile widens a fraction — they've been watching this potential the whole chapter. The Builders see you move and Sera's expression goes very still. Tam's hand tightens on the rebar.
+
+Sera moves first. She always was the calmest fighter in the district.`,
+    enemy: {
+      name: 'Builder Strike Team', icon: '🛡️',
+      hp: 200, atk: 22, def: 14, xp: 240,
+      loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_shield', qty: 1 }],
+    },
+    onWin: 'sweep_join_win', onLose: 'district_hub',
+  },
+  sweep_join_win: {
+    id: 'sweep_join_win', type: 'story',
+    text: `Sera goes down first. She fights well — she fights better than you expected — but she fights without joy, and that's the difference.
+
+When it's over, Tam is still standing. They're holding the rebar in both hands now, knuckles white, looking at Sera on the ground.
+
+Voss puts a hand on your shoulder, briefly. "You'll be famous in this district," they say. "For a little while. Then you'll be useful, which is better."
+
+Tam doesn't move. They're staring at Sera. They're not going to forget this. Neither are you.
+
+Your interface registers a quiet update: ALLIANCE LOG — Hunters: Sweep joined. The System has logged the moment.`,
+    rewards: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Continue', next: 'district_hub' }],
+  },
+  sweep_escape: {
+    id: 'sweep_escape', type: 'story',
+    text: `You back out of the plaza before either side notices you arrive. You hear it start behind you — the first shout, then the first crash, then a sound that might be a body hitting tile.
+
+You don't turn around.
+
+You find a side corridor and keep moving. By the time the sounds fade you're three blocks away and you don't know who won.
+
+Later, in the hub, the district feels different. Neither faction is in their usual position. People are missing on both sides. Nobody asks where you were. The way nobody asks is its own kind of answer.
+
+Your interface registers a quiet update: ALLIANCE LOG — Sweep avoided. The System has logged the silence.`,
+    choices: [{ label: 'Continue', next: 'district_hub', allianceTagRepeatable: 'cowardice' }],
+  },
+
+  // ═══════════════════════════════
+  // PURE HERO FINALE (#27)
+  // Intercepts at pre_boss_ch2 entry when:
+  //   moral_score >= 60  AND
+  //   alliance_log includes 'sweep_builders'  AND
+  //   >= 5 zone bosses cleared
+  // Sera offers a last defense of the plaza. Player can accept to lock the
+  // hero finale (defends with Builder allies, then Judges fight where
+  // Mercy is fully present) or decline (proceeds to normal Judges flow).
+  // ═══════════════════════════════
+  hero_finale_offer: {
+    id: 'hero_finale_offer', type: 'story',
+    text: `Sera is waiting for you at the edge of the plaza. The Builders have been quietly working — you can see it now in the way the rubble has been moved, the lines of sight cleared, the choke points planned.
+
+"The Judges are coming." She's not asking. She's stating it. "We've been watching the system messages. We have maybe an hour. Maybe less."
+
+Tam steps up beside her. The bandage on their hand is gone. There's a new scar there instead — a clean line, healed past the worst of it.
+
+"We're going to defend this plaza," Sera says. "Not because we think we'll stop them. Because we want them to see a district that didn't fold." She looks at you steadily. "We'd like you to stand with us. One last fight before the assessment. The Judges will see it. They'll see what kind of place you helped make."
+
+Behind her, the other Builders are taking positions. A dozen of them. Not many. Enough.
+
+"This isn't required. You can walk past us right now and the Judges will still come for you. The fight just won't have us in it."`,
+    sysMsg: 'HERO TRACK UNLOCKED — defend the plaza with the Builders before facing the Judges.',
+    choices: [
+      { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +5', next: 'hero_finale_combat', moral: 5, allianceTag: 'hero_finale_done' },
+      { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+    ],
+  },
+  hero_finale_combat: {
+    id: 'hero_finale_combat', type: 'combat',
+    text: `The Hunter remnants come fast — Voss not among them, but their best operators. Sera's line holds. Tam's holds. You're at the apex of the formation. The first wave breaks against you like a wave on cliff.`,
+    enemy: {
+      name: 'Hunter Remnants', icon: '⚔️',
+      hp: 240, atk: 26, def: 12, xp: 280,
+      loot: [{ itemKey: 'rare_component', qty: 2 }, { itemKey: 'medical_pack', qty: 2 }, { itemKey: 'scrap_shield', qty: 1 }],
+    },
+    onWin: 'hero_finale_done', onLose: 'pre_boss_ch2',
+  },
+  hero_finale_done: {
+    id: 'hero_finale_done', type: 'story',
+    text: `The Hunters break. Not many of them die. They retreat in good order — Voss's training showing in how they pull back.
+
+Sera lets out a breath she's clearly been holding for a long time. She turns to face you. "Thank you." Just that, just two words, said the way she says things she means.
+
+Tam looks at you. There's something in their face you haven't seen there before. Permission, maybe. The kind of permission a kid grants an adult after long observation.
+
+"Mercy will see this," Sera says. "She's the one who designed this kind of mattering."
+
+The plaza is quiet again. The Judges are coming. But this time you won't be standing in it alone.`,
+    rewards: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 3 }],
+    choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+  },
+
+  // ═══════════════════════════════
+  // PURE VILLAIN FINALE (#26)
+  // Intercepts at pre_boss_ch2 entry when:
+  //   moral_score <= -60  AND
+  //   alliance_log includes 'sweep_hunters'  AND
+  //   >= 5 zone bosses cleared
+  // Voss offers a final sweep of the last Builder positions, with Tam
+  // standing in the way. Player can complete the run (Judges fight where
+  // Wrath dominates entirely) or decline (proceeds to normal Judges).
+  // ═══════════════════════════════
+  villain_finale_offer: {
+    id: 'villain_finale_offer', type: 'story',
+    text: `Voss intercepts you in the corridor approaching the plaza. The smile is there but it's tired around the edges. They've been working.
+
+"There's one more position." They don't bother with preamble anymore — you're past that. "The Builders' last holdout. Three of them. The kid is with them. We can clear it before the Judges arrive. The Judges will see a district that committed all the way."
+
+A pause. They're watching your face.
+
+"I'm not asking you to do something I haven't done. But you're better at it than I am now. You've been moving differently the last few zones. Like you stopped needing to think about it."
+
+The corridor is dark. The Judges are coming. Voss isn't going to ask twice.`,
+    sysMsg: 'VILLAIN TRACK UNLOCKED — finish the district before facing the Judges.',
+    choices: [
+      { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -5', next: 'villain_finale_combat', moral: -5, allianceTag: 'villain_finale_done' },
+      { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
+    ],
+  },
+  villain_finale_combat: {
+    id: 'villain_finale_combat', type: 'combat',
+    text: `The Builders' last position is a service corridor. Two of them go down fast — they were tired. The third puts up a real fight before Voss takes them from behind.
+
+Then it's just the kid. Tam. Standing in front of a doorway. Holding the same length of rebar from the plaza. They've been crying. They are not crying now.`,
+    enemy: {
+      name: 'Tam', icon: '⚔️',
+      hp: 130, atk: 24, def: 10, xp: 200,
+      humanoid: true,
+      loot: [{ itemKey: 'rare_component', qty: 1 }, { itemKey: 'medical_pack', qty: 2 }],
+      executeLoot: [{ itemKey: 'judges_seal', qty: 1 }],
+    },
+    onWin: 'villain_finale_done', onLose: 'pre_boss_ch2',
+    onSpare: 'villain_finale_done_spared',
+    onExecute: 'villain_finale_done_executed',
+  },
+  villain_finale_done: {
+    id: 'villain_finale_done', type: 'story',
+    text: `Tam is down. Voss steps past you, checks them, says nothing. The corridor is silent in a way the district has never been.
+
+"It's done." Voss is matter-of-fact. They look at you with something that's not quite respect but isn't far from it. "Wrath will see this. Mercy won't even speak. That's the form you've earned."
+
+The Judges are still coming. But there's nothing left in this district for them to weigh except you.`,
+    choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+  },
+  villain_finale_done_spared: {
+    id: 'villain_finale_done_spared', type: 'story',
+    text: `Tam is on the ground but breathing. You step over them. Voss watches.
+
+"Interesting," Voss says. Just that.
+
+You don't look back. The Judges are coming.`,
+    choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+  },
+  villain_finale_done_executed: {
+    id: 'villain_finale_done_executed', type: 'story',
+    text: `Tam doesn't make a sound. You move past Voss without looking at them. The seal on Tam's vest comes off easily — Sera's mark. You take it.
+
+When you step back into the corridor, Voss is gone. The plaza is empty.
+
+The Judges are already there.`,
+    rewards: [{ itemKey: 'judges_seal', qty: 1 }],
+    choices: [{ label: 'Face the Judges', next: 'pre_boss_ch2' }],
+  },
+
+  // ═══════════════════════════════
   // NPC TRADER
   // ═══════════════════════════════
   trader_intro: {
@@ -393,10 +1107,10 @@ They gesture at the shelves behind them. Not phone parts anymore — material go
 
 A name tag on the counter reads PELL, written in careful block letters.`,
     choices: [
-      { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop' },
-      { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore' },
-      { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges' },
-      { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub' },
+      { label: 'Browse Pell\'s stock',     sub: 'See what\'s available',      next: 'trader_shop',  allianceTag: 'pell_met' },
+      { label: 'Ask Pell about the zones', sub: 'They might know something',  next: 'trader_lore',  allianceTag: 'pell_met' },
+      { label: 'Ask about the Judges',     sub: 'Get a neutral read',         next: 'trader_judges', allianceTag: 'pell_met' },
+      { label: 'Leave the shop',           sub: 'Continue into the district', next: 'district_hub', allianceTag: 'pell_met' },
     ],
   },
 
@@ -484,9 +1198,9 @@ They stop walking.
 
 They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
     choices: [
-      { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -3 },
-      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +5', next: 'cache_refused', moral: 5 },
-      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +10',    next: 'cache_reported', moral: 10 },
+      { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -3, allianceTag: 'cache_seen' },
+      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +5', next: 'cache_refused', moral: 5, allianceTag: 'cache_seen' },
+      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +10',    next: 'cache_reported', moral: 10, allianceTag: 'cache_seen' },
     ],
   },
 
@@ -689,6 +1403,40 @@ She pauses.
   },
 
   // ═══════════════════════════════
+  // PRE-BOSS GATE — routes through camp_reflection on first time
+  // ═══════════════════════════════
+  // The district hub points here instead of pre_boss_ch2 directly. On first
+  // visit, the player is routed through camp_reflection to give the chapter
+  // a quiet before-the-storm moment. Subsequent visits (replay, back-button)
+  // go straight to pre_boss_ch2.
+  pre_boss_gate: {
+    id: 'pre_boss_gate', type: 'story',
+    sysMsg: '',
+    text: '',
+    choices: [], // filled by route() — see below
+    route(p) {
+      return (p.alliance_log || []).includes('camp_seen')
+        ? 'pre_boss_ch2'
+        : 'camp_reflection'
+    },
+  },
+
+  // ═══════════════════════════════
+  // CAMP REFLECTION — the night before the Judges
+  // ═══════════════════════════════
+  // Text is composed at render-time from buildCampReflection(player).
+  // Sets camp_seen on exit so it cannot re-fire if the player backs out
+  // and returns later. Single choice leads to pre_boss_ch2.
+  camp_reflection: {
+    id: 'camp_reflection', type: 'story',
+    sysMsg: 'CHAPTER ASSESSMENT BEGINNING — reflection logged.',
+    text: '', // built dynamically
+    choices: [
+      { label: 'Walk back out into the plaza', sub: 'The Judges are summoning. You are ready.', next: 'pre_boss_ch2', allianceTag: 'camp_seen' },
+    ],
+  },
+
+  // ═══════════════════════════════
   // PRE-BOSS CONVERGENCE
   // ═══════════════════════════════
   pre_boss_ch2: {
@@ -713,8 +1461,8 @@ Two shapes at the far end of the plaza. One moving toward you with the patience 
 
 Your interface shows both:
 
-JUDGE KAELITH — Evaluator of Cooperation
-JUDGE MORREN — Evaluator of Dominance
+JUDGE MERCY — Judge of Salvation
+JUDGE WRATH — Judge of Ruin
 
 Two axes. Two records. Both present.
 
@@ -726,7 +1474,20 @@ Below it, quieter, as if the system didn't mean for you to read it:
 
 "The form this takes depends on what you built. Both of what you built."`,
     choices: [
-      { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'boss_judges' },
+      { label: 'Face the Twin Judges', sub: 'Boss fight — your full record determines the encounter', next: 'judges_verdict' },
+    ],
+  },
+
+  // ═══════════════════════════════
+  // JUDGES VERDICT — dynamic record readout
+  // (text composed at render-time from real player state)
+  // ═══════════════════════════════
+  judges_verdict: {
+    id: 'judges_verdict', type: 'story',
+    sysMsg: 'TWIN JUDGES — Record review in progress.',
+    text: '',
+    choices: [
+      { label: 'Stand before them', sub: 'The reading is finished. The fight begins.', next: 'boss_judges' },
     ],
   },
 
@@ -735,21 +1496,14 @@ Below it, quieter, as if the system didn't mean for you to read it:
   // ═══════════════════════════════
   boss_judges: {
     id: 'boss_judges', type: 'boss',
-    text: `Mercy arrives like weather — not a dramatic entrance but a presence that was suddenly relevant. Tall. Still. An interface halo twice the complexity of any System display you've seen. Eyes that are cataloguing, not judging — or judging in the sense that a scale judges: accurately, without preference.
+    text: `The reading is finished. The interfaces fold away — every choice, every alliance, every elemental zone, every life ended or spared, returned to wherever the System keeps things it has already accounted for.
 
-Wrath is already beside you somehow. No approach. Just — adjacent. Smaller than Mercy. More compressed. The feeling off Wrath is like holding something very sharp — not threatening unless you make a mistake.
+Both Judges look at you now. Not the record — you.
 
-Neither of them speaks.
+Mercy's halo settles into its working state, twice the complexity of any System display you've seen.
+Wrath's compression sharpens.
 
-Their interfaces open simultaneously. Your record scrolls between them — every choice, every alliance, every betrayal, every cooperation, every elemental zone entered. All of it, in precise System notation.
-
-Mercy's display highlights the cooperative entries. They glow warm.
-Wrath's display highlights the decisive entries. They glow cold.
-A third column, narrower than the others: ELEMENTAL RESONANCE. Every zone you entered. One entry, or more.
-
-Both Judges look at the third column. Then at each other. Then at you.
-
-The form this fight takes — who leads, whether they stay separate, whether they become something neither of them was before — that was decided before they arrived. By you.
+Neither of them speaks again.
 
 The fight begins.`,
     enemy: {
@@ -759,7 +1513,7 @@ The fight begins.`,
       atk: 22,
       def: 14,
       xp: 600,
-      img: '../assets/boss/twin_judges.png',
+      img: '../assets/boss/equilibrium.webp',
       loot: [{ itemKey: 'judges_seal', qty: 1 }, { itemKey: 'rune_lux', qty: 1 }],
     },
     bossKey: 'twin_judges',
@@ -774,8 +1528,4 @@ The fight begins.`,
     id: 'chapter_end_ch2', type: 'end',
   },
 
-} // END NODES
-
-// ═══════════════════════════════════════════════════════════
-// ENGINE — mirrors chapter1 exactly
-// ═══════════════════════════════════════════════════════════
+}
