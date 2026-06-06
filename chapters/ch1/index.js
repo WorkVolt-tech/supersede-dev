@@ -30,7 +30,23 @@ function installModuleStyle() {
   const style = document.createElement('style')
   style.id = MODULE_STYLE_ID
   style.dataset.bookModuleStyle = 'true'
-  style.textContent = MODULE_STYLES
+  style.textContent = MODULE_STYLES + `
+    /* ── Parchment combat panel: kill all residual yellow/gold inline colors ── */
+    #right-panel .combat-enemy-name { color: var(--ink) !important; }
+    #right-panel .combat-log        { color: var(--ink-dim) !important; }
+    #right-panel .combat-panel [style*="color:#c8b96e"],
+    #right-panel .combat-panel [style*="color: #c8b96e"],
+    #right-panel .combat-panel [style*="color:#e8d8a8"],
+    #right-panel .combat-panel [style*="color: #e8d8a8"],
+    #right-panel .combat-panel [style*="color:#a08858"],
+    #right-panel .combat-panel [style*="color: #a08858"],
+    #right-panel .combat-panel [style*="color:#ffd700"],
+    #right-panel .combat-panel [style*="color: #ffd700"],
+    #right-panel .combat-panel [style*="color:#c8b880"],
+    #right-panel .combat-panel [style*="color: #c8b880"],
+    #right-panel .combat-panel [style*="color:#f0d060"],
+    #right-panel .combat-panel [style*="color: #f0d060"] { color: var(--ink-dim) !important; }
+  `
   document.head.appendChild(style)
 }
 
@@ -265,14 +281,14 @@ export async function mountChapter1(__mountOptions = {}) {
     `
     win.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(200,184,128,.2)">
-        <span style="font-size:.62rem;letter-spacing:.1em;color:#c8b880">ITEMS OBTAINED</span>
+        <span style="font-size:.62rem;letter-spacing:.1em;color:var(--ink-dim)">ITEMS OBTAINED</span>
         <button onclick="document.getElementById('loot-window').remove()" style="background:none;border:none;color:var(--ink-dim);cursor:pointer;font-size:1rem;line-height:1;padding:0 2px">✕</button>
       </div>
       <div style="padding:6px 0;max-height:280px;overflow-y:auto">
         ${drops.map(d => `
           <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-bottom:.5px solid rgba(200,184,128,.1)">
             ${d.img ? `<img src="${d.img}" style="width:28px;height:28px;object-fit:contain;border-radius:3px;flex-shrink:0">` : `<span style="font-size:1.1rem;flex-shrink:0">📦</span>`}
-            <span style="font-size:.68rem;color:#e8d8a8;flex:1">${d.name}</span>
+            <span style="font-size:.68rem;color:var(--ink);flex:1">${d.name}</span>
             ${d.qty > 1 ? `<span style="font-size:.58rem;color:var(--ink-dim)">×${d.qty}</span>` : ''}
             <button onclick="declineDrop('${d.name}',this)" style="background:none;border:.5px solid rgba(224,85,85,.3);color:#e05555;cursor:pointer;font-size:.55rem;padding:1px 5px;border-radius:2px;font-family:'Share Tech Mono',monospace">skip</button>
           </div>
@@ -427,7 +443,7 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-alert-lines p:nth-child(2){animation-delay:0.3s}
         #eye-alert-lines p:nth-child(3){animation-delay:0.55s}
         #eye-alert-lines p:nth-child(4){animation-delay:0.8s;color:#e05555;font-weight:bold;letter-spacing:.1em}
-        #eye-alert-lines p:nth-child(5){animation-delay:1.1s;color:#a08858}
+        #eye-alert-lines p:nth-child(5){animation-delay:1.1s;color:#c8bfb8}
         .eye-combat-panel { width:100%;max-width:440px;padding:0 1rem; }
 
         /* ── Override dark-on-parchment combat styles for the dark overlay ── */
@@ -441,10 +457,10 @@ export async function mountChapter1(__mountOptions = {}) {
           display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
         }
         #eye-encounter-overlay .combat-enemy-name {
-          color: #e8d8a8 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .combat-log {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
           background: rgba(0,0,0,.3) !important;
           border-color: rgba(200,184,128,.15) !important;
           font-family: 'IM Fell English', serif;
@@ -458,20 +474,20 @@ export async function mountChapter1(__mountOptions = {}) {
           color: #e05555 !important;
         }
         #eye-encounter-overlay .stat-key {
-          color: #a08858 !important;
+          color: #c8bfb8 !important;
         }
         #eye-encounter-overlay .stat-val {
-          color: #e8d8a8 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .stat-bar-wrap {
           background: rgba(255,255,255,.08) !important;
         }
         #eye-encounter-overlay p[style*="color:var(--ink)"],
         #eye-encounter-overlay span[style*="color:var(--ink)"] {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .combat-btn {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
           background: rgba(200,184,128,.08) !important;
           border-color: rgba(200,184,128,.25) !important;
         }
@@ -486,10 +502,10 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-skill-slots-row"] p,
         #eye-encounter-overlay [id$="-skill-slots-row"] span,
         #eye-encounter-overlay [id$="-skill-slots-row"] div {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay [id$="-skill-slots-row"] button {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
           background: rgba(200,184,128,.08) !important;
           border: 1px solid rgba(200,184,128,.25) !important;
         }
@@ -500,13 +516,13 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-items-panel"] p,
         #eye-encounter-overlay [id$="-items-panel"] span,
         #eye-encounter-overlay [id$="-items-panel"] div {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay [id$="-items-panel"] button {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay #combat-over {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay #combat-over button {
           color: #1a1208 !important;
@@ -515,7 +531,7 @@ export async function mountChapter1(__mountOptions = {}) {
         }
         /* FORCED ENGAGEMENT label */
         #eye-combat-phase > p {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
         }
         /* ─────────────────────────────────────────────────────────────
            ESCAPE PARCHMENT GLOBALS
@@ -532,9 +548,9 @@ export async function mountChapter1(__mountOptions = {}) {
         }
         /* Re-establish the alert-phase colours, since 'inherit' above
            reset them. These match the original inline-style intent. */
-        #eye-alert-phase { color: #c8b96e; }
+        #eye-alert-phase { color: #f0ede8; }
         #eye-alert-lines p {
-          color: #c8b96e !important;
+          color: #f0ede8 !important;
           opacity: 0;
           animation: eyeTextIn .35s ease forwards;
         }
@@ -544,9 +560,9 @@ export async function mountChapter1(__mountOptions = {}) {
           letter-spacing: .1em;
         }
         #eye-alert-lines p:nth-child(5) {
-          color: #a08858 !important;
+          color: #c8bfb8 !important;
         }
-        #eye-engage-btn-wrap p { color: #a08858 !important; }
+        #eye-engage-btn-wrap p { color: #c8bfb8 !important; }
         /* Make the ENGAGE button text bullet-proof too */
         #eye-engage-btn { color: #0d0b08 !important; }
       </style>
@@ -557,14 +573,14 @@ export async function mountChapter1(__mountOptions = {}) {
           style="width:${isSwarm?'120px':'88px'};height:${isSwarm?'120px':'88px'};object-fit:contain;margin:0 auto 1.5rem;display:block;animation:eyePulse 2s infinite;filter:drop-shadow(0 0 20px rgba(255,255,255,0.4))"
           onerror="this.style.fontSize='4rem';this.textContent='👁';this.style.background='none'">
         <div id="eye-alert-lines" style="margin-bottom:1.5rem">
-          ${alertLines.map(l => `<p style="font-size:.72rem;color:#c8b96e;margin:.4rem 0;line-height:1.6">${l}</p>`).join('')}
+          ${alertLines.map(l => `<p style="font-size:.72rem;color:#f0ede8;margin:.4rem 0;line-height:1.6">${l}</p>`).join('')}
         </div>
         <div id="eye-engage-btn-wrap" style="opacity:0;transition:opacity 0.4s">
           <button id="eye-engage-btn"
-            style="font-family:'Cinzel',serif;font-size:.9rem;color:#0d0b08;background:#c8b96e;border:none;border-radius:3px;padding:.6rem 2rem;cursor:pointer;letter-spacing:.08em;box-shadow:0 0 20px rgba(200,185,110,0.4)">
+            style="font-family:'Cinzel',serif;font-size:.9rem;color:#0d0b08;background:#5c7a5c;border:none;border-radius:3px;padding:.6rem 2rem;cursor:pointer;letter-spacing:.08em;box-shadow:0 0 20px rgba(92,122,92,0.4)">
             ⚔ ENGAGE
           </button>
-          <p style="font-size:.5rem;color:#a08858;margin-top:.5rem;letter-spacing:.06em">You have no choice.</p>
+          <p style="font-size:.5rem;color:#c8bfb8;margin-top:.5rem;letter-spacing:.06em">You have no choice.</p>
         </div>
       </div>
 
@@ -642,9 +658,9 @@ export async function mountChapter1(__mountOptions = {}) {
       // Walk all elements inside overlay and flip #1a1208 / #3a2008 to light colors
       overlay.querySelectorAll('[style]').forEach(el => {
         el.style.cssText = el.style.cssText
-          .replace(/color\s*:\s*#1a1208/gi,  'color:#e8d8a8')
-          .replace(/color\s*:\s*#3a2008/gi,  'color:#a08858')
-          .replace(/color\s*:\s*#7a6435/gi,  'color:#a08858')
+          .replace(/color\s*:\s*#1a1208/gi,  'color:#f0ede8')
+          .replace(/color\s*:\s*#3a2008/gi,  'color:#c8bfb8')
+          .replace(/color\s*:\s*#7a6435/gi,  'color:#c8bfb8')
           .replace(/background\s*:\s*rgba\(200,184,128,[^)]+\)/gi, 'background:rgba(200,184,128,.12)')
       })
     })
@@ -755,7 +771,7 @@ export async function mountChapter1(__mountOptions = {}) {
           </div>
         </div>
 
-        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:#a08858">· Unlocked via Skill Tree</span></p>
+        <p style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink);letter-spacing:.08em;margin-bottom:6px">CORE STATS <span style="color:var(--ink-dim)">· Unlocked via Skill Tree</span></p>
         ${STATS.map(s => `
           <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:5px;padding:5px 7px;background:rgba(0,0,0,.07);border-radius:3px">
             <div style="width:8px;height:8px;border-radius:50%;background:${s.color};flex-shrink:0"></div>
@@ -1192,7 +1208,7 @@ export async function mountChapter1(__mountOptions = {}) {
               [INSIGHT ${c.insightRequired} REQUIRED]
               <span class="choice-sub">Equip items with Insight to unlock hidden paths</span>
             </span>
-            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:#ffd700">⚡ INS</span>
+            <span style="font-family:'Share Tech Mono',monospace;font-size:.55rem;color:var(--ink-dim)">⚡ INS</span>
           </div>
         `).join('')}
       </div>
@@ -1379,7 +1395,7 @@ export async function mountChapter1(__mountOptions = {}) {
         <div class="end-box">
           <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
           <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
-          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#c8b96e;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
+          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#f0ede8;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
           <button class="end-btn" id="beat-btn" style="display:block;width:100%">
             ${isLast ? '🔧 Enter Garage ›' : 'Continue ›'}
           </button>
@@ -1613,21 +1629,21 @@ export async function mountChapter1(__mountOptions = {}) {
               title="Fast attack. Always goes first.">
               <span style="font-size:1.1rem;line-height:1">⚔</span>
               <span>Strike</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">FAST · FIRST</span>
+              <span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">FAST · FIRST</span>
             </button>
             <button class="combat-btn" id="${cid}-btn-heavy"
               style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
               title="Heavy blow. High damage but slower.">
               <span style="font-size:1.1rem;line-height:1">💥</span>
               <span>Heavy</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">HIGH DMG · SLOW</span>
+              <span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">HIGH DMG · SLOW</span>
             </button>
             <button class="combat-btn" id="${cid}-btn-defend"
               style="flex-direction:column;gap:2px;padding:.45rem .25rem;font-size:.62rem"
               title="Halve incoming damage this turn. Always acts first.">
               <span style="font-size:1.1rem;line-height:1">🛡</span>
               <span>Defend</span>
-              <span style="font-size:.44rem;color:#a08858;letter-spacing:.04em">BLOCK · FIRST</span>
+              <span style="font-size:.44rem;color:var(--ink-dim);letter-spacing:.04em">BLOCK · FIRST</span>
             </button>
           </div>
 
@@ -1686,7 +1702,7 @@ export async function mountChapter1(__mountOptions = {}) {
     function log(msg, turnInfo) {
       const el = $('combat-log')
       if (el) el.innerHTML = (turnInfo
-        ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:#a08858;letter-spacing:.06em;display:block;margin-bottom:2px">' + turnInfo + '</span>'
+        ? '<span style="font-family:\'Share Tech Mono\',monospace;font-size:.48rem;color:#c8bfb8;letter-spacing:.06em;display:block;margin-bottom:2px">' + turnInfo + '</span>'
         : '') + msg
     }
 
@@ -1786,14 +1802,14 @@ export async function mountChapter1(__mountOptions = {}) {
         window._eyeEncounterCallback = null
         window._inEyeEncounter = false
         const resultLabel = result==='win' ? '✦ Eye Defeated ✦' : '✦ The Eye Retreats ✦'
-        const resultColor = result==='win' ? '#c8b96e' : '#e05555'
+        const resultColor = result==='win' ? '#5c9c5c' : '#e05555'
         const resultMsg   = result==='win'
           ? 'It dissolves in pale light. Somewhere above the clouds, something blinks. It will send more.'
           : 'The eye rises back toward the crack in the sky, iris closing slowly. It was a test. You are still standing.'
         if (overEl) {
           overEl.style.display = 'block'
           overEl.innerHTML = '<p style="font-family:Cinzel,serif;font-size:1rem;font-weight:600;color:'+resultColor+';letter-spacing:.1em;margin-bottom:.5rem">'+resultLabel+'</p>'
-            + '<p style="font-family:&quot;IM Fell English&quot;,serif;font-style:italic;font-size:.82rem;color:#c8b96e;line-height:1.55;margin-bottom:.6rem">'+resultMsg+'</p>'
+            + '<p style="font-family:&quot;IM Fell English&quot;,serif;font-style:italic;font-size:.82rem;color:#5c9c5c;line-height:1.55;margin-bottom:.6rem">'+resultMsg+'</p>'
             + '<p style="font-family:&quot;Share Tech Mono&quot;,monospace;font-size:.55rem;color:var(--ink-dim);letter-spacing:.08em">Returning to your story\u2026</p>'
         }
         // Award XP for eye fight
@@ -2171,7 +2187,7 @@ export async function mountChapter1(__mountOptions = {}) {
         const cd     = statusEffects.skillCooldowns[k] || 0
         const isUlt  = sk.type === 'ultimate'
         const lv     = _skillLvGlobal(k)
-        const lvColor = lv >= 10 ? '#ffd700' : lv >= 7 ? '#c8b96e' : lv >= 4 ? '#a0c080' : '#9a8858'
+        const lvColor = lv >= 10 ? '#a0c8a0' : lv >= 7 ? '#a0c8a0' : lv >= 4 ? '#a0c080' : '#9a8858'
         const pct    = Math.round((0.5 + (lv - 1) * (0.5 / 9)) * 100)
 
         // Skill icon — try image, fall back to element emoji
@@ -2184,7 +2200,7 @@ export async function mountChapter1(__mountOptions = {}) {
         // Build skill button safely — avoid nested template literals and quote hell
         const cdOverlay = cd > 0
           ? '<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;border-radius:3px">'
-            + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8b96e">' + cdLabel + '</span>'
+            + '<span style="font-family:Share Tech Mono,monospace;font-size:.55rem;color:#c8bfb8">' + cdLabel + '</span>'
             + '</div>'
           : ''
         const iconFilter = cd > 0 ? 'grayscale(1)' : 'drop-shadow(0 0 4px ' + sk.color + '88)'
