@@ -231,6 +231,11 @@ export async function mountChapter1(__mountOptions = {}) {
       if (!player.defeated_bosses || !player.defeated_bosses.length) {
         player.defeated_bosses = prevDefeated
       }
+      // Preserve in-memory moral_score and badge from the updates payload —
+      // the DB response may lag or omit these, overwriting the value that
+      // applyMoralChange just set. The updates object is authoritative.
+      if (updates.moral_score !== undefined) player.moral_score = updates.moral_score
+      if (updates.badge       !== undefined) player.badge       = updates.badge
     }
     renderHUD()
   }
