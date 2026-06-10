@@ -569,7 +569,7 @@ export async function mountChapter1(__mountOptions = {}) {
         }
         #eye-engage-btn-wrap p { color: #c8bfb8 !important; }
         /* Make the ENGAGE button text bullet-proof too */
-        #eye-engage-btn { color: #0d0b08 !important; }
+        #eye-engage-btn { color: #ffffff !important; }
       </style>
 
       <!-- Alert phase -->
