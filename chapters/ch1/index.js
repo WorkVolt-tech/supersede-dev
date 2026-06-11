@@ -822,6 +822,12 @@ export async function mountChapter1(__mountOptions = {}) {
     if (nodeId === 'garage_b4_dorian_won' && nextId === 'garage_b4_sentinel_fight') {
       window._dorianDefeated = true
     }
+    // Early-attack path: beating Dorian at garage_b3 also takes him out of the
+    // shadows, so he must not lurk during the later Sentinel fight.
+    if (nextId === 'garage_b3_dorian_beaten') {
+      window._dorianDefeated = true
+    }
+    
     // Reset when leaving the garage arc entirely
     if (nextId === 'garage_b4_clear' || nextId === 'garage_b5_summit') {
       window._dorianDefeated = false
