@@ -462,37 +462,37 @@ export async function mountChapter1(__mountOptions = {}) {
           display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
         }
         #eye-encounter-overlay .combat-enemy-name {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay .combat-log {
-          color: #f0ede8 !important;
-          background: rgba(0,0,0,.3) !important;
-          border-color: rgba(200,184,128,.15) !important;
+          color: #2b1d16 !important;
+          background: rgba(0,0,0,.06) !important;
+          border-color: rgba(139,106,32,.2) !important;
           font-family: 'IM Fell English', serif;
           font-style: italic;
           min-height: 2.5rem;
         }
         #eye-encounter-overlay .combat-log em {
-          color: #8fd8f0 !important;
+          color: #6b4a2a !important;
         }
         #eye-encounter-overlay .combat-log strong {
           color: #e05555 !important;
         }
         #eye-encounter-overlay .stat-key {
-          color: #c8bfb8 !important;
+          color: #5c4638 !important;
         }
         #eye-encounter-overlay .stat-val {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay .stat-bar-wrap {
           background: rgba(255,255,255,.08) !important;
         }
         #eye-encounter-overlay p[style*="color:var(--ink)"],
         #eye-encounter-overlay span[style*="color:var(--ink)"] {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay .combat-btn {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
           background: rgba(200,184,128,.08) !important;
           border-color: rgba(200,184,128,.25) !important;
         }
@@ -507,10 +507,10 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-skill-slots-row"] p,
         #eye-encounter-overlay [id$="-skill-slots-row"] span,
         #eye-encounter-overlay [id$="-skill-slots-row"] div {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay [id$="-skill-slots-row"] button {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
           background: rgba(200,184,128,.08) !important;
           border: 1px solid rgba(200,184,128,.25) !important;
         }
@@ -521,13 +521,13 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-items-panel"] p,
         #eye-encounter-overlay [id$="-items-panel"] span,
         #eye-encounter-overlay [id$="-items-panel"] div {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay [id$="-items-panel"] button {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay #combat-over {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         #eye-encounter-overlay #combat-over button {
           color: #1a1208 !important;
@@ -536,7 +536,7 @@ export async function mountChapter1(__mountOptions = {}) {
         }
         /* FORCED ENGAGEMENT label */
         #eye-combat-phase > p {
-          color: #f0ede8 !important;
+          color: #2b1d16 !important;
         }
         /* Option B — Eye combat panel uses the light parchment look, so ALL
            text inside it must be dark ink to stay readable. Scoped to the
@@ -836,10 +836,12 @@ export async function mountChapter1(__mountOptions = {}) {
     if (nextId === 'garage_b3_dorian_beaten') {
       window._dorianDefeated = true
     }
-    
-    // Reset when leaving the garage arc entirely
-    if (nextId === 'garage_b4_clear' || nextId === 'garage_b5_summit') {
-      window._dorianDefeated = false
+
+    // If Dorian was already defeated, skip the post-Sentinel ambush scene
+    // (garage_b4_clear shows him springing back out). Route straight to the
+    // quiet aftermath instead so a dead Dorian doesn't reappear.
+    if (nextId === 'garage_b4_clear' && window._dorianDefeated) {
+      nextId = 'garage_b4_after_dorian'
     }
 
     const cur = NODES[nodeId]
