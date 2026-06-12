@@ -1406,7 +1406,7 @@ export async function mountChapter1(__mountOptions = {}) {
         <div class="end-box">
           <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
           <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
-          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#f0ede8;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
+          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#2b1d16;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
           <button class="end-btn" id="beat-btn" style="display:block;width:100%">
             ${isLast ? '🔧 Enter Garage ›' : 'Continue ›'}
           </button>
