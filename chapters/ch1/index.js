@@ -538,6 +538,15 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-combat-phase > p {
           color: #f0ede8 !important;
         }
+        /* Option B — Eye combat panel uses the light parchment look, so ALL
+           text inside it must be dark ink to stay readable. Scoped to the
+           combat panel only; the black alert-phase intro stays light. */
+        #eye-encounter-overlay .combat-panel,
+        #eye-encounter-overlay .combat-panel * {
+          color: #2b1d16 !important;
+        }
+        #eye-encounter-overlay .combat-panel .combat-log strong { color: #a02020 !important; }
+        #eye-encounter-overlay .combat-panel .combat-log em { color: #6b4a2a !important; }
         /* ─────────────────────────────────────────────────────────────
            ESCAPE PARCHMENT GLOBALS
            The page-level "p, li, span { color: var(--ink) !important }"
