@@ -3371,7 +3371,15 @@ You walk back out.`
   // between book.html's init paint and our mount.
   let player = __mountOptions.player
   if (player) {
-    window.renderNav(__mountOptions.navId || 'nav').catch(e => console.warn('[ch2] nav render failed', e))
+    // Await the nav render so the bookmark bar is fully painted before the
+    // chapter continues. Fire-and-forget here raced with the host DOM swap
+    // and left the nav blank on entry (notably arriving from the drive),
+    // requiring a manual refresh. Awaiting removes that race.
+    try {
+      await window.renderNav(__mountOptions.navId || 'nav')
+    } catch (e) {
+      console.warn('[ch2] nav render failed', e)
+    }
   } else {
     player = await window.renderNav(__mountOptions.navId || 'nav')
   }
