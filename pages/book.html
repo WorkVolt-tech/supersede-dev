@@ -526,7 +526,7 @@ window.showSysOverlay = showSysOverlay
   window.replayChapter = replayChapter
 
   // ── Book module router ──────────────────────────────
-  const MODULE_VERSION = '2026-06-11-combat-fix'
+  const MODULE_VERSION = '2026-06-11-drive-gate'
   const MODULE_ROUTES = {
     ch1:       () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
     ch2:       () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
@@ -625,6 +625,25 @@ window.showSysOverlay = showSysOverlay
     if (!loader) {
       window.location.href = routeUrl({ ...route, key: 'chapters' })
       return
+    }
+
+    // ── Chapter unlock gate ─────────────────────────────────────────────
+    // Story chapters (ch2, ch3, ...) require the destination to be present in
+    // the player's chapters_unlocked array. The drive (vehicle.js) writes the
+    // unlock on arrival. Ch1 is always allowed. This stops direct-URL access
+    // (book.html?chapter=N) and any UI that bypasses the visual lock from
+    // entering a chapter the player hasn't reached the proper way.
+    {
+      const chMatch = /^ch(\d+)$/.exec(route.key)
+      if (chMatch) {
+        const chNum = parseInt(chMatch[1], 10)
+        const unlockedList = (currentPlayer && currentPlayer.chapters_unlocked) || [1]
+        if (chNum > 1 && !unlockedList.includes(chNum)) {
+          window.showToast && window.showToast('Complete the drive to unlock Chapter ' + chNum + '.')
+          window.location.href = routeUrl({ ...route, key: 'chapters' })
+          return
+        }
+      }
     }
 
     if (push) history.pushState({}, '', routeUrl(route))
