@@ -29,7 +29,7 @@ You pick up a fallen fig on your way through. It's good.`,
   },
 
   zone_plant_unlock: {
-    id: 'zone_plant_unlock', type: 'story',
+    id: 'zone_plant_unlock', type: 'story', hpLoss: 15,
     text: `Navigating around costs you. Zone flora active: Enemy attrition −10% district-wide.
 
 FLORA TREE UNLOCKED. FLORA BINDING: HP regen +3% per combat turn. Max HP −15%.
@@ -55,7 +55,7 @@ It drops now.`,
   },
 
   zone_plant_swing: {
-    id: 'zone_plant_swing', type: 'story',
+    id: 'zone_plant_swing', type: 'story', hpLoss: 10,
     text: `The vine holds. You swing to the next aisle over — the Thorn Stalker drops behind you, lands in the wrong spot, has to reorient.
 
 You're through before it catches up.`,
