@@ -83,7 +83,7 @@ On a shelf: a sealed professional tool kit. Expensive. Still in packaging.`,
   },
 
   zone_metal_extract: {
-    id: 'zone_metal_extract', type: 'story',
+    id: 'zone_metal_extract', type: 'story', hpLoss: 15,
     text: `The extraction triggers a discharge that runs through you and the shelving both. You hold on. The formation releases — heavy, warm, solid.
 
 Your hand tingles for the next few minutes. Worth it.`,
