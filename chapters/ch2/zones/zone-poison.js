@@ -43,7 +43,7 @@ VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn 
   },
 
   zone_poison_unlock: {
-    id: 'zone_poison_unlock', type: 'story',
+    id: 'zone_poison_unlock', type: 'story', hpLoss: 12,
     text: `You take neither. Move through under the DoT, conserving everything else.
 
 VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
@@ -104,7 +104,7 @@ On the pharmacist's counter: a clean, sealed bag. A note in small handwriting: "
   },
 
   zone_poison_unit: {
-    id: 'zone_poison_unit', type: 'story',
+    id: 'zone_poison_unit', type: 'story', hpLoss: 10,
     text: `Breaking into the unit releases a concentrated burst of DoT into the immediate area. You hold your breath and push through. The formation is dense — worth it.`,
     xp: 50, rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Continue', next: 'zone_poison_corridor' }],
