@@ -22,7 +22,7 @@ UMBRA SKILL TREE — UNLOCKED.`,
   },
 
   zone_shadow_hidden: {
-    id: 'zone_shadow_hidden', type: 'story',
+    id: 'zone_shadow_hidden', type: 'story', hpLoss: 15,
     text: `A storage corridor. Film reel canisters, acetate, dust. In the back: a secondary cache. Small. Items that don't appear in any manifest.
 
 You take them. The way back costs you health.
@@ -57,7 +57,7 @@ It finds you.`,
   },
 
   zone_shadow_still: {
-    id: 'zone_shadow_still', type: 'story',
+    id: 'zone_shadow_still', type: 'story', hpLoss: 12,
     text: `You hold perfectly still. The Drifter reaches you — passes through. Cold, wrong-feeling, gone in three seconds.
 
 You're lower on HP. But it doesn't look back.`,
