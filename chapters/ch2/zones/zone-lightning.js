@@ -43,7 +43,7 @@ One of the screens has gone dark.`,
   },
 
   zone_lightning_unlock: {
-    id: 'zone_lightning_unlock', type: 'story',
+    id: 'zone_lightning_unlock', type: 'story', hpLoss: 20,
     text: `You discharge it through yourself. The jolt drops your HP. The other player gets nothing.
 
 They look at you. Not angry. Just reading you. Then leave without a word.
@@ -111,7 +111,7 @@ On a workbench: an insulated tool bag, left by whoever was maintaining this equi
   },
 
   zone_lightning_extract: {
-    id: 'zone_lightning_extract', type: 'story',
+    id: 'zone_lightning_extract', type: 'story', hpLoss: 15,
     text: `Contact. The discharge runs through you — painful, disorienting. You hold on. The node collapses into three compressed rune units in your hand.
 
 Your hair is standing on end. Your HP is down. Worth it.`,
