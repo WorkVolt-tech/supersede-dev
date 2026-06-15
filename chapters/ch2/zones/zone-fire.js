@@ -45,7 +45,7 @@ IGNIS TREE UNLOCKED. IGNIS BINDING: Strike damage +15%. Regen −20%.`,
   },
 
   zone_fire_unlock: {
-    id: 'zone_fire_unlock', type: 'story',
+    id: 'zone_fire_unlock', type: 'story', hpLoss: 20,
     text: `The long path costs you. Residual heat, scored walls, everything harder than expected.
 
 IGNIS TREE UNLOCKED. IGNIS BINDING: Strike damage +15%. Regen −20%.`,
@@ -69,7 +69,7 @@ It finds yours.`,
   },
 
   zone_fire_slip_1: {
-    id: 'zone_fire_slip_1', type: 'story',
+    id: 'zone_fire_slip_1', type: 'story', hpLoss: 10,
     text: `You move low and slow along the far wall. The Char Hound turns toward you once. Pauses. Moves away. You're through — barely.`,
     xp: 30,
     choices: [{ label: 'Continue', next: 'zone_fire_explore_2' }],
@@ -119,7 +119,7 @@ Two Slag Drones block the path. Former warehouse equipment, now running on heat-
   },
 
   zone_fire_pipe: {
-    id: 'zone_fire_pipe', type: 'story',
+    id: 'zone_fire_pipe', type: 'story', hpLoss: 12,
     text: `You hit the pipe coupling. The pressurized system vents downward — a burst that catches both drones. One goes down. The other staggers, damaged but functional. The burst caught your arm. You're singed.`,
     xp: 50,
     choices: [{ label: 'Finish the second drone', next: 'zone_fire_enemy_2b' }],
