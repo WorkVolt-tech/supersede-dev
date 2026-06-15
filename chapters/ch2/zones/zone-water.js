@@ -19,7 +19,7 @@ AQUA SKILL TREE — UNLOCKED.`,
   },
 
   zone_water_rescue: {
-    id: 'zone_water_rescue', type: 'story',
+    id: 'zone_water_rescue', type: 'story', hpLoss: 12,
     text: `It takes four attempts. The survivor — badly shaken — slides out. "I've been in there since yesterday." They follow you through, don't speak, don't get in the way.
 
 AQUA TREE UNLOCKED. AQUA BINDING: 25% damage reduction below 40% HP. AP pool +10%.
@@ -65,7 +65,7 @@ It registers your heat signature and orients.`,
   },
 
   zone_water_submerge: {
-    id: 'zone_water_submerge', type: 'story',
+    id: 'zone_water_submerge', type: 'story', hpLoss: 12,
     text: `You drop below the surface and drag yourself along the floor. The cold hits hard. The Wraith passes overhead — you can see its luminescence through the water.
 
 You come up on the far side, gasping, down on HP but through.`,
@@ -97,7 +97,7 @@ On a floating crate: a waterproof bag with supplies inside. Someone planned to c
   },
 
   zone_water_dive: {
-    id: 'zone_water_dive', type: 'story',
+    id: 'zone_water_dive', type: 'story', hpLoss: 12,
     text: `Six feet down in water that's gotten colder. You reach the node — it releases on contact, filling your palm with compressed elemental residue.
 
 You surface, lower on HP than you went in. Worth it.`,
