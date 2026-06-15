@@ -1138,16 +1138,19 @@ You walk back out.`
     let zonesHtml = ZONES.map(z=>{
       const bossKey = 'zone_boss_'+z.id.replace('zone_','')
       const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
-      const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
-      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px">
+      // Visual: UNCLEARED zones are bright/inviting; CLEARED zones dim out so
+      // the player can see at a glance what's left to do. (Brightness inverted
+      // from done — bright = still available, dim = finished.)
+      const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.45':'0.9'};border-bottom:.5px solid ${z.color}44"></div>` : ''
+      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'33':''};border-radius:5px;overflow:hidden;background:${z.color}${done?'08':'18'};cursor:pointer;transition:all .2s;margin-bottom:6px;${done?'opacity:.6':''}">
         ${imgHtml}
         <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
           <span style="font-size:1rem">${z.icon}</span>
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'var(--ink-dim)'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
+            <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?'var(--ink-dim)':z.color};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
             <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
           </div>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?'#5a4825':z.color};border:.5px solid ${done?'rgba(139,106,32,.2)':z.color+'44'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
         </div>
       </div>`
     }).join('')
@@ -3371,15 +3374,7 @@ You walk back out.`
   // between book.html's init paint and our mount.
   let player = __mountOptions.player
   if (player) {
-    // Await the nav render so the bookmark bar is fully painted before the
-    // chapter continues. Fire-and-forget here raced with the host DOM swap
-    // and left the nav blank on entry (notably arriving from the drive),
-    // requiring a manual refresh. Awaiting removes that race.
-    try {
-      await window.renderNav(__mountOptions.navId || 'nav')
-    } catch (e) {
-      console.warn('[ch2] nav render failed', e)
-    }
+    window.renderNav(__mountOptions.navId || 'nav').catch(e => console.warn('[ch2] nav render failed', e))
   } else {
     player = await window.renderNav(__mountOptions.navId || 'nav')
   }
