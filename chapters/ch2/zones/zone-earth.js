@@ -20,7 +20,7 @@ TERRA SKILL TREE — UNLOCKED.`,
   },
 
   zone_earth_pull: {
-    id: 'zone_earth_pull', type: 'story',
+    id: 'zone_earth_pull', type: 'story', hpLoss: 18,
     text: `A crack runs from floor to ceiling fast. The ceiling drops a section onto the space you just occupied. You weren't in it. Barely.
 
 TERRA TREE UNLOCKED. TERRA BINDING: Max HP +20. Physical damage reduction +10%. Attack speed −1.`,
