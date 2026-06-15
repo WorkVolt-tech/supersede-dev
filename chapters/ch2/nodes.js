@@ -129,8 +129,8 @@ Three different kinds of stares land on you at the same moment.
 
 Your interface registers: NEW ENVIRONMENT. FACTION ASSESSMENT ACTIVE.`,
     choices: [
-      { label: 'Walk toward the Builders',       sub: 'Signal cooperation — moral +5',   next: 'meet_builders',  moral: 5 },
-      { label: 'Walk toward the Hunters',        sub: 'Signal strength — moral -3',        next: 'meet_hunters',   moral: -3 },
+      { label: 'Walk toward the Builders',       sub: 'Signal cooperation',   next: 'meet_builders',  moral: 5 },
+      { label: 'Walk toward the Hunters',        sub: 'Signal strength',        next: 'meet_hunters',   moral: -3 },
       { label: 'Sit with the Ghosts',            sub: 'Signal neutrality — no change',     next: 'meet_ghosts' },
       { label: 'Stand in the center and wait',   sub: 'Let them come to you',              next: 'plaza_center' },
     ],
@@ -302,10 +302,48 @@ She goes back to her tablet.
 She doesn't say anything else. She lets you think.`,
     xp: 50,
     choices: [
-      { label: 'Offer to be the partner',      sub: 'Alliance signature — moral +8',  next: 'builders_alliance', moral: 8 },
+      { label: 'Offer to be the partner',      sub: 'Alliance signature',  next: 'builders_alliance', moral: 8 },
       { label: "Ask what you'd get out of it",  sub: 'Practical question',              next: 'builders_negotiation' },
+      { label: 'Scavengers are hitting the supply line — help defend it', sub: 'Stand with the Builders', next: 'builders_defend_intro' },
       { label: 'Keep your options open',        sub: 'Non-committal',                   next: 'district_hub' },
     ],
+  },
+
+  // ── Builders faction fight (skippable; win = +moral, skip = -moral) ──
+  builders_defend_intro: {
+    id: 'builders_defend_intro', type: 'story',
+    text: `Sera's comm crackles before she's finished her sentence. "Supply line. Two of them. They're going for the medical crates." She's already moving. "You don't have to come."
+
+You can hear it from here — the scrape of someone prying a locked shutter, the low voices of people who expect to be gone before anyone arrives.
+
+Two scavengers, working fast. The crates behind them are stamped with the Builders' mark.`,
+    choices: [
+      { label: 'Step in — drive them off', sub: 'Defend the Builders', next: 'builders_defend_combat' },
+      { label: 'Stay out of it — keep walking', sub: 'Not your fight — the Builders will remember', next: 'builders_defend_skip', moral: -3 },
+    ],
+  },
+  builders_defend_combat: {
+    id: 'builders_defend_combat', type: 'combat',
+    text: `You move into the open. The scavengers turn — one reaching for the crate, the other for a length of pipe. Sera arrives at your shoulder a second later. "Good," she says. "Left one's mine."`,
+    enemy: { name: 'Supply Scavengers', icon: '🗡️', hp: 120, atk: 19, def: 8, xp: 120, humanoid: true,
+      loot: [{ itemKey: 'medical_pack', qty: 1 }, { itemKey: 'scrap_metal', qty: 2 }] },
+    onWin: 'builders_defend_win', onLose: 'builders_deep', onEscape: 'builders_deep',
+  },
+  builders_defend_win: {
+    id: 'builders_defend_win', type: 'story',
+    text: `The scavengers break and run, leaving the crates and a few dropped supplies behind. Sera checks the seals, then looks at you.
+
+"That wasn't your fight, and you made it yours anyway." She presses a salvaged pack into your hand. "The log will show this. So will I."`,
+    hpLoss: 12,
+    rewards: [{ itemKey: 'medical_pack', qty: 1 }],
+    choices: [{ label: 'Back to Sera', next: 'builders_deep', moral: 5, allianceTagRepeatable: 'builders_helped' }],
+  },
+  builders_defend_skip: {
+    id: 'builders_defend_skip', type: 'story',
+    text: `You keep walking. Behind you, the sound of the shutter giving way, then Sera's people arriving too late. When you see her again, she doesn't mention it.
+
+She doesn't have to. The log already noted where you were.`,
+    choices: [{ label: 'Back to Sera', next: 'builders_deep' }],
   },
 
   builders_negotiation: {
@@ -322,7 +360,7 @@ She picks the tablet back up.
 
 "I'm not trying to scare you into it. I'm telling you what I know. You can decide what that's worth."`,
     choices: [
-      { label: 'Sign the alliance',  sub: 'moral +8', next: 'builders_alliance', moral: 8 },
+      { label: 'Sign the alliance',  sub: 'Commit to the alliance', next: 'builders_alliance', moral: 8 },
       { label: 'Decline, stay free', sub: 'Keep all options',  next: 'district_hub' },
     ],
   },
@@ -365,8 +403,46 @@ They lean against a broken shelf. "I'm not recruiting you to betray the Builders
     choices: [
       { label: 'Ask what Voss wants',          next: 'hunters_voss_goal' },
       { label: 'Ask about the elemental zones', next: 'ghosts_deep' },
+      { label: "Voss has a runner to corner — back the play", sub: 'Stand with the Hunters', next: 'hunters_corner_intro' },
       { label: 'Head into the district',       next: 'district_hub' },
     ],
+  },
+
+  // ── Hunters faction fight (skippable; win = -moral, skip = +moral) ──
+  hunters_corner_intro: {
+    id: 'hunters_corner_intro', type: 'story',
+    text: `Voss tilts their head toward the back of the shop. "Convenient timing. There's a player who signed a cache deal with us this morning and is now trying to walk it back — with our half in their bag." A thin smile. "We're going to have a conversation. You can be part of it."
+
+Through the gutted doorway, you can see them: one player, moving fast, a loaded pack on their shoulder. Two of Voss's people are already drifting to cut off the exits.
+
+"They agreed to the split," Voss says. "Now they don't want to. The System recorded the agreement either way."`,
+    choices: [
+      { label: 'Back the Hunters — take it back by force', sub: 'Stand with Voss', next: 'hunters_corner_combat' },
+      { label: 'Refuse — this one isn\'t yours to take', sub: 'Walk away from the aggression', next: 'hunters_corner_skip', moral: 3 },
+    ],
+  },
+  hunters_corner_combat: {
+    id: 'hunters_corner_combat', type: 'combat',
+    text: `You move to cut the angle. The runner sees the trap close and decides to fight through it rather than hand the pack over. Voss's people hang back half a step — letting you take the front. Testing you.`,
+    enemy: { name: 'Cornered Runner', icon: '🗡️', hp: 130, atk: 21, def: 9, xp: 130, humanoid: true,
+      loot: [{ itemKey: 'scrap_metal', qty: 2 }, { itemKey: 'energy_drink', qty: 1 }] },
+    onWin: 'hunters_corner_win', onLose: 'hunters_deep', onEscape: 'hunters_deep',
+  },
+  hunters_corner_win: {
+    id: 'hunters_corner_win', type: 'story',
+    text: `The runner goes down hard and stays down, pack spilling open. Voss steps past you, sorts the contents with a practiced hand, and tosses you a share without being asked.
+
+"You don't flinch. That's rare." They don't smile this time. "The System saw that too. It always does."`,
+    hpLoss: 14,
+    rewards: [{ itemKey: 'energy_drink', qty: 1 }],
+    choices: [{ label: 'Back to Voss', next: 'hunters_deep', moral: -5, allianceTagRepeatable: 'hunters_helped' }],
+  },
+  hunters_corner_skip: {
+    id: 'hunters_corner_skip', type: 'story',
+    text: `"Not mine to take," you say, and step back out of the angle.
+
+Voss watches you go without anger. "Deliberate. Fine. The System logs the ones who walk away too." The runner slips past, pack intact. Voss doesn't chase.`,
+    choices: [{ label: 'Back to Voss', next: 'hunters_deep' }],
   },
 
   hunters_voss_goal: {
@@ -407,8 +483,48 @@ They hand you the map. "Maybe you are."`,
     rewards: [{ itemKey: 'district_map', qty: 1 }],
     choices: [
       { label: 'Ask what the zones give you',     next: 'zone_explanation' },
+      { label: 'A System construct is tracking Rue — intercept it', sub: 'Neutral encounter', next: 'ghosts_construct_intro' },
       { label: 'Head into the district',          next: 'district_hub' },
     ],
+  },
+
+  // ── Ghosts faction fight (skippable; win = neutral, skip = small -moral) ──
+  ghosts_construct_intro: {
+    id: 'ghosts_construct_intro', type: 'story',
+    text: `Rue goes still mid-sentence. "Don't move." Their eyes track something over your shoulder.
+
+A System construct — one of the unclassified ones, all angles and quiet — has been pacing the edge of the lot. It isn't faction. It isn't elemental. It's just the System, watching, the way it always is. Except this one has locked onto Rue's signal and started closing.
+
+"It does this," Rue murmurs. "Follows the ones it can't read. Usually I just leave." A pause. "I'm tired of leaving."`,
+    choices: [
+      { label: 'Put yourself between Rue and the construct', sub: 'Face it down', next: 'ghosts_construct_combat' },
+      { label: 'Let Rue slip away — don\'t engage', sub: 'Avoid the fight — Rue notes it', next: 'ghosts_construct_skip', moral: -2 },
+    ],
+  },
+  ghosts_construct_combat: {
+    id: 'ghosts_construct_combat', type: 'combat',
+    text: `You step into its path. The construct reorients instantly — reassessing, recalculating. Rue moves to your flank, quiet and fast, reading its pattern out loud as it shifts. "Left. Now low. It telegraphs."`,
+    enemy: { name: 'Unclassified Construct', icon: '👁', hp: 140, atk: 20, def: 12, xp: 125,
+      loot: [{ itemKey: 'scrap_metal', qty: 2 }, { itemKey: 'rune_lux', qty: 1 }] },
+    onWin: 'ghosts_construct_win', onLose: 'ghosts_deep', onEscape: 'ghosts_deep',
+  },
+  ghosts_construct_win: {
+    id: 'ghosts_construct_win', type: 'story',
+    text: `The construct folds in on itself and goes dark. Rue stares at the spot where it stood for a long moment.
+
+"Huh." They almost smile. "It read you fine. It just couldn't decide what you were." They look at you differently now. "That's the interesting part, isn't it. Not the elements. What the System does when it can't sort you."
+
+They don't explain what they mean. You're not sure they could.`,
+    hpLoss: 10,
+    rewards: [{ itemKey: 'rune_lux', qty: 1 }],
+    choices: [{ label: 'Back to Rue', next: 'ghosts_deep' }],
+  },
+  ghosts_construct_skip: {
+    id: 'ghosts_construct_skip', type: 'story',
+    text: `Rue slips into the dark between two buildings and is gone before the construct finishes turning. When you find them again later, they're quieter than before.
+
+"You didn't have to run with me," they say. "But you did." They let it drop. The construct logged you both anyway.`,
+    choices: [{ label: 'Back to Rue', next: 'ghosts_deep' }],
   },
 
   zone_explanation: {
@@ -423,7 +539,9 @@ A silence.
 
 "The Judges respond to elemental resonance. Judge Mercy — the cooperation Judge — responds to Water, Plant, Earth, Wind, Arcane. Protective elements. Patient ones. Judge Wrath — the dominance Judge — responds to Fire, Lightning, Shadow, Metal. Aggressive elements. Precise ones."
 
-Rue looks at the map in your hands. "I don't think either Judge is worse than the other. I think they're the same difficulty, tuned for different kinds of players." A long pause. "I think the System is fair, actually. I just haven't figured out what that means yet."`,
+Rue looks at the map in your hands. "I don't think either Judge is worse than the other. I think they're the same difficulty, tuned for different kinds of players." A long pause. "I think the System is fair, actually. I just haven't figured out what that means yet."
+
+Rue folds the map slowly. "One thing. The trees aren't the only door — they're just the one everyone walks through. The empty hand opens something else." They shrug, like they don't believe it themselves. "Probably nothing. Most doors are."`,
     choices: [
       { label: 'Head to the district hub',  next: 'district_hub' },
     ],
@@ -470,9 +588,9 @@ She watches you, patient.
 
 "Take this as the favor it is. Not an obligation. The Builders don't trade in obligations."`,
     choices: [
-      { label: 'Hand over two medical packs', sub: 'Costs 2 medical_pack · Moral +5 · Builder credit', next: 'sera_gave', moral: 5, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
+      { label: 'Hand over two medical packs', sub: 'Costs 2 medical packs · Builder credit', next: 'sera_gave', moral: 5, allianceTag: 'sera_met', requires: [{ itemKey: 'medical_pack', qty: 2 }] },
       { label: '"I don\'t have any to spare."', sub: 'Honest — no penalty', next: 'sera_declined', allianceTag: 'sera_met' },
-      { label: 'Walk past her without speaking', sub: 'Moral -3 · the System notes the silence', next: 'sera_ignored', moral: -3, allianceTag: 'sera_met' },
+      { label: 'Walk past her without speaking', sub: 'The System notes the silence', next: 'sera_ignored', moral: -3, allianceTag: 'sera_met' },
     ],
   },
   sera_gave: {
@@ -512,8 +630,8 @@ A small pause. Voss doesn't smile.
 
 "I'm not asking you to pull a trigger. I'm telling you there's an option. Information has value. You don't even have to act on it."`,
     choices: [
-      { label: '"Tell me where." (intercept the runner)', sub: 'Moral -8 · gear loot · Voss credit', next: 'voss_intercept', moral: -8, allianceTag: 'voss_met' },
-      { label: '"Tell me where." (warn the runner)', sub: 'Moral +5 · Builder credit', next: 'voss_warned', moral: 5, allianceTag: 'voss_met' },
+      { label: '"Tell me where." (intercept the runner)', sub: 'Gear loot · Voss credit', next: 'voss_intercept', moral: -8, allianceTag: 'voss_met' },
+      { label: '"Tell me where." (warn the runner)', sub: 'Builder credit', next: 'voss_warned', moral: 5, allianceTag: 'voss_met' },
       { label: '"Not interested."', sub: 'No change', next: 'voss_declined', allianceTag: 'voss_met' },
     ],
   },
@@ -676,9 +794,9 @@ They finally look at you again.
 
 "Could you stay? Or — I don't know. Whatever you can do."`,
     choices: [
-      { label: 'Help bandage the leg',     sub: 'Stay — moral +3, Builder credit',                              next: 'tam_wounded_help',    moral: 3, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
-      { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical_pack — moral +4, deeper Builder credit',       next: 'tam_wounded_medpack', moral: 4, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
-      { label: '"I have to keep moving."', sub: 'Walk on — moral -2, Tam notes the choice',                     next: 'tam_wounded_left',    moral: -2, allianceTag: 'tam_walked_past' },
+      { label: 'Help bandage the leg',     sub: 'Stay — Builder credit',                              next: 'tam_wounded_help',    moral: 3, allianceTag: 'tam_helped_fire', allianceTagRepeatable: 'builders_helped' },
+      { label: 'Give Tam a medical pack',  sub: 'Costs 1 medical pack — deeper Builder credit',       next: 'tam_wounded_medpack', moral: 4, allianceTag: 'tam_gave_medpack',  requires: [{ itemKey: 'medical_pack', qty: 1 }], cost: [{ itemKey: 'medical_pack', qty: 1 }] },
+      { label: '"I have to keep moving."', sub: 'Walk on — Tam notes the choice',                     next: 'tam_wounded_left',    moral: -2, allianceTag: 'tam_walked_past' },
     ],
   },
 
@@ -826,8 +944,8 @@ They draw a blade.`,
 
 The recruiter is alive but out of the fight. The blade is gone, the leg won't hold. They look up at you — that same dry, professional look — and wait.`,
     choices: [
-      { label: 'Spare them',   sub: 'Moral +3',                next: 'tam_xroads_fight_spare',   moral: 3,  allianceTag: 'spared_humanoid' },
-      { label: 'Finish them',  sub: 'Moral -3, executed flag', next: 'tam_xroads_fight_execute', moral: -3, allianceTag: 'executed_humanoid' },
+      { label: 'Spare them',   sub: 'Let them live',                next: 'tam_xroads_fight_spare',   moral: 3,  allianceTag: 'spared_humanoid' },
+      { label: 'Finish them',  sub: 'Executed — the System records it', next: 'tam_xroads_fight_execute', moral: -3, allianceTag: 'executed_humanoid' },
     ],
   },
 
@@ -893,8 +1011,8 @@ Tam — the kid with the bandaged hand — steps from behind Sera. They're holdi
 The fight is going to happen in about ten seconds. The only question is who you stand next to when it does.`,
     sysMsg: 'THE SWEEP — district alignment is forcing a clash. Choose carefully.',
     choices: [
-      { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew · moral +8', next: 'sweep_defend_combat', moral: 8, allianceTag: 'sweep_builders' },
-      { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this · moral -8', next: 'sweep_join_combat', moral: -8, allianceTag: 'sweep_hunters' },
+      { label: 'Stand with the Builders', sub: 'Defend Sera\'s crew', next: 'sweep_defend_combat', moral: 8, allianceTag: 'sweep_builders' },
+      { label: 'Stand with the Hunters',  sub: 'Voss has been waiting for this', next: 'sweep_join_combat', moral: -8, allianceTag: 'sweep_hunters' },
       { label: 'Leave the plaza',         sub: 'Let them sort it out · cowardice noted', next: 'sweep_escape', allianceTag: 'sweep_walked' },
     ],
   },
@@ -989,7 +1107,7 @@ Behind her, the other Builders are taking positions. A dozen of them. Not many. 
 "This isn't required. You can walk past us right now and the Judges will still come for you. The fight just won't have us in it."`,
     sysMsg: 'HERO TRACK UNLOCKED — defend the plaza with the Builders before facing the Judges.',
     choices: [
-      { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this · moral +5', next: 'hero_finale_combat', moral: 5, allianceTag: 'hero_finale_done' },
+      { label: 'Stand with them', sub: 'Defensive fight · Mercy will see this', next: 'hero_finale_combat', moral: 5, allianceTag: 'hero_finale_done' },
       { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
     ],
   },
@@ -1041,7 +1159,7 @@ A pause. They're watching your face.
 The corridor is dark. The Judges are coming. Voss isn't going to ask twice.`,
     sysMsg: 'VILLAIN TRACK UNLOCKED — finish the district before facing the Judges.',
     choices: [
-      { label: 'Finish it', sub: 'Final sweep · Wrath will see this · moral -5', next: 'villain_finale_combat', moral: -5, allianceTag: 'villain_finale_done' },
+      { label: 'Finish it', sub: 'Final sweep · Wrath will see this', next: 'villain_finale_combat', moral: -5, allianceTag: 'villain_finale_done' },
       { label: 'Walk past — face the Judges alone', sub: 'Normal Judges fight', next: 'pre_boss_ch2' },
     ],
   },
@@ -1199,8 +1317,8 @@ They stop walking.
 They start walking again. "I'm going to the Shadow zone now. It's been open for me since the first day."`,
     choices: [
       { label: 'Go to the cache — consider it',     sub: 'See what the Builders found', next: 'cache_consider', moral: -3, allianceTag: 'cache_seen' },
-      { label: 'Walk away from the offer',           sub: 'Your record stays clean — moral +5', next: 'cache_refused', moral: 5, allianceTag: 'cache_seen' },
-      { label: 'Report the offer to Sera',           sub: 'Build trust — moral +10',    next: 'cache_reported', moral: 10, allianceTag: 'cache_seen' },
+      { label: 'Walk away from the offer',           sub: 'Your record stays clean', next: 'cache_refused', moral: 5, allianceTag: 'cache_seen' },
+      { label: 'Report the offer to Sera',           sub: 'Build trust with Sera',    next: 'cache_reported', moral: 10, allianceTag: 'cache_seen' },
     ],
   },
 
@@ -1220,8 +1338,8 @@ Your interface: MORAL DECISION POINT. This action will be recorded.
 
 Two paths forward from here — take, or stand.`,
     choices: [
-      { label: 'Take nothing — stand with the Builders', sub: 'moral +8, full alliance maintained', next: 'cache_stood', moral: 8 },
-      { label: 'Take the sealed container and leave',    sub: 'Betrayal — moral -20. Recorded permanently.', next: 'cache_betrayed', moral: -20 },
+      { label: 'Take nothing — stand with the Builders', sub: 'Full alliance maintained', next: 'cache_stood', moral: 8 },
+      { label: 'Take the sealed container and leave',    sub: 'Betrayal — recorded permanently', next: 'cache_betrayed', moral: -20 },
     ],
   },
 
