@@ -92,7 +92,7 @@ On a bench nearby: a folded map weighted down with a chunk of concrete. Someone 
   },
 
   zone_wind_harvest: {
-    id: 'zone_wind_harvest', type: 'story',
+    id: 'zone_wind_harvest', type: 'story', hpLoss: 12,
     text: `The draft is strong enough to push your arm backward as you reach. You brace and push through. The formation releases — your hand comes back full of compressed residue and the knockback sends you into the far wall.
 
 Worth it.`,
