@@ -7,13 +7,13 @@ export default {
 
 The door is locked but not System-locked. Standard key lock — a person put it there. A person could force it.
 
-Your interface: ELEMENTAL ZONE — VENOM. Resonance check: Attrition alignment detected.
+Your interface: ELEMENTAL ZONE — VENIN. Resonance check: Attrition alignment detected.
 
 The zone deals constant low damage from the moment you enter.
 
 Inside: an antidote — one dose, neutralizes the zone's environmental DoT. Behind it: an unstable compound. Your interface: If applied in the Judge fight, deals 5% of both Judges' max HP as poison per turn × 3 turns. Cost: 25% of your own max HP.
 
-VENOM SKILL TREE — UNLOCKED.`,
+VENIN SKILL TREE — UNLOCKED.`,
     xp: 120,
     choices: [
       { label: 'Take the antidote only.', sub: 'Safe — neutralizes zone DoT.', next: 'zone_poison_antidote' },
@@ -26,7 +26,7 @@ VENOM SKILL TREE — UNLOCKED.`,
     id: 'zone_poison_antidote', type: 'story',
     text: `The antidote neutralizes the DoT cleanly.
 
-VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
+VENIN TREE UNLOCKED. VENIN BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
     xp: 50, rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Push deeper into the pharmacy', next: 'zone_poison_explore_1' }],
   },
@@ -37,16 +37,16 @@ VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn 
 
 Your interface: Unstable compound secured.
 
-VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
+VENIN TREE UNLOCKED. VENIN BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
     xp: 80, rewards: [{ itemKey: 'rune_venin', qty: 2 }, { itemKey: 'venom_compound', qty: 1 }],
     choices: [{ label: 'Push deeper into the pharmacy', next: 'zone_poison_explore_1' }],
   },
 
   zone_poison_unlock: {
-    id: 'zone_poison_unlock', type: 'story', hpLoss: 12,
+    id: 'zone_poison_unlock', type: 'story',
     text: `You take neither. Move through under the DoT, conserving everything else.
 
-VENOM TREE UNLOCKED. VENOM BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
+VENIN TREE UNLOCKED. VENIN BINDING: All attacks apply poison — 3% max HP/turn × 2 turns. Own HP regen permanently halved.`,
     xp: 50, rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Push deeper into the pharmacy', next: 'zone_poison_explore_1' }],
   },
@@ -104,7 +104,7 @@ On the pharmacist's counter: a clean, sealed bag. A note in small handwriting: "
   },
 
   zone_poison_unit: {
-    id: 'zone_poison_unit', type: 'story', hpLoss: 10,
+    id: 'zone_poison_unit', type: 'story',
     text: `Breaking into the unit releases a concentrated burst of DoT into the immediate area. You hold your breath and push through. The formation is dense — worth it.`,
     xp: 50, rewards: [{ itemKey: 'rune_venin', qty: 2 }],
     choices: [{ label: 'Continue', next: 'zone_poison_corridor' }],
@@ -226,7 +226,7 @@ From behind the shelving — a serpent made of toxin and motion, dripping acid f
 It opens its jaw. The sound of a burst pipe.
 
 The DoT increases.`,
-    choices: [{ label: 'Fight The Plague Coil', sub: 'Zone guardian — defeat to claim Venom', next: 'zone_poison_boss' }],
+    choices: [{ label: 'Fight The Plague Coil', sub: 'Zone guardian — defeat to claim Venin', next: 'zone_poison_boss' }],
   },
 
   zone_poison_boss: {
@@ -244,7 +244,7 @@ The DoT increases.`,
 
 The purple cloud disperses. Slowly. The air still tastes wrong for a few minutes, then clears.
 
-Your interface: VENOM ZONE — FULLY CLAIMED. Venom resonance locked.
+Your interface: VENIN ZONE — FULLY CLAIMED. Venin resonance locked.
 
 A rune sits on the loading dock floor. You take it carefully.`,
     xp: 80, rewards: [{ itemKey: 'rune_venin', qty: 1 }],
