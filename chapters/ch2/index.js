@@ -380,7 +380,12 @@ export async function mountChapter2(__mountOptions = {}) {
     // they show on top of the hub without changing where you land.
     const pendingClockFlags = []
     if (nextId === 'district_hub') {
-      const log = player.alliance_log || []
+      // Include the tag set by the choice that brought us here. The
+      // allianceTag save (further down in _goToCore) runs AFTER this redirect
+      // block, so without this merge a reaction node's own 'seen' flag isn't
+      // visible yet and the reaction re-fires forever on return to the hub.
+      const _pendingTags = [choice.allianceTag, choice.allianceTagRepeatable].filter(Boolean)
+      const log = [...(player.alliance_log || []), ..._pendingTags]
       const defeated = (player.defeated_bosses || []).filter(b => b.startsWith('zone_boss_')).length
       const helpedRescue = log.includes('builders_helped')
       const moral = player.moral_score || 0
@@ -1138,19 +1143,16 @@ You walk back out.`
     let zonesHtml = ZONES.map(z=>{
       const bossKey = 'zone_boss_'+z.id.replace('zone_','')
       const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
-      // Visual: UNCLEARED zones are bright/inviting; CLEARED zones dim out so
-      // the player can see at a glance what's left to do. (Brightness inverted
-      // from done — bright = still available, dim = finished.)
-      const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.45':'0.9'};border-bottom:.5px solid ${z.color}44"></div>` : ''
-      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'33':''};border-radius:5px;overflow:hidden;background:${z.color}${done?'08':'18'};cursor:pointer;transition:all .2s;margin-bottom:6px;${done?'opacity:.6':''}">
+      const imgHtml = z.img ? `<div style="height:56px;background:url('${z.img}') center/cover no-repeat;opacity:${done?'0.9':'0.55'};border-bottom:.5px solid ${z.color}44"></div>` : ''
+      return `<div data-go="${z.id}" style="border:.5px solid ${z.color}${done?'':'44'};border-radius:5px;overflow:hidden;background:${z.color}${done?'18':'08'};cursor:pointer;transition:all .2s;margin-bottom:6px">
         ${imgHtml}
         <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .6rem">
           <span style="font-size:1rem">${z.icon}</span>
           <div style="flex:1;min-width:0">
-            <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?'var(--ink-dim)':z.color};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
+            <p style="font-family:'Cinzel',serif;font-size:.78rem;color:${done?z.color:'var(--ink-dim)'};margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${z.element} — ${z.name}</p>
             <p style="font-family:'Share Tech Mono',monospace;font-size:.44rem;color:var(--ink-dim);margin:0">${z.branch} · ${done?'✓ CLEARED':'Enter zone'}</p>
           </div>
-          <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?'#5a4825':z.color};border:.5px solid ${done?'rgba(139,106,32,.2)':z.color+'44'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
+          <span style="font-family:'Share Tech Mono',monospace;font-size:.48rem;color:${done?z.color:'#5a4825'};border:.5px solid ${done?z.color+'44':'rgba(139,106,32,.2)'};padding:1px 6px;border-radius:10px">${done?'CLEARED':'ZONE'}</span>
         </div>
       </div>`
     }).join('')
