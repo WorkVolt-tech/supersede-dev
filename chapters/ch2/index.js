@@ -39,6 +39,7 @@ import ZONE_POISON    from './zones/zone-poison.js'
 import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 import { NODES } from './nodes.js'
 import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
+import { playHitFx } from '../../data/combat-fx.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -2702,6 +2703,19 @@ You walk back out.`
       let messages=[]
 
       function resolvePlayerAction() {
+        // ── Tier-2 elemental hit FX ──────────────────────────────────
+        // Fire a burst over the enemy keyed to the attack's element. Skills
+        // carry sk.el; basic strike/heavy are 'physical'. Purely cosmetic,
+        // wrapped so it can never interfere with damage resolution.
+        try {
+          let _fxEl = 'physical'
+          if (playerAction === 'skill' && skillKey) {
+            const _sk = BATTLE_SKILLS[skillKey]
+            if (_sk && _sk.el) _fxEl = _sk.el
+          }
+          const _enemyRow = panel.querySelector('.combat-enemy-row')
+          playHitFx(_enemyRow, _fxEl)
+        } catch (_e) { /* FX must never break combat */ }
         if(playerAction==='strike') {
           const roll=Math.floor(Math.random()*(6+luckBonus))+1
           let baseATK=playerATK()+(statusEffects.playerATKBonus||0)
