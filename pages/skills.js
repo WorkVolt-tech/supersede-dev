@@ -328,7 +328,7 @@ export async function mountSkills(__mountOptions = {}) {
       desc:'◆ FLOW NOTABLE: +8 SPD. On dodge, your next Strike deals double damage. If you have Arcane nodes, the proc also triggers a free spell hit. Agility becomes your opener.' },
     { id:'fln5', label:'Stagger',    type:'notable', battleType:'passive', branch:'flow', x:CX-546, y:CY-325,  cost:2, stat:'control_bonus', val:6, requires:['flc6'],
       desc:'◆ SYNERGY — FLOW × ARCANE: +6 CTR. 25% chance each turn to stagger the enemy — they miss their attack. Control debuffs further reduce their hit chance by 5% per stack.' },
-    { id:'fln6', label:'Momentum',   type:'notable', battleType:'passive', branch:'flow', x:CX-618, y:CY-201, cost:2, stat:'speed_bonus',  val:8,  requires:['fl6'],
+    { id:'fln6', label:'Momentum',   type:'notable', battleType:'active', branch:'flow', x:CX-618, y:CY-201, cost:2, stat:'speed_bonus',  val:8,  requires:['fl6'],
       desc:'◆ SYNERGY — FLOW × OFFENSE: +8 SPD. Gain +1 ATK per SPD point above the enemy — moving faster translates directly into hitting harder. Speed is damage.' },
     // Pre-keystone
     { id:'fl7',  label:'+3 SPD',     type:'small', branch:'flow', x:CX-706, y:CY-156, cost:1, stat:'speed_bonus',   val:3, requires:['fln4','fln6'] },
