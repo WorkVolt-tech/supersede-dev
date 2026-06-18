@@ -1655,9 +1655,12 @@ You walk back out.`
     // (messages will print in the first combat-log push after enemy actions)
 
     // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
-    const enemyImg = enemy.img
-      ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
+    const enemyArtInner = enemy.img
+      ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
       : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
+    // Wrap in a positioned box so the hit-FX burst can anchor directly over
+    // the enemy art (not the whole row, which would put it over the HP bar).
+    const enemyImg = '<div class="combat-enemy-art" style="position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center">'+enemyArtInner+'</div>'
 
     // ── Twin Judges form banner (#20 / #21) ────────────────────────────────
     // Shown only when the Judges fight is active. Renders the leading Judge,
@@ -2713,8 +2716,8 @@ You walk back out.`
             const _sk = BATTLE_SKILLS[skillKey]
             if (_sk && _sk.el) _fxEl = _sk.el
           }
-          const _enemyRow = panel.querySelector('.combat-enemy-row')
-          playHitFx(_enemyRow, _fxEl)
+          const _enemyArt = panel.querySelector('.combat-enemy-art') || panel.querySelector('.combat-enemy-row')
+          playHitFx(_enemyArt, _fxEl)
         } catch (_e) { /* FX must never break combat */ }
         if(playerAction==='strike') {
           const roll=Math.floor(Math.random()*(6+luckBonus))+1
