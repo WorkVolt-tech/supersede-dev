@@ -155,6 +155,14 @@ function ensureStyles() {
     }
     .cfx-slash { animation: cfxSlash .38s ease-out forwards; }
 
+    /* ── Aura (self-cast buff glow on the player side) ── */
+    @keyframes cfxAura {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(.6); }
+      25%  { opacity: .85; }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(1.5); }
+    }
+    .cfx-aura { animation: cfxAura .65s ease-out forwards; }
+
     @media (prefers-reduced-motion: reduce) {
       .cfx { animation-duration: .01ms !important; }
     }
@@ -195,6 +203,11 @@ function svgFor(shape, c, g) {
         <circle cx="50" cy="50" r="30" fill="url(#cfxtox)" opacity=".85"/>
         ${[20,90,160,250,320].map(a=>{const rad=a*Math.PI/180;return `<circle cx="${50+30*Math.cos(rad)}" cy="${50+30*Math.sin(rad)}" r="9" fill="${g}" opacity=".7"/>`}).join('')}
         </svg>`
+    case 'aura':
+      return `<svg viewBox="0 0 100 100"><defs><radialGradient id="cfxaura" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="${g}" stop-opacity=".9"/><stop offset="55%" stop-color="${c}" stop-opacity=".5"/><stop offset="100%" stop-color="${c}" stop-opacity="0"/></radialGradient></defs>
+        <circle cx="50" cy="50" r="46" fill="url(#cfxaura)"/>
+        <circle cx="50" cy="50" r="30" fill="none" stroke="${g}" stroke-width="2" opacity=".6"/></svg>`
     case 'smear':
       return `<svg viewBox="0 0 100 100"><defs><radialGradient id="cfxsm" cx="50%" cy="50%" r="50%">
         <stop offset="0%" stop-color="${g}"/><stop offset="60%" stop-color="${c}"/><stop offset="100%" stop-color="transparent"/></radialGradient></defs>
@@ -242,6 +255,26 @@ export function playHitFx(targetEl, element) {
   const cleanup = () => { if (done) return; done = true; el.remove() }
   el.addEventListener('animationend', cleanup, { once: true })
   setTimeout(cleanup, 800)
+}
+
+// Buff/self-cast variant: plays the aura shape over the player's side
+// (HP row) instead of a hit-burst on the enemy. Same color logic.
+export function playBuffFx(targetEl, element) {
+  if (!targetEl) return
+  ensureStyles()
+  const fx = FX[element] || FX.physical
+  const pos = getComputedStyle(targetEl).position
+  if (pos === 'static') targetEl.style.position = 'relative'
+  let layer = targetEl.querySelector(':scope > .cfx-layer')
+  if (!layer) { layer = document.createElement('div'); layer.className = 'cfx-layer'; targetEl.appendChild(layer) }
+  const el = document.createElement('div')
+  el.className = 'cfx cfx-aura'
+  el.innerHTML = svgFor('aura', fx.color, fx.glow)
+  layer.appendChild(el)
+  let done = false
+  const cleanup = () => { if (done) return; done = true; el.remove() }
+  el.addEventListener('animationend', cleanup, { once: true })
+  setTimeout(cleanup, 900)
 }
 
 // Optional convenience: map a basic combat action to an element.
