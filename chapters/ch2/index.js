@@ -1637,6 +1637,8 @@ You walk back out.`
     if(has('dcn4')) statusEffects.shadeWalk=true
     if(has('dcn5')) statusEffects.enduringRoot=true
     if(has('dc_ks2'))statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2)
+    if(has('dcn3')) statusEffects.thornwall=true        // Thornwall: defend reflects 15%
+    if(has('dfn6')) statusEffects.bulwarkPassive=true   // Bulwark: DEF doubles after 2 consecutive hits
 
     // ── Class skill combat hooks: initialize ─────────────────────────────────
     // Equal Sky (Arbiter t5b) grants +5 SP at combat start via statusEffects.cls_bonusSP
@@ -2950,7 +2952,10 @@ You walk back out.`
       function resolveEnemyAction() {
         if(statusEffects.enemyStunTurns>0||statusEffects.rootTrapTurns>0){messages.push(enemy.name+' is <em>immobilized</em> this turn!');return}
         if(statusEffects.phantomStep){statusEffects.phantomStep=false;messages.push(enemy.name+' attacks — but you phase out!');return}
-        let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())+(Math.random()*6|0)))
+        // Bulwark passive: if a DEF-double is queued, apply 2x DEF this turn then consume it.
+        let _bulwarkDef = 0
+        if(statusEffects.bulwarkDefDouble){_bulwarkDef=playerDEF();statusEffects.bulwarkDefDouble=false}
+        let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
         eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
         // Cowardice modifier (#20): Twin Judges hit harder while player is
         // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
@@ -2985,8 +2990,12 @@ You walk back out.`
           }
           currentHp = newHp
           messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')
+          // Bulwark (passive): count consecutive enemy hits; at 2, queue a DEF-double next turn.
+          if(statusEffects.bulwarkPassive){statusEffects.bulwarkHitStreak=(statusEffects.bulwarkHitStreak||0)+1;if(statusEffects.bulwarkHitStreak>=2){statusEffects.bulwarkDefDouble=true;statusEffects.bulwarkHitStreak=0;messages.push('🛡 Bulwark — DEF doubled next turn!')}}
         }
         if(statusEffects.metalReflect&&eDmg>0){const ref=Math.round(eDmg*0.15);enemyHp=Math.max(0,enemyHp-ref);messages.push('⚙ Reflect <strong>'+ref+'</strong> back!')}
+        // Thornwall (passive): while defending, reflect 15% of damage taken as thorns.
+        if(statusEffects.thornwall&&defending&&eDmg>0){const tr=Math.max(1,Math.round(eDmg*0.15));enemyHp=Math.max(0,enemyHp-tr);messages.push('🌿 Thornwall reflects <strong>'+tr+'</strong>!')}
         if(statusEffects.liveWire&&Math.random()<0.20){statusEffects.enemyStunTurns=1;messages.push('⚡ Thorns — enemy stunned!')}
         if(statusEffects.ironMirror){const ref=Math.round(eDmg*0.4);enemyHp=Math.max(0,enemyHp-ref);statusEffects.ironMirror=false;messages.push('⚙ Iron Mirror reflected <strong>'+ref+'</strong>!')}
         // Ghost step dodge on counterattack
