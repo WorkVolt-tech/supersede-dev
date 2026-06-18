@@ -39,7 +39,7 @@ import ZONE_POISON    from './zones/zone-poison.js'
 import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 import { NODES } from './nodes.js'
 import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
-import { playHitFx } from '../../data/combat-fx.js'
+import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -1691,7 +1691,7 @@ You walk back out.`
       + '<p id="'+cid+'-e-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink-dim);margin-top:2px">'+enemyHp+' / '+maxEnemyHp+' HP</p>'
       + '</div></div>'
       + '<div class="combat-log" id="'+cid+'-combat-log">The encounter begins.</div>'
-      + '<div class="stat-row" style="margin-bottom:.4rem">'
+      + '<div class="stat-row combat-player-row" style="margin-bottom:.4rem;position:relative">'
       + '<span class="stat-key" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink)">YOUR HP</span>'
       + '<div class="stat-bar-wrap"><div class="stat-bar" id="'+cid+'-c-player-bar" style="background:#5ec45e;width:100%;transition:width .4s,background .4s"></div></div>'
       + '<span id="'+cid+'-c-player-hp" style="font-family:\'Share Tech Mono\',monospace;font-size:.62rem;color:var(--ink);min-width:50px;text-align:right">'+currentHp+'/'+maxPlayerHp+'</span>'
@@ -2713,13 +2713,25 @@ You walk back out.`
         // carry sk.el; basic strike/heavy are 'physical'. Purely cosmetic,
         // wrapped so it can never interfere with damage resolution.
         try {
+          // Skill fns that actually strike the enemy → enemy hit-burst.
+          // Everything else (buffs/heals/stances/debuffs) → self-cast aura on
+          // the player side. Basic Strike/Heavy are always enemy hits.
+          const _ATTACK_FNS = new Set(['fireBlast','earthquake','earthSpike','lightningStrike',
+            'thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine'])
           let _fxEl = 'physical'
+          let _isAttack = true
           if (playerAction === 'skill' && skillKey) {
             const _sk = BATTLE_SKILLS[skillKey]
             if (_sk && _sk.el) _fxEl = _sk.el
+            _isAttack = _sk && _ATTACK_FNS.has(_sk.fn)
           }
-          const _enemyArt = panel.querySelector('.combat-enemy-art') || panel.querySelector('.combat-enemy-row')
-          playHitFx(_enemyArt, _fxEl)
+          if (_isAttack) {
+            const _enemyArt = panel.querySelector('.combat-enemy-art') || panel.querySelector('.combat-enemy-row')
+            playHitFx(_enemyArt, _fxEl)
+          } else {
+            const _playerRow = panel.querySelector('.combat-player-row')
+            playBuffFx(_playerRow, _fxEl)
+          }
         } catch (_e) { /* FX must never break combat */ }
         if(playerAction==='strike') {
           const roll=Math.floor(Math.random()*(6+luckBonus))+1
