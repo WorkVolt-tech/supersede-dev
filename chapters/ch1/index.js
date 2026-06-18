@@ -3,6 +3,7 @@ import { supabase } from '../../supabase.js'
 import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
+import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 import * as ClsCombat from '../../data/class_combat.js'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
 import {
@@ -61,9 +62,6 @@ export async function mountChapter1(__mountOptions = {}) {
   // ── Constants ────────────────────────────────────
   // XP needed to reach next level — exponential curve
   // Level 1→2: 100, 2→3: 150, 3→4: 225, 4→5: 337, 5→6: 506, 6→7: 759...
-  function xpForLevel(level) {
-    return Math.floor(100 * Math.pow(1.5, level - 1))
-  }
 
   // ── App state ────────────────────────────────────
   // Always call renderNav so the bookmark re-paints on every mount.
@@ -131,12 +129,12 @@ export async function mountChapter1(__mountOptions = {}) {
     currentHp = newHp
     player.max_hp = newMaxHp
     player.level  = level
-    player.xp     = newXp
+    player.xp     = xp
 
     window.showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
     renderHUD()
 
-    return { level, max_hp: newMaxHp, hp: newHp, xp: newXp,
+    return { level, max_hp: newMaxHp, hp: newHp, xp: xp,
              skill_points: newSP, sp_claimed: newClaimed, ...updStats }
   }
 
@@ -148,9 +146,10 @@ export async function mountChapter1(__mountOptions = {}) {
     const lvl = player.level || 1
     const hpPct  = Math.max(0, Math.round(hp / mhp * 100))
     const hpCol  = hpPct > 60 ? '#5ec45e' : hpPct > 30 ? '#c8b96e' : '#e05555'
-    const xpNext = xpForLevel(lvl)
-    const xpIntoLevel = Math.max(0, Math.min(xp, xpNext - 1))
-    const xpPct = Math.min(100, Math.round(xpIntoLevel / xpNext * 100))
+    const _xpP = xpProgress(player)
+    const xpNext = _xpP.needed
+    const xpIntoLevel = _xpP.into
+    const xpPct = _xpP.pct
 
     // ── Moral standing (HUD display) ─────────────────────────
     // Shared 6-tier ladder via reputation.js (Hero/Good/Neutral/Ruthless/Corrupt/Villain).
