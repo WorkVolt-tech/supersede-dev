@@ -38,6 +38,7 @@ import ZONE_METAL     from './zones/zone-metal.js'
 import ZONE_POISON    from './zones/zone-poison.js'
 import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 import { NODES } from './nodes.js'
+import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -67,7 +68,6 @@ export async function mountChapter2(__mountOptions = {}) {
   // ENGINE — mirrors chapter1 exactly
   // ═══════════════════════════════════════════════════════════
 
-  function xpForLevel(lv) { return Math.floor(100 * Math.pow(1.5, lv - 1)) }
   function getDefeatedBosses() { return player.defeated_bosses || [] }
   function markBossDefeated(key) { const d=[...getDefeatedBosses()]; if(!d.includes(key)) d.push(key); player.defeated_bosses=d; return d }
   function escapeHtml(value) {
@@ -3231,10 +3231,10 @@ You walk back out.`
     player.skill_points=newSP;player.sp_claimed=(player.sp_claimed||0)+spGained
     const sg=levelsGained
     const us={atk:(player.atk||1)+sg,def:(player.def||0)+sg,power:(player.power||0)+sg,guard:(player.guard||0)+sg,speed:(player.speed||0)+sg,insight:(player.insight||0)+sg,luck:(player.luck||0)+sg,control:(player.control||0)+sg}
-    Object.assign(player,us);currentHp=newHp;player.max_hp=newMaxHp;player.level=level;player.xp=newXp
+    Object.assign(player,us);currentHp=newHp;player.max_hp=newMaxHp;player.level=level;player.xp=xp
     window.showToast('LEVEL UP! Lvl '+level+' — +5 HP · +1 all stats · +'+spGained+' SP!')
     renderHUD()
-    return{level,max_hp:newMaxHp,hp:newHp,xp:newXp,skill_points:newSP,sp_claimed:player.sp_claimed,...us}
+    return{level,max_hp:newMaxHp,hp:newHp,xp:xp,skill_points:newSP,sp_claimed:player.sp_claimed,...us}
   }
 
   function getEquippedBonus(stat) {
@@ -3315,9 +3315,10 @@ You walk back out.`
     const moralPct = getMoralBarPct(player.moral_score)
     const hpPct=Math.max(0,Math.round(hp/mhp*100))
     const hpCol=hpPct>60?'#5ec45e':hpPct>30?'#c8b96e':'#e05555'
-    const xpNext=xpForLevel(lvl)
-    const xpIntoLevel=Math.max(0,Math.min(xp,xpNext-1))
-    const xpPct=Math.min(100,Math.round(xpIntoLevel/xpNext*100))
+    const _xpP=xpProgress(player)
+    const xpNext=_xpP.needed
+    const xpIntoLevel=_xpP.into
+    const xpPct=_xpP.pct
     const dotLeft=Math.max(2,Math.min(94,moralPct))
 
     document.getElementById('hud').innerHTML=`
