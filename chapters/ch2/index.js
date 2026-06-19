@@ -2930,27 +2930,33 @@ You walk back out.`
           const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
           statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
           const sc=skillScale(skillKey),lv=_skillLv(skillKey)
+          // Elemental tree: damage multiplier for THIS skill's element. The
+          // damage-dealing skills below multiply their computed damage by this
+          // so the tree's +X% <element> damage nodes actually apply. Buffs and
+          // heals don't use it. Falls back to 1 on any error.
+          let _elMult = 1
+          try { _elMult = elDamageMult(player, sk.el || 'physical') } catch(_e){}
           // Skill effects
           if(sk.fn==='shadowStep'){statusEffects.ignoreEnemyDEF=true;messages.push('🌑 Shadow Step — next attack ignores DEF!')}
           else if(sk.fn==='rockArmor'){const b=Math.round(20*sc);statusEffects.playerDEFBonus=(statusEffects.playerDEFBonus||0)+b;statusEffects.rockArmorTurns=2;messages.push('🪨 Rock Armor +'+b+' DEF!')}
-          else if(sk.fn==='earthquake'){const d=Math.max(5,Math.round(playerATK()*2*sc));enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌍 Earthquake <strong>'+d+'</strong> — stunned!')}
-          else if(sk.fn==='fireBlast'){const d=Math.max(1,Math.round((25*sc+playerATK())-Math.floor((enemy.def||0)*0.5)));enemyHp=Math.max(0,enemyHp-d);messages.push('🔥 Fire Blast <strong>'+d+'</strong>!')}
+          else if(sk.fn==='earthquake'){const d=Math.max(5,Math.round(playerATK()*2*sc*_elMult));enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌍 Earthquake <strong>'+d+'</strong> — stunned!')}
+          else if(sk.fn==='fireBlast'){const d=Math.max(1,Math.round(((25*sc+playerATK())-Math.floor((enemy.def||0)*0.5))*_elMult));enemyHp=Math.max(0,enemyHp-d);messages.push('🔥 Fire Blast <strong>'+d+'</strong>!')}
           else if(sk.fn==='infernoZone'){statusEffects.infernoTurns=3;statusEffects.infernoDmg=Math.round(40*sc);messages.push('🔥 Inferno Zone — '+statusEffects.infernoDmg+' dmg/turn!')}
           else if(sk.fn==='healPulse'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('✨ Heal Pulse +<strong>'+h+'</strong> HP!')}
           else if(sk.fn==='divineBarrier'){statusEffects.invulnerable=true;statusEffects.divineBarrierReflect=true;messages.push('✨ Divine Barrier — invulnerable this turn!')}
-          else if(sk.fn==='lightningStrike'){const d=Math.round((30+playerATK()*0.5)*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('⚡ Lightning Strike <strong>'+d+'</strong>!')}
-          else if(sk.fn==='thunderstorm'){let tot=0;for(let i=0;i<5;i++){const b=Math.round(10*sc)+Math.floor(Math.random()*Math.round(10*sc));tot+=b;enemyHp=Math.max(0,enemyHp-b)};messages.push('⚡ Thunderstorm <strong>'+tot+'</strong>!')}
+          else if(sk.fn==='lightningStrike'){const d=Math.round((30+playerATK()*0.5)*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('⚡ Lightning Strike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='thunderstorm'){let tot=0;for(let i=0;i<5;i++){const b=Math.round((Math.round(10*sc)+Math.floor(Math.random()*Math.round(10*sc)))*_elMult);tot+=b;enemyHp=Math.max(0,enemyHp-b)};messages.push('⚡ Thunderstorm <strong>'+tot+'</strong>!')}
           else if(sk.fn==='bladeForm'){const ab=Math.round(20*sc),sb=Math.round(5*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+sb;messages.push('⚙ Blade Form ATK+'+ab+' SPD+'+sb+'!')}
           else if(sk.fn==='ironDomain'){const ab=Math.round(playerATK()*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('⚙ Iron Domain ATK+'+ab+'!')}
           else if(sk.fn==='rootTrap'){statusEffects.rootTrapTurns=1;messages.push('🌿 Root Trap — enemy rooted!')}
-          else if(sk.fn==='overgrowth'){const h=Math.round(40*sc),d=Math.round(30*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);enemyHp=Math.max(0,enemyHp-d);messages.push('🌿 Overgrowth +'+h+' HP & <strong>'+d+'</strong> dmg!')}
+          else if(sk.fn==='overgrowth'){const h=Math.round(40*sc),d=Math.round(30*sc*_elMult);currentHp=Math.min(maxPlayerHp,currentHp+h);enemyHp=Math.max(0,enemyHp-d);messages.push('🌿 Overgrowth +'+h+' HP & <strong>'+d+'</strong> dmg!')}
           else if(sk.fn==='waterShield'){const s=Math.round(30*sc);statusEffects.waterShield=(statusEffects.waterShield||0)+s;messages.push('💧 Water Shield absorbs '+s+' dmg!')}
-          else if(sk.fn==='tsunami'){const d=Math.round((50+playerATK()*0.4)*sc);enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌊 Tsunami <strong>'+d+'</strong> — stunned!')}
-          else if(sk.fn==='dashStrike'){const d=Math.max(1,Math.round((playerATK()*2+Math.floor(Math.random()*8))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('💨 Dash Strike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='tsunami'){const d=Math.round((50+playerATK()*0.4)*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);statusEffects.enemyStunTurns=1;messages.push('🌊 Tsunami <strong>'+d+'</strong> — stunned!')}
+          else if(sk.fn==='dashStrike'){const d=Math.max(1,Math.round((playerATK()*2+Math.floor(Math.random()*8))*sc*_elMult));enemyHp=Math.max(0,enemyHp-d);messages.push('💨 Dash Strike <strong>'+d+'</strong>!')}
           else if(sk.fn==='tornadoField'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+pSPD;messages.push('💨 Tornado Field — enemy ATK -'+Math.round(sc*30)+'%!')}
           else if(sk.fn==='voidZone'){statusEffects.enemyATKMult=Math.min(1,1-Math.round(sc*30)/100);messages.push('🌑 Void Zone — enemy ATK -'+Math.round(sc*30)+'%!')}
           else if(sk.fn==='warbound'){statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(playerATK()*0.15);messages.push('✦ Warbound — ATK +15% this turn!')}
-          else if(sk.fn==='embersEnd'){const eb=enemyHp/maxEnemyHp<0.3?0.25:0;const d=Math.max(1,Math.round(playerATK()*(1+eb)*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('✦ Executioner <strong>'+d+'</strong>!'+(eb>0?' [execute bonus]':''))}
+          else if(sk.fn==='embersEnd'){const eb=enemyHp/maxEnemyHp<0.3?0.25:0;const d=Math.max(1,Math.round(playerATK()*(1+eb)*sc*_elMult));enemyHp=Math.max(0,enemyHp-d);messages.push('✦ Executioner <strong>'+d+'</strong>!'+(eb>0?' [execute bonus]':''))}
           else if(sk.fn==='venomLance'){statusEffects.venomLanceTurns=3;messages.push('☠ Venom Lance — next Heavy poisons!')}
           else if(sk.fn==='predator'){const ab=Math.round(20*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('✦ Predator ATK+'+ab+'!')}
           else if(sk.fn==='foresight'){statusEffects.foresightThisTurn=true;messages.push('🔮 Hex Weave — incoming dmg -90% this turn!')}
@@ -2958,7 +2964,7 @@ You walk back out.`
           else if(sk.fn==='heavyGround'){statusEffects.enemySPDDebuff=(statusEffects.enemySPDDebuff||0)+6;messages.push('🌀 Lockdown — enemy SPD -6!')}
           else if(sk.fn==='phantomStep'){statusEffects.phantomStep=true;statusEffects.nextCrit=true;messages.push('👻 Phantom Step — untargetable + guaranteed crit!')}
           else if(sk.fn==='timeLock'){statusEffects.enemyStunTurns=1;statusEffects.nextCrit=true;messages.push('⏱ Time Lock — enemy frozen, next attack ×2!')}
-          else if(sk.fn==='earthSpike'){const d=Math.max(1,Math.round((20-Math.floor((enemy.def||0)*0.3))*sc));enemyHp=Math.max(0,enemyHp-d);messages.push('🪨 Ground Spike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='earthSpike'){const d=Math.max(1,Math.round((20-Math.floor((enemy.def||0)*0.3))*sc*_elMult));enemyHp=Math.max(0,enemyHp-d);messages.push('🪨 Ground Spike <strong>'+d+'</strong>!')}
           else if(sk.fn==='nightshroud'){statusEffects.nightshroud=true;messages.push('🌑 Nightshroud — first dodge is free!')}
           else if(sk.fn==='thornwall'){statusEffects.thornwall=true;messages.push('🌿 Thornwall — Defend reflects 15% dmg!')}
           else if(sk.fn==='dreadPulse'){statusEffects.dreadPulseStacks=(statusEffects.dreadPulseStacks||0);messages.push('💀 Dread Pulse active — each hit -2 enemy ATK!')}
@@ -2970,7 +2976,7 @@ You walk back out.`
           else if(sk.fn==='bloodthirst'){messages.push('🩸 Bloodthirst ready — triggers on kill!')}
           else if(sk.fn==='spellSurge'){statusEffects.spellSurge=true;messages.push('✨ Spell Surge — next skill ×1.5!')}
           else if(sk.fn==='sixthSense'){statusEffects.sixthSense=true;messages.push('👁 Sixth Sense — predicting enemy move!')}
-          else if(sk.fn==='chaosEngine'){const effects=['fire','stun','heal','buff'];const ef=effects[Math.floor(Math.random()*effects.length)];if(ef==='fire'){const d=Math.round(30*sc);enemyHp=Math.max(0,enemyHp-d);messages.push('🌀 Chaos — blast for <strong>'+d+'</strong>!')}else if(ef==='stun'){statusEffects.enemyStunTurns=1;messages.push('🌀 Chaos — enemy stunned!')}else if(ef==='heal'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('🌀 Chaos — healed <strong>'+h+'</strong>!')}else{statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(15*sc);messages.push('🌀 Chaos — ATK buffed!')}}
+          else if(sk.fn==='chaosEngine'){const effects=['fire','stun','heal','buff'];const ef=effects[Math.floor(Math.random()*effects.length)];if(ef==='fire'){const d=Math.round(30*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('🌀 Chaos — blast for <strong>'+d+'</strong>!')}else if(ef==='stun'){statusEffects.enemyStunTurns=1;messages.push('🌀 Chaos — enemy stunned!')}else if(ef==='heal'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('🌀 Chaos — healed <strong>'+h+'</strong>!')}else{statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(15*sc);messages.push('🌀 Chaos — ATK buffed!')}}
           else if(sk.fn==='ancientRoot'){statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2*sc);messages.push('🌿 Ancient Root — shield activated!')}
         }
       }
