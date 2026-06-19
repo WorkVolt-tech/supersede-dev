@@ -60,102 +60,71 @@ export async function renderNav(containerId = 'nav') {
     <style>
       /* ── Nav isolation — always wins over page CSS ── */
       .bm-logo, .bm-player, .bm-link, .bm-signout, .bm-sep, .bm-dot,
-      .bm-top-row, .bm-mid-row, .bm-bottom-row, .bm-links, .bm-content,
-      .bm-wrap, .bm-img {
+      .bm-row, .bm-links, .bm-content, .bm-wrap {
         all: revert;
         box-sizing: border-box;
       }
+      /* CSS bookmark — no image. Dovetail notch via clip-path. Sizes to its
+         own content (no fixed height), so it never pushes the page down the
+         way the old 330px webp did. Recolor by changing --bm-paper / --bm-edge. */
       .bm-wrap {
+        --bm-paper: #f1e4cf;
+        --bm-edge:  #8a5b44;
+        --bm-gold:  #c8a050;
         position: relative;
-        width: 770px;
-        height: 330px;
+        width: 540px;
+        max-width: 100%;
         margin: 0 auto;
+        background: var(--bm-paper);
+        border: 2px solid var(--bm-edge);
+        clip-path: polygon(0 0, 100% 0, 100% 100%, 54% 100%, 50% 90%, 46% 100%, 0 100%);
+        padding: 16px 26px 30px;
         user-select: none;
       }
       @media (max-width: 800px) {
-        .bm-wrap {
-          width: 100%;
-          height: auto;
-          aspect-ratio: 1680 / 720;
-        }
-      }
-      .bm-img {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: fill;
-        pointer-events: none;
+        .bm-wrap { width: 100%; padding: 12px 14px 26px; }
       }
       .bm-content {
-        position: absolute;
-        inset: 0;
-        z-index: 10;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: center;
-        padding-top: 0px;
-        gap: 6px;
-        pointer-events: none;
-      }
-      .bm-content a, .bm-content button, .bm-content span { pointer-events: all; }
-      .bm-top-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .bm-mid-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-      }
-      .bm-bottom-row {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
+        gap: 10px;
       }
       .bm-logo {
-        font-family: 'Cinzel', serif;
-        font-size: 12px;
-        letter-spacing: .28em;
+        font-family: 'Cinzel', Georgia, serif;
+        font-size: 18px;
+        letter-spacing: .34em;
         text-transform: uppercase;
         color: #3a2a14;
         text-decoration: none;
-        flex-shrink: 0;
-        margin-right: 14px;
+      }
+      .bm-rule {
+        height: 1px; width: 200px; max-width: 60%;
+        background: var(--bm-gold); opacity: .55;
       }
       .bm-player {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .08em;
+        font-size: 11px;
+        letter-spacing: .06em;
         color: #4a3820;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex: 1;
+        display: flex; align-items: center; gap: 5px;
         white-space: nowrap;
-        overflow: hidden;
       }
       .bm-dot {
-        display: inline-block;
-        width: 5px; height: 5px;
-        border-radius: 50%;
-        background: ${color};
-        flex-shrink: 0;
+        display: inline-block; width: 6px; height: 6px;
+        border-radius: 50%; background: ${color}; flex-shrink: 0;
       }
+      /* The links row: a centered wrapping flex row. Add or remove links in
+         the array below and they stay centered and balanced automatically —
+         no positions to adjust. */
       .bm-links {
-        display: flex;
-        align-items: center;
-        gap: 0;
-        flex-shrink: 0;
+        display: flex; align-items: center; justify-content: center;
+        flex-wrap: wrap; gap: 0;
       }
       .bm-link {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 9px;
-        letter-spacing: .18em;
+        font-size: 11px;
+        letter-spacing: .16em;
         text-transform: uppercase;
         color: #4a3820;
         text-decoration: none;
@@ -165,64 +134,49 @@ export async function renderNav(containerId = 'nav') {
       }
       .bm-link:hover { color: #1a0e04; }
       .bm-link.active { color: #1a0e04; font-weight: 700; }
-      .bm-sep {
-        color: #8a7050;
-        font-size: 8px;
-        opacity: .4;
-      }
+      .bm-sep { color: #8a7050; font-size: 9px; opacity: .4; }
       .bm-signout {
         font-family: 'JetBrains Mono', monospace;
-        font-size: 7px;
-        letter-spacing: .15em;
+        font-size: 9px;
+        letter-spacing: .14em;
         text-transform: uppercase;
         color: #7a5030;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 3px 5px;
-        transition: color .2s;
-        margin-left: 4px;
-        white-space: nowrap;
+        background: none; border: none; cursor: pointer;
+        padding: 3px 7px; margin-left: 4px;
+        transition: color .2s; white-space: nowrap;
       }
       .bm-signout:hover { color: #1a0e04; }
       @media (max-width: 800px) {
-        .bm-logo { font-size: 8px; }
-        .bm-player { font-size: 6px; }
-        .bm-link { font-size: 5.5px; padding: 2px 4px; }
-        .bm-signout { font-size: 5.5px; }
-        .bm-content { gap: 3px; padding-top: 0; }
+        .bm-logo { font-size: 15px; letter-spacing: .24em; }
+        .bm-player { font-size: 9px; }
+        .bm-link { font-size: 9px; padding: 2px 5px; }
+        .bm-signout { font-size: 8px; }
       }
     </style>
     <div class="bm-wrap">
-      <img class="bm-img" src="${base}components/nav_bookmark.webp" alt="">
       <div class="bm-content">
-        <div class="bm-top-row">
-          <a href="${base}index.html" class="bm-logo">SuperSede</a>
-        </div>
-        <div class="bm-mid-row">
-          <span class="bm-player">
-            ${adminImg}<span class="bm-dot"></span>
-            ${player.username} · Lvl ${player.level} · ◈ ${player.gold}
-          </span>
-        </div>
-        <div class="bm-bottom-row">
-          <nav class="bm-links">
-            ${[
-              { href: `${base}pages/book.html`,                label: 'Chapters',  view: 'chapters'  },
-              { href: `${base}pages/book.html?view=inventory`, label: 'Inventory', view: 'inventory' },
-              { href: `${base}pages/book.html?view=skills`,    label: 'Skills',    view: 'skills'    },
-              { href: `${base}pages/book.html?view=trader`,    label: 'Trader',    view: 'trader'    },
-              { href: `${base}pages/book.html?view=lobby`,     label: 'Lobby',     view: 'lobby'     },
-              { href: `${base}pages/book.html?view=badges`,    label: 'Badges',    view: 'badges'    },
-            ].map((l, i, arr) => {
-              const active = currentPage === 'book.html'
-                ? currentView === l.view
-                : l.href.includes(currentPage) && currentPage !== 'index.html'
-              return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
-            }).join('')}
-            <button class="bm-signout" onclick="signOut()">Sign Out</button>
-          </nav>
-        </div>
+        <a href="${base}index.html" class="bm-logo">SuperSede</a>
+        <div class="bm-rule"></div>
+        <span class="bm-player">
+          ${adminImg}<span class="bm-dot"></span>
+          ${player.username} · Lvl ${player.level} · ◈ ${player.gold}
+        </span>
+        <nav class="bm-links">
+          ${[
+            { href: `${base}pages/book.html`,                label: 'Chapters',  view: 'chapters'  },
+            { href: `${base}pages/book.html?view=inventory`, label: 'Inventory', view: 'inventory' },
+            { href: `${base}pages/book.html?view=skills`,    label: 'Skills',    view: 'skills'    },
+            { href: `${base}pages/book.html?view=trader`,    label: 'Trader',    view: 'trader'    },
+            { href: `${base}pages/book.html?view=lobby`,     label: 'Lobby',     view: 'lobby'     },
+            { href: `${base}pages/book.html?view=badges`,    label: 'Badges',    view: 'badges'    },
+          ].map((l, i, arr) => {
+            const active = currentPage === 'book.html'
+              ? currentView === l.view
+              : l.href.includes(currentPage) && currentPage !== 'index.html'
+            return `<a href="${l.href}" class="bm-link${active ? ' active' : ''}">${l.label}</a>${i < arr.length - 1 ? '<span class="bm-sep">·</span>' : ''}`
+          }).join('')}
+          <button class="bm-signout" onclick="signOut()">Sign Out</button>
+        </nav>
       </div>
     </div>
   `
