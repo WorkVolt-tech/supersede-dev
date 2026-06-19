@@ -40,6 +40,7 @@ import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 import { NODES } from './nodes.js'
 import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
+import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect } from '../../data/elemental-bonuses.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -2767,6 +2768,12 @@ You walk back out.`
               messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
             }
           }
+          // Elemental tree: scale basic-strike damage by the player's
+          // element-damage bonus. Basic strike is physical (mult 1); a skill
+          // strike would carry its element, but the basic Strike action is
+          // always physical, so this is a no-op unless a future basic attack
+          // is elementally tagged. Skill damage is scaled in the skill block.
+          try { dmg = Math.round(dmg * elDamageMult(player, 'physical')) } catch(_e){}
           const oldEnemyHp = enemyHp
           enemyHp=Math.max(0,enemyHp-dmg)
           messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
@@ -2968,6 +2975,8 @@ You walk back out.`
         let _bulwarkDef = 0
         if(statusEffects.bulwarkDefDouble){_bulwarkDef=playerDEF();statusEffects.bulwarkDefDouble=false}
         let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
+        // Elemental tree: apply total resistance to incoming damage (capped in module).
+        try { eDmg = Math.max(1, Math.round(eDmg * elResistMult(player))) } catch(_e){}
         eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
         // Cowardice modifier (#20): Twin Judges hit harder while player is
         // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
@@ -3002,6 +3011,8 @@ You walk back out.`
           }
           currentHp = newHp
           messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')
+          // Elemental tree: reflect a share of damage taken back at the enemy.
+          try { const _rf = elReflect(player); if(_rf>0 && eDmg>0){ const _rb=Math.max(1,Math.round(eDmg*_rf)); enemyHp=Math.max(0,enemyHp-_rb); messages.push('☠ Caustic reflect <strong>'+_rb+'</strong>!') } } catch(_e){}
           // Bulwark (passive): count consecutive enemy hits; at 2, queue a DEF-double next turn.
           if(statusEffects.bulwarkPassive){statusEffects.bulwarkHitStreak=(statusEffects.bulwarkHitStreak||0)+1;if(statusEffects.bulwarkHitStreak>=2){statusEffects.bulwarkDefDouble=true;statusEffects.bulwarkHitStreak=0;messages.push('🛡 Bulwark — DEF doubled next turn!')}}
         }
