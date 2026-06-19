@@ -2087,41 +2087,21 @@ export async function mountSkills(__mountOptions = {}) {
     // First-time-see-new-system check: if resonance_shards is undefined
     // on the player record, we haven't migrated yet. Convert the old
     // balance and wipe unlocks (their node IDs no longer exist).
-    // Reconcile ESP → Resonance Shards on EVERY load. The chapters award
-    // player.esp on zone-boss wins, but the tree spends resonance_shards.
-    // The old code migrated the two only ONCE, so every esp earned after the
-    // first skills-page visit became invisible — players had no shards to
-    // spend. esp is only ever ADDED (never spent), so the shards owed =
-    // total esp earned minus what we've already banked. esp_banked tracks the
-    // converted amount so we never double-credit.
+    // Resonance Shards are the only currency now — awarded directly by the
+    // chapters on zone-boss wins. The old `esp` field is fully retired. We just
+    // read the balance here; brand-new players who somehow lack the field get
+    // initialized to 0 (and an empty unlocked list) and that's persisted once.
     {
       const firstTime = typeof player.resonance_shards === 'undefined'
       if (firstTime) {
         player.resonance_shards = 0
         player.elemental_unlocked = []
-        player.esp_banked = 0
-      }
-      // Players who migrated under the OLD one-time code have resonance_shards
-      // set but no esp_banked. Their existing shard balance already accounted
-      // for the esp they had AT migration time, so seed esp_banked from their
-      // current esp to avoid re-crediting that already-migrated portion. They
-      // still correctly receive any esp earned AFTER this point.
-      if (typeof player.esp_banked === 'undefined') {
-        player.esp_banked = player.esp || 0
-      }
-      const totalEsp = player.esp || 0
-      const banked   = player.esp_banked || 0
-      const owed     = Math.max(0, totalEsp - banked)
-      if (owed > 0 || firstTime) {
-        player.resonance_shards = (player.resonance_shards || 0) + owed
-        player.esp_banked = totalEsp
         supabase.from('players').update({
-          resonance_shards: player.resonance_shards,
-          esp_banked: player.esp_banked,
-          ...(firstTime ? { elemental_unlocked: player.elemental_unlocked } : {}),
+          resonance_shards: 0,
+          elemental_unlocked: [],
         }).eq('id', player.id)
-          .then(() => console.info('[elements] Credited', owed, 'shards. Balance:', player.resonance_shards))
-          .catch(e => console.warn('[elements] shard sync failed:', e))
+          .then(() => console.info('[elements] Initialized resonance_shards.'))
+          .catch(e => console.warn('[elements] init save failed:', e))
       }
       shards = player.resonance_shards || 0
       elUnlocked = Array.isArray(player.elemental_unlocked) ? player.elemental_unlocked : []
