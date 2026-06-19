@@ -478,6 +478,8 @@ They trace the path with one finger.
 
 Rue rolls the map. "I've been to all nine. None of them opened for me. I'm not sure what I am yet."
 
+A beat. "Though — the longer I go without picking one, the more the System looks at me. Not like it's waiting for me to choose. Like the not-choosing is the thing it's reading." Rue shakes their head. "Probably nothing. I think about it too much."
+
 They hand you the map. "Maybe you are."`,
     xp: 60,
     rewards: [{ itemKey: 'district_map', qty: 1 }],
@@ -1566,6 +1568,8 @@ MORAL RECORD: Compiled.
 ALLIANCE LOG: Compiled.
 ELEMENTAL RESONANCE: Recorded.
 ELEMENTS ATTEMPTED: Recorded.
+
+[ The readout hesitates on that last line — ELEMENTS ATTEMPTED — as if checking it twice. For a fraction of a second a different status flickers behind it, one you don't recognize, before the interface smooths it over. Whatever it was, it didn't read as an error. It read as a category. ]
 
 TWIN JUDGES: Summoned.
 
