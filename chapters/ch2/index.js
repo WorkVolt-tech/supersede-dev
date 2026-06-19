@@ -41,6 +41,7 @@ import { NODES } from './nodes.js'
 import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
 import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect } from '../../data/elemental-bonuses.js'
+import { getUnlockedKeystones, applyKeystone } from '../../data/elemental-keystones.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 2 \u2014 Broken Alliances</p>\n        <p class=\"chapter-sub\">Groups form. Groups break. The System watches both.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
@@ -1564,6 +1565,8 @@ You walk back out.`
     let currentHp = player.hp || 100
 
     window._enemyAIState = initEnemyState(enemy)
+    // Elemental keystone cooldowns: { keystoneId: turnsRemaining }
+    let ksCooldowns = {}
 
     function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
     function playerDEF() {
@@ -1717,6 +1720,7 @@ You walk back out.`
       + '</div>'
       + '<div id="'+cid+'-skill-slots-row" style="margin-bottom:4px"></div>'
       + '<div id="'+cid+'-class-skills-row" style="margin-bottom:4px"></div>'
+      + '<div id="'+cid+'-keystone-row" style="margin-bottom:4px"></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
       + '<button class="combat-btn" id="'+cid+'-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>'
       + (onEscape ? '<button class="combat-btn" id="'+cid+'-btn-escape" style="font-size:.6rem" title="Attempt to flee.">💨 Flee</button>' : '<span></span>')
@@ -1823,6 +1827,65 @@ You walk back out.`
       row.querySelectorAll('[data-skill-key]').forEach(btn => {
         btn.addEventListener('click', () => useSkillLocal(btn.dataset.skillKey))
       })
+    }
+
+    // ── Elemental keystone action buttons ─────────────────────────────────
+    // Renders unlocked elemental-tree keystones (Forge-Body, Chain Lightning,
+    // etc.) as clickable cooldown abilities — mirrors the class-skills row.
+    function renderKeystones() {
+      const row = $('keystone-row')
+      if (!row) return
+      let list = []
+      try { list = getUnlockedKeystones(player, ksCooldowns) } catch(_e) { list = [] }
+      if (!list.length) { row.innerHTML = ''; return }
+      row.innerHTML = '<div style="display:flex;gap:3px;flex-wrap:wrap">'
+        + list.map(k => {
+            const dim = k.available ? '' : 'opacity:.4;cursor:not-allowed;'
+            const cdTxt = k.available ? '' : ' ('+k.cooldown+')'
+            return '<button class="combat-btn" data-keystone="'+k.id+'" '+(k.available?'':'disabled ')
+              + 'style="font-size:.6rem;border-color:'+k.color+'99;color:'+k.color+';'+dim+'" '
+              + 'title="'+(k.desc||'').replace(/"/g,'&quot;')+'">✦ '+k.label+cdTxt+'</button>'
+          }).join('')
+        + '</div>'
+      row.querySelectorAll('[data-keystone]').forEach(btn => {
+        btn.addEventListener('click', () => useKeystoneLocal(btn.dataset.keystone))
+      })
+    }
+
+    // Fires when the player clicks a keystone button. Applies the effect,
+    // logs it, sets the cooldown, and (unless the keystone grants a free
+    // action) ends the turn by resolving the enemy's move.
+    async function useKeystoneLocal(id) {
+      if (over) return
+      if ((ksCooldowns[id]||0) > 0) return
+      let res
+      try {
+        res = applyKeystone(id, player, statusEffects, {
+          enemyHp, maxEnemyHp, currentHp, maxPlayerHp, playerATK: playerATK(),
+        })
+      } catch(_e) { return }
+      const msgs = [...(res.messages||[])]
+      if (res.enemyDamage > 0) enemyHp = Math.max(0, enemyHp - res.enemyDamage)
+      if (res.healPlayer  > 0) currentHp = Math.min(maxPlayerHp, currentHp + res.healPlayer)
+      // Apply any status flags the keystone set.
+      if (res.setStatus) for (const k of Object.keys(res.setStatus)) statusEffects[k] = res.setStatus[k]
+      ksCooldowns[id] = res.cooldown || 3
+      syncBars()
+      log(msgs.join('<br>'))
+      // Win check after keystone damage.
+      if (enemyHp <= 0) { await endCombat('win'); return }
+      // Most keystones consume the turn (enemy acts); free-action ones don't.
+      if (res.consumesTurn) {
+        setButtons(false)
+        // Resolve enemy turn via a lightweight strike, mirroring how defend works.
+        // We reuse doTurn's flow by simulating a 'defend-less' enemy action:
+        // simplest correct approach is to let the enemy act through doTurn with
+        // a no-op player action. We call doTurn('skip') which the engine treats
+        // as no player action but a full enemy turn.
+        await doTurn('keystone_pass', null)
+      } else {
+        renderKeystones()
+      }
     }
 
     // ── Class skill action buttons ───────────────────────────────────────
@@ -1995,6 +2058,7 @@ You walk back out.`
 
     renderSkillSlots()
     renderClassSkills()
+    renderKeystones()
     syncBars()
 
     // ── Oathbreaker oath picker ──────────────────────────────────────
@@ -2687,6 +2751,8 @@ You walk back out.`
       if(statusEffects.enemyStunTurns>0) statusEffects.enemyStunTurns--
       if(statusEffects.rootTrapTurns>0)  statusEffects.rootTrapTurns--
       Object.keys(statusEffects.skillCooldowns).forEach(k=>{if(statusEffects.skillCooldowns[k]>0)statusEffects.skillCooldowns[k]--})
+      // Tick elemental keystone cooldowns too.
+      Object.keys(ksCooldowns).forEach(k=>{if(ksCooldowns[k]>0)ksCooldowns[k]--})
 
       // Mourner's Pace (Hollow t2b): SPD doubles below 50% HP.
       let pSPD=playerSPD()+(statusEffects.playerSPDBonus||0)
@@ -2741,7 +2807,8 @@ You walk back out.`
             playBuffFx(_playerRow, _fxEl)
           }
         } catch (_e) { /* FX must never break combat */ }
-        if(playerAction==='strike') {
+        if(playerAction==='keystone_pass') { /* keystone already resolved; player takes no further action this turn */ }
+        else if(playerAction==='strike') {
           const roll=Math.floor(Math.random()*(6+luckBonus))+1
           let baseATK=playerATK()+(statusEffects.playerATKBonus||0)
           const ignoreDEF=statusEffects.ignoreEnemyDEF; statusEffects.ignoreEnemyDEF=false
@@ -2990,6 +3057,9 @@ You walk back out.`
         let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
         // Elemental tree: apply total resistance to incoming damage (capped in module).
         try { eDmg = Math.max(1, Math.round(eDmg * elResistMult(player))) } catch(_e){}
+        // Elemental keystone: Forge-Body / Glacier-Body / Storm Ward / Aegis /
+        // Living Antidote — half damage from ALL sources while active.
+        if ((statusEffects.cfx_damageHalveTurns||0) > 0) { eDmg = Math.max(1, Math.round(eDmg * 0.5)) }
         eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
         // Cowardice modifier (#20): Twin Judges hit harder while player is
         // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
@@ -3133,6 +3203,14 @@ You walk back out.`
         if(statusEffects.playerStunTurns===0){messages.push('⚡ Stun fades.')}
       }
 
+      // ── Elemental keystone duration ticking ───────────────────────────
+      // Decrement the active-effect timers the keystones set. When a shield
+      // (damage-halve) expires, note it. Reflect timers tick silently.
+      ;['cfx_damageHalveTurns','cfx_fireReflectTurns','cfx_poisonReflectTurns',
+        'cfx_dmgToMpTurns','cfx_stunMeleeTurns'].forEach(k=>{
+        if((statusEffects[k]||0)>0){ statusEffects[k]--; if(statusEffects[k]===0 && k==='cfx_damageHalveTurns') messages.push('✦ Your ward fades.') }
+      })
+
       // ── Class skill: turn-end hook (mark/silence countdown + DoT) ─────
       const _clsTurn = ClsCombat.onTurnEnd(player, statusEffects)
       if (_clsTurn.damageToEnemy > 0) enemyHp = Math.max(0, enemyHp - _clsTurn.damageToEnemy)
@@ -3191,6 +3269,7 @@ You walk back out.`
       setButtons(true)
       renderSkillSlots()
       renderClassSkills()
+      renderKeystones()
     }
   }
 
