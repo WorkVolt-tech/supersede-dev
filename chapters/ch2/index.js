@@ -1144,7 +1144,11 @@ You walk back out.`
 
     let zonesHtml = ZONES.map(z=>{
       const bossKey = 'zone_boss_'+z.id.replace('zone_','')
-      const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(z.element.toLowerCase()+'_'))
+      // Use the zone's INTERNAL element key (ZONE_ELEMENT_MAP) for the skill-
+      // prefix fallback, not z.element — display names get renamed (Arcane→Lux,
+      // Venom→Venin) which would silently break this check. The id never changes.
+      const _elKey = ZONE_ELEMENT_MAP[z.id] || z.element.toLowerCase()
+      const done = defeated.includes(bossKey)||player.skills_unlocked?.some(s=>s.startsWith(_elKey+'_'))
       // Visual: UNCLEARED zones are bright/inviting; CLEARED zones dim out so
       // the player can see at a glance what's left to do. (Brightness inverted
       // from done — bright = still available, dim = finished.)
