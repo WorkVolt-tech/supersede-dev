@@ -2144,17 +2144,13 @@ You walk back out.`
             if(!espTree.collected)espTree.collected=[]
             const elNodes=['off_n','def_n','flo_n','arc_n','dec_n','off_k','def_k','flo_k','arc_k','dec_k'].map(s=>elKey+'_'+s).filter(k=>!espTree.collected.includes(k))
             if(elNodes.length){espTree.collected.push(...elNodes);player.esp_tree=espTree;updates.esp_tree=espTree}
-            const newEsp=(player.esp||0)+3; player.esp=newEsp; updates.esp=newEsp
-            // Award Resonance Shards directly (the tree spends these). Keep
-            // esp_banked in lockstep so the skills-page reconciliation never
-            // re-credits this same amount. This is the real source-of-award.
+            // Award Resonance Shards directly — the only currency now. The old
+            // `esp` field is fully retired (column dropped); nothing reads or
+            // writes it anymore.
             const newShards=(player.resonance_shards||0)+3; player.resonance_shards=newShards; updates.resonance_shards=newShards
-            player.esp_banked=newEsp; updates.esp_banked=newEsp
             window.showToast('⬡ +3 Resonance Shards · '+elKey+' nodes unlocked!')
           } else {
-            const newEsp=(player.esp||0)+1; player.esp=newEsp; updates.esp=newEsp
             const newShards=(player.resonance_shards||0)+1; player.resonance_shards=newShards; updates.resonance_shards=newShards
-            player.esp_banked=newEsp; updates.esp_banked=newEsp
             window.showToast('⬡ +1 Resonance Shard')
           }
         }
