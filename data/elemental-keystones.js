@@ -42,8 +42,8 @@ const KEYSTONE_META = (() => {
 })()
 
 const ELEMENT_COLORS = {
-  fire:'#ff7a1a', water:'#2a9df4', lightning:'#ffe23a', earth:'#a9743c',
-  wind:'#8fe3e8', plant:'#5cc24a', metal:'#b8c0c8', poison:'#9a7ad0',
+  fire:'#ff7a1a', water:'#2a9df4', lightning:'#ffe23a', earth:'#8b5e3c',
+  wind:'#a8d8ea', plant:'#66bb6a', metal:'#90a4ae', poison:'#9a7ad0',
   arcane:'#c8a8ff', shadow:'#8a50c0',
 }
 
@@ -212,6 +212,91 @@ export function applyKeystone(id, player, statusEffects, ctx = {}) {
       r.cooldown = 3
       r.consumesTurn = false
       r.messages.push('🌑 No Witnesses — you vanish; your next strike is lethal.')
+      break
+
+    // ── EARTH (Terra) ─────────────────────────────────────────────────
+    case 'earth_aggr_ks': { // Avalanche — damage = % of DEF, stun
+      const def = (ctx.playerDEF != null ? ctx.playerDEF : (player?.def || 5))
+      const mult = att ? 3.0 : 2.0
+      r.enemyDamage = Math.round(def * mult)
+      r.setStatus.enemyStunTurns = 1
+      r.cooldown = 2
+      r.messages.push('🪨 Avalanche — ' + r.enemyDamage + ' crushing damage; enemy stunned!')
+      break }
+    case 'earth_def_ks': // Bastion — half damage + 3 Stoneborn stacks
+      r.setStatus.cfx_damageHalveTurns = 2
+      r.setStatus.cfx_stonebornStacks = 3
+      r.cooldown = 3
+      r.messages.push('🪨 Bastion — you set yourself like bedrock.')
+      break
+    case 'earth_util_ks': // Worldspine — heal 25% + cleanse debuffs
+      r.healPlayer = Math.round((ctx.maxPlayerHp || 100) * 0.25)
+      r.setStatus.cfx_cleanseDebuffs = true
+      if (att) r.setStatus.cfx_stonebornBonus = 2
+      r.cooldown = 3
+      r.messages.push('🪨 Worldspine — the mountain mends you.')
+      break
+
+    // ── WIND (Aero) ───────────────────────────────────────────────────
+    case 'wind_aggr_ks': { // Cyclone — 3-4 strikes at 50% ATK, ignore DEF
+      const hits = att ? 4 : 3
+      r.enemyDamage = Math.round((ctx.playerATK||10) * 0.5 * hits)
+      r.cooldown = 2
+      r.messages.push('💨 Cyclone — ' + hits + ' cutting strikes for ' + r.enemyDamage + '!')
+      break }
+    case 'wind_def_ks': // Eye of the Storm — half damage + dodge buff
+      r.setStatus.cfx_damageHalveTurns = 2
+      r.setStatus.cfx_dodgeBuffTurns = 2
+      r.cooldown = 3
+      r.messages.push('💨 Eye of the Storm — the blows pass through you.')
+      break
+    case 'wind_util_ks': // Hurricane — extra turn
+      r.setStatus.cfx_extraTurn = true
+      if (att) r.setStatus.cfx_dodgeBuffTurns = 1
+      r.cooldown = 3
+      r.consumesTurn = false
+      r.messages.push('💨 Hurricane — you move again on the wind.')
+      break
+
+    // ── PLANT (Flora) ─────────────────────────────────────────────────
+    case 'plant_aggr_ks': // Bloodflower — next attacks lifesteal heavily
+      r.setStatus.cfx_bloodflowerTurns = att ? 3 : 3
+      r.setStatus.cfx_bloodflowerPct = att ? 1.0 : 0.5
+      r.cooldown = 2
+      r.messages.push('🌿 Bloodflower — your strikes drink deep.')
+      break
+    case 'plant_def_ks': // World Tree — big heal now + regen
+      r.healPlayer = Math.round((ctx.maxPlayerHp||100) * 0.30)
+      r.setStatus.cfx_worldTreeTurns = 3
+      if (att) r.setStatus.cfx_cleanseDebuffs = true
+      r.cooldown = 3
+      r.messages.push('🌿 World Tree — you root and flourish.')
+      break
+    case 'plant_util_ks': { // Heartwood — heal from missing HP
+      const missing = Math.max(0, (ctx.maxPlayerHp||100) - (ctx.currentHp||0))
+      r.healPlayer = Math.round(missing * (att ? 0.75 : 0.5))
+      r.cooldown = 3
+      r.messages.push('🌿 Heartwood — ' + r.healPlayer + ' HP drawn from the wound.')
+      break }
+
+    // ── METAL (Ferro) ─────────────────────────────────────────────────
+    case 'metal_aggr_ks': // Guillotine — 250% ATK, ignore all DEF
+      r.enemyDamage = Math.round((ctx.playerATK||10) * 2.5)
+      if (att) r.setStatus.cfx_guaranteedCrit = true
+      r.cooldown = 2
+      r.messages.push('⚙ Guillotine — a clean cut for ' + r.enemyDamage + '!')
+      break
+    case 'metal_def_ks': // Iron Maiden — half damage + 50% reflect
+      r.setStatus.cfx_damageHalveTurns = 2
+      r.setStatus.cfx_ironMaidenTurns = 2
+      r.cooldown = 3
+      r.messages.push('⚙ Iron Maiden — every blow returns.')
+      break
+    case 'metal_util_ks': // Living Forge — +30% ATK & DEF for the battle
+      r.setStatus.cfx_forgeAtk = true
+      r.setStatus.cfx_forgeDef = true
+      r.cooldown = 4
+      r.messages.push('⚙ Living Forge — you reforge yourself, stronger.')
       break
 
     default:
