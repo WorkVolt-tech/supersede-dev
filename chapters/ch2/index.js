@@ -1569,14 +1569,15 @@ You walk back out.`
     // Elemental keystone cooldowns: { keystoneId: turnsRemaining }
     let ksCooldowns = {}
 
-    function playerATK() { return (player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6) }
+    function playerATK() { let a=(player.atk||5)+(player.power||0)*.5+(player.strength||0)+Math.floor(Math.random()*6); if(statusEffects.cfx_forgeAtk)a*=1.3; return Math.round(a) }
     function playerDEF() {
       let base = (player.def||2)+(player.guard||0)*.5+(player.armor||0)
       // Armour Shred (applied by enemyAI.js): reduces DEF by shredAmt
       if (statusEffects.playerDefShredTurns > 0) {
         base = Math.max(0, base - (statusEffects.playerDefShredAmt||0))
       }
-      return base
+      if (statusEffects.cfx_forgeDef) base *= 1.3   // Living Forge keystone
+      return Math.round(base)
     }
     function playerSPD() { return (player.speed||5)+(player.agility||0)*.5 }
     function enemySPD()  { return enemy.spd||5 }
@@ -3612,10 +3613,10 @@ You walk back out.`
     return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
   }
   function calcATK() {
-    { let _a=(player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')+(()=>{try{return elRaw(player,'atk_bonus')}catch(_e){return 0}})(); if(statusEffects.cfx_forgeAtk)_a*=1.3; return Math.max(1,Math.round(_a)) }
+    return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')+(()=>{try{return elRaw(player,'atk_bonus')}catch(_e){return 0}})()))
   }
   function calcDEF() {
-    { let _d=(player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus')+(()=>{try{return elRaw(player,'def_bonus')}catch(_e){return 0}})(); if(statusEffects.cfx_forgeDef)_d*=1.3; return Math.round(_d) }
+    return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus')+(()=>{try{return elRaw(player,'def_bonus')}catch(_e){return 0}})())
   }
   function calcSPD() {
     return Math.round((player.speed||0)+(player.insight||0)*0.1+getEquippedBonus('speed_bonus'))
