@@ -187,6 +187,33 @@ export function applyKeystone(id, player, statusEffects, ctx = {}) {
       r.messages.push(stacks > 0 ? `☠ Virulent Crown — ${stacks} Decay stacks become ${heal} HP.` : '☠ Virulent Crown — no Decay stacks to convert.')
       break }
 
+    // ── SHADOW (Umbra) ────────────────────────────────────────────────
+    case 'shadow_aggr_ks': { // Death Mark — spend all Unseen stacks for a big crit
+      const stacks = statusEffects.cfx_unseenStacks || 0
+      const atk2 = ctx.playerATK || (player?.atk || 10)
+      const dmg = Math.round(atk2 * (1.5 + 0.4 * stacks))
+      r.enemyDamage = dmg
+      r.setStatus.cfx_unseenStacks = 0
+      if (att) r.setStatus.cfx_deathMarkIgnoreDef = true
+      r.cooldown = 2
+      r.messages.push(stacks > 0
+        ? '🌑 Death Mark — ' + stacks + ' stacks spent for ' + dmg + '!'
+        : '🌑 Death Mark — ' + dmg + ' (no stacks).')
+      break }
+    case 'shadow_def_ks': // Nightshade — half damage + big dodge for 2 turns
+      r.setStatus.cfx_damageHalveTurns = 2
+      r.setStatus.cfx_dodgeBuffTurns = 2
+      r.cooldown = 3
+      r.messages.push('🌑 Nightshade — half damage and you melt into shadow.')
+      break
+    case 'shadow_util_ks': // No Witnesses — untargetable 1 turn, then guaranteed crit
+      r.setStatus.cfx_untargetableTurns = 1
+      r.setStatus.cfx_guaranteedCrit = true
+      r.cooldown = 3
+      r.consumesTurn = false
+      r.messages.push('🌑 No Witnesses — you vanish; your next strike is lethal.')
+      break
+
     default:
       r.messages.push('This keystone has no effect yet.')
       r.consumesTurn = false
