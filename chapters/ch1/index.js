@@ -3,9 +3,10 @@ import { supabase } from '../../supabase.js'
 import { META, SOCKET_RULES, rollSockets, ZONE_GUARDIANS } from './config.js'
 import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
-import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 import * as ClsCombat from '../../data/class_combat.js'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
+import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect, critChanceBonus as elCritChance, critDamageBonus as elCritDmg, rawBonus as elRaw } from '../../data/elemental-bonuses.js'
+import { getUnlockedKeystones, applyKeystone } from '../../data/elemental-keystones.js'
 import {
   getMoralTier,
   getMoralBarPct,
@@ -62,6 +63,9 @@ export async function mountChapter1(__mountOptions = {}) {
   // ── Constants ────────────────────────────────────
   // XP needed to reach next level — exponential curve
   // Level 1→2: 100, 2→3: 150, 3→4: 225, 4→5: 337, 5→6: 506, 6→7: 759...
+  function xpForLevel(level) {
+    return Math.floor(100 * Math.pow(1.5, level - 1))
+  }
 
   // ── App state ────────────────────────────────────
   // Always call renderNav so the bookmark re-paints on every mount.
@@ -129,12 +133,12 @@ export async function mountChapter1(__mountOptions = {}) {
     currentHp = newHp
     player.max_hp = newMaxHp
     player.level  = level
-    player.xp     = xp
+    player.xp     = newXp
 
     window.showToast('LEVEL UP! Lvl ' + level + ' — +5 HP · +1 all stats · +' + spGained + ' SP!')
     renderHUD()
 
-    return { level, max_hp: newMaxHp, hp: newHp, xp: xp,
+    return { level, max_hp: newMaxHp, hp: newHp, xp: newXp,
              skill_points: newSP, sp_claimed: newClaimed, ...updStats }
   }
 
@@ -146,10 +150,9 @@ export async function mountChapter1(__mountOptions = {}) {
     const lvl = player.level || 1
     const hpPct  = Math.max(0, Math.round(hp / mhp * 100))
     const hpCol  = hpPct > 60 ? '#5ec45e' : hpPct > 30 ? '#c8b96e' : '#e05555'
-    const _xpP = xpProgress(player)
-    const xpNext = _xpP.needed
-    const xpIntoLevel = _xpP.into
-    const xpPct = _xpP.pct
+    const xpNext = xpForLevel(lvl)
+    const xpIntoLevel = Math.max(0, Math.min(xp, xpNext - 1))
+    const xpPct = Math.min(100, Math.round(xpIntoLevel / xpNext * 100))
 
     // ── Moral standing (HUD display) ─────────────────────────
     // Shared 6-tier ladder via reputation.js (Hero/Good/Neutral/Ruthless/Corrupt/Villain).
@@ -1674,6 +1677,9 @@ export async function mountChapter1(__mountOptions = {}) {
           <!-- Class skills — only renders if player has unlocked active-type skills -->
           <div id="${cid}-class-skills-row" style="margin-bottom:4px"></div>
 
+          <!-- Elemental keystones — auto-renders unlocked keystones as buttons -->
+          <div id="${cid}-keystone-row" style="margin-bottom:4px"></div>
+
           <!-- Utility row -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
             <button class="combat-btn" id="${cid}-btn-items" style="color:#5eaee0;font-size:.6rem" title="Use a consumable item.">🎒 Items</button>
@@ -2090,6 +2096,8 @@ export async function mountChapter1(__mountOptions = {}) {
     Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
 
     // ── Combat status effects ────────────────────────────────
+    let ksCooldowns = {}   // elemental keystone cooldowns { id: turnsLeft }
+    let turnCount = 0      // for Slow Bloom scaling
     let statusEffects = {
       playerATKBonus:  0,
       playerDEFBonus:  0,
@@ -2250,6 +2258,48 @@ export async function mountChapter1(__mountOptions = {}) {
       row.innerHTML = html
     }
 
+    // ── Elemental keystone action buttons (Ch1) ───────────────────────────
+    function renderKeystones() {
+      const row = $('keystone-row')
+      if (!row) return
+      let list = []
+      try { list = getUnlockedKeystones(player, ksCooldowns) } catch(_e) { list = [] }
+      if (!list.length) { row.innerHTML = ''; return }
+      row.innerHTML = '<div style="display:flex;gap:3px;flex-wrap:wrap">'
+        + list.map(k => {
+            const dim = k.available ? '' : 'opacity:.4;cursor:not-allowed;'
+            const cdTxt = k.available ? '' : ' ('+k.cooldown+')'
+            return '<button class="combat-btn" data-keystone="'+k.id+'" '+(k.available?'':'disabled ')
+              + 'style="font-size:.6rem;border-color:'+k.color+'99;color:'+k.color+';'+dim+'" '
+              + 'title="'+(k.desc||'').replace(/"/g,'&quot;')+'">✦ '+k.label+cdTxt+'</button>'
+          }).join('')
+        + '</div>'
+      row.querySelectorAll('[data-keystone]').forEach(btn => {
+        btn.addEventListener('click', () => useKeystoneLocal(btn.dataset.keystone))
+      })
+    }
+
+    async function useKeystoneLocal(id) {
+      if (over) return
+      if ((ksCooldowns[id]||0) > 0) return
+      let res
+      try {
+        res = applyKeystone(id, player, statusEffects, {
+          enemyHp, maxEnemyHp, currentHp, maxPlayerHp, playerATK: playerATK(), playerDEF: playerDEF(),
+        })
+      } catch(_e) { return }
+      const msgs = [...(res.messages||[])]
+      if (res.enemyDamage > 0) enemyHp = Math.max(0, enemyHp - res.enemyDamage)
+      if (res.healPlayer  > 0) currentHp = Math.min(maxPlayerHp, currentHp + res.healPlayer)
+      if (res.setStatus) for (const k of Object.keys(res.setStatus)) statusEffects[k] = res.setStatus[k]
+      ksCooldowns[id] = res.cooldown || 3
+      syncBars()
+      log(msgs.join('<br>'))
+      if (enemyHp <= 0) { await endCombat('win'); return }
+      if (res.consumesTurn) { setButtons(false); await doTurn('keystone_pass', null) }
+      else { renderKeystones() }
+    }
+
     // ── Class skill action buttons (Ch1 mirror of Ch2 renderClassSkills) ──
     // Renders a row of active class skills under the regular skill row.
     // Hidden if the player has no active class or no active-type skills.
@@ -2400,6 +2450,10 @@ export async function mountChapter1(__mountOptions = {}) {
       if (over) return
       setButtons(false)
       defending = false
+      turnCount++
+      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_aggr_3') && (playerAction==='defend'||playerAction==='keystone_pass')){
+        statusEffects.cfx_heldBreathStacks = Math.min(3, (statusEffects.cfx_heldBreathStacks||0)+1)
+      }
       const luckBonus  = Math.floor(eqLuck / 2)
       const unlocked   = player.skills_unlocked || []
 
@@ -2441,6 +2495,8 @@ export async function mountChapter1(__mountOptions = {}) {
       Object.keys(statusEffects.skillCooldowns).forEach(k => {
         if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
       })
+      Object.keys(ksCooldowns).forEach(k => { if (ksCooldowns[k] > 0) ksCooldowns[k]-- })
+      ;['cfx_damageHalveTurns','cfx_fireReflectTurns','cfx_poisonReflectTurns','cfx_ironMaidenTurns','cfx_dodgeBuffTurns','cfx_untargetableTurns','cfx_worldTreeTurns'].forEach(k=>{ if((statusEffects[k]||0)>0) statusEffects[k]-- })
 
       // ── FF-Style Turn Order ───────────────────────────────────
       // Base speed comparison with jitter. Faster player goes first.
@@ -2491,7 +2547,11 @@ export async function mountChapter1(__mountOptions = {}) {
         // Wind dodge: Lv1 +20%, Lv10 +35%
         const windLv = unlocked.includes('wind_passive_dodge') ? _skillLvGlobal('wind_passive_dodge') : 0
         const windBonus = windLv > 0 ? 0.20 + (windLv - 1) * (0.15 / 9) : 0
-        return Math.min(0.55, base + windBonus)
+        // Elemental tree dodge: Misdirection/Drift/Tailwind nodes + Nightshade/Eye keystone buff.
+        let elDodge = (()=>{try{return elRaw(player,'dodge_chance_pct')}catch(_e){return 0}})()/100
+        if((statusEffects.cfx_dodgeBuffTurns||0) > 0) elDodge += 0.50
+        if((statusEffects.cfx_untargetableTurns||0) > 0) return 1
+        return Math.min(0.85, base + windBonus + elDodge)
       }
       function calcEnemyDodge() {
         const speedAdv = Math.max(0, eSPD - pSPD)
@@ -2505,6 +2565,9 @@ export async function mountChapter1(__mountOptions = {}) {
 
       // ── Player action ─────────────────────────────────────
       function resolvePlayerAction() {
+        // keystone_pass: the keystone already resolved; player takes no action,
+        // the enemy still gets its turn. Just return so no strike/skill fires.
+        if (playerAction === 'keystone_pass') return
         // Enemy dodge check (applies to attack actions only)
         const enemyDodged = (playerAction === 'strike' || playerAction === 'heavy') && Math.random() < calcEnemyDodge()
         if (enemyDodged) {
@@ -2542,22 +2605,56 @@ export async function mountChapter1(__mountOptions = {}) {
           const _bonusFlatDmg  = (typeof _clsAtk.bonusFlatDmg  === 'number') ? _clsAtk.bonusFlatDmg  : 0
 
           let dmg = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult * _dmgMult + _bonusFlatDmg))
+          // Elemental tree: basic strike is physical (no element skill in Ch1),
+          // so damage% doesn't apply, but crit chance/damage from the trees do.
+          let _elCritCh = 0, _elCritDmg = 0
+          try { _elCritCh = elCritChance(player); _elCritDmg = elCritDmg(player) } catch(_e){}
+          const _totalCritChance = _critChanceAdd + _elCritCh
           let wasCrit = false
-          if (_critChanceAdd > 0 && Math.random() < _critChanceAdd) {
+          if (_totalCritChance > 0 && Math.random() < _totalCritChance) {
             wasCrit = true
-            dmg = Math.round(dmg * 1.5)
-            messages.push('⚖ Judgment Chain — critical strike.')
+            dmg = Math.round(dmg * (1.5 + _elCritDmg))
+            messages.push('🎯 Critical strike!')
             if (_defIgnoreFrac > 0 && (enemy.def || 0) > 0) {
               const defBonus = Math.round((enemy.def || 0) * _defIgnoreFrac)
               dmg += defBonus
               messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
             }
           }
+          // ── Elemental tree offensive procs (ported from Ch2) ──
+          const _hasEl = id => Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes(id)
+          const _attEl = el => (player.attuned_element||player.element) === el
+          // Armor Pierce (Ferro): ignore a % of enemy DEF.
+          { const dip=(()=>{try{return elRaw(player,'def_ignore_pct')}catch(_e){return 0}})(); if(dip>0 && (enemy.def||0)>0){ const back=Math.round((enemy.def||0)*Math.min(0.9,dip/100)); if(back>0) dmg+=back } }
+          // Tremor (Terra): bonus damage from DEF.
+          { const gdp=(()=>{try{return elRaw(player,'guard_damage_pct')}catch(_e){return 0}})(); if(gdp>0){ const tb=Math.round(playerDEF()*(gdp/100)); if(tb>0){ dmg+=tb; messages.push('🪨 Tremor +'+tb+'.') } } }
+          // Slow Bloom (Flora): scale with turns elapsed.
+          if(_hasEl('plant_aggr_3')){ const per=_attEl('plant')?0.10:0.05; const cap=0.50+(()=>{try{return elRaw(player,'slow_bloom_cap_pct')}catch(_e){return 0}})()/100; const grow=Math.min(cap,per*(turnCount||0)); if(grow>0){ const gb=Math.round(dmg*grow); if(gb>0) dmg+=gb } }
+          // Held Breath (Aero): spend stored stacks.
+          if((statusEffects.cfx_heldBreathStacks||0)>0){ const per=0.25+(()=>{try{return elRaw(player,'held_breath_dmg_pct')}catch(_e){return 0}})()/100; const hb=Math.round(dmg*per*statusEffects.cfx_heldBreathStacks); if(hb>0){ dmg+=hb; messages.push('💨 Held Breath +'+hb+'!') } statusEffects.cfx_heldBreathStacks=0 }
+          // Unseen (Shadow): spend stealth stacks.
+          if((statusEffects.cfx_unseenStacks||0)>0){ const per=(()=>{try{return elRaw(player,'unseen_dmg_pct')}catch(_e){return 12}})()||12; const ub=Math.round(dmg*(per/100)*statusEffects.cfx_unseenStacks); if(ub>0){ dmg+=ub; messages.push('🌑 Unseen strike +'+ub+'.') } statusEffects.cfx_unseenStacks=0 }
+          // No Witnesses keystone: guaranteed crit.
+          if(statusEffects.cfx_guaranteedCrit){ dmg=Math.round(dmg*1.5); statusEffects.cfx_guaranteedCrit=false; messages.push('🌑 Guaranteed crit!') }
           const oldEnemyHp = enemyHp
           enemyHp          = Math.max(0, enemyHp - dmg)
           messages.push(backstab
             ? '⚡ Backstab Lv' + bsLv + '! You strike for <strong>' + dmg + '</strong> (' + Math.round(bsMult*10)/10 + '× dmg)!'
             : 'You strike for <strong>' + dmg + '</strong>.' + (ignoreDEF ? ' (DEF ignored)' : ''))
+
+          // ── Elemental tree post-hit procs (Ch1) ──
+          // Lifesteal (Flora): heal a share of damage dealt.
+          { let ls=(()=>{try{return elRaw(player,'lifesteal_pct')}catch(_e){return 0}})()/100; if((statusEffects.cfx_bloodflowerTurns||0)>0){ ls=Math.max(ls,statusEffects.cfx_bloodflowerPct||0.5); statusEffects.cfx_bloodflowerTurns-- } if(ls>0 && dmg>0){ const h=Math.round(dmg*ls); if(h>0){ currentHp=Math.min(maxPlayerHp,currentHp+h); messages.push('🌿 Lifesteal +'+h+' HP.') } } }
+          // Ember Memory (Ignis) stack application.
+          if(_hasEl('fire_aggr_3') || (statusEffects.cfx_emberStepTurns||0)>0){ const maxS=3+(()=>{try{return elRaw(player,'ember_memory_max_stacks')}catch(_e){return 0}})(); let add=0; if((statusEffects.cfx_emberStepTurns||0)>0){ add+=_attEl('fire')?2:1; statusEffects.cfx_emberStepTurns-- } if(_hasEl('fire_aggr_3') && Math.random()<(_attEl('fire')?0.30:0.15)) add+=1; if(add>0){ statusEffects.cfx_emberStacks=Math.min(maxS,(statusEffects.cfx_emberStacks||0)+add); messages.push('🔥 Ember Memory ('+statusEffects.cfx_emberStacks+').') } }
+          // Long Decay (Venin) stack application.
+          if(_hasEl('poison_aggr_3') || (statusEffects.cfx_plagueFangTurns||0)>0){ const maxS=3+(()=>{try{return elRaw(player,'long_decay_max_stacks')}catch(_e){return 0}})(); let add=0; if((statusEffects.cfx_plagueFangTurns||0)>0){ add+=_attEl('poison')?2:1; statusEffects.cfx_plagueFangTurns-- } if(_hasEl('poison_aggr_3') && Math.random()<(_attEl('poison')?0.30:0.15)) add+=1; if(add>0){ statusEffects.cfx_longDecayStacks=Math.min(maxS,(statusEffects.cfx_longDecayStacks||0)+add); messages.push('☠ Long Decay ('+statusEffects.cfx_longDecayStacks+').') } }
+          // Unseen (Shadow) stack gain.
+          if(_hasEl('shadow_aggr_3') && Math.random()<(_attEl('shadow')?0.30:0.15)){ const maxS=3+(()=>{try{return elRaw(player,'unseen_max_stacks')}catch(_e){return 0}})(); statusEffects.cfx_unseenStacks=Math.min(maxS,(statusEffects.cfx_unseenStacks||0)+1); messages.push('🌑 Unseen ('+statusEffects.cfx_unseenStacks+').') }
+          // Second Strike (Volt).
+          if(_hasEl('lightning_aggr_3') && Math.random()<(_attEl('lightning')?0.30:0.15)){ const bonus=(()=>{try{return elRaw(player,'second_strike_dmg_pct')}catch(_e){return 0}})()/100; const d2=Math.max(1,Math.round(playerATK()*(0.5+bonus))); enemyHp=Math.max(0,enemyHp-d2); messages.push('⚡ Second Strike — <strong>'+d2+'</strong>!') }
+          // Landslide (Terra) stun chance.
+          { const scp=(()=>{try{return elRaw(player,'stun_chance_pct')}catch(_e){return 0}})(); if(scp>0 && Math.random()<scp/100){ statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1); messages.push('🪨 Landslide — enemy stunned!') } }
 
           // ── Class skill: post-attack hook (deferred damage, hit counters) ─
           const _clsPost = ClsCombat.onPlayerAttackPost(player, statusEffects, enemy, dmg, wasCrit)
@@ -2691,6 +2788,10 @@ export async function mountChapter1(__mountOptions = {}) {
         } else if (playerAction === 'defend') {
           defending = true
           messages.push('You brace — defense doubled this turn.')
+          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_def_3')){
+            statusEffects.cfx_stonebornStacks = Math.min(3, (statusEffects.cfx_stonebornStacks||0)+1)
+            messages.push('🪨 Stoneborn — you harden ('+statusEffects.cfx_stonebornStacks+').')
+          }
           // Absorption: heal 15 HP if charged
           if (statusEffects.absorptionHeal) {
             const healAmt = statusEffects.absorptionHeal
@@ -3008,6 +3109,8 @@ export async function mountChapter1(__mountOptions = {}) {
 
         if (Math.random() < dodgeChance) {
           messages.push('You <em>dodge</em> the attack!')
+          // Elemental: heal on dodge (Nightmend/Float nodes).
+          { const hod=(()=>{try{return elRaw(player,'hp_on_dodge')}catch(_e){return 0}})(); if(hod>0){ currentHp=Math.min(maxPlayerHp,currentHp+hod); messages.push('🌑 +'+hod+' HP (dodge).') } }
           // Flicker: next strike doubles
           if (statusEffects.flicker) { statusEffects.flickerReady = true }
           // Ghost Step / Umbral Veil: counter on dodge
@@ -3031,6 +3134,13 @@ export async function mountChapter1(__mountOptions = {}) {
         const eSPDReduced = (statusEffects.enemySPDReduction || 0)
         const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
         let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
+        // Elemental tree: resistance reduces incoming damage; keystone shields halve it.
+        try { eDmg = Math.max(0, Math.round(eDmg * elResistMult(player))) } catch(_e){}
+        if ((statusEffects.cfx_damageHalveTurns||0) > 0) { eDmg = Math.max(0, Math.round(eDmg * 0.5)) }
+        if ((statusEffects.cfx_stonebornStacks||0) > 0 && eDmg > 0) {
+          const perStack = ((player.attuned_element||player.element)==='earth') ? 0.16 : 0.08
+          eDmg = Math.max(0, Math.round(eDmg * (1 - Math.min(0.6, perStack*statusEffects.cfx_stonebornStacks))))
+        }
 
         // Water shield absorbs
         if (statusEffects.waterShield > 0 && eDmg > 0) {
@@ -3048,6 +3158,16 @@ export async function mountChapter1(__mountOptions = {}) {
           for (const m of _clsHit.messages) messages.push(m)
           eDmg = Math.round(eDmg * (_clsHit.dmgMult || 1))
           if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
+        }
+        // Elemental tree: reflect a share of damage taken (passive + keystone + metal).
+        if (eDmg > 0) {
+          let rf = 0
+          try { rf = elReflect(player) } catch(_e){}
+          let mr = 0; try { mr = elRaw(player,'metal_reflect_pct')/100 } catch(_e){}
+          if ((statusEffects.cfx_ironMaidenTurns||0) > 0) mr = Math.max(mr, 0.5)
+          if ((statusEffects.cfx_fireReflectTurns||0) > 0 || (statusEffects.cfx_poisonReflectTurns||0) > 0) rf = Math.max(rf, 0.25)
+          const totalRef = Math.min(0.6, rf + mr)
+          if (totalRef > 0) { const rb = Math.max(1, Math.round(eDmg * totalRef)); enemyHp = Math.max(0, enemyHp - rb); messages.push('✦ Reflect <strong>'+rb+'</strong> back!') }
         }
 
         // ── Class skill: HP-clamp guards (Monarch Throne / Loyal Guard) ──
@@ -3158,6 +3278,11 @@ export async function mountChapter1(__mountOptions = {}) {
         statusEffects.infernoTurns--
         messages.push('🔥 Inferno: ' + iDmg + ' dmg! (' + statusEffects.infernoTurns + ' left)')
       }
+      // ── Elemental stacking DoTs + regen (Ch1) ──
+      if((statusEffects.cfx_emberStacks||0) > 0 && enemyHp > 0){ const per=Math.round(4*(1+(()=>{try{return elRaw(player,'ember_memory_dmg_pct')}catch(_e){return 0}})()/100)); const d=per*statusEffects.cfx_emberStacks; enemyHp=Math.max(0,enemyHp-d); messages.push('🔥 Ember Memory — '+d+' ('+statusEffects.cfx_emberStacks+').'); statusEffects.cfx_emberStacks-- }
+      if((statusEffects.cfx_longDecayStacks||0) > 0 && enemyHp > 0){ const per=Math.round(4*(1+(()=>{try{return elRaw(player,'long_decay_dmg_pct')}catch(_e){return 0}})()/100)); const d=per*statusEffects.cfx_longDecayStacks; enemyHp=Math.max(0,enemyHp-d); messages.push('☠ Long Decay — '+d+' ('+statusEffects.cfx_longDecayStacks+').'); statusEffects.cfx_longDecayStacks-- }
+      { const hpr=(()=>{try{return elRaw(player,'hp_regen_combat')}catch(_e){return 0}})(); if(hpr>0 && currentHp<maxPlayerHp){ currentHp=Math.min(maxPlayerHp,currentHp+hpr); messages.push('🌿 Regen +'+hpr+' HP') } }
+      if((statusEffects.cfx_worldTreeTurns||0) > 0){ const wh=Math.round(maxPlayerHp*0.10); currentHp=Math.min(maxPlayerHp,currentHp+wh); statusEffects.cfx_worldTreeTurns--; messages.push('🌿 World Tree +'+wh+' HP') }
       if (statusEffects.regenTurns > 0 && currentHp > 0) {
         const regenLv  = _skillLvGlobal('water_passive_regen')
         const regenAmt = Math.round(5 + (regenLv - 1))
@@ -3282,6 +3407,7 @@ export async function mountChapter1(__mountOptions = {}) {
       for (const m of _clsTurn.messages) messages.push(m)
       renderSkillSlots()
       renderClassSkills()
+      renderKeystones()
 
       if (enemyHp <= 0) {
         // ── Class skill: kill hook (Final Sentence message) ────────────
@@ -3559,6 +3685,7 @@ export async function mountChapter1(__mountOptions = {}) {
 
     renderSkillSlots()
     renderClassSkills()
+    renderKeystones()
     syncBars()
   }
 
