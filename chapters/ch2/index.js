@@ -1561,6 +1561,7 @@ You walk back out.`
     }
 
     let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=(player.max_hp||100)+(()=>{try{return elRaw(player,'hp_bonus')}catch(_e){return 0}})()
+    let turnCount = 0   // increments each turn; used by Slow Bloom (Flora) scaling
     let over=false, defending=false
     let currentHp = player.hp || 100
 
@@ -1859,7 +1860,7 @@ You walk back out.`
       let res
       try {
         res = applyKeystone(id, player, statusEffects, {
-          enemyHp, maxEnemyHp, currentHp, maxPlayerHp, playerATK: playerATK(),
+          enemyHp, maxEnemyHp, currentHp, maxPlayerHp, playerATK: playerATK(), playerDEF: playerDEF(),
         })
       } catch(_e) { return }
       const msgs = [...(res.messages||[])]
@@ -2701,6 +2702,15 @@ You walk back out.`
     }
 
     async function doTurn(playerAction, skillKey=null) {
+      turnCount++
+      // Held Breath (Aero): gain a stack when you take a non-attack action
+      // (defend / keystone_pass), spend them on your next attack.
+      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_aggr_3')){
+        if(playerAction==='defend' || playerAction==='keystone_pass'){
+          const att3 = (player.attuned_element||player.element)==='wind'
+          statusEffects.cfx_heldBreathStacks = Math.min(3, (statusEffects.cfx_heldBreathStacks||0)+1)
+        }
+      }
       if(over)return
       setButtons(false)
       defending=false
@@ -2953,14 +2963,49 @@ You walk back out.`
           }
           // No Witnesses keystone: next strike is a guaranteed crit.
           if(statusEffects.cfx_guaranteedCrit){ dmg = Math.round(dmg * 1.5); statusEffects.cfx_guaranteedCrit=false; messages.push('🌑 Guaranteed crit!') }
+          // Tremor (Terra): add a % of your DEF as bonus damage.
+          {
+            const gdp = (()=>{try{return elRaw(player,'guard_damage_pct')}catch(_e){return 0}})()
+            if(gdp>0){ const tb=Math.round(playerDEF()*(gdp/100)); if(tb>0){ dmg+=tb; messages.push('🪨 Tremor +'+tb+' (from DEF).') } }
+          }
+          // Landslide (Terra): chance to stun the enemy on attack.
+          {
+            const scp = (()=>{try{return elRaw(player,'stun_chance_pct')}catch(_e){return 0}})()
+            if(scp>0 && Math.random() < scp/100){ statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1); messages.push('🪨 Landslide — enemy stunned!') }
+          }
+          // Armor Pierce (Ferro): ignore a % of enemy DEF — add it back as damage.
+          {
+            const dip = (()=>{try{return elRaw(player,'def_ignore_pct')}catch(_e){return 0}})()
+            if(dip>0 && (enemy.def||0)>0){ const back=Math.round((enemy.def||0)*Math.min(0.9,dip/100)); if(back>0){ dmg+=back; } }
+          }
+          // Slow Bloom (Flora): attacks grow stronger each turn elapsed this battle.
+          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('plant_aggr_3')){
+            const att2 = (player.attuned_element||player.element)==='plant'
+            const perTurn = att2 ? 0.10 : 0.05
+            const cap = 0.50 + (()=>{try{return elRaw(player,'slow_bloom_cap_pct')}catch(_e){return 0}})()/100
+            const grow = Math.min(cap, perTurn * (turnCount||0))
+            if(grow>0){ const gb=Math.round(dmg*grow); if(gb>0){ dmg+=gb; } }
+          }
+          // Held Breath (Aero): spend stored stacks for bonus damage.
+          if((statusEffects.cfx_heldBreathStacks||0) > 0){
+            const per = 0.25 + (()=>{try{return elRaw(player,'held_breath_dmg_pct')}catch(_e){return 0}})()/100
+            const hb = Math.round(dmg * per * statusEffects.cfx_heldBreathStacks)
+            if(hb>0){ dmg+=hb; messages.push('💨 Held Breath released +'+hb+'!') }
+            statusEffects.cfx_heldBreathStacks = 0
+          }
           try { dmg = Math.round(dmg * elDamageMult(player, 'physical')) } catch(_e){}
           const oldEnemyHp = enemyHp
           enemyHp=Math.max(0,enemyHp-dmg)
           messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
 
+          // ── Lifesteal (Flora): heal a share of damage dealt ──
+          try {
+            let ls = (()=>{try{return elRaw(player,'lifesteal_pct')}catch(_e){return 0}})()/100
+            if((statusEffects.cfx_bloodflowerTurns||0) > 0){ ls = Math.max(ls, statusEffects.cfx_bloodflowerPct||0.5); statusEffects.cfx_bloodflowerTurns-- }
+            if(ls > 0 && dmg > 0){ const heal=Math.round(dmg*ls); if(heal>0){ currentHp=Math.min(maxPlayerHp,currentHp+heal); messages.push('🌿 Lifesteal +'+heal+' HP.') } }
+          } catch(_e){}
+
           // ── Signature stack application on attack ──────────────────────
-          // Keystone-forced: Cinder Step / Plague Fang make the next N attacks
-          // apply a stack (twice if attuned — the keystone set the counter to 6).
           try { applyStacksOnAttack() } catch(_e){}
 
           // ── Class skill: post-attack hook ──────────────────────────────
@@ -3058,6 +3103,11 @@ You walk back out.`
           messages.push('Heavy strike <strong>'+dmg+'</strong>!')
         } else if(playerAction==='defend') {
           defending=true; messages.push('You brace — defense doubled.')
+          // Stoneborn (Terra): defending builds a stack (max 3, +bonus from Bastion etc.)
+          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_def_3')){
+            statusEffects.cfx_stonebornStacks = Math.min(3, (statusEffects.cfx_stonebornStacks||0) + 1)
+            messages.push('🪨 Stoneborn — you harden ('+statusEffects.cfx_stonebornStacks+').')
+          }
           if(statusEffects.absorptionHeal){const h=statusEffects.absorptionHeal;currentHp=Math.min(maxPlayerHp,currentHp+h);statusEffects.absorptionHeal=0;messages.push('🛡 Absorption +<strong>'+h+'</strong> HP!')}
           // ── Bastion Bulwark on Defend (t1a) ─────────────────────────
           if (player.active_class === 'bastion') {
@@ -3192,6 +3242,12 @@ You walk back out.`
         // Elemental keystone: Forge-Body / Glacier-Body / Storm Ward / Aegis /
         // Living Antidote — half damage from ALL sources while active.
         if ((statusEffects.cfx_damageHalveTurns||0) > 0) { eDmg = Math.max(1, Math.round(eDmg * 0.5)) }
+        // Stoneborn (Terra): each stack reduces incoming damage (8%/stack, 16% attuned).
+        if((statusEffects.cfx_stonebornStacks||0) > 0 && eDmg > 0){
+          const perStack = ((player.attuned_element||player.element)==='earth') ? 0.16 : 0.08
+          const reduce = Math.min(0.6, perStack * statusEffects.cfx_stonebornStacks)
+          eDmg = Math.max(1, Math.round(eDmg * (1 - reduce)))
+        }
         eDmg=Math.round(eDmg*(statusEffects.enemyATKMult||1.0))
         // Cowardice modifier (#20): Twin Judges hit harder while player is
         // under 50% HP. Only applies to the Judges fight (gated by judgesForm).
@@ -3233,6 +3289,12 @@ You walk back out.`
           if(eDmg>0 && ((statusEffects.cfx_fireReflectTurns||0)>0 || (statusEffects.cfx_poisonReflectTurns||0)>0)){
             const _kr=Math.max(1,Math.round(eDmg*0.25)); enemyHp=Math.max(0,enemyHp-_kr);
             messages.push('✦ Keystone reflect <strong>'+_kr+'</strong>!')
+          }
+          // Metal reflect: Mirror Skin (passive metal_reflect_pct) + Iron Maiden (50%).
+          if(eDmg>0){
+            let mr = (()=>{try{return elRaw(player,'metal_reflect_pct')}catch(_e){return 0}})()/100
+            if((statusEffects.cfx_ironMaidenTurns||0) > 0) mr = Math.max(mr, 0.5)
+            if(mr > 0){ const _mr=Math.max(1,Math.round(eDmg*Math.min(0.6,mr))); enemyHp=Math.max(0,enemyHp-_mr); messages.push('⚙ Reflect <strong>'+_mr+'</strong> back!') }
           }
           // Aegis / Storm Ward: convert a share of damage taken into... nothing yet
           // (no MP system) — left as damage-halve only, which is already applied.
@@ -3321,6 +3383,10 @@ You walk back out.`
         statusEffects.cfx_longDecayStacks--
       }
       if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
+      // Living Stone (Terra): flat HP regen each turn from the tree.
+      { const hpr=(()=>{try{return elRaw(player,'hp_regen_combat')}catch(_e){return 0}})(); if(hpr>0 && currentHp<maxPlayerHp){ currentHp=Math.min(maxPlayerHp,currentHp+hpr); messages.push('🪨 Living Stone +'+hpr+' HP') } }
+      // World Tree (Flora keystone): heal 10% max HP each turn while active.
+      if((statusEffects.cfx_worldTreeTurns||0) > 0){ const wh=Math.round(maxPlayerHp*0.10); currentHp=Math.min(maxPlayerHp,currentHp+wh); statusEffects.cfx_worldTreeTurns--; messages.push('🌿 World Tree +'+wh+' HP') }
 
       // Player-side status DoTs and counter decrements. Player statuses are
       // applied by enemyAI.js (when used) via apply* helpers; ticking lives
@@ -3361,11 +3427,17 @@ You walk back out.`
         if(statusEffects.playerStunTurns===0){messages.push('⚡ Stun fades.')}
       }
 
+      // Worldspine (Terra): cleanse player debuffs when flagged.
+      if(statusEffects.cfx_cleanseDebuffs){
+        ;['playerStunTurns','playerTerrorTurns','enemySPDDebuff','burnTurns','poisonTurns'].forEach(k=>{ if(statusEffects[k]) statusEffects[k]=0 })
+        statusEffects.cfx_cleanseDebuffs=false
+        messages.push('🪨 Worldspine — debuffs cleansed.')
+      }
       // ── Elemental keystone duration ticking ───────────────────────────
       // Decrement the active-effect timers the keystones set. When a shield
       // (damage-halve) expires, note it. Reflect timers tick silently.
       ;['cfx_damageHalveTurns','cfx_fireReflectTurns','cfx_poisonReflectTurns',
-        'cfx_dmgToMpTurns','cfx_stunMeleeTurns','cfx_dodgeBuffTurns','cfx_untargetableTurns'].forEach(k=>{
+        'cfx_dmgToMpTurns','cfx_stunMeleeTurns','cfx_dodgeBuffTurns','cfx_untargetableTurns','cfx_ironMaidenTurns'].forEach(k=>{
         if((statusEffects[k]||0)>0){ statusEffects[k]--; if(statusEffects[k]===0 && k==='cfx_damageHalveTurns') messages.push('✦ Your ward fades.') }
       })
 
@@ -3540,10 +3612,10 @@ You walk back out.`
     return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
   }
   function calcATK() {
-    return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')+(()=>{try{return elRaw(player,'atk_bonus')}catch(_e){return 0}})()))
+    { let _a=(player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')+(()=>{try{return elRaw(player,'atk_bonus')}catch(_e){return 0}})(); if(statusEffects.cfx_forgeAtk)_a*=1.3; return Math.max(1,Math.round(_a)) }
   }
   function calcDEF() {
-    return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus')+(()=>{try{return elRaw(player,'def_bonus')}catch(_e){return 0}})())
+    { let _d=(player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus')+(()=>{try{return elRaw(player,'def_bonus')}catch(_e){return 0}})(); if(statusEffects.cfx_forgeDef)_d*=1.3; return Math.round(_d) }
   }
   function calcSPD() {
     return Math.round((player.speed||0)+(player.insight||0)*0.1+getEquippedBonus('speed_bonus'))
