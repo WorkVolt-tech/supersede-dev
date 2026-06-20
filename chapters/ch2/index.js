@@ -1777,12 +1777,10 @@ You walk back out.`
         : ''
 
       if(!activeSkills.length) {
+        // No active skills equipped — just show any passives quietly. The basic
+        // Strike / Heavy / Defend actions are always available above, so there's
+        // nothing the player needs to be warned about here.
         row.innerHTML = passiveStrip
-          + '<p style="font-family:\'Share Tech Mono\',monospace;font-size:.5rem;color:var(--ink-dim);padding:4px 0">'
-          + (battleSkillKeys.length===0
-              ? 'No active skills assigned — visit Skills page'
-              : battleSkillKeys.length+' skill key(s) found but not recognized — visit Skills page to re-save')
-          + '</p>'
         return
       }
 
@@ -2781,6 +2779,40 @@ You walk back out.`
 
       let messages=[]
 
+      // Applies signature stacks (Ember Memory / Long Decay) to the enemy when
+      // the player attacks. Two sources: (1) keystone-forced windows — Cinder
+      // Step sets cfx_emberStepTurns, Plague Fang sets cfx_plagueFangTurns, each
+      // counting down per attack (and applying 2 stacks while the attuned 6-turn
+      // version is active); (2) proc nodes — Ash Recall (fire_aggr_3) / Virulence
+      // (poison_aggr_3) give a chance-on-attack to apply a stack. Max stacks are
+      // capped (base 3, +tree *_max_stacks nodes).
+      function applyStacksOnAttack() {
+        const has = id => Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes(id)
+        const att = el => (player.attuned_element||player.element) === el
+        // ── Ember Memory (fire) ──
+        {
+          const maxStacks = 3 + (()=>{try{return elRaw(player,'ember_memory_max_stacks')}catch(_e){return 0}})()
+          let add = 0
+          if((statusEffects.cfx_emberStepTurns||0) > 0){ add += att('fire') ? 2 : 1; statusEffects.cfx_emberStepTurns-- }
+          if(has('fire_aggr_3')){ const chance = att('fire') ? 0.30 : 0.15; if(Math.random() < chance) add += 1 }
+          if(add > 0){
+            statusEffects.cfx_emberStacks = Math.min(maxStacks, (statusEffects.cfx_emberStacks||0) + add)
+            messages.push('🔥 Ember Memory applied ('+statusEffects.cfx_emberStacks+').')
+          }
+        }
+        // ── Long Decay (poison) ──
+        {
+          const maxStacks = 3 + (()=>{try{return elRaw(player,'long_decay_max_stacks')}catch(_e){return 0}})()
+          let add = 0
+          if((statusEffects.cfx_plagueFangTurns||0) > 0){ add += att('poison') ? 2 : 1; statusEffects.cfx_plagueFangTurns-- }
+          if(has('poison_aggr_3')){ const chance = att('poison') ? 0.30 : 0.15; if(Math.random() < chance) add += 1 }
+          if(add > 0){
+            statusEffects.cfx_longDecayStacks = Math.min(maxStacks, (statusEffects.cfx_longDecayStacks||0) + add)
+            messages.push('☠ Long Decay applied ('+statusEffects.cfx_longDecayStacks+').')
+          }
+        }
+      }
+
       function resolvePlayerAction() {
         // ── Tier-2 elemental hit FX ──────────────────────────────────
         // Fire a burst over the enemy keyed to the attack's element. Skills
@@ -2856,6 +2888,11 @@ You walk back out.`
           const oldEnemyHp = enemyHp
           enemyHp=Math.max(0,enemyHp-dmg)
           messages.push('You strike for <strong>'+dmg+'</strong>.'+(ignoreDEF?' (DEF ignored)':''))
+
+          // ── Signature stack application on attack ──────────────────────
+          // Keystone-forced: Cinder Step / Plague Fang make the next N attacks
+          // apply a stack (twice if attuned — the keystone set the counter to 6).
+          try { applyStacksOnAttack() } catch(_e){}
 
           // ── Class skill: post-attack hook ──────────────────────────────
           // Computes deferred damage from Delayed Verdict, increments hit counters.
@@ -3050,6 +3087,10 @@ You walk back out.`
           else if(sk.fn==='sixthSense'){statusEffects.sixthSense=true;messages.push('👁 Sixth Sense — predicting enemy move!')}
           else if(sk.fn==='chaosEngine'){const effects=['fire','stun','heal','buff'];const ef=effects[Math.floor(Math.random()*effects.length)];if(ef==='fire'){const d=Math.round(30*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('🌀 Chaos — blast for <strong>'+d+'</strong>!')}else if(ef==='stun'){statusEffects.enemyStunTurns=1;messages.push('🌀 Chaos — enemy stunned!')}else if(ef==='heal'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('🌀 Chaos — healed <strong>'+h+'</strong>!')}else{statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+Math.round(15*sc);messages.push('🌀 Chaos — ATK buffed!')}}
           else if(sk.fn==='ancientRoot'){statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2*sc);messages.push('🌿 Ancient Root — shield activated!')}
+          // Signature stacks also apply when casting attack skills (e.g. Fire
+          // Blast during a Cinder Step window applies Ember Memory).
+          const _ATTACK_FNS_STACK = new Set(['fireBlast','earthquake','earthSpike','lightningStrike','thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine'])
+          if(_ATTACK_FNS_STACK.has(sk.fn)){ try { applyStacksOnAttack() } catch(_e){} }
         }
       }
 
@@ -3167,6 +3208,24 @@ You walk back out.`
       // DoT effects
       if(statusEffects.burnTurns>0){const bd=statusEffects.burnDmg;enemyHp=Math.max(0,enemyHp-bd);statusEffects.burnTurns--;messages.push('🔥 Burn — <strong>'+bd+'</strong> dmg ('+statusEffects.burnTurns+' left)')}
       if(statusEffects.infernoTurns>0){const id=statusEffects.infernoDmg||40;enemyHp=Math.max(0,enemyHp-id);statusEffects.infernoTurns--;messages.push('🔥 Inferno — <strong>'+id+'</strong> dmg!')}
+      // ── Signature stacking DoTs: Ember Memory (Ignis) & Long Decay (Venin) ──
+      // Each stack deals per-stack damage every turn, then all stacks decay by 1.
+      // Per-stack damage and max-stacks scale from the tree's *_dmg_pct / *_max_stacks
+      // nodes (read via elRaw). Base per-stack damage is 4.
+      if((statusEffects.cfx_emberStacks||0) > 0){
+        const perStack = Math.round(4 * (1 + (()=>{try{return elRaw(player,'ember_memory_dmg_pct')}catch(_e){return 0}})()/100))
+        const dmg = perStack * statusEffects.cfx_emberStacks
+        enemyHp = Math.max(0, enemyHp - dmg)
+        messages.push('🔥 Ember Memory — <strong>'+dmg+'</strong> ('+statusEffects.cfx_emberStacks+' stacks)')
+        statusEffects.cfx_emberStacks--   // stacks decay over time
+      }
+      if((statusEffects.cfx_longDecayStacks||0) > 0){
+        const perStack = Math.round(4 * (1 + (()=>{try{return elRaw(player,'long_decay_dmg_pct')}catch(_e){return 0}})()/100))
+        const dmg = perStack * statusEffects.cfx_longDecayStacks
+        enemyHp = Math.max(0, enemyHp - dmg)
+        messages.push('☠ Long Decay — <strong>'+dmg+'</strong> ('+statusEffects.cfx_longDecayStacks+' stacks)')
+        statusEffects.cfx_longDecayStacks--
+      }
       if(statusEffects.regenTurns>0){const rh=Math.round(maxPlayerHp*0.04);currentHp=Math.min(maxPlayerHp,currentHp+rh);messages.push('💧 Flow regen +'+rh+' HP')}
 
       // Player-side status DoTs and counter decrements. Player statuses are
