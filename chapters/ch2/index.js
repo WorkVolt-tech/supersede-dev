@@ -2786,6 +2786,36 @@ You walk back out.`
       // version is active); (2) proc nodes — Ash Recall (fire_aggr_3) / Virulence
       // (poison_aggr_3) give a chance-on-attack to apply a stack. Max stacks are
       // capped (base 3, +tree *_max_stacks nodes).
+      // Reverberation (Lux): when a Lux skill lands, it may ECHO — dealing a
+      // fraction of its damage again. Echo CHANCE comes from the tree's
+      // reverberation_chance_pct nodes (base 15% if Reverberation notable is
+      // unlocked, +Sustain); echo DAMAGE fraction is 50% base, boosted by
+      // reverberation_dmg_pct (Amplitude). The Standing Wave keystone sets
+      // cfx_standingWave to a count of GUARANTEED full-power echoes (and, if
+      // attuned, those ignore DEF — handled by the flag).
+      function applyReverbEcho(baseDamage) {
+        const has = id => Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes(id)
+        const att = (player.attuned_element||player.element) === 'arcane'
+        let echoes = 0
+        let fullPower = false
+        // Standing Wave: guaranteed full-power echoes first.
+        if ((statusEffects.cfx_standingWave||0) > 0) {
+          echoes = 1
+          fullPower = true
+          statusEffects.cfx_standingWave--
+        } else if (has('arcane_aggr_3')) {
+          // Reverberation notable: chance-based echo.
+          let chance = (att ? 0.30 : 0.15) + (()=>{try{return elRaw(player,'reverberation_chance_pct')}catch(_e){return 0}})()/100
+          if (Math.random() < chance) echoes = 1
+        }
+        if (echoes <= 0) return
+        const dmgPct = (()=>{try{return elRaw(player,'reverberation_dmg_pct')}catch(_e){return 0}})()/100
+        const frac = fullPower ? 1 : (0.5 + dmgPct)
+        const echoDmg = Math.max(1, Math.round(baseDamage * frac))
+        enemyHp = Math.max(0, enemyHp - echoDmg)
+        messages.push('✨ Reverberation echo — <strong>'+echoDmg+'</strong>!')
+      }
+
       function applyStacksOnAttack() {
         const has = id => Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes(id)
         const att = el => (player.attuned_element||player.element) === el
@@ -3054,6 +3084,8 @@ You walk back out.`
           else if(sk.fn==='healPulse'){const h=Math.round(25*sc);currentHp=Math.min(maxPlayerHp,currentHp+h);messages.push('✨ Heal Pulse +<strong>'+h+'</strong> HP!')}
           else if(sk.fn==='divineBarrier'){statusEffects.invulnerable=true;statusEffects.divineBarrierReflect=true;messages.push('✨ Divine Barrier — invulnerable this turn!')}
           else if(sk.fn==='lightningStrike'){const d=Math.round((30+playerATK()*0.5)*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('⚡ Lightning Strike <strong>'+d+'</strong>!')}
+          else if(sk.fn==='resonantBolt'){const d=Math.round((30+playerATK()*0.4)*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('✨ Resonant Bolt <strong>'+d+'</strong>!');try{applyReverbEcho(d)}catch(_e){}}
+          else if(sk.fn==='standingChord'){const d=Math.round((45+playerATK()*0.5)*sc*_elMult);enemyHp=Math.max(0,enemyHp-d);messages.push('✨ Standing Chord <strong>'+d+'</strong>!');try{applyReverbEcho(d)}catch(_e){}}
           else if(sk.fn==='thunderstorm'){let tot=0;for(let i=0;i<5;i++){const b=Math.round((Math.round(10*sc)+Math.floor(Math.random()*Math.round(10*sc)))*_elMult);tot+=b;enemyHp=Math.max(0,enemyHp-b)};messages.push('⚡ Thunderstorm <strong>'+tot+'</strong>!')}
           else if(sk.fn==='bladeForm'){const ab=Math.round(20*sc),sb=Math.round(5*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;statusEffects.playerSPDBonus=(statusEffects.playerSPDBonus||0)+sb;messages.push('⚙ Blade Form ATK+'+ab+' SPD+'+sb+'!')}
           else if(sk.fn==='ironDomain'){const ab=Math.round(playerATK()*sc);statusEffects.playerATKBonus=(statusEffects.playerATKBonus||0)+ab;messages.push('⚙ Iron Domain ATK+'+ab+'!')}
