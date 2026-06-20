@@ -2962,6 +2962,8 @@ You walk back out.`
             if(bonus>0){ dmg += bonus; messages.push('🌑 Unseen strike +'+bonus+' ('+statusEffects.cfx_unseenStacks+' stacks).') }
             statusEffects.cfx_unseenStacks = 0
           }
+          // Tailwind (Aero): next attack after a dodge deals double.
+          if(statusEffects.cfx_tailwindNext){ dmg = Math.round(dmg * 2); statusEffects.cfx_tailwindNext=false; messages.push('💨 Tailwind — the strike lands twice as hard!') }
           // No Witnesses keystone: next strike is a guaranteed crit.
           if(statusEffects.cfx_guaranteedCrit){ dmg = Math.round(dmg * 1.5); statusEffects.cfx_guaranteedCrit=false; messages.push('🌑 Guaranteed crit!') }
           // Tremor (Terra): add a % of your DEF as bonus damage.
@@ -2978,6 +2980,13 @@ You walk back out.`
           {
             const dip = (()=>{try{return elRaw(player,'def_ignore_pct')}catch(_e){return 0}})()
             if(dip>0 && (enemy.def||0)>0){ const back=Math.round((enemy.def||0)*Math.min(0.9,dip/100)); if(back>0){ dmg+=back; } }
+          }
+          // Fault Line (Terra): ignore 15%/30% of enemy DEF per Stoneborn stack.
+          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_aggr_3') && (statusEffects.cfx_stonebornStacks||0)>0 && (enemy.def||0)>0){
+            const perStack = ((player.attuned_element||player.element)==='earth') ? 0.30 : 0.15
+            const frac = Math.min(0.9, perStack * statusEffects.cfx_stonebornStacks)
+            const back = Math.round((enemy.def||0) * frac)
+            if(back>0){ dmg+=back; messages.push('🪨 Fault Line — pierced '+back+' DEF.') }
           }
           // Slow Bloom (Flora): attacks grow stronger each turn elapsed this battle.
           if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('plant_aggr_3')){
@@ -3235,6 +3244,18 @@ You walk back out.`
             const hod = (()=>{try{return elRaw(player,'hp_on_dodge')}catch(_e){return 0}})()
             if(hod > 0){ currentHp = Math.min(maxPlayerHp, currentHp + hod); messages.push('🌑 Dodged — slipped aside (+'+hod+' HP).') }
             else messages.push('🌑 Dodged — the blow finds only shadow.')
+            // Tailwind (Aero): on dodge, your next attack deals double.
+            if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_def_3')){ statusEffects.cfx_tailwindNext=true }
+          }
+        }
+        // ── Parry (Ferro): chance to negate the attack and counter ──
+        if(!_dodged){
+          const pc = (()=>{try{return elRaw(player,'parry_chance_pct')}catch(_e){return 0}})()/100
+          if(pc > 0 && Math.random() < pc){
+            _dodged = true
+            const counter = Math.max(1, Math.round(playerATK() * 0.75))
+            enemyHp = Math.max(0, enemyHp - counter)
+            messages.push('⚙ Parry! You turn the blow and counter for <strong>'+counter+'</strong>.')
           }
         }
         let eDmg = _dodged ? 0 : Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
@@ -3318,6 +3339,10 @@ You walk back out.`
       // Player stun gate (applied by enemyAI.js): if stunned, skip player
       // action this turn. Enemy still gets to act. The tick happens later
       // in the DoT block so this turn counts against the duration.
+      // Rooted (Terra): immune to stun. Clear any stun and skip the stun lockout.
+      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_util_2')){
+        if((statusEffects.playerStunTurns||0)>0){ statusEffects.playerStunTurns=0; log('🪨 Rooted — you shrug off the stun.') }
+      }
       const playerStunned = (statusEffects.playerStunTurns||0) > 0
       if (playerStunned) {
         log('⚡ You are stunned and cannot act.')
