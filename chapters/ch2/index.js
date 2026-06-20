@@ -2841,6 +2841,28 @@ You walk back out.`
             messages.push('☠ Long Decay applied ('+statusEffects.cfx_longDecayStacks+').')
           }
         }
+        // ── Second Strike (Volt): chance to immediately strike again ──
+        if(has('lightning_aggr_3')){
+          const chance = att('lightning') ? 0.30 : 0.15
+          if(Math.random() < chance){
+            // Second hit at 50% ATK, boosted by second_strike_dmg_pct nodes.
+            const bonus = (()=>{try{return elRaw(player,'second_strike_dmg_pct')}catch(_e){return 0}})()/100
+            const d = Math.max(1, Math.round(playerATK() * (0.5 + bonus)))
+            enemyHp = Math.max(0, enemyHp - d)
+            messages.push('⚡ Second Strike — <strong>'+d+'</strong>!')
+          }
+        }
+        // ── Still Water (Aqua): chance to strip a buff from the enemy ──
+        if(has('water_aggr_3')){
+          const chance = att('water') ? 0.30 : 0.15
+          if(Math.random() < chance){
+            // Strip enemy ATK/DEF buffs if present (the enemy's temporary boosts).
+            let stripped = false
+            if(statusEffects.enemyATKBuff){ statusEffects.enemyATKBuff=0; stripped=true }
+            if(statusEffects.enemyDEFBuff){ statusEffects.enemyDEFBuff=0; stripped=true }
+            messages.push(stripped ? '💧 Still Water — stripped the enemy\'s buff!' : '💧 Still Water — nothing to strip.')
+          }
+        }
       }
 
       function resolvePlayerAction() {
@@ -3067,7 +3089,9 @@ You walk back out.`
           }
         } else if(playerAction==='skill'&&skillKey) {
           const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
-          { const _cdr=(()=>{try{return elRaw(player,'cooldown_reduction')}catch(_e){return 0}})(); const _base=sk.type==='ultimate'?4:2; statusEffects.skillCooldowns[skillKey]=Math.max(1,_base-_cdr) }
+          { const _cdr=(()=>{try{return elRaw(player,'cooldown_reduction')}catch(_e){return 0}})(); const _base=sk.type==='ultimate'?4:2;
+            if(statusEffects.cfx_perfectRecall){ statusEffects.skillCooldowns[skillKey]=0; statusEffects.cfx_perfectRecall=false; messages.push('✨ Perfect Recall — no cooldown!') }
+            else { statusEffects.skillCooldowns[skillKey]=Math.max(1,_base-_cdr) } }
           const sc=skillScale(skillKey),lv=_skillLv(skillKey)
           // Elemental tree: damage multiplier for THIS skill's element. The
           // damage-dealing skills below multiply their computed damage by this
@@ -3174,6 +3198,14 @@ You walk back out.`
           messages.push(enemy.name+' strikes for <strong>'+eDmg+'</strong>.')
           // Elemental tree: reflect a share of damage taken back at the enemy.
           try { const _rf = elReflect(player); if(_rf>0 && eDmg>0){ const _rb=Math.max(1,Math.round(eDmg*_rf)); enemyHp=Math.max(0,enemyHp-_rb); messages.push('☠ Caustic reflect <strong>'+_rb+'</strong>!') } } catch(_e){}
+          // Keystone reflect: Forge-Body / Living Antidote / Storm Ward etc. reflect
+          // 25% of damage taken back while their reflect timer is active.
+          if(eDmg>0 && ((statusEffects.cfx_fireReflectTurns||0)>0 || (statusEffects.cfx_poisonReflectTurns||0)>0)){
+            const _kr=Math.max(1,Math.round(eDmg*0.25)); enemyHp=Math.max(0,enemyHp-_kr);
+            messages.push('✦ Keystone reflect <strong>'+_kr+'</strong>!')
+          }
+          // Aegis / Storm Ward: convert a share of damage taken into... nothing yet
+          // (no MP system) — left as damage-halve only, which is already applied.
           // Bulwark (passive): count consecutive enemy hits; at 2, queue a DEF-double next turn.
           if(statusEffects.bulwarkPassive){statusEffects.bulwarkHitStreak=(statusEffects.bulwarkHitStreak||0)+1;if(statusEffects.bulwarkHitStreak>=2){statusEffects.bulwarkDefDouble=true;statusEffects.bulwarkHitStreak=0;messages.push('🛡 Bulwark — DEF doubled next turn!')}}
         }
