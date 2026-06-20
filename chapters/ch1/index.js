@@ -2626,6 +2626,10 @@ export async function mountChapter1(__mountOptions = {}) {
           const _attEl = el => (player.attuned_element||player.element) === el
           // Armor Pierce (Ferro): ignore a % of enemy DEF.
           { const dip=(()=>{try{return elRaw(player,'def_ignore_pct')}catch(_e){return 0}})(); if(dip>0 && (enemy.def||0)>0){ const back=Math.round((enemy.def||0)*Math.min(0.9,dip/100)); if(back>0) dmg+=back } }
+          // Fault Line (Terra): ignore DEF per Stoneborn stack.
+          if(_hasEl('earth_aggr_3') && (statusEffects.cfx_stonebornStacks||0)>0 && (enemy.def||0)>0){ const ps=_attEl('earth')?0.30:0.15; const back=Math.round((enemy.def||0)*Math.min(0.9,ps*statusEffects.cfx_stonebornStacks)); if(back>0){ dmg+=back; messages.push('🪨 Fault Line — pierced '+back+' DEF.') } }
+          // Tailwind (Aero): next attack after dodge deals double.
+          if(statusEffects.cfx_tailwindNext){ dmg=Math.round(dmg*2); statusEffects.cfx_tailwindNext=false; messages.push('💨 Tailwind — twice as hard!') }
           // Tremor (Terra): bonus damage from DEF.
           { const gdp=(()=>{try{return elRaw(player,'guard_damage_pct')}catch(_e){return 0}})(); if(gdp>0){ const tb=Math.round(playerDEF()*(gdp/100)); if(tb>0){ dmg+=tb; messages.push('🪨 Tremor +'+tb+'.') } } }
           // Slow Bloom (Flora): scale with turns elapsed.
@@ -3107,8 +3111,16 @@ export async function mountChapter1(__mountOptions = {}) {
         if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
         if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
 
+        // Parry (Ferro): independent chance to negate the attack and counter.
+        let _parried = false
+        { const pc=(()=>{try{return elRaw(player,'parry_chance_pct')}catch(_e){return 0}})()/100
+          if(pc>0 && Math.random()<pc){ _parried=true; const cnt=Math.max(1,Math.round(playerATK()*0.75)); enemyHp=Math.max(0,enemyHp-cnt); messages.push('⚙ Parry! You counter for <strong>'+cnt+'</strong>.') } }
+        if(_parried) dodgeChance = 1.0   // treat as a full dodge for damage negation
+
         if (Math.random() < dodgeChance) {
           messages.push('You <em>dodge</em> the attack!')
+          // Tailwind (Aero): on dodge, next attack deals double.
+          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_def_3')){ statusEffects.cfx_tailwindNext=true }
           // Elemental: heal on dodge (Nightmend/Float nodes).
           { const hod=(()=>{try{return elRaw(player,'hp_on_dodge')}catch(_e){return 0}})(); if(hod>0){ currentHp=Math.min(maxPlayerHp,currentHp+hod); messages.push('🌑 +'+hod+' HP (dodge).') } }
           // Flicker: next strike doubles
@@ -3245,6 +3257,10 @@ export async function mountChapter1(__mountOptions = {}) {
 
       // Player stun gate (applied by enemyAI.js): if stunned, skip player
       // action this turn. Enemy still gets to act. The tick happens later.
+      // Rooted (Terra): immune to stun.
+      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_util_2')){
+        if((statusEffects.playerStunTurns||0)>0){ statusEffects.playerStunTurns=0; log('🪨 Rooted — you shrug off the stun.') }
+      }
       const playerStunned = (statusEffects.playerStunTurns||0) > 0
       if (playerStunned) {
         log('⚡ You are stunned and cannot act.')
