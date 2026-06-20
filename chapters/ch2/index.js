@@ -40,7 +40,7 @@ import ZONE_FARMING, { randomizeFarmingWaves } from './zones/zone-farming.js'
 import { NODES } from './nodes.js'
 import { xpForLevel, xpProgress, resolveLevelUp } from '../../data/leveling.js'
 import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
-import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect } from '../../data/elemental-bonuses.js'
+import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect, critChanceBonus as elCritChance, critDamageBonus as elCritDmg, mpMaxBonus as elMpMax, mpRegenCombat as elMpRegen, rawBonus as elRaw } from '../../data/elemental-bonuses.js'
 import { getUnlockedKeystones, applyKeystone } from '../../data/elemental-keystones.js'
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-2'
@@ -1560,7 +1560,7 @@ You walk back out.`
       if (ally.maxHp === undefined) ally.maxHp = ally.hp
     }
 
-    let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=player.max_hp||100
+    let enemyHp=enemy.hp, maxEnemyHp=enemy.hp, maxPlayerHp=(player.max_hp||100)+(()=>{try{return elRaw(player,'hp_bonus')}catch(_e){return 0}})()
     let over=false, defending=false
     let currentHp = player.hp || 100
 
@@ -2829,12 +2829,17 @@ You walk back out.`
           const _bonusFlatDmg  = (typeof _clsAtk.bonusFlatDmg  === 'number') ? _clsAtk.bonusFlatDmg  : 0
 
           let dmg=Math.max(1,Math.round(((baseATK+roll)*flickerMult+_bonusFlatDmg)*_dmgMult))
-          // Crit chance from Judgment Chain or other sources — roll it.
+          // Crit chance: class sources (_critChanceAdd) PLUS the elemental tree's
+          // crit_chance_pct nodes. Crit multiplier is the base 1.5 plus the tree's
+          // crit_dmg_pct nodes. Both wrapped so the tree can never break the roll.
+          let _elCritCh = 0, _elCritDmg = 0
+          try { _elCritCh = elCritChance(player); _elCritDmg = elCritDmg(player) } catch(_e){}
+          const _totalCritChance = _critChanceAdd + _elCritCh
           let wasCrit = false
-          if (_critChanceAdd > 0 && Math.random() < _critChanceAdd) {
+          if (_totalCritChance > 0 && Math.random() < _totalCritChance) {
             wasCrit = true
-            dmg = Math.round(dmg * 1.5)
-            messages.push('⚖ Judgment Chain — critical strike.')
+            dmg = Math.round(dmg * (1.5 + _elCritDmg))
+            messages.push('🎯 Critical strike!')
             // Executioner's Eye: crits ignore 50% enemy DEF
             if (_defIgnoreFrac > 0 && (enemy.def||0) > 0) {
               const defBonus = Math.round((enemy.def||0) * _defIgnoreFrac)
@@ -2995,7 +3000,7 @@ You walk back out.`
           }
         } else if(playerAction==='skill'&&skillKey) {
           const sk=BATTLE_SKILLS[skillKey]; if(!sk)return
-          statusEffects.skillCooldowns[skillKey]=sk.type==='ultimate'?4:2
+          { const _cdr=(()=>{try{return elRaw(player,'cooldown_reduction')}catch(_e){return 0}})(); const _base=sk.type==='ultimate'?4:2; statusEffects.skillCooldowns[skillKey]=Math.max(1,_base-_cdr) }
           const sc=skillScale(skillKey),lv=_skillLv(skillKey)
           // Elemental tree: damage multiplier for THIS skill's element. The
           // damage-dealing skills below multiply their computed damage by this
@@ -3382,10 +3387,10 @@ You walk back out.`
     return (window._equippedItems||[]).reduce((s,i)=>s+(i[stat]||0),0)
   }
   function calcATK() {
-    return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')))
+    return Math.max(1,Math.round((player.atk||1)+(player.power||0)*0.6+(player.speed||0)*0.2+getEquippedBonus('atk_bonus')+(()=>{try{return elRaw(player,'atk_bonus')}catch(_e){return 0}})()))
   }
   function calcDEF() {
-    return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus'))
+    return Math.round((player.def||0)+(player.guard||0)*0.6+(player.control||0)*0.2+getEquippedBonus('def_bonus')+(()=>{try{return elRaw(player,'def_bonus')}catch(_e){return 0}})())
   }
   function calcSPD() {
     return Math.round((player.speed||0)+(player.insight||0)*0.1+getEquippedBonus('speed_bonus'))
