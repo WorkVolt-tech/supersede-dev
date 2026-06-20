@@ -28,6 +28,8 @@ export const BATTLE_SKILLS_REGISTRY = {
   lightning_passive_chain_damage: { label:'Chain',          type:'passive',  el:'lightning', color:'#88ccff' },
   lightning_skill_lightning_strike:{ label:'Lightning Strike',type:'active', el:'lightning', color:'#88ccff', desc:'30 dmg, ignores shields',       fn:'lightningStrike' },
   lightning_ultimate_thunderstorm:{ label:'Thunderstorm',   type:'ultimate', el:'lightning', color:'#88ccff', desc:'5 bolts × 15 damage',           fn:'thunderstorm' },
+  arcane_skill_resonant_bolt:     { label:'Resonant Bolt',  type:'active',   el:'arcane',    color:'#b06eff', desc:'30 Lux damage; can echo via Reverberation', fn:'resonantBolt' },
+  arcane_ultimate_standing_chord: { label:'Standing Chord', type:'ultimate', el:'arcane',    color:'#b06eff', desc:'45 Lux damage that echoes harder',           fn:'standingChord' },
   metal_passive_reflect:          { label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0' },
   metal_skill_blade_form:         { label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK +20, SPD +5 for 2 turns',   fn:'bladeForm' },
   metal_ultimate_iron_domain:     { label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',       fn:'ironDomain' },
