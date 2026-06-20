@@ -2856,11 +2856,19 @@ You walk back out.`
         if(has('water_aggr_3')){
           const chance = att('water') ? 0.30 : 0.15
           if(Math.random() < chance){
-            // Strip enemy ATK/DEF buffs if present (the enemy's temporary boosts).
             let stripped = false
             if(statusEffects.enemyATKBuff){ statusEffects.enemyATKBuff=0; stripped=true }
             if(statusEffects.enemyDEFBuff){ statusEffects.enemyDEFBuff=0; stripped=true }
             messages.push(stripped ? '💧 Still Water — stripped the enemy\'s buff!' : '💧 Still Water — nothing to strip.')
+          }
+        }
+        // ── Unseen (Shadow): chance to gain a stealth stack on attack ──
+        if(has('shadow_aggr_3')){
+          const chance = att('shadow') ? 0.30 : 0.15
+          if(Math.random() < chance){
+            const maxStacks = 3 + (()=>{try{return elRaw(player,'unseen_max_stacks')}catch(_e){return 0}})()
+            statusEffects.cfx_unseenStacks = Math.min(maxStacks, (statusEffects.cfx_unseenStacks||0) + 1)
+            messages.push('🌑 Unseen — you slip from sight ('+statusEffects.cfx_unseenStacks+').')
           }
         }
       }
@@ -2936,6 +2944,15 @@ You walk back out.`
           // strike would carry its element, but the basic Strike action is
           // always physical, so this is a no-op unless a future basic attack
           // is elementally tagged. Skill damage is scaled in the skill block.
+          // Unseen (Shadow): spend stealth stacks for bonus damage on this strike.
+          if((statusEffects.cfx_unseenStacks||0) > 0){
+            const per = (()=>{try{return elRaw(player,'unseen_dmg_pct')}catch(_e){return 12}})() || 12
+            const bonus = Math.round(dmg * (per/100) * statusEffects.cfx_unseenStacks)
+            if(bonus>0){ dmg += bonus; messages.push('🌑 Unseen strike +'+bonus+' ('+statusEffects.cfx_unseenStacks+' stacks).') }
+            statusEffects.cfx_unseenStacks = 0
+          }
+          // No Witnesses keystone: next strike is a guaranteed crit.
+          if(statusEffects.cfx_guaranteedCrit){ dmg = Math.round(dmg * 1.5); statusEffects.cfx_guaranteedCrit=false; messages.push('🌑 Guaranteed crit!') }
           try { dmg = Math.round(dmg * elDamageMult(player, 'physical')) } catch(_e){}
           const oldEnemyHp = enemyHp
           enemyHp=Math.max(0,enemyHp-dmg)
@@ -3156,7 +3173,20 @@ You walk back out.`
         // Bulwark passive: if a DEF-double is queued, apply 2x DEF this turn then consume it.
         let _bulwarkDef = 0
         if(statusEffects.bulwarkDefDouble){_bulwarkDef=playerDEF();statusEffects.bulwarkDefDouble=false}
-        let eDmg=Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
+        // ── Shadow dodge: Misdirection node + Nightshade keystone buff ──
+        let _dodged = false
+        {
+          let dodgeCh = (()=>{try{return elRaw(player,'dodge_chance_pct')}catch(_e){return 0}})()/100
+          if((statusEffects.cfx_dodgeBuffTurns||0) > 0) dodgeCh += 0.50
+          if((statusEffects.cfx_untargetableTurns||0) > 0) dodgeCh = 1   // No Witnesses: can't be hit
+          if(dodgeCh > 0 && Math.random() < dodgeCh){
+            _dodged = true
+            const hod = (()=>{try{return elRaw(player,'hp_on_dodge')}catch(_e){return 0}})()
+            if(hod > 0){ currentHp = Math.min(maxPlayerHp, currentHp + hod); messages.push('🌑 Dodged — slipped aside (+'+hod+' HP).') }
+            else messages.push('🌑 Dodged — the blow finds only shadow.')
+          }
+        }
+        let eDmg = _dodged ? 0 : Math.max(1,Math.round((enemy.atk||10)-(defending?playerDEF()*2:playerDEF())-_bulwarkDef+(Math.random()*6|0)))
         // Elemental tree: apply total resistance to incoming damage (capped in module).
         try { eDmg = Math.max(1, Math.round(eDmg * elResistMult(player))) } catch(_e){}
         // Elemental keystone: Forge-Body / Glacier-Body / Storm Ward / Aegis /
@@ -3335,7 +3365,7 @@ You walk back out.`
       // Decrement the active-effect timers the keystones set. When a shield
       // (damage-halve) expires, note it. Reflect timers tick silently.
       ;['cfx_damageHalveTurns','cfx_fireReflectTurns','cfx_poisonReflectTurns',
-        'cfx_dmgToMpTurns','cfx_stunMeleeTurns'].forEach(k=>{
+        'cfx_dmgToMpTurns','cfx_stunMeleeTurns','cfx_dodgeBuffTurns','cfx_untargetableTurns'].forEach(k=>{
         if((statusEffects[k]||0)>0){ statusEffects[k]--; if(statusEffects[k]===0 && k==='cfx_damageHalveTurns') messages.push('✦ Your ward fades.') }
       })
 
