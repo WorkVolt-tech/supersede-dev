@@ -3137,6 +3137,10 @@ export async function mountChapter1(__mountOptions = {}) {
             const dmg = Math.round((55+playerATK()*0.6)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('⚙ Annihilate — <strong>'+dmg+'</strong>!')
           } else if (sk.fn === 'pandemic') {
             const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_longDecayStacks=Math.min(3,(statusEffects.cfx_longDecayStacks||0)+2); messages.push('☠ Pandemic — <strong>'+dmg+'</strong> + Long Decay!')
+          } else if (sk.fn === 'blightNova') {
+            const dmg = Math.round((38+playerATK()*0.45)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('☠ Blight Nova — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'umbralBurst') {
+            const dmg = Math.round((38+playerATK()*0.45)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('🌑 Umbral Burst — <strong>'+dmg+'</strong>!')
           }
         }
       }
