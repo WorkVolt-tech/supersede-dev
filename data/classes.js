@@ -29,6 +29,14 @@ export const ELEMENT_PREFIXES = [
 // with level > 0 counts as "touched an element." This is the only gate
 // for class eligibility; defeating zone bosses without spending SP is fine.
 export function hasUsedAnyElement(player) {
+  // The "empty hand" class path is reserved for players who never touched the
+  // elemental trees. Spending ANY Resonance Shard writes a node id into
+  // player.elemental_unlocked, so a non-empty array = elements were used.
+  const elUnlocked = player.elemental_unlocked
+  if (Array.isArray(elUnlocked) && elUnlocked.length > 0) return true
+  // Belt-and-suspenders: also count an equipped elemental attack skill, or any
+  // leveled elemental skill, in case a player equipped a skill without nodes.
+  if (player.equipped_elemental_skill) return true
   const levels = player.skill_levels || {}
   for (const key in levels) {
     if ((levels[key] || 0) <= 0) continue
