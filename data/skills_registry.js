@@ -47,6 +47,8 @@ export const BATTLE_SKILLS_REGISTRY = {
   plant_mastery_bloom:            { label:'Carnivore Bloom',type:'ultimate', el:'plant',     color:'#5ec45e', desc:'Mastery: 55 plant damage + heavy lifesteal',      fn:'carnivoreBloom' },
   metal_mastery_annihilate:       { label:'Annihilate',     type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'Mastery: 55 metal damage, ignores all DEF',       fn:'annihilate' },
   poison_mastery_pandemic:        { label:'Pandemic',       type:'ultimate', el:'poison',    color:'#7aad30', desc:'Mastery: 55 poison damage + 2 Long Decay stacks', fn:'pandemic' },
+  poison_skill_blight_nova:       { label:'Blight Nova',    type:'active',   el:'poison',    color:'#7aad30', desc:'38 poison damage in a toxic burst',           fn:'blightNova' },
+  shadow_skill_umbral_burst:      { label:'Umbral Burst',   type:'active',   el:'shadow',    color:'#9a6fd8', desc:'38 shadow damage from the dark',              fn:'umbralBurst' },
   metal_passive_reflect:          { label:'Reflect',        type:'passive',  el:'metal',     color:'#c0c0c0' },
   metal_skill_blade_form:         { label:'Blade Form',     type:'active',   el:'metal',     color:'#c0c0c0', desc:'ATK +20, SPD +5 for 2 turns',   fn:'bladeForm' },
   metal_ultimate_iron_domain:     { label:'Iron Domain',    type:'ultimate', el:'metal',     color:'#c0c0c0', desc:'ATK doubles for 3 turns',       fn:'ironDomain' },
