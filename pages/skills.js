@@ -767,7 +767,7 @@ export async function mountSkills(__mountOptions = {}) {
           display:block;margin-bottom:.15rem;text-transform:uppercase;
         }
         #cls-pick-banner .cls-banner-msg {
-          font-family:'IM Fell English',serif;font-size:.85rem;color:var(--ink);
+          font-family:'IM Fell English',serif;font-size:.85rem;color:#e8dcc0;
           line-height:1.3;
         }
         #cls-pick-open {
@@ -1330,7 +1330,7 @@ export async function mountSkills(__mountOptions = {}) {
       }
       body = `
         <p style="margin:0 0 4px">${tierBadge}<span style="font-family:'Cinzel',serif;font-size:1rem;color:${col};font-weight:600">${nd.label}</span></p>
-        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:var(--ink);margin:0 0 8px">${nd.sub || ''}</p>
+        <p style="font-family:'IM Fell English',serif;font-style:italic;font-size:.85rem;color:#e8dcc0;margin:0 0 8px">${nd.sub || ''}</p>
         <p style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:${lvlOk?'var(--ink-dim)':'#a04040'};margin:0 0 6px;letter-spacing:.05em">
           REQUIRES LEVEL ${nd.levelRequired || 1}${lvlOk?'':' — you are level '+lvl}
         </p>
@@ -2221,12 +2221,12 @@ export async function mountSkills(__mountOptions = {}) {
     water:    ['water_skill_water_jet','water_ultimate_tsunami','water_mastery_maelstrom'],
     lightning:['lightning_skill_lightning_strike','lightning_ultimate_thunderstorm','lightning_mastery_tempest'],
     arcane:   ['arcane_skill_resonant_bolt','arcane_ultimate_standing_chord','arcane_mastery_resonance'],
-    shadow:   ['shadow_skill_shadow_lance','shadow_mastery_eclipse','shadow_mastery_eclipse'],
+    shadow:   ['shadow_skill_shadow_lance','shadow_skill_umbral_burst','shadow_mastery_eclipse'],
     earth:    ['earth_skill_stone_throw','earth_ultimate_earthquake','earth_mastery_tectonic'],
     wind:     ['wind_skill_dash_strike','wind_ultimate_tornado_field','wind_mastery_cyclone'],
     plant:    ['plant_skill_thorn_volley','plant_ultimate_nature_overgrowth','plant_mastery_bloom'],
     metal:    ['metal_skill_blade_arc','metal_ultimate_iron_domain','metal_mastery_annihilate'],
-    poison:   ['poison_skill_venom_spit','poison_mastery_pandemic','poison_mastery_pandemic'],
+    poison:   ['poison_skill_venom_spit','poison_skill_blight_nova','poison_mastery_pandemic'],
   }
   const ELEMENTAL_SKILL_THRESHOLDS = [7, 13, 19]
 
@@ -2301,7 +2301,7 @@ export async function mountSkills(__mountOptions = {}) {
         } else if (isEquipped) {
           btn = '<span style="font-size:.62rem;color:'+tree.color+';font-weight:bold">✓ EQUIPPED</span>'
         } else {
-          btn = '<button onclick="equipElementalSkill(\''+skKey+'\')" style="font-size:.62rem;padding:3px 8px;border:1px solid '+tree.color+';color:'+tree.color+';background:transparent;border-radius:3px;cursor:pointer">Equip</button>'
+          btn = '<button onclick="equipElementalSkill(\''+skKey+'\')" style="font-size:.62rem;padding:4px 12px;border:1px solid '+tree.color+' !important;color:#f5efe0 !important;background:'+tree.color+'55 !important;border-radius:3px;cursor:pointer;font-weight:bold">Equip</button>'
         }
         panel += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;'+(unlocked?'':'opacity:.55;')+'">'
               +  '<span style="font-size:.66rem;color:#e8dcc0"><b style="color:'+tree.color+'">'+tierName+'.</b> '+meta.label+'</span>'
