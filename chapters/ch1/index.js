@@ -2856,6 +2856,9 @@ export async function mountChapter1(__mountOptions = {}) {
           const sc = skillScale(skillKey)
           const skLv = getSkillLevel(skillKey)
           if (skLv < 10) messages.push('Skill Lv ' + skLv + ' — power ' + Math.round(sc*100) + '%')
+          // Elemental tree: damage multiplier for this skill's element.
+          let _elMult = 1
+          try { _elMult = elDamageMult(player, sk.el || 'physical') } catch(_e){}
 
           if (sk.fn === 'shadowStep') {
             statusEffects.ignoreEnemyDEF = true
@@ -2866,13 +2869,13 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.rockArmorTurns = 2
             messages.push('🪨 Rock Armor Lv' + skLv + ' — +' + defBonus + ' DEF for 2 turns!')
           } else if (sk.fn === 'earthquake') {
-            const dmg = Math.max(5, Math.round(playerATK() * 2 * sc))
+            const dmg = Math.max(5, Math.round(playerATK() * 2 * sc * _elMult))
             enemyHp   = Math.max(0, enemyHp - dmg)
             statusEffects.enemyStunTurns = 1
             messages.push('🌍 Earthquake Lv' + skLv + '! <strong>' + dmg + '</strong> dmg — stunned!')
           } else if (sk.fn === 'fireBlast') {
             const def = Math.floor((enemy.def||0) * 0.5)
-            const dmg = Math.max(1, Math.round((25 * sc + playerATK()) - def))
+            const dmg = Math.max(1, Math.round(((25 * sc + playerATK()) - def) * _elMult))
             enemyHp   = Math.max(0, enemyHp - dmg)
             messages.push('🔥 Fire Blast Lv' + skLv + ' — <strong>' + dmg + '</strong> (50% DEF ignored)!')
           } else if (sk.fn === 'infernoZone') {
@@ -2889,7 +2892,7 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.divineBarrierReflect = true
             messages.push('✨ Divine Barrier Lv' + skLv + ' — invulnerable this turn! Damage reflected.')
           } else if (sk.fn === 'lightningStrike') {
-            const dmg = Math.round((30 + playerATK() * 0.5) * sc)
+            const dmg = Math.round((30 + playerATK() * 0.5) * sc * _elMult)
             enemyHp   = Math.max(0, enemyHp - dmg)
             messages.push('⚡ Lightning Strike Lv' + skLv + ' — <strong>' + dmg + '</strong> (ignores shields)!')
           } else if (sk.fn === 'thunderstorm') {
@@ -3087,6 +3090,33 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + atkBoost
             statusEffects.ignoreEnemyDEF = true
             messages.push('☠ Reaper Form — ATK +' + atkBoost + ', next attack ignores DEF!')
+          } else if (sk.fn === 'resonantBolt') {
+            const dmg = Math.round((30 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('✨ Resonant Bolt Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'standingChord') {
+            const dmg = Math.round((45 + playerATK()*0.5) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('✨ Standing Chord Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'shadowLance') {
+            const dmg = Math.round((28 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('🌑 Shadow Lance Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'venomSpit') {
+            const dmg = Math.round((24 + playerATK()*0.35) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            statusEffects.cfx_longDecayStacks = Math.min(3, (statusEffects.cfx_longDecayStacks||0)+1)
+            messages.push('☠ Venom Spit Lv'+skLv+' — <strong>'+dmg+'</strong> + Long Decay!')
+          } else if (sk.fn === 'waterJet') {
+            const dmg = Math.round((28 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('💧 Water Jet Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'stoneThrow') {
+            const dmg = Math.round((26 + playerATK()*0.4 + playerDEF()*0.3) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('🪨 Stone Throw Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'thornVolley') {
+            const dmg = Math.round((26 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            const h = Math.round(dmg*0.2); currentHp = Math.min(maxPlayerHp, currentHp + h)
+            messages.push('🌿 Thorn Volley Lv'+skLv+' — <strong>'+dmg+'</strong> (+'+h+' HP)!')
+          } else if (sk.fn === 'bladeArc') {
+            const pierce = Math.round((enemy.def||0)*0.25)
+            const dmg = Math.round((28 + playerATK()*0.4 + pierce) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
+            messages.push('⚙ Blade Arc Lv'+skLv+' — <strong>'+dmg+'</strong>!')
           }
         }
       }
