@@ -2894,7 +2894,13 @@ You walk back out.`
           // Everything else (buffs/heals/stances/debuffs) → self-cast aura on
           // the player side. Basic Strike/Heavy are always enemy hits.
           const _ATTACK_FNS = new Set(['fireBlast','earthquake','earthSpike','lightningStrike',
-            'thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine'])
+            'thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine',
+            // New element attack skills (tier I/II) + Lux:
+            'resonantBolt','standingChord','shadowLance','umbralBurst','venomSpit','blightNova',
+            'waterJet','stoneThrow','thornVolley','bladeArc',
+            // Tier-III mastery skills:
+            'cinderstorm','maelstrom','tempest','resonanceBurst','eclipse','tectonicCrush',
+            'wildCyclone','carnivoreBloom','annihilate','pandemic'])
           let _fxEl = 'physical'
           let _isAttack = true
           if (playerAction === 'skill' && skillKey) {
@@ -3240,7 +3246,7 @@ You walk back out.`
           else if(sk.fn==='ancientRoot'){statusEffects.ancientRootShield=Math.round(maxPlayerHp*0.2*sc);messages.push('🌿 Ancient Root — shield activated!')}
           // Signature stacks also apply when casting attack skills (e.g. Fire
           // Blast during a Cinder Step window applies Ember Memory).
-          const _ATTACK_FNS_STACK = new Set(['fireBlast','earthquake','earthSpike','lightningStrike','thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine'])
+          const _ATTACK_FNS_STACK = new Set(['fireBlast','earthquake','earthSpike','lightningStrike','thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine','resonantBolt','standingChord','shadowLance','umbralBurst','venomSpit','blightNova','waterJet','stoneThrow','thornVolley','bladeArc','cinderstorm','maelstrom','tempest','resonanceBurst','eclipse','tectonicCrush','wildCyclone','carnivoreBloom','annihilate','pandemic'])
           if(_ATTACK_FNS_STACK.has(sk.fn)){ try { applyStacksOnAttack() } catch(_e){} }
         }
       }
