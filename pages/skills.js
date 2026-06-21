@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js'
+import { BATTLE_SKILLS_REGISTRY as _ELSKILL_REG } from '../data/skills_registry.js'
 import {
   ELEMENT_TREES,
   isElementUnlocked,
@@ -2201,6 +2202,51 @@ export async function mountSkills(__mountOptions = {}) {
     })
   }
 
+  // ── Elemental attack skills: 3 per element, unlock at 7 / 13 / 19 nodes ──
+  // Only ONE elemental attack skill can be equipped at a time (across all
+  // elements). The equipped one is stored in player.equipped_elemental_skill
+  // and mirrored into battle_skills active slot 0 so combat can fire it.
+  const ELEMENTAL_ATTACK_SKILLS = {
+    fire:     ['fire_skill_fire_blast','fire_ultimate_inferno_zone','fire_mastery_cinderstorm'],
+    water:    ['water_skill_water_jet','water_ultimate_tsunami','water_mastery_maelstrom'],
+    lightning:['lightning_skill_lightning_strike','lightning_ultimate_thunderstorm','lightning_mastery_tempest'],
+    arcane:   ['arcane_skill_resonant_bolt','arcane_ultimate_standing_chord','arcane_mastery_resonance'],
+    shadow:   ['shadow_skill_shadow_lance','shadow_mastery_eclipse','shadow_mastery_eclipse'],
+    earth:    ['earth_skill_stone_throw','earth_ultimate_earthquake','earth_mastery_tectonic'],
+    wind:     ['wind_skill_dash_strike','wind_ultimate_tornado_field','wind_mastery_cyclone'],
+    plant:    ['plant_skill_thorn_volley','plant_ultimate_nature_overgrowth','plant_mastery_bloom'],
+    metal:    ['metal_skill_blade_arc','metal_ultimate_iron_domain','metal_mastery_annihilate'],
+    poison:   ['poison_skill_venom_spit','poison_mastery_pandemic','poison_mastery_pandemic'],
+  }
+  const ELEMENTAL_SKILL_THRESHOLDS = [7, 13, 19]
+
+  function countTreeNodesUnlocked(elKey) {
+    const tree = ELEMENT_TREES[elKey]
+    if (!tree || !tree.nodes) return 0
+    return tree.nodes.filter(n => isElementNodeUnlocked(n.id)).length
+  }
+
+  // Mirror the chosen elemental skill into battle_skills slot 0 (one at a time).
+  async function equipElementalSkill(skillKey) {
+    // Remove any previously equipped elemental skill from the active slots.
+    const allEl = new Set(Object.values(ELEMENTAL_ATTACK_SKILLS).flat())
+    for (let i = 0; i < 4; i++) { if (allEl.has(battleSkills[i])) battleSkills[i] = null }
+    // Place the new one in the first free active slot (prefer slot 0).
+    let placed = false
+    for (let i = 0; i < 4; i++) { if (!battleSkills[i]) { battleSkills[i] = skillKey; placed = true; break } }
+    if (!placed) battleSkills[0] = skillKey   // all full → overwrite slot 0
+    player.equipped_elemental_skill = skillKey
+    try {
+      // Try saving both; if the equipped_elemental_skill column is absent, retry
+      // with just battle_skills (that's what combat actually reads).
+      const { error } = await supabase.from('players').update({ battle_skills: battleSkills, equipped_elemental_skill: skillKey }).eq('id', player.id)
+      if (error) { await supabase.from('players').update({ battle_skills: battleSkills }).eq('id', player.id) }
+    } catch(e) { try { await supabase.from('players').update({ battle_skills: battleSkills }).eq('id', player.id) } catch(_e){} }
+    player.battle_skills = battleSkills
+    renderElementsTree()
+  }
+  window.equipElementalSkill = equipElementalSkill
+
   function renderElementsTree() {
     const tree = getActiveElementTree()
     const header = document.getElementById('elements-tree-header')
@@ -2223,6 +2269,38 @@ export async function mountSkills(__mountOptions = {}) {
           ? '<span style="color:#ffe94d">★ ATTUNED — all node values doubled in combat (when wired in Phase 2).</span>'
           : 'Not attuned. Tree still works at base values.') +
       '</p>'
+
+    // ── Elemental attack skill panel (3 skills @ 7/13/19 nodes) ──
+    const _elSkills = ELEMENTAL_ATTACK_SKILLS[activeElementKey] || []
+    const _nUnlocked = countTreeNodesUnlocked(activeElementKey)
+    const _equippedEl = player.equipped_elemental_skill || null
+    if (_elSkills.length) {
+      let panel = '<div class="el-skill-panel" style="margin:8px 0;padding:8px;border:1px solid '+tree.color+'55;border-radius:6px;background:rgba(0,0,0,.15)">'
+      panel += '<p style="font-family:\'Cinzel\',serif;font-size:.7rem;color:'+tree.color+';margin:0 0 6px">⚔ '+tree.label+' Attack Skills <span style="color:var(--ink-dim);font-size:.6rem">('+_nUnlocked+'/19 nodes)</span></p>'
+      for (let i = 0; i < 3; i++) {
+        const skKey = _elSkills[i]
+        const reg = _ELSKILL_REG[skKey] || null
+        const meta = reg || { label: skKey, desc: '' }
+        const need = ELEMENTAL_SKILL_THRESHOLDS[i]
+        const unlocked = _nUnlocked >= need
+        const isEquipped = _equippedEl === skKey
+        const tierName = ['I','II','III'][i]
+        let btn
+        if (!unlocked) {
+          btn = '<span style="font-size:.6rem;color:var(--ink-dim)">🔒 unlock at '+need+' nodes</span>'
+        } else if (isEquipped) {
+          btn = '<span style="font-size:.62rem;color:'+tree.color+';font-weight:bold">✓ EQUIPPED</span>'
+        } else {
+          btn = '<button onclick="equipElementalSkill(\''+skKey+'\')" style="font-size:.62rem;padding:3px 8px;border:1px solid '+tree.color+';color:'+tree.color+';background:transparent;border-radius:3px;cursor:pointer">Equip</button>'
+        }
+        panel += '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;'+(unlocked?'':'opacity:.55;')+'">'
+              +  '<span style="font-size:.66rem"><b style="color:'+tree.color+'">'+tierName+'.</b> '+meta.label+'</span>'
+              +  btn + '</div>'
+      }
+      panel += '<p style="font-size:.55rem;color:var(--ink-dim);margin:6px 0 0">Only one elemental attack skill can be equipped at a time.</p>'
+      panel += '</div>'
+      header.innerHTML += panel
+    }
 
     // Compute canvas offsets: nodes use centered coords (root at origin).
     // Straight diagonal arms reach ±510 in both x and y; down arm reaches
