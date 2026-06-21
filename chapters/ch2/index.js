@@ -2902,15 +2902,17 @@ You walk back out.`
             'cinderstorm','maelstrom','tempest','resonanceBurst','eclipse','tectonicCrush',
             'wildCyclone','carnivoreBloom','annihilate','pandemic'])
           let _fxEl = 'physical'
+          let _fxSkill = (playerAction==='heavy') ? '__heavy' : (playerAction==='strike' ? '__strike' : null)
           let _isAttack = true
           if (playerAction === 'skill' && skillKey) {
             const _sk = BATTLE_SKILLS[skillKey]
             if (_sk && _sk.el) _fxEl = _sk.el
+            if (_sk && _sk.fn) _fxSkill = _sk.fn
             _isAttack = _sk && _ATTACK_FNS.has(_sk.fn)
           }
           if (_isAttack) {
             const _enemyArt = panel.querySelector('.combat-enemy-art') || panel.querySelector('.combat-enemy-row')
-            playHitFx(_enemyArt, _fxEl)
+            playHitFx(_enemyArt, _fxEl, _fxSkill)
           } else {
             const _playerRow = panel.querySelector('.combat-player-row')
             playBuffFx(_playerRow, _fxEl)
