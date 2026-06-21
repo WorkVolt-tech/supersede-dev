@@ -47,6 +47,62 @@ const FX = {
   physical:  { color: '#ffffff', glow: '#e8e8e8', shape: 'slash' },
 }
 
+// Per-SKILL overrides, keyed by the skill's combat fn name. These take priority
+// over the element default so each attack looks distinct. color/glow can also be
+// overridden per skill; if omitted, the element's palette is used.
+const SKILL_FX = {
+  // ── Fire ──
+  fireBlast:     { shape: 'burst',  color: '#ff5500', glow: '#ffcc44' },
+  infernoZone:   { shape: 'nova',   color: '#ff3300', glow: '#ffaa33' },
+  cinderstorm:   { shape: 'meteor', color: '#ff6622', glow: '#ffd86a' },
+  embersEnd:     { shape: 'slashx', color: '#ff7a1a', glow: '#ffcc44' },
+  // ── Water ──
+  waterJet:      { shape: 'pierce', color: '#2a9df4', glow: '#bfe6ff' },
+  tsunami:       { shape: 'wave',   color: '#1f7fd0', glow: '#9fd8ff' },
+  maelstrom:     { shape: 'nova',   color: '#2a9df4', glow: '#cfeeff' },
+  waterShield:   { shape: 'ring',   color: '#2a9df4', glow: '#9fd8ff' },
+  // ── Lightning ──
+  lightningStrike:{ shape: 'bolt',  color: '#ffe23a', glow: '#fff7a0' },
+  thunderstorm:  { shape: 'nova',   color: '#ffe23a', glow: '#ffffff' },
+  tempest:       { shape: 'spike',  color: '#ffe23a', glow: '#fff7a0' },
+  // ── Earth ──
+  earthquake:    { shape: 'crack',  color: '#a9743c', glow: '#d6a86a' },
+  earthSpike:    { shape: 'spike',  color: '#8b5e3c', glow: '#d6a86a' },
+  stoneThrow:    { shape: 'meteor', color: '#8b5e3c', glow: '#cda06a' },
+  tectonicCrush: { shape: 'nova',   color: '#7a5230', glow: '#d6a86a' },
+  // ── Wind ──
+  dashStrike:    { shape: 'slashx', color: '#8fe3e8', glow: '#d6fbfd' },
+  wildCyclone:   { shape: 'swirl',  color: '#8fe3e8', glow: '#ffffff' },
+  tornadoField:  { shape: 'swirl',  color: '#a8d8ea', glow: '#d6fbfd' },
+  // ── Plant ──
+  thornVolley:   { shape: 'spike',  color: '#5cc24a', glow: '#bff0a8' },
+  overgrowth:    { shape: 'thorn',  color: '#5cc24a', glow: '#bff0a8' },
+  carnivoreBloom:{ shape: 'nova',   color: '#4aa838', glow: '#bff0a8' },
+  // ── Metal ──
+  bladeArc:      { shape: 'cross',  color: '#c0c0c0', glow: '#eef2f6' },
+  bladeForm:     { shape: 'shard',  color: '#b8c0c8', glow: '#eef2f6' },
+  annihilate:    { shape: 'slashx', color: '#d8dce0', glow: '#ffffff' },
+  ironDomain:    { shape: 'ring',   color: '#b8c0c8', glow: '#eef2f6' },
+  // ── Shadow (Umbra) ──
+  shadowLance:   { shape: 'pierce', color: '#9a6fd8', glow: '#c8a8ff' },
+  umbralBurst:   { shape: 'smear',  color: '#8a50c0', glow: '#c8a8ff' },
+  eclipse:       { shape: 'nova',   color: '#6a3aa0', glow: '#c8a8ff' },
+  shadowStep:    { shape: 'smear',  color: '#8a50c0', glow: '#c8a8ff' },
+  voidZone:      { shape: 'nova',   color: '#6a3aa0', glow: '#b06eff' },
+  // ── Poison (Venin) ──
+  venomSpit:     { shape: 'toxic',  color: '#7aad30', glow: '#b06eff' },
+  blightNova:    { shape: 'nova',   color: '#7aad30', glow: '#b06eff' },
+  pandemic:      { shape: 'toxic',  color: '#6a9a28', glow: '#c8a8ff' },
+  venomLance:    { shape: 'pierce', color: '#7aad30', glow: '#b06eff' },
+  // ── Arcane (Lux) ──
+  resonantBolt:  { shape: 'flash',  color: '#b06eff', glow: '#fffbe6' },
+  standingChord: { shape: 'nova',   color: '#b06eff', glow: '#f5e3a0' },
+  resonanceBurst:{ shape: 'nova',   color: '#c88aff', glow: '#fffbe6' },
+  // ── Physical (basic actions) ──
+  __strike:      { shape: 'slash',  color: '#ffffff', glow: '#e8e8e8' },
+  __heavy:       { shape: 'slashx', color: '#ffd0a0', glow: '#ffffff' },
+}
+
 function ensureStyles() {
   if (document.getElementById(STYLE_ID)) return
   const style = document.createElement('style')
@@ -216,6 +272,20 @@ function svgFor(shape, c, g) {
       return `<svg viewBox="0 0 100 100"><g fill="${g}"><circle cx="50" cy="50" r="16"/></g>
         <g stroke="${c}" stroke-width="5" stroke-linecap="round">
         ${[0,30,60,90,120,150].map(a=>{const rad=a*Math.PI/180;return `<line x1="${50-46*Math.cos(rad)}" y1="${50-46*Math.sin(rad)}" x2="${50+46*Math.cos(rad)}" y2="${50+46*Math.sin(rad)}"/>`}).join('')}</g></svg>`
+    case 'meteor':
+      return `<svg viewBox="0 0 100 100"><g fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round"><line x1="14" y1="14" x2="54" y2="54"/><line x1="26" y1="10" x2="60" y2="44" opacity=".5" stroke="${g}"/></g><circle cx="62" cy="62" r="20" fill="${c}"/><circle cx="62" cy="62" r="11" fill="${g}"/></svg>`
+    case 'spike':
+      return `<svg viewBox="0 0 100 100"><g fill="${c}" stroke="${g}" stroke-width="2">${[0,40,80,120,160,200,240,280,320].map(a=>{const rad=a*Math.PI/180;return `<polygon points="${50+8*Math.cos(rad)},${50+8*Math.sin(rad)} ${50+48*Math.cos(rad)},${50+48*Math.sin(rad)} ${50+8*Math.cos(rad+0.35)},${50+8*Math.sin(rad+0.35)}"/>`}).join('')}</g></svg>`
+    case 'wave':
+      return `<svg viewBox="0 0 100 100"><g fill="none" stroke="${c}" stroke-width="6" stroke-linecap="round"><path d="M8,40 q12,-14 24,0 t24,0 t24,0 t24,0"/><path d="M8,58 q12,-14 24,0 t24,0 t24,0 t24,0" stroke="${g}" opacity=".7"/></g></svg>`
+    case 'slashx':
+      return `<svg viewBox="0 0 100 100"><g fill="none" stroke="${c}" stroke-width="8" stroke-linecap="round"><path d="M18,18 L82,82"/><path d="M82,18 L18,82" stroke="${g}"/></g></svg>`
+    case 'pierce':
+      return `<svg viewBox="0 0 100 100"><g stroke="${c}" stroke-width="8" stroke-linecap="round"><line x1="10" y1="50" x2="90" y2="50"/></g><polygon points="78,38 96,50 78,62" fill="${g}"/></svg>`
+    case 'nova':
+      return `<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="${c}" stroke-width="4" opacity=".7"/><g fill="none" stroke="${g}" stroke-width="5" stroke-linecap="round">${[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>{const rad=a*Math.PI/180;return `<line x1="${50+20*Math.cos(rad)}" y1="${50+20*Math.sin(rad)}" x2="${50+44*Math.cos(rad)}" y2="${50+44*Math.sin(rad)}"/>`}).join('')}</g><circle cx="50" cy="50" r="12" fill="${c}"/></svg>`
+    case 'cross':
+      return `<svg viewBox="0 0 100 100"><g fill="none" stroke="${c}" stroke-width="9" stroke-linecap="round"><path d="M20,28 Q50,44 80,64"/></g><g fill="none" stroke="${g}" stroke-width="9" stroke-linecap="round"><path d="M80,28 Q50,44 20,64"/></g></svg>`
     case 'slash':
     default:
       return `<svg viewBox="0 0 100 100"><g fill="none" stroke="${c}" stroke-width="7" stroke-linecap="round">
@@ -226,10 +296,13 @@ function svgFor(shape, c, g) {
 // Public API. Plays one elemental burst over targetEl.
 //   targetEl — DOM node (enemy image / combat-enemy-row). If null, no-op.
 //   element  — skill el value or 'physical'. Unknown values fall back to physical.
-export function playHitFx(targetEl, element) {
+export function playHitFx(targetEl, element, skillKey) {
   if (!targetEl) return
   ensureStyles()
-  const fx = FX[element] || FX.physical
+  // Per-skill FX takes priority; fall back to element palette, then physical.
+  const base = FX[element] || FX.physical
+  const skfx = skillKey ? SKILL_FX[skillKey] : null
+  const fx = skfx ? { color: skfx.color || base.color, glow: skfx.glow || base.glow, shape: skfx.shape || base.shape } : base
 
   // The layer is positioned relative to the target. The target needs
   // position other than static; we set it if it's static so the layer
