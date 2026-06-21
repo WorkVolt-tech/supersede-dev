@@ -3117,6 +3117,26 @@ export async function mountChapter1(__mountOptions = {}) {
             const pierce = Math.round((enemy.def||0)*0.25)
             const dmg = Math.round((28 + playerATK()*0.4 + pierce) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
             messages.push('⚙ Blade Arc Lv'+skLv+' — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'cinderstorm') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_emberStacks=Math.min(3,(statusEffects.cfx_emberStacks||0)+1); messages.push('🔥 Cinderstorm — <strong>'+dmg+'</strong> + Ember!')
+          } else if (sk.fn === 'maelstrom') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('💧 Maelstrom — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'tempest') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); if(Math.random()<0.4){statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1);messages.push('⚡ Tempest — <strong>'+dmg+'</strong> stunned!')}else messages.push('⚡ Tempest — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'resonanceBurst') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('✨ Resonance Burst — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'eclipse') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_unseenStacks=Math.min(3,(statusEffects.cfx_unseenStacks||0)+2); messages.push('🌑 Eclipse — <strong>'+dmg+'</strong> + Unseen!')
+          } else if (sk.fn === 'tectonicCrush') {
+            const dmg = Math.round((55+playerATK()*0.4+playerDEF()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1); messages.push('🪨 Tectonic Crush — <strong>'+dmg+'</strong> stunned!')
+          } else if (sk.fn === 'wildCyclone') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('💨 Wild Cyclone — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'carnivoreBloom') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); const h=Math.round(dmg*0.5); currentHp=Math.min(maxPlayerHp,currentHp+h); messages.push('🌿 Carnivore Bloom — <strong>'+dmg+'</strong> (+'+h+' HP)!')
+          } else if (sk.fn === 'annihilate') {
+            const dmg = Math.round((55+playerATK()*0.6)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('⚙ Annihilate — <strong>'+dmg+'</strong>!')
+          } else if (sk.fn === 'pandemic') {
+            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_longDecayStacks=Math.min(3,(statusEffects.cfx_longDecayStacks||0)+2); messages.push('☠ Pandemic — <strong>'+dmg+'</strong> + Long Decay!')
           }
         }
       }
