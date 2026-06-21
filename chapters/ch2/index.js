@@ -267,7 +267,7 @@ export async function mountChapter2(__mountOptions = {}) {
         setTimeout(() => {
           host.innerHTML = `<button class="choice" data-next-node="${nextNode}">
             <span class="choice-arrow">→</span>
-            <span class="choice-body">You are <em style="color:${cls.color}">${cls.name}</em>. Continue.</span>
+            <span class="choice-body" style="display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;text-align:center"><span style="font-size:.8rem;opacity:.75">You are the</span><span style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:700;letter-spacing:.04em;color:${cls.color};line-height:1.1">${cls.name}</span><span style="font-size:.72rem;opacity:.6;margin-top:6px;letter-spacing:.1em">→ CONTINUE</span></span>
           </button>`
           host.querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
         }, 1800)
@@ -2645,7 +2645,7 @@ You walk back out.`
                   setTimeout(() => {
                     modal.remove()
                     // Replace combat-over with just Continue (no more View Now)
-                    $('combat-over').innerHTML = `<button class="choice" data-next-node="${nextNode}"><span class="choice-arrow">→</span><span class="choice-body">You are <em style="color:${cls.color}">${cls.name}</em>. Continue.</span></button>`
+                    $('combat-over').innerHTML = `<button class="choice" data-next-node="${nextNode}" style="text-align:center;justify-content:center;flex-direction:column;gap:2px;padding:16px 14px"><span class="choice-body" style="display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;text-align:center"><span style="font-size:.8rem;opacity:.75">You are the</span><span style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:700;letter-spacing:.04em;color:${cls.color};line-height:1.1">${cls.name}</span><span style="font-size:.72rem;opacity:.6;margin-top:6px;letter-spacing:.1em">→ CONTINUE</span></span></button>`
                     $('combat-over').querySelector('[data-next-node]')?.addEventListener('click', e => goTo(e.currentTarget.dataset.nextNode))
                   }, 1800)
                 })
