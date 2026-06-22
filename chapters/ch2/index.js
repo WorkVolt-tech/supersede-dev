@@ -2153,9 +2153,11 @@ You walk back out.`
         if (enemy.loot) for(const l of enemy.loot) await addItem(l.itemKey,l.qty)
 
         if (isBoss) {
-          // Twin Judges only — chapter unlock + per-form SP
-          const uls=player.chapters_unlocked||[1]; if(!uls.includes(3)) uls.push(3)
-          updates.chapters_unlocked=uls
+          // Twin Judges only — unlock the DRIVE to Ch3 (not the chapter itself).
+          // The chapter unlocks only after the drive is completed (vehicle2.js),
+          // mirroring how every Ch2+ entry is meant to be gated.
+          const dru=player.drives_unlocked||[]; if(!dru.includes(3)) dru.push(3)
+          updates.drives_unlocked=dru
           // ── Per-form SP ──
           // Form key matches the canonical Judge forms from world design:
           //   verdict     — Verdict (Final Judge of Humanity)
