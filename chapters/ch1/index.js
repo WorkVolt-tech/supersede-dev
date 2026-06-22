@@ -1928,9 +1928,11 @@ export async function mountChapter1(__mountOptions = {}) {
           }
 
           if (isBoss) {
-            // NOTE: Chapter 2 is NOT unlocked here. The drive (vehicle.js) is the
-            // real gate — it unlocks the destination chapter on arrival. Unlocking
-            // on boss-win let players skip the drive, so that line was removed.
+            // Chapter 2 is NOT unlocked here — the drive (vehicle.js) is the real
+            // gate and unlocks the chapter on arrival. The boss only unlocks the
+            // DRIVE so the Drive button appears; finishing the drive unlocks Ch2.
+            const dru = player.drives_unlocked || []
+            if (!dru.includes(2)) { dru.push(2); updates.drives_unlocked = dru }
             // ── 1 SP for boss kill — only once ever ──
             const spKey = 'watcher_sp_claimed'
             const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
