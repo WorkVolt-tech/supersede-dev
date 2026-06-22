@@ -45,7 +45,7 @@ IGNIS TREE UNLOCKED. IGNIS BINDING: Strike damage +15%. Regen −20%.`,
   },
 
   zone_fire_unlock: {
-    id: 'zone_fire_unlock', type: 'story', hpLoss: 20,
+    id: 'zone_fire_unlock', type: 'story',
     text: `The long path costs you. Residual heat, scored walls, everything harder than expected.
 
 IGNIS TREE UNLOCKED. IGNIS BINDING: Strike damage +15%. Regen −20%.`,
@@ -69,7 +69,7 @@ It finds yours.`,
   },
 
   zone_fire_slip_1: {
-    id: 'zone_fire_slip_1', type: 'story', hpLoss: 10,
+    id: 'zone_fire_slip_1', type: 'story',
     text: `You move low and slow along the far wall. The Char Hound turns toward you once. Pauses. Moves away. You're through — barely.`,
     xp: 30,
     choices: [{ label: 'Continue', next: 'zone_fire_explore_2' }],
@@ -78,7 +78,7 @@ It finds yours.`,
   zone_fire_enemy_1: {
     id: 'zone_fire_enemy_1', type: 'combat',
     text: `The Char Hound lunges — fast, low, heat trailing.`,
-    enemy: { name: 'Char Hound', icon: '🔥', hp: 90, atk: 18, def: 6, xp: 95,
+    enemy: { name: 'Char Hound', icon: '🔥', img: '../assets/enemy/enemy_char_hound.webp', hp: 90, atk: 18, def: 6, xp: 95,
       loot: [{ itemKey: 'rune_ignis', qty: 1 }] },
     onWin: 'zone_fire_explore_2', onLose: 'zone_fire_explore_1',
   },
@@ -119,7 +119,7 @@ Two Slag Drones block the path. Former warehouse equipment, now running on heat-
   },
 
   zone_fire_pipe: {
-    id: 'zone_fire_pipe', type: 'story', hpLoss: 12,
+    id: 'zone_fire_pipe', type: 'story',
     text: `You hit the pipe coupling. The pressurized system vents downward — a burst that catches both drones. One goes down. The other staggers, damaged but functional. The burst caught your arm. You're singed.`,
     xp: 50,
     choices: [{ label: 'Finish the second drone', next: 'zone_fire_enemy_2b' }],
@@ -128,7 +128,7 @@ Two Slag Drones block the path. Former warehouse equipment, now running on heat-
   zone_fire_enemy_2: {
     id: 'zone_fire_enemy_2', type: 'combat',
     text: `Both Slag Drones close in simultaneously.`,
-    enemy: { name: 'Slag Drone Pair', icon: '🔥', hp: 145, atk: 20, def: 10, xp: 135,
+    enemy: { name: 'Slag Drone Pair', icon: '🔥', img: '../assets/enemy/enemy_slag_drone_pair.webp', hp: 145, atk: 20, def: 10, xp: 135,
       loot: [{ itemKey: 'scrap_metal', qty: 2 }] },
     onWin: 'zone_fire_midpoint', onLose: 'zone_fire_corridor',
   },
@@ -136,7 +136,7 @@ Two Slag Drones block the path. Former warehouse equipment, now running on heat-
   zone_fire_enemy_2b: {
     id: 'zone_fire_enemy_2b', type: 'combat',
     text: `The surviving Slag Drone is damaged but still dangerous.`,
-    enemy: { name: 'Damaged Slag Drone', icon: '🔥', hp: 72, atk: 16, def: 6, xp: 80,
+    enemy: { name: 'Damaged Slag Drone', icon: '🔥', img: '../assets/enemy/enemy_damaged_slag_drone.webp', hp: 72, atk: 16, def: 6, xp: 80,
       loot: [{ itemKey: 'scrap_metal', qty: 1 }] },
     onWin: 'zone_fire_midpoint', onLose: 'zone_fire_corridor',
   },
@@ -162,7 +162,7 @@ Your interface: ZONE GUARDIAN PROXIMITY DETECTED.`,
   zone_fire_enemy_3: {
     id: 'zone_fire_enemy_3', type: 'combat',
     text: `The Ignis Construct detects your approach and turns. Its core ignites.`,
-    enemy: { name: 'Ignis Construct', icon: '🔥', hp: 225, atk: 26, def: 14, xp: 210,
+    enemy: { name: 'Ignis Construct', icon: '🔥', img: '../assets/enemy/enemy_ignis_construct.webp', hp: 225, atk: 26, def: 14, xp: 210,
       loot: [{ itemKey: 'rune_ignis', qty: 2 }, { itemKey: 'medical_pack', qty: 1 }] },
     onWin: 'zone_fire_cache', onLose: 'zone_fire_midpoint',
   },
@@ -225,7 +225,7 @@ A rune sits in the rubble where it stood.`,
     id: 'zone_fire_hunters', type: 'combat',
     text: `Two Hunters — Voss's people, geared for solo work, here for whatever they can carry out. They see you. The taller one swears, draws.`,
     enemy: {
-      name: 'Hunter Scout Pair', icon: '🗡️',
+      name: 'Hunter Scout Pair', icon: '🗡️', img: '../assets/enemy/enemy_hunter_scout_pair.webp',
       hp: 110, atk: 22, def: 8, xp: 130,
       humanoid: true,
       loot: [{ itemKey: 'scrap_metal', qty: 2 }, { itemKey: 'energy_drink', qty: 1 }],
