@@ -404,10 +404,51 @@
       text-transform: uppercase;
       text-align: center;
     }
+
+    /* ── Collapsible nav (mobile roll-out) ─────────────────────────────── */
+    /* Desktop default: toggle hidden, nav always visible. */
+    #nav-toggle { display: none; }
+    #nav-collapse { overflow: hidden; }
+
+    @media (max-width: 800px) {
+      /* Sticky slim toggle bar at the very top. */
+      #nav-toggle {
+        display: flex; align-items: center; gap: 8px;
+        position: sticky; top: 0; z-index: 1000;
+        width: 100%;
+        padding: 10px 16px;
+        background: rgba(20,15,10,.96);
+        border: none; border-bottom: 1px solid rgba(200,160,80,.30);
+        color: #e8d8a8;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 12px; letter-spacing: .14em; text-transform: uppercase;
+        cursor: pointer;
+      }
+      #nav-toggle .nav-toggle-icon { font-size: 16px; line-height: 1; }
+      #nav-toggle[aria-expanded="true"] { border-bottom-color: rgba(200,160,80,.5); }
+
+      /* The nav rolls open/shut via max-height. Collapsed = 0. */
+      #nav-collapse {
+        max-height: 0;
+        transition: max-height .32s ease;
+      }
+      #nav-collapse.nav-open {
+        max-height: 70vh;          /* enough to show the menu; scrolls if taller */
+        overflow-y: auto;
+      }
+    }
+
   </style>
 </head>
 <body>
-<div id="nav"></div>
+<!-- Collapsible nav (mobile): a slim sticky toggle rolls the menu open/shut
+     so book content isn't pushed below the fold. Desktop stays open. -->
+<button id="nav-toggle" aria-expanded="false" aria-controls="nav-collapse">
+  <span class="nav-toggle-icon">&#9776;</span><span class="nav-toggle-label">Menu</span>
+</button>
+<div id="nav-collapse" class="nav-collapsed">
+  <div id="nav"></div>
+</div>
 
 <div class="scene" id="toc-view">
 
@@ -526,7 +567,7 @@ window.showSysOverlay = showSysOverlay
   window.replayChapter = replayChapter
 
   // ── Book module router ──────────────────────────────
-  const MODULE_VERSION = '2026-06-11-forge-fix'
+  const MODULE_VERSION = '2026-06-11-mobile-nav'
   const MODULE_ROUTES = {
     ch1:       () => import(`../chapters/ch1/index.js?v=${MODULE_VERSION}`),
     ch2:       () => import(`../chapters/ch2/index.js?v=${MODULE_VERSION}`),
@@ -605,6 +646,8 @@ window.showSysOverlay = showSysOverlay
   }
 
   async function loadRoute(route, { push = false } = {}) {
+    // Mobile: roll the nav shut so the loaded content is what the user lands on.
+    if (window._collapseNav) window._collapseNav()
     const tocView = document.getElementById('toc-view')
     const moduleView = document.getElementById('module-view')
     const host = document.getElementById('book-module-host')
@@ -1154,6 +1197,7 @@ window.showSysOverlay = showSysOverlay
     currentPlayer = player
 
     const unlocked = player.chapters_unlocked || [1]
+    const drivesUnlocked = player.drives_unlocked || []
     const completed = player.chapters_completed || []
 
     document.getElementById('rec-username').textContent = player.username
@@ -1181,6 +1225,8 @@ window.showSysOverlay = showSysOverlay
 
     document.getElementById('chapter-list').innerHTML = CHAPTERS.map(ch => {
       const isUnlocked = unlocked.includes(ch.number)
+      const driveOpen  = drivesUnlocked.includes(ch.number)
+      const reachable  = isUnlocked || driveOpen
       const previewHref = CH_PREVIEW[ch.number]
       const chNumLabel = `<span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.22em;color:var(--gold);display:block;margin-bottom:3px;text-transform:uppercase">Ch.${String(ch.number).padStart(2,'0')}</span>`
 
@@ -1197,7 +1243,7 @@ window.showSysOverlay = showSysOverlay
           ? `<a href="${previewHref}" class="ch-thumb" title="View Chapter ${ch.number} preview" style="display:block;cursor:pointer;text-decoration:none;background:${thumbBg}" onclick="event.preventDefault();bookNavigate('${previewHref}')">${thumbInner}</a>`
         : `<div class="ch-thumb" style="background:${thumbBg}">${thumbInner}</div>`
 
-      if (!isUnlocked) {
+      if (!reachable) {
         return `<div class="chapter-entry locked">
           ${thumbHtml}
           <div class="ch-info">
@@ -1276,6 +1322,32 @@ window.showSysOverlay = showSysOverlay
     window.addEventListener('popstate', () => loadRoute(routeFromUrl(new URL(location.href)), { push: false }))
     await loadRoute(routeFromUrl(new URL(location.href)), { push: false })
   })()
+
+  // ── Collapsible nav (mobile) ──────────────────────────────────────────
+  // Slim toggle rolls the menu open/shut so book content isn't pushed below
+  // the fold on phones. Auto-collapses after navigation and after tapping a
+  // link inside the nav. Desktop ignores all of this (toggle is display:none).
+  (function initNavToggle() {
+    const toggle = document.getElementById('nav-toggle')
+    const collapse = document.getElementById('nav-collapse')
+    if (!toggle || !collapse) return
+    function setOpen(open) {
+      collapse.classList.toggle('nav-open', open)
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false')
+      const label = toggle.querySelector('.nav-toggle-label')
+      if (label) label.textContent = open ? 'Close' : 'Menu'
+    }
+    toggle.addEventListener('click', () => {
+      setOpen(!collapse.classList.contains('nav-open'))
+    })
+    // Tapping any link/button inside the nav collapses it (you've navigated).
+    collapse.addEventListener('click', (e) => {
+      if (e.target.closest('a, button')) setOpen(false)
+    })
+    // Expose so loadRoute can auto-collapse on chapter open.
+    window._collapseNav = () => setOpen(false)
+  })()
+
 </script>
 </body>
 </html>
