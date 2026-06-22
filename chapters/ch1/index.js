@@ -403,8 +403,8 @@ export async function mountChapter1(__mountOptions = {}) {
   function triggerForcedEyeEncounter(encounterType, resumeNextId) {
     const isSwarm   = encounterType === 'watcher_eye_swarm'
     const enemyData = isSwarm
-      ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.webp' }
-      : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.webp' }
+      ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
+      : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
 
     const alertLines = isSwarm ? [
       "The sky fractures in seven places at once.",
@@ -928,7 +928,7 @@ export async function mountChapter1(__mountOptions = {}) {
       if (!watcherImg) {
         const img = document.createElement('img')
         img.id    = 'watcher-img'
-        img.src   = '../assets/boss/the_watcher.webp'
+        img.src   = '../assets/boss/the_watcher.png'
         img.alt   = 'The Watcher'
         img.style.cssText = 'width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:' + (nodeId==='boss'?'none':'brightness(.7) saturate(0.6)')
         document.getElementById('story-text').insertAdjacentElement('afterend', img)
@@ -1058,7 +1058,7 @@ export async function mountChapter1(__mountOptions = {}) {
       <p class="choices-label">Choose a Zone</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
         ${node.locations.map(loc => {
-          const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.webp','loc_market':'../assets/zones/zone_frozen_market.webp','loc_tower':'../assets/zones/zone_glass_tower.webp'}
+          const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.png','loc_market':'../assets/zones/zone_frozen_market.png','loc_tower':'../assets/zones/zone_glass_tower.png'}
           const zImg = zMap[loc.id]
           const unlocked = isZoneUnlocked(loc.id)
           const guardian = ZONE_GUARDIANS[loc.id]
@@ -1121,9 +1121,9 @@ export async function mountChapter1(__mountOptions = {}) {
 
   function renderFarmZone(panel, loc) {
     const zoneImgs = {
-      'loc_garage': '../assets/zones/zone_parking_garage.webp',
-      'loc_market': '../assets/zones/zone_frozen_market.webp',
-      'loc_tower':  '../assets/zones/zone_glass_tower.webp',
+      'loc_garage': '../assets/zones/zone_parking_garage.png',
+      'loc_market': '../assets/zones/zone_frozen_market.png',
+      'loc_tower':  '../assets/zones/zone_glass_tower.png',
     }
     const zoneImg = zoneImgs[loc.id]
 
@@ -1141,32 +1141,32 @@ export async function mountChapter1(__mountOptions = {}) {
             return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">${label} ${pct}%</span>`
           }).join(' · ')
           const eImgs = {
-            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.webp',
-            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.webp',
-            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.webp',
-            'Static Crawler':         '../assets/enemy/enemy_static_crawler.webp',
-            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.webp',
-            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.webp',
-            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.webp',
-            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.webp',
-            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.webp',
-            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.webp',
-            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.webp',
-            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.webp',
-            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.webp',
-            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.webp',
-            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.webp',
-            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.webp',
-            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.webp',
-            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.webp',
-            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.webp',
-            'Dorian':                 '../assets/npc/dorian_normal.webp',
-            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.webp',
-            "Watcher's Eye":          '../assets/boss/watcher_eye.webp',
-            "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.webp',
-            'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.webp',
-            'The Surveyor':           '../assets/boss/the_surveyor.webp',
-            'The Unseen':             '../assets/boss/the_unseen.webp',
+            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+            'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+            'Dorian':                 '../assets/npc/dorian_normal.png',
+            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+            "Watcher's Eye":          '../assets/boss/watcher_eye.png',
+            "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.png',
+            'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.png',
+            'The Surveyor':           '../assets/boss/the_surveyor.png',
+            'The Unseen':             '../assets/boss/the_unseen.png',
           }
           const eImg = eImgs[e.name]
           return `<div onclick="fightFarmEnemy(${i})"
@@ -1579,36 +1579,36 @@ export async function mountChapter1(__mountOptions = {}) {
         <div class="combat-enemy-row">
           ${(()=>{
             const EIMGS = {
-              'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.webp',
-              'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.webp',
-              'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.webp',
-              'Static Crawler':         '../assets/enemy/enemy_static_crawler.webp',
-              'Static Crawlers':        '../assets/enemy/enemy_static_crawler.webp',
-              'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.webp',
-              'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.webp',
-              'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.webp',
-              "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.webp',
-              'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.webp',
-              'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.webp',
-              'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.webp',
-              'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.webp',
-              'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.webp',
-              'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.webp',
-              'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.webp',
-              'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.webp',
-              'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.webp',
-              'System Enforcer':        '../assets/enemy/enemy_system_enforcer.webp',
-              'Dorian':                 '../assets/npc/dorian_normal.webp',
-              'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.webp',
-              "Watcher's Eye":              '../assets/boss/watcher_eye.webp',
-              "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.webp',
-              'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.webp',
-              'The Surveyor':               '../assets/boss/the_surveyor.webp',
-              'The Unseen':                 '../assets/boss/the_unseen.webp',
+              'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+              'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+              'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+              'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+              'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+              'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+              'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+              'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+              "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+              'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+              'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+              'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+              'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+              'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+              'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+              'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+              'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+              'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+              'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+              'Dorian':                 '../assets/npc/dorian_normal.png',
+              'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+              "Watcher's Eye":              '../assets/boss/watcher_eye.png',
+              "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.png',
+              'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.png',
+              'The Surveyor':               '../assets/boss/the_surveyor.png',
+              'The Unseen':                 '../assets/boss/the_unseen.png',
             }
-            if (isBoss) return '<img src=\'../assets/boss/the_watcher.webp\' alt=\'The Watcher\' style=\'width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
+            if (isBoss) return '<img src=\'../assets/boss/the_watcher.png\' alt=\'The Watcher\' style=\'width:120px;height:120px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
             const src = EIMGS[enemy.name]
-            if (src) return `<img src="${src}" alt="${enemy.name}" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
+            if (src) return `<img src="${src}" alt="${enemy.name}" style="width:110px;height:110px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
             return `<span class="combat-enemy-icon">${enemy.icon}</span>`
           })()}
           <div style="flex:1">
@@ -3728,28 +3728,28 @@ export async function mountChapter1(__mountOptions = {}) {
       {
         item_key: 'watcher_eye_ring', name: "Watcher's Multi-Eye Ring", rarity: 'rare',
         item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_eye_ring.webp',
+        img: '../assets/sets/watcher_eye_ring.png',
         stats: ['insight_bonus','luck_bonus','atk_bonus'],
         special_effect: "Observer's Sight: First attack on an unseen enemy deals +25% damage. Reveals hidden enemies nearby.",
       },
       {
         item_key: 'watcher_band', name: "Watcher's Band", rarity: 'rare',
         item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_band.webp',
+        img: '../assets/sets/watcher_band.png',
         stats: ['control_bonus','speed_bonus','atk_bonus'],
         special_effect: "Pattern Recognition: Consecutive hits on the same enemy stack +2% damage (max 20%).",
       },
       {
         item_key: 'watcher_cloak', name: "Watcher's Cloak", rarity: 'rare',
         item_type: 'armor', icon: '🧥',
-        img: '../assets/sets/watcher_cloak.webp',
+        img: '../assets/sets/watcher_cloak.png',
         stats: ['speed_bonus','insight_bonus','def_bonus','luck_bonus'],
         special_effect: "Phantom Step: After dodging, your next attack cannot be dodged. 15% chance to phase (50% dmg reduction).",
       },
       {
         item_key: 'watcher_crown', name: "Watcher's Crown", rarity: 'rare',
         item_type: 'armor', icon: '👑',
-        img: '../assets/sets/watcher_crown.webp',
+        img: '../assets/sets/watcher_crown.png',
         stats: ['insight_bonus','guard_bonus','def_bonus'],
         special_effect: "Observed: Enemies you hit take -10% ATK and +10% damage from you.",
       },
