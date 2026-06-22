@@ -1667,8 +1667,9 @@ You walk back out.`
     // (messages will print in the first combat-log push after enemy actions)
 
     // ── Build UI — mirrors chapter1 structure exactly ─────────────────────────
+    const _enemyImgSize = isBoss ? 120 : 110
     const enemyArtInner = enemy.img
-      ? '<img src="'+enemy.img+'" style="width:80px;height:80px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
+      ? '<img src="'+enemy.img+'" style="width:'+_enemyImgSize+'px;height:'+_enemyImgSize+'px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))">'
       : '<span style="font-size:2.5rem;line-height:1">'+( enemy.icon||'⚔')+'</span>'
     // Wrap in a positioned box so the hit-FX burst can anchor directly over
     // the enemy art (not the whole row, which would put it over the HP bar).
