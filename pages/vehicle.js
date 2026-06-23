@@ -430,11 +430,13 @@ export async function mountVehicle(__mountOptions = {}) {
       // Hard pixel size — never derived from sz
       const d=(SPRITE_SIZE[e.name]||80)*ps
       const half=d/2
-      // Rectangular glow
-      ctx.shadowColor=e.col;ctx.shadowBlur=32
-      ctx.fillStyle=e.col+'15'
-      ctx.fillRect(-half,-half,d,d)
-      ctx.shadowBlur=0
+      // Soft radial glow (no hard square edges)
+      const gr=ctx.createRadialGradient(0,0,d*0.15,0,0,d*0.62)
+      gr.addColorStop(0,e.col+'22')
+      gr.addColorStop(0.6,e.col+'10')
+      gr.addColorStop(1,e.col+'00')
+      ctx.fillStyle=gr
+      ctx.beginPath();ctx.arc(0,0,d*0.62,0,Math.PI*2);ctx.fill()
       // Draw full sprite — rectangle, no clipping whatsoever
       ctx.drawImage(img,-half,-half,d,d)
       // HP bar below sprite
