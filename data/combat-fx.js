@@ -296,7 +296,7 @@ function svgFor(shape, c, g) {
 // Public API. Plays one elemental burst over targetEl.
 //   targetEl — DOM node (enemy image / combat-enemy-row). If null, no-op.
 //   element  — skill el value or 'physical'. Unknown values fall back to physical.
-export function playHitFx(targetEl, element, skillKey) {
+export function playHitFx(targetEl, element, skillKey, speed) {
   if (!targetEl) return
   ensureStyles()
   // Per-skill FX takes priority; fall back to element palette, then physical.
@@ -320,6 +320,9 @@ export function playHitFx(targetEl, element, skillKey) {
   const el = document.createElement('div')
   el.className = 'cfx cfx-' + fx.shape
   el.innerHTML = svgFor(fx.shape, fx.color, fx.glow)
+  // Optional speed override: a number (seconds) sets the animation duration so
+  // callers can make e.g. a quick Strike faster than a heavy blow.
+  if (typeof speed === 'number' && speed > 0) el.style.animationDuration = speed + 's'
   layer.appendChild(el)
 
   // Self-remove after the animation finishes (fallback timeout in case
