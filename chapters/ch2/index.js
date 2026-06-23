@@ -2915,7 +2915,8 @@ You walk back out.`
           }
           if (_isAttack) {
             const _enemyArt = panel.querySelector('.combat-enemy-art') || panel.querySelector('.combat-enemy-row')
-            playHitFx(_enemyArt, _fxEl, _fxSkill)
+            const _fxSpeed = _fxSkill==='__strike' ? 0.3 : (_fxSkill==='__heavy' ? 0.65 : undefined)
+            playHitFx(_enemyArt, _fxEl, _fxSkill, _fxSpeed)
           } else {
             const _playerRow = panel.querySelector('.combat-player-row')
             playBuffFx(_playerRow, _fxEl)
