@@ -208,7 +208,7 @@ export async function mountVehicle(__mountOptions = {}) {
   // Loot
   const LTBL=['scrap_metal','flashlight','energy_drink','rune_lux','rune_umbra','scrap_blade']
   const LIC={scrap_metal:'⚙️',flashlight:'🔦',energy_drink:'🥤',rune_lux:'✨',rune_umbra:'🌑',scrap_blade:'🗡️'}
-  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.4,k,life:200,collected:false})}
+  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.0,k,life:480,collected:false})}
   async function collectLoot(l){
     l.collected=true
     const {data:ex}=await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',l.k).maybeSingle()
@@ -522,7 +522,7 @@ export async function mountVehicle(__mountOptions = {}) {
 
   // Draw loot
   function drawLoot(l){
-    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/40)
+    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/30)
     ctx.shadowColor='#c8b96e';ctx.shadowBlur=10
     ctx.fillStyle='rgba(200,184,128,.18)';ctx.strokeStyle='rgba(200,184,128,.7)';ctx.lineWidth=1.5
     ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke()
@@ -720,8 +720,10 @@ export async function mountVehicle(__mountOptions = {}) {
 
     // Loot
     lootDrops=lootDrops.filter(l=>{
-      l.y+=l.vy;l.life--
-      if(l.life<=0||l.collected||l.y>canvas.height+20)return false
+      l.vy=Math.min(l.vy+0.02, 2.2) // gentle gravity
+      l.y+=l.vy+G.speed*0.15         // slight road scroll feel, much slower
+      l.life--
+      if(l.life<=0||l.collected||l.y>canvas.height+10)return false
       drawLoot(l)
       if(Math.abs(l.x-PV.x)<PV.w+8&&Math.abs(l.y-PV.y)<PV.h+8){collectLoot(l);return false}
       return true
@@ -784,18 +786,9 @@ export async function mountVehicle(__mountOptions = {}) {
     else{document.getElementById('end-overlay').classList.remove('show');G.finished=false;startGame()}
   }
 
-  frameId = requestAnimationFrame(loop)
+  requestAnimationFrame(loop)
 
-  // Cleanup: stop the game loop and tear down listeners so the drive doesn't
-  // keep running (and crashing) after the router swaps in the next chapter.
-  return {
-    player,
-    cleanup() {
-      try { G.running = false } catch(_e){}
-      try { if (frameId) cancelAnimationFrame(frameId) } catch(_e){}
-      try { window.removeEventListener('resize', resize) } catch(_e){}
-    }
-  }
+  return { player, cleanup() {} }
 }
 
 export default mountVehicle
