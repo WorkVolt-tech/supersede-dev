@@ -718,10 +718,35 @@ window.showSysOverlay = showSysOverlay
       // manual refresh (notably when arriving from the drive). Re-render the
       // nav here, after the module has fully mounted, so it's always painted.
       try {
+        // The drive (vehicle2.js) removes the #nav element from the DOM. If we
+        // mount a chapter straight after the drive, renderNav('nav') has no
+        // element to paint into and the bookmark bar stays blank until a manual
+        // refresh. Recreate #nav inside its container if it has gone missing.
+        if (!document.getElementById('nav')) {
+          const navHost = document.getElementById('nav-collapse') || document.body
+          const navDiv = document.createElement('div')
+          navDiv.id = 'nav'
+          navHost.insertBefore(navDiv, navHost.firstChild)
+        }
         if (window.renderNav) await window.renderNav('nav')
       } catch (e) {
         console.warn('[SuperSede] post-mount nav render failed', e)
       }
+      // Deferred repaint: when arriving from the drive the DOM swap, chapter
+      // render and nav render all fire before the browser settles layout,
+      // leaving the book faded and the nav blank until a manual refresh.
+      // Re-run the nav paint on the next two frames (after layout settles) and
+      // nudge a reflow so the parchment book renders at full opacity.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(async () => {
+          try { if (window.renderNav) await window.renderNav('nav') } catch (_e) {}
+          try {
+            // Force a layout/paint pass so any interrupted fade-in completes.
+            const bk = host.querySelector('.book')
+            if (bk) { void bk.offsetHeight; bk.style.opacity = '1' }
+          } catch (_e) {}
+        })
+      })
     } catch (err) {
       console.error('[SuperSede] Failed to open book module:', route.key, err)
       host.innerHTML = `<div class="module-loading">
