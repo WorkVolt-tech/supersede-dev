@@ -208,7 +208,7 @@ export async function mountVehicle(__mountOptions = {}) {
   // Loot
   const LTBL=['scrap_metal','flashlight','energy_drink','rune_lux','rune_umbra','scrap_blade']
   const LIC={scrap_metal:'⚙️',flashlight:'🔦',energy_drink:'🥤',rune_lux:'✨',rune_umbra:'🌑',scrap_blade:'🗡️'}
-  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.4,k,life:200,collected:false})}
+  function spawnLoot(x,y){const k=LTBL[Math.floor(Math.random()*LTBL.length)];lootDrops.push({x,y,vy:1.0,k,life:480,collected:false})}
   async function collectLoot(l){
     l.collected=true
     const {data:ex}=await supabase.from('inventory').select('id,quantity').eq('player_id',player.id).eq('item_key',l.k).maybeSingle()
@@ -522,7 +522,7 @@ export async function mountVehicle(__mountOptions = {}) {
 
   // Draw loot
   function drawLoot(l){
-    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/40)
+    ctx.save();ctx.translate(l.x,l.y);ctx.globalAlpha=Math.min(1,l.life/30)
     ctx.shadowColor='#c8b96e';ctx.shadowBlur=10
     ctx.fillStyle='rgba(200,184,128,.18)';ctx.strokeStyle='rgba(200,184,128,.7)';ctx.lineWidth=1.5
     ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();ctx.stroke()
