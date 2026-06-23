@@ -45,7 +45,21 @@ export async function mount(__mountOptions = {}) {
 
 async function mountCh3(__mountOptions = {}) {
   const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
-  const player = __mountOptions.player || await window.renderNav('nav')
+  // Always call renderNav so the bookmark bar paints on every mount. The old
+  // `__mountOptions.player || await renderNav(...)` short-circuited renderNav
+  // entirely when the host passed the player in (notably arriving from the
+  // drive), leaving the nav blank and the page faded until a manual refresh.
+  // Await it so it's fully painted before the chapter proceeds. (Same fix as Ch2.)
+  let player = __mountOptions.player
+  if (player) {
+    try {
+      await window.renderNav(__mountOptions.navId || 'nav')
+    } catch (e) {
+      console.warn('[ch3] nav render failed', e)
+    }
+  } else {
+    player = await window.renderNav(__mountOptions.navId || 'nav')
+  }
   if (!player) throw new Error('Ch3 mount: no player')
 
   // ── Layout: parchment two-page book, story-left, HUD+choices right ──
