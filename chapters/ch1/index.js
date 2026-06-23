@@ -7,6 +7,7 @@ import * as ClsCombat from '../../data/class_combat.js'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
 import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect, critChanceBonus as elCritChance, critDamageBonus as elCritDmg, rawBonus as elRaw } from '../../data/elemental-bonuses.js'
 import { getUnlockedKeystones, applyKeystone } from '../../data/elemental-keystones.js'
+import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
 import {
   getMoralTier,
   getMoralBarPct,
@@ -3470,6 +3471,32 @@ export async function mountChapter1(__mountOptions = {}) {
       }
 
       shake()
+      // ── Combat FX (Ch1) ─────────────────────────────────────────────
+      // Strike = fast slash, Heavy = slower heavy slash, attack skills get
+      // their per-skill/element FX, and defensive moves get a buff glow.
+      try {
+        const _enemyEl = panel.querySelector('.combat-enemy-row')
+        if (_enemyEl) {
+          const _DEFENSIVE_FNS = new Set(['foresight','ironWall','stoneSkin','guardStance','barrier','aegis'])
+          const _ATTACK_SKILL_FNS = new Set(['fireBlast','earthquake','earthSpike','lightningStrike','thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine','resonantBolt','standingChord','shadowLance','umbralBurst','venomSpit','blightNova','waterJet','stoneThrow','thornVolley','bladeArc','cinderstorm','maelstrom','tempest','resonanceBurst','eclipse','tectonicCrush','wildCyclone','carnivoreBloom','annihilate','pandemic','preciseStrike'])
+          let _sk = null
+          if (playerAction === 'skill' && skillKey) {
+            _sk = BATTLE_SKILLS_REGISTRY[skillKey] || NOTABLE_SKILLS_REGISTRY[skillKey] || null
+          }
+          if (playerAction === 'strike') {
+            playHitFx(_enemyEl, 'physical', '__strike', 0.3)   // fast slash
+          } else if (playerAction === 'heavy') {
+            playHitFx(_enemyEl, 'physical', '__heavy', 0.65)    // slower heavy slash
+          } else if (playerAction === 'defend') {
+            playBuffFx(_enemyEl, 'physical')                    // brace glow
+          } else if (_sk) {
+            const _el = _sk.el || 'physical'
+            const _isDef = _DEFENSIVE_FNS.has(_sk.fn) || _sk.type === 'buff' || (_sk.type === 'active' && !_ATTACK_SKILL_FNS.has(_sk.fn))
+            if (_isDef) playBuffFx(_enemyEl, _el)                // defensive/buff skills (e.g. Hex Weave) glow
+            else        playHitFx(_enemyEl, _el, _sk.fn)         // attack skills hit
+          }
+        }
+      } catch(_fxe) { /* FX must never break combat */ }
       log(messages.join(' '), turnLabel)
       syncBars()
       // ── Class skill: turn-end hook (mark/silence countdown + DoT) ────
