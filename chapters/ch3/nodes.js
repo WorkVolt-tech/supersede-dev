@@ -705,6 +705,8 @@ SYSTEM REMNANT LEAK — patched. (Coverage incomplete. Other remnants likely act
       { text: '[receiver: offline. signal: null.]', real: true },
     ],
     choices: [
+      // Optional Class Mirror — only appears if the player unlocked a class in Ch2.
+      { label: 'The receiver flickers once more — something is still forming', sub: 'A signal wearing your shape', next: 'ch3_mirror_intro', showIf: (p) => !!(p && p.active_class) },
       { label: 'Leave the chamber', next: 'ch3_ending' },
     ],
   },
@@ -741,6 +743,72 @@ The Twin Judges have heard about this. So has Yara. So have the Hunters. Word tr
   },
 
   // Terminal node — sends the player back to the chapters TOC. The
+  // ════════════════════════════════════════════════════════════════════
+  //  CLASS MIRROR — optional super-boss. Only reachable from ch3_aftermath
+  //  when the player unlocked a class under the Twin Judges in Chapter 2.
+  //  The System renders a perfected copy of the player's own class.
+  //  Themed per class via window.__ch3MirrorFlavor / __ch3MirrorName.
+  // ════════════════════════════════════════════════════════════════════
+  ch3_mirror_intro: {
+    type: 'story',
+    text: (player) => {
+      const f = (typeof window !== 'undefined' && window.__ch3MirrorFlavor)
+        ? window.__ch3MirrorFlavor(player)
+        : { name: 'The Other', title: 'Unsorted', taunt: '', flavor: 'A shape the System scraped from you.' };
+      return `The receiver you switched off is humming again. Not playing back this time — building.\n\nLight pulls together above the dead console, resolves into a silhouette you know better than any other. It is you. Or the System's idea of you, finished the way it would have preferred: ${f.name}, ${f.title}.\n\n${f.flavor}\n\n${f.taunt}\n\nThis fight is not required. The way out is behind you. But the thing wearing your path is right here, and it will not be here twice.`;
+    },
+    signals: [
+      { text: '[receiver: re-initializing. source pattern — local.]', real: true },
+      { text: 'you. you. you.', real: false },
+      { text: '[rendering entity from: active_class]', real: true },
+    ],
+    choices: [
+      { label: 'Face it', sub: 'Optional super-boss — far stronger than the Echo. Super rewards.', next: 'ch3_mirror_fight' },
+      { label: 'Walk away', sub: 'Leave it unformed. Some things should not be fought.', next: 'ch3_ending', moral: 2 },
+    ],
+  },
+
+  ch3_mirror_fight: {
+    type: 'combat',
+    // enemyFromClass tells renderCombat to build the mirror from player.active_class.
+    enemyFromClass: true,
+    intro: 'It moves the instant you do. Of course it does.',
+    onWin:  'ch3_mirror_win',
+    onLose: 'ch3_mirror_lose',
+  },
+
+  ch3_mirror_win: {
+    type: 'story',
+    text: (player) => {
+      const name = (typeof window !== 'undefined' && window.__ch3MirrorName)
+        ? window.__ch3MirrorName(player) : 'the mirror';
+      return `${name} cracks down its center. For one frame it shows your real face — mid-breath, unsure — then it falls dark and dissolves into static the System couldn't hold together.\n\nIt could not overwrite you with yourself. Whatever you are, it was not the version in the receiver's files.\n\nA shard of the broken render cools on the floor. You pocket it. It still reflects a face that isn't quite yours.`;
+    },
+    signals: [
+      { text: '[entity: mirror — terminated.]', real: true },
+      { text: '[overwrite failed. subject: irreducible.]', real: true },
+    ],
+    // Super-rewards granted here.
+    loot: [
+      { itemKey: 'rune_lux', qty: 3 },
+      { itemKey: 'item_voice_imprint', qty: 1 },
+      { itemKey: 'item_mirror_shard', qty: 1 },
+    ],
+    onEnter: { xp: 600 },
+    choices: [
+      { label: 'Leave the chamber', sub: 'XP +600 · Mirror Shard claimed', next: 'ch3_ending' },
+    ],
+  },
+
+  ch3_mirror_lose: {
+    type: 'story',
+    text: 'You hesitate against your own shape for half a second too long. It does not. You break away up the tunnel, lungs burning, the receiver still wearing your face behind you. It does not follow. It does not need to — it knows you will think about it.',
+    choices: [
+      { label: 'Catch your breath, then leave', next: 'ch3_ending', hp: 10 },
+      { label: 'Turn back and try again', sub: 'Face the mirror once more', next: 'ch3_mirror_fight' },
+    ],
+  },
+
   // engine reads `type: 'complete'` and triggers the chapter-finish
   // flow (save state, navigate back to book.html).
   ch3_complete: {
