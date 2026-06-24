@@ -24,7 +24,7 @@ import { runRiddle }     from '../../data/puzzle-riddle.js'
 import { runSequence }   from '../../data/puzzle-sequence.js'
 import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
 import { initEnemyState, resolveEnemyTurn } from '../../data/enemyAI.js'
-import { buildClassMirror, hasClassMirror, classMirrorName, classMirrorFlavor } from '../../data/ch3-class-mirror.js'
+import { renderReputationBadge } from '../../data/avatar.js'
 import { ITEM_IMAGES } from './items.js'
 import { META, signalTier, signalTierMeta } from './config.js'
 import { NODES } from './nodes.js'
@@ -236,7 +236,7 @@ async function mountCh3(__mountOptions = {}) {
 
     $('hud').innerHTML = `
       <div class="hud-badge-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <span class="hud-seal" style="font-size:1.6rem">${tier.seal||'◆'}</span>
+        ${renderReputationBadge(player.moral_score, { size: 46 })}
         <div>
           <p class="hud-seal-label" style="color:${tier.color};margin:0;font-size:.95rem">${tier.label}</p>
           <p class="hud-chapter" style="margin:0">Chapter ${META.number} · Lvl ${lvl}</p>
@@ -445,7 +445,6 @@ async function mountCh3(__mountOptions = {}) {
       const ITEM_DEF = {
         rune_lux:          { name: 'Lux Rune',      item_type: 'material',  rarity: 'uncommon',  icon: '✨' },
         item_voice_imprint:{ name: 'Voice Imprint', item_type: 'accessory', rarity: 'legendary', icon: '📡' },
-        item_mirror_shard: { name: 'Mirror Shard',  item_type: 'accessory', rarity: 'mythic',    icon: '🪞' },
       }
       const def = ITEM_DEF[itemKey] || { name: itemKey, item_type: 'material', rarity: 'common', icon: '📦' }
       const { error } = await supabase.from('inventory').insert({
@@ -473,11 +472,7 @@ async function mountCh3(__mountOptions = {}) {
   // separate, larger task (Ch2's skill registry is ~1600 lines). This is
   // the core boss loop: Attack / Defend, status effects, loot, xp.
   function renderCombat(node) {
-    // Class Mirror: the enemy is generated from the player's unlocked Ch2 class
-    // at fight time, so it always mirrors THIS player's chosen path.
-    const enemy = node.enemyFromClass
-      ? buildClassMirror(player)
-      : (node.enemy || { name: 'Unknown', hp: 100, atk: 10, def: 5, xp: 0, icon: '❓' })
+    const enemy = node.enemy || { name: 'Unknown', hp: 100, atk: 10, def: 5, xp: 0, icon: '❓' }
 
     // Mirror renderHUD's stat formulas exactly so combat numbers match
     // the HUD the player just saw.
