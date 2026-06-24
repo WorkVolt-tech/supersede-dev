@@ -24,6 +24,7 @@ import { runRiddle }     from '../../data/puzzle-riddle.js'
 import { runSequence }   from '../../data/puzzle-sequence.js'
 import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
 import { initEnemyState, resolveEnemyTurn } from '../../data/enemyAI.js'
+import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
 import { renderReputationBadge } from '../../data/avatar.js'
 import { buildClassMirror, hasClassMirror, classMirrorName, classMirrorFlavor } from '../../data/ch3-class-mirror.js'
 if (typeof window !== 'undefined') {
@@ -511,8 +512,9 @@ async function mountCh3(__mountOptions = {}) {
     const playerDEF = () => defStat
     const panel = $('right-panel')
 
+    const _eSize = enemy.isClassMirror ? 120 : 110
     const enemyImg = enemy.img
-      ? `<img src="${enemy.img}" alt="${enemy.name}" style="width:54px;height:54px;object-fit:cover;border:1px solid rgba(138,91,68,.4)" onerror="this.style.display='none'">`
+      ? `<img src="${enemy.img}" alt="${enemy.name}" style="width:${_eSize}px;height:${_eSize}px;object-fit:contain;border-radius:6px;filter:drop-shadow(0 0 8px rgba(0,0,0,.5))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon || '❓'}</span>'">`
       : `<span class="combat-enemy-icon">${enemy.icon || '❓'}</span>`
 
     panel.innerHTML = `
@@ -535,7 +537,8 @@ async function mountCh3(__mountOptions = {}) {
           <span class="stat-val" id="ch3-cb-php-val">${currentHp}/${maxPlayerHp}</span>
         </div>
         <div style="display:flex;gap:6px;margin-top:10px" id="ch3-cb-actions">
-          <button class="combat-btn" id="ch3-cb-attack" style="flex:1">⚔ ATTACK</button>
+          <button class="combat-btn" id="ch3-cb-attack" style="flex:1">⚔ STRIKE</button>
+          <button class="combat-btn" id="ch3-cb-heavy" style="flex:1">🗡 HEAVY</button>
           <button class="combat-btn" id="ch3-cb-defend" style="flex:1">🛡 DEFEND</button>
         </div>
       </div>
@@ -563,6 +566,17 @@ async function mountCh3(__mountOptions = {}) {
       frame.classList.remove('animate-shake')
       void frame.offsetWidth
       frame.classList.add('animate-shake')
+    }
+
+    // ── Combat FX (matches Ch1/Ch2) ──────────────────────────────────────
+    // Anchor effects over the enemy art so the burst lands on the foe, not the
+    // whole panel. Wrapped so FX can never break combat.
+    const fxTarget = () => panel.querySelector('.combat-enemy-row')
+    function fxHit(skillKey, speed) {
+      try { const t = fxTarget(); if (t) playHitFx(t, enemy.element || 'physical', skillKey, speed) } catch (_e) {}
+    }
+    function fxBuff() {
+      try { const t = fxTarget(); if (t) playBuffFx(t, enemy.element || 'physical') } catch (_e) {}
     }
 
     function tickPlayerDots(messages) {
@@ -612,6 +626,28 @@ async function mountCh3(__mountOptions = {}) {
       enemyHp = Math.max(0, enemyHp - dmg)
       enemyState.echoLastPlayerMove = { name: 'Strike', dmg }
       messages.push(`⚔ You strike for <strong>${dmg}</strong>.`)
+      fxHit('__strike', 0.3)
+      refreshBars()
+      if (enemyHp <= 0) { log(messages.join('<br>')); endCombat(true); return }
+      enemyTurn(messages)
+    }
+
+    // Heavy: slower, hits harder (bigger base + bigger roll), and the FX plays
+    // at a slower speed to read as a weightier blow (matches Ch1/Ch2).
+    function playerHeavy() {
+      if (over) return
+      const messages = []
+      if (se.playerStunTurns > 0) {
+        messages.push('⚡ <em>Stunned — you lose your action.</em>')
+        enemyTurn(messages)
+        return
+      }
+      const roll = Math.floor(Math.random() * 9)
+      const dmg  = Math.max(1, Math.round((atkStat + roll) * 1.6) - (enemy.def || 0))
+      enemyHp = Math.max(0, enemyHp - dmg)
+      enemyState.echoLastPlayerMove = { name: 'Heavy', dmg }
+      messages.push(`🗡 Heavy blow for <strong>${dmg}</strong>.`)
+      fxHit('__heavy', 0.65)
       refreshBars()
       if (enemyHp <= 0) { log(messages.join('<br>')); endCombat(true); return }
       enemyTurn(messages)
@@ -620,10 +656,12 @@ async function mountCh3(__mountOptions = {}) {
     function playerDefend() {
       if (over) return
       defending = true
+      fxBuff()
       enemyTurn(['🛡 <em>You brace. Defense doubled this turn.</em>'])
     }
 
     panel.querySelector('#ch3-cb-attack').addEventListener('click', playerAttack)
+    panel.querySelector('#ch3-cb-heavy').addEventListener('click', playerHeavy)
     panel.querySelector('#ch3-cb-defend').addEventListener('click', playerDefend)
 
     async function endCombat(won) {
