@@ -852,12 +852,6 @@ export async function mountChapter1(__mountOptions = {}) {
     const oldLvl = player.level || 1
 
     const updates = { current_node: 'ch1_' + nextId }
-    if (nextId === 'search_team') {
-      const log = player.alliance_log || []
-      if (!log.includes('met_marcus')) {
-        log.push('met_marcus'); player.alliance_log = log; updates.alliance_log = log
-      }
-    }
     if (cur?.xp)     { updates.xp = oldXp + cur.xp; player.xp = updates.xp }
     if (cur?.hpLoss) { currentHp = Math.max(1, currentHp - cur.hpLoss); updates.hp = currentHp }
 
@@ -925,7 +919,7 @@ export async function mountChapter1(__mountOptions = {}) {
     if (node.sysMsg) window.showSysOverlay(node.sysMsg)
 
     const stEl = document.getElementById('story-text')
-    stEl.textContent = (typeof node.text === 'function' ? node.text(player) : node.text) || ''
+    stEl.textContent = node.text || ''
     stEl.className   = nodeId === 'opening' ? 'story-text drop-cap' : 'story-text'
 
     // Watcher image — teaser on pre_boss nodes, full on boss node
@@ -3798,9 +3792,7 @@ export async function mountChapter1(__mountOptions = {}) {
   renderHUD()
   render()
 
-  return { player, cleanup() {
-    document.getElementById('book-module-style-chapter-1')?.remove();
-  } }
+  return { player, cleanup() {} }
 }
 
 export default mountChapter1
