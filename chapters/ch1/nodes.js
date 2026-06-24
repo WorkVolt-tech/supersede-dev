@@ -1045,25 +1045,16 @@ And behind them — movement. A shape that's definitely human, trying to stay ve
 
   garage_b1_meet: {
     id: 'garage_b1_meet', type: 'story',
-    text: `The shape against the pillar doesn't run when you approach. That's either brave or too scared to move.
-
-You get close enough to see the face.
-
-Marcus.
-
-The nineteen-year-old from the parking structure earlier — or someone who looks exactly like him. But the badge is different now. It was NEUTRAL before. It reads UNKNOWN.
-
-"You," he says. His voice has changed. Quieter. More controlled.
-
-"Marcus," you say.
-
-He shakes his head slowly. "I was. The System updated me. Something happened while I was hiding — my interface went dark, came back with new information. A different read on everything."
-
-He holds up his arm. The badge flickers. NEUTRAL. UNKNOWN. NEUTRAL.
-
-"I don't know what I am anymore," he says. "But I know what's deeper in this garage. And I know you're going to have to get through it."
-
-He pauses. "I can come with you. Or I can stay here. Either way, it's going to notice you soon."`,
+    text: (player) => {
+      const met = (player && player.alliance_log || []).includes('met_marcus')
+      const opening = met
+        ? `You get close enough to see the face.\n\nMarcus.\n\nThe nineteen-year-old from the street earlier — or someone who looks exactly like him. But the badge is different now. It was NEUTRAL when you met him. It reads UNKNOWN.`
+        : `You get close enough to see the face.\n\nA young man — nineteen, maybe twenty. You've never seen him before, but something about him is already wrong. His badge doesn't sit still. It reads UNKNOWN.`
+      const youLine = met
+        ? `"You," he says. His voice has changed. Quieter. More controlled.\n\n"Marcus," you say.\n\nHe shakes his head slowly. "I was. The System updated me. Something happened while I was hiding — my interface went dark, came back with new information. A different read on everything."`
+        : `"You're a player," he says. His voice is quiet, controlled — like someone holding very still. "Marcus. I was Marcus." He shakes his head. "The System updated me while I was hiding down here. My interface went dark, came back with a different read on everything."`
+      return `The shape against the pillar doesn't run when you approach. That's either brave or too scared to move.\n\n${opening}\n\n${youLine}\n\nHe holds up his arm. The badge flickers. NEUTRAL. UNKNOWN. NEUTRAL.\n\n"I don't know what I am anymore," he says. "But I know what's deeper in this garage. And I know you're going to have to get through it."\n\nHe pauses. "I can come with you. Or I can stay here. Either way, it's going to notice you soon."`
+    },
     sysMsg: '⚠ Unknown badge detected — player status unclassified.',
     choices: [
       { label: 'Take Marcus with you', sub: 'He knows the layout. Risky — his badge is unstable.', next: 'garage_b2_together', moral: 6 },
