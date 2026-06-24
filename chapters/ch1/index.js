@@ -847,6 +847,18 @@ export async function mountChapter1(__mountOptions = {}) {
       nextId = 'garage_b4_after_dorian'
     }
 
+    // Garage intro (the Marcus meeting) should only play once. The district
+    // hub routes back to garage_approach until the Sentinel is beaten, which
+    // replays the Marcus scene word-for-word. On a repeat visit, skip the
+    // intro and drop the player straight into the garage fight instead.
+    if (nextId === 'garage_approach') {
+      if (window._seenGarageIntro) {
+        nextId = 'garage_b1_fight'
+      } else {
+        window._seenGarageIntro = true
+      }
+    }
+
     const cur = NODES[nodeId]
     const oldXp  = player.xp || 0
     const oldLvl = player.level || 1
@@ -3792,7 +3804,9 @@ export async function mountChapter1(__mountOptions = {}) {
   renderHUD()
   render()
 
-  return { player, cleanup() {} }
+  return { player, cleanup() {
+    document.getElementById('book-module-style-chapter-1')?.remove();
+  } }
 }
 
 export default mountChapter1
