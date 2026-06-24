@@ -5,9 +5,6 @@ import { NODES } from './nodes.js'
 import { ITEM_IMAGES } from './items.js'
 import * as ClsCombat from '../../data/class_combat.js'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../data/skills_registry.js'
-import { damageMult as elDamageMult, resistMult as elResistMult, reflectFraction as elReflect, critChanceBonus as elCritChance, critDamageBonus as elCritDmg, rawBonus as elRaw } from '../../data/elemental-bonuses.js'
-import { getUnlockedKeystones, applyKeystone } from '../../data/elemental-keystones.js'
-import { playHitFx, playBuffFx } from '../../data/combat-fx.js'
 import {
   getMoralTier,
   getMoralBarPct,
@@ -26,7 +23,7 @@ import {
 
 const MODULE_STYLE_ID = 'book-module-style-chapter-1'
 const MODULE_MARKUP = "<div class=\"book-wrap\">\n  \n  <div class=\"book animate-in\" style=\"position:relative;\">\n    <div class=\"page-left parchment\" id=\"left-page\">\n      <div class=\"page-inner\">\n        <p class=\"chapter-label\">Chapter 1 \u2014 System Initialization</p>\n        <p class=\"chapter-sub\">The world stops. The game begins.</p>\n        <hr class=\"ink-divider\">\n        <p class=\"story-text\" id=\"story-text\"></p>\n        <div class=\"notice-box animate-in\" id=\"outcome-box\" style=\"display:none\"></div>\n      </div>\n    </div>\n    <div class=\"page-right parchment\">\n      <div class=\"page-inner\">\n        <div class=\"hud\" id=\"hud\"></div>\n        <hr class=\"ink-divider\">\n        <div id=\"right-panel\"></div>\n      </div>\n    </div>\n    <!-- Decorative page-flip animation \u2014 purely visual, no pointer events -->\n    <div class=\"page-flip-decorator\" aria-hidden=\"true\"></div>\n  </div>\n</div>"
-const MODULE_STYLES = "\n    /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n       PARCHMENT BOOK THEME \u2014 Warm Ink / Aged Paper\n       Matches the interactive book page-flip UI.\n    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n       :root {\n      --bg-0:      #14110f;\n      --bg-1:      #2b1d16;\n      --panel:     #f4ead7;\n      --page-l:    #f4ead7;\n      --page-r:    #f1e4cf;\n      --ink:       #2b1d16;\n      --ink-dim:   #5c4638;\n      --ink-faint: #a08060;\n      --ice:       #7a5230;\n      --ice-hot:   #4b2e14;\n      --gold:      #c8a050;\n      --gold-hot:  #e0c070;\n      --gold-dim:  #a08040;\n      --amber:     #d09040;\n      --amber-hot: #e0a050;\n      --warn:      #e06050;\n      --line:      rgba(200,160,80,.30);\n      --green:     #5cae50;\n      --purple:    #8a50c0;\n      --spine-col: #2b1d16;\n    }\n    *, *::before, *::after { box-sizing: border-box; }\n\n    /* \u2500\u2500 Global reset \u2500\u2500 */\n    html, body {\n      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;\n      color: var(--ink) !important;\n      font-family: 'Cormorant Garamond', Georgia, serif !important;\n      min-height: 100vh;\n      overflow-x: hidden;\n    }\n\n    /* Warm ambient glow */\n    body::after {\n      content: \"\"; position: fixed; inset: 0; pointer-events: none; z-index: 9998;\n      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);\n    }\n\n    /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n\n    /* \u2500\u2500 Book \u2014 warm parchment open-book \u2500\u2500 */\n    .book {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: none !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n    }\n    @media(max-width: 860px) {\n      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }\n    }\n\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto;\n      overflow-x: hidden;\n    }\n    /* Dot-texture paper grain */\n    .page-left::before, .page-right::before {\n      content: \"\" !important;\n      position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important;\n      opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    /* Spine-edge shadow */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    /* Decorative corner brackets */\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 14px !important; left: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important;\n      position: absolute !important;\n      bottom: 14px !important; right: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n\n    /* \u2500\u2500 Chapter label / subtitle \u2500\u2500 */\n    .chapter-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .42em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      margin-bottom: 5px !important;\n    }\n    .chapter-sub {\n      font-size: 17px !important;\n      font-style: italic !important;\n      color: var(--ink) !important;\n      margin-bottom: 0 !important;\n    }\n\n        /* \u2500\u2500 Divider \u2500\u2500 */\n    .ink-divider, hr.ink-divider {\n      border: none !important;\n      border-top: 1px solid rgba(200,180,120,.40) !important;\n      margin: 12px 0 !important;\n      opacity: 1 !important;\n    }\n\n    /* \u2500\u2500 Body text colour remaps \u2500\u2500 */\n    p, li, span { color: var(--ink) !important; }\n    [style*=\"color:var(--ink)\"] { color: var(--ink) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--ink-dim) !important; }\n    /* Normalize stale light-yellow inline colors on parchment pages only. */\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #c8b96e\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #c8b880\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #f0d060\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #e8d8b0\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #f0e0c0\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #f0c080\"],\n    .parchment [style*=\"color:#a08858\"], .parchment [style*=\"color: #a08858\"],\n    .parchment [style*=\"color:#2b1d16\"], .parchment [style*=\"color: #e8d8a8\"] { color: var(--ink) !important; }\n    [style*=\"background:rgba(200,184,128\"] { background: rgba(138,91,68,.08) !important; }\n    [style*=\"border-color:rgba(139,106,32\"] { border-color: rgba(138,91,68,.30) !important; }\n\n    /* \u2500\u2500 Story text \u2500\u2500 */\n    .story-text {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 17px !important;\n      line-height: 1.65 !important;\n      color: var(--ink) !important;\n      white-space: pre-line !important;\n    }\n    .story-text.drop-cap::first-letter {\n      font-size: 3.8em !important;\n      float: left !important;\n      line-height: .78 !important;\n      margin: .05em .12em 0 0 !important;\n      color: var(--gold) !important;\n      font-weight: 600 !important;\n    }\n\n    /* \u2500\u2500 Notice / outcome box \u2500\u2500 */\n    .notice-box {\n      border: 1px solid rgba(200,180,120,.50) !important;\n      background: rgba(30,20,15,.85) !important;\n      color: #f0d060 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .06em !important;\n      padding: 10px 14px !important;\n      border-radius: 0 !important;\n      margin-top: 14px !important;\n    }\n\n        /* \u2500\u2500 HUD (parchment-readable) \u2500\u2500 */\n    #hud { color: var(--ink); }\n    #hud p, #hud span, #hud div { color: var(--ink); }\n    /* seal-label: NO !important so inline color:${bc} wins for badge tint */\n    #hud .hud-badge-row .hud-seal-label { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .04em; }\n    #hud .hud-chapter { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .62rem !important; letter-spacing: .08em !important; }\n    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }\n    #hud .stat-val { color: var(--ink) !important; font-family: 'JetBrains Mono',monospace !important; font-weight: 600; }\n    #hud .stat-bar-wrap { background: rgba(43,29,22,.18) !important; border-radius: 0 !important; }\n    #hud .stat-box { background: rgba(138,91,68,.10) !important; border: 1px solid rgba(138,91,68,.35) !important; border-radius: 0 !important; }\n    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; letter-spacing: .08em !important; }\n    #hud .stat-box-val { color: var(--ink) !important; font-family: 'Cinzel',serif !important; font-weight: 600 !important; }\n    #hud button {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.40) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-family: 'JetBrains Mono',monospace !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    #hud button:hover { border-color: var(--gold-dim) !important; color: var(--gold-dim) !important; background: rgba(138,91,68,.06) !important; }\n    #hud div[onclick] {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.45) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-weight: 500;\n    }\n    /* Remap stale light-on-cream inline colors anywhere inside the HUD */\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #c8b96e\"],\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #c8b880\"],\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #f0d060\"],\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #e8d8b0\"],\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #f0e0c0\"],\n    #hud [style*=\"color:#2b1d16\"], #hud [style*=\"color: #f0c080\"] { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Buttons / choices \u2014 warm parchment \u2500\u2500 */\n    button:not(.bm-signout), .choice, .combat-btn {\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important; letter-spacing: .08em !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Choices panel \u2500\u2500 */\n    .choices-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important;\n      letter-spacing: .38em !important;\n      text-transform: uppercase !important;\n      color: var(--ink-dim) !important;\n      margin-bottom: 12px !important;\n    }\n    .choices { display: flex; flex-direction: column; gap: 8px; }\n\n    button.choice, .choice {\n      background: rgba(244,234,215,.60) !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      padding: 12px 14px !important;\n      text-align: left !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, transform .2s !important;\n      display: flex !important;\n      align-items: flex-start !important;\n      gap: 10px !important;\n      width: 100% !important;\n      font-family: 'Cormorant Garamond', serif !important;\n    }\n    button.choice:hover, .choice:hover {\n      border-color: var(--ice) !important;\n      background: rgba(138,91,68,.12) !important;\n      transform: translateX(4px) !important;\n    }\n    button.choice.danger, .choice.danger {\n      border-color: rgba(192,57,43,.35) !important;\n    }\n    button.choice.danger:hover, .choice.danger:hover {\n      border-color: var(--warn) !important;\n      background: rgba(192,57,43,.08) !important;\n    }\n    button.choice.locked, .choice.locked {\n      opacity: .45 !important;\n      cursor: default !important;\n      border-color: rgba(138,91,68,.15) !important;\n    }\n    .choice-arrow {\n      color: var(--gold) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 13px !important;\n      flex-shrink: 0 !important;\n      margin-top: 1px !important;\n    }\n    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }\n    .choice-body {\n      font-size: 17px !important;\n      color: var(--ink) !important;\n      display: flex !important;\n      flex-direction: column !important;\n    }\n    .choice-sub {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .06em !important;\n      color: var(--ink-dim) !important;\n      margin-top: 3px !important;\n    }\n\n    /* \u2500\u2500 Stat bars \u2500\u2500 */\n    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }\n    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }\n    .stat-val { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Combat panel \u2500\u2500 */\n    .combat-panel {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 16px !important;\n      position: relative;\n    }\n    .combat-panel::before {\n      content: \"\"; position: absolute; top: -1px; left: -1px;\n      width: 12px; height: 12px;\n      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);\n    }\n    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }\n    .combat-enemy-icon { font-size: 2.5rem; }\n    .combat-enemy-name {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 20px !important; font-weight: 600 !important;\n      letter-spacing: .04em !important; color: var(--ink) !important;\n    }\n    .combat-log {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-style: italic !important;\n      font-size: 15px !important;\n      line-height: 1.55 !important;\n      color: var(--ink-dim) !important;\n      background: rgba(0,0,0,.06) !important;\n      border: 1px solid rgba(138,91,68,.20) !important;\n      border-radius: 0 !important;\n      padding: 10px 12px !important;\n      min-height: 3rem !important;\n      margin-bottom: 10px !important;\n    }\n    .combat-log em     { color: var(--gold) !important; font-style: italic; }\n    .combat-log strong { color: var(--warn) !important; font-style: normal; }\n    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }\n    .stat-bar-wrap {\n      flex: 1; height: 5px !important;\n      background: rgba(0,0,0,.08) !important;\n      border-radius: 0 !important; overflow: hidden;\n    }\n    .stat-bar { height: 100%; transition: width .4s, background .4s; }\n    .stat-key {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .58rem !important; letter-spacing: .08em !important;\n      color: var(--ink-dim) !important; min-width: 44px;\n    }\n    .stat-val {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; color: var(--ink) !important;\n      min-width: 50px; text-align: right;\n    }\n\n    /* \u2500\u2500 Combat action buttons \u2500\u2500 */\n    .combat-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; letter-spacing: .06em !important;\n      color: var(--ink) !important;\n      background: rgba(244,234,215,.50) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: .45rem .5rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, color .2s !important;\n      display: flex !important; align-items: center !important; justify-content: center !important;\n    }\n    .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.10) !important;\n    }\n    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }\n\n    /* stat-grid inside HUD */\n    .stat-grid {\n      display: grid;\n      grid-template-columns: repeat(3,1fr);\n      gap: 4px; margin-top: 6px;\n    }\n\n    /* \u2500\u2500 End screen \u2500\u2500 */\n    .end-box {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 20px !important;\n      position: relative;\n    }\n    .end-box::before { content:\"\"; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }\n    .end-box::after  { content:\"\"; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }\n    .end-title {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 22px !important; font-weight: 600 !important;\n      letter-spacing: .06em !important;\n      color: var(--gold) !important;\n      margin-bottom: 10px !important;\n    }\n    .end-sub {\n      font-style: italic !important;\n      font-size: 16px !important;\n      color: var(--ink-dim) !important;\n      line-height: 1.55 !important;\n      margin-bottom: 14px !important;\n    }\n    .end-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .75rem !important;\n      letter-spacing: .14em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      padding: .55rem 1.2rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n      text-decoration: none !important;\n      display: inline-block !important;\n    }\n    .end-btn:hover {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n        /* \u2500\u2500 System overlay messages \u2500\u2500 */\n    .sys-overlay, [id=\"sys-overlay\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .08em !important;\n      border-radius: 4px !important;\n      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .sys-overlay span, [id=\"sys-overlay\"] span,\n    .sys-overlay p, [id=\"sys-overlay\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Toast \u2500\u2500 */\n    .toast, [class*=\"toast\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      border-radius: 4px !important;\n      font-size: 11px !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .toast span, [class*=\"toast\"] span,\n    .toast p, [class*=\"toast\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Loot window \u2500\u2500 */\n    #loot-window {\n      background: rgba(241,228,207,.96) !important;\n      border-color: rgba(138,91,68,.40) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n    }\n    #loot-window p, #loot-window span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Stat window modal \u2500\u2500 */\n    #stat-window > div {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n    #stat-window * { color: var(--ink) !important; }\n    #stat-window [style*=\"background:rgba(200\"] {\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Judge image \u2500\u2500 */\n    #judge-img {\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;\n    }\n\n    /* \u2500\u2500 combat-over \u2500\u2500 */\n    [id$=\"-combat-over\"] { color: var(--ink) !important; }\n    [id$=\"-combat-over\"] button {\n      font-family: 'JetBrains Mono', monospace !important;\n      color: var(--ink) !important;\n      background: rgba(138,91,68,.07) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      cursor: pointer !important;\n      transition: border-color .15s, color .15s !important;\n    }\n    [id$=\"-combat-over\"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n\n    /* \u2500\u2500 Modals \u2500\u2500 */\n    [id$=\"-window\"] > div, .end-box {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n\n    /* \u2500\u2500 Right panel zone cards \u2500\u2500 */\n    #right-panel div[onclick] { border-radius: 0 !important; }\n\n    /* \u2500\u2500 Spine \u2014 warm book gutter \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(232,210,170,.0)   0%,\n        rgba(200,170,120,.25)  15%,\n        rgba(160,120,70,.55)   30%,\n        rgba(90,55,20,.88)     43%,\n        rgba(40,20,5,1.0)      50%,\n        rgba(90,55,20,.88)     57%,\n        rgba(160,120,70,.55)   70%,\n        rgba(200,170,120,.25)  85%,\n        rgba(232,210,170,.0)   100%\n      ) !important;\n      border-left:  none !important;\n      border-right: none !important;\n      position: relative; z-index: 5;\n      width: 32px !important;\n      min-width: 32px !important;\n      margin: 0 !important;\n      overflow: visible;\n      box-shadow: none !important;\n    }\n    .spine::before {\n      content: \"\";\n      position: absolute;\n      top: 0; bottom: 0; left: 50%;\n      width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg,\n        transparent 0%,\n        rgba(43,29,22,.9) 8%,\n        rgba(43,29,22,.9) 92%,\n        transparent 100%);\n      z-index: 2;\n    }\n    .spine::after {\n      content: \"\";\n      position: absolute;\n      top: 2px; bottom: 2px; left: -3px;\n      width: 3px;\n      background: repeating-linear-gradient(\n        180deg,\n        rgba(138,91,68,.08) 0px,\n        rgba(138,91,68,.03) 1px,\n        rgba(0,0,0,.10)     1px,\n        rgba(0,0,0,.04)     2px\n      );\n      border-left: 1px solid rgba(138,91,68,.12);\n      z-index: 1;\n    }\n\n    /* \u2500\u2500 Scrollbar \u2500\u2500 */\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n\n    /* \u2500\u2500 Page-flip decorative animation \u2500\u2500 */\n    /* \u2500\u2500 Page-flip animation \u2014 triggered on navigation only \u2500\u2500 */\n    @keyframes bookPageFlip {\n      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }\n      6%   { opacity: .92; }\n      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }\n      80%  { opacity: 0; }\n      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }\n    }\n    .page-flip-decorator {\n      position: absolute;\n      top: 0; right: 0;\n      width: 50%; height: 100%;\n      transform-origin: left center;\n      pointer-events: none;\n      z-index: 40;\n      opacity: 0;\n      background: linear-gradient(to left, rgba(241,228,207,.96) 0%, rgba(230,215,190,.92) 60%, rgba(215,196,165,.72) 100%);\n      box-shadow: -4px 0 20px rgba(0,0,0,.15);\n    }\n    .page-flip-decorator.playing {\n      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;\n    }\n   .page-flip-decorator::after { content: \"\"; }\n    .combat-panel .combat-log, .combat-panel .combat-log em, .combat-panel .combat-enemy-name, .combat-panel .combat-btn, .combat-panel .combat-btn span { color: #2b1d16 !important; }\n    .combat-panel .combat-log { color: #3a2a1a !important; }\n    .combat-panel .combat-btn span[style*=\"color:#a08858\"] { color: #6b4a2a !important; }\n    .combat-panel [style*=\"color:#a08858\"], .combat-panel [style*=\"color: #a08858\"] { color: #6b4a2a !important; }\n    .combat-panel [style*=\"var(--ink-dim)\"] { color: #3a2a1a !important; }\n    .combat-panel .combat-log, .combat-panel .combat-log * { color: #2b1d16 !important; }\n    .combat-panel p, .combat-panel span, .combat-panel div { color: #2b1d16 !important; }\n    #eye-encounter-overlay .combat-log, #eye-encounter-overlay .combat-log * { color: #e8d8a8 !important; }\n    #eye-encounter-overlay .combat-btn, #eye-encounter-overlay .combat-btn * { color: #e8d8a8 !important; }\n    #eye-encounter-overlay .combat-enemy-name { color: #e8d8a8 !important; }\n  "
+const MODULE_STYLES = "\n    /* \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n       PARCHMENT BOOK THEME \u2014 Warm Ink / Aged Paper\n       Matches the interactive book page-flip UI.\n    \u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550 */\n       :root {\n      --bg-0:      #14110f;\n      --bg-1:      #2b1d16;\n      --panel:     #f4ead7;\n      --page-l:    #f4ead7;\n      --page-r:    #f1e4cf;\n      --ink:       #2b1d16;\n      --ink-dim:   #5c4638;\n      --ink-faint: #a08060;\n      --ice:       #7a5230;\n      --ice-hot:   #4b2e14;\n      --gold:      #c8a050;\n      --gold-hot:  #e0c070;\n      --gold-dim:  #a08040;\n      --amber:     #d09040;\n      --amber-hot: #e0a050;\n      --warn:      #e06050;\n      --line:      rgba(200,160,80,.30);\n      --green:     #5cae50;\n      --purple:    #8a50c0;\n      --spine-col: #2b1d16;\n    }\n    *, *::before, *::after { box-sizing: border-box; }\n\n    /* \u2500\u2500 Global reset \u2500\u2500 */\n    html, body {\n      background: radial-gradient(ellipse at 50% 0%, #2a1a0e 0%, #14110f 55%, #0d0b09 100%) !important;\n      color: var(--ink) !important;\n      font-family: 'Cormorant Garamond', Georgia, serif !important;\n      min-height: 100vh;\n      overflow-x: hidden;\n    }\n\n    /* Warm ambient glow */\n    body::after {\n      content: \"\"; position: fixed; inset: 0; pointer-events: none; z-index: 9998;\n      background: radial-gradient(ellipse 900px 900px at 50% 40%, rgba(180,120,60,.07) 0%, transparent 70%);\n    }\n\n    /* \u2500\u2500 Book wrap \u2500\u2500 */\n    .book-wrap {\n      background: transparent !important;\n      max-width: 1060px;\n      margin: 0 auto;\n      padding: 24px 24px 60px;\n    }\n\n    /* \u2500\u2500 Book \u2014 warm parchment open-book \u2500\u2500 */\n    .book {\n      display: grid !important;\n      grid-template-columns: 1fr 1fr !important;\n      align-items: stretch !important;\n      gap: 0 !important;\n      background: transparent !important;\n      border: none !important;\n      box-shadow: none !important;\n      border-radius: 24px !important;\n      filter: drop-shadow(0 24px 60px rgba(0,0,0,.75)) drop-shadow(0 8px 20px rgba(0,0,0,.5)) !important;\n      transform: perspective(1600px) rotateX(2.5deg) !important;\n      transform-origin: 50% 0 !important;\n      margin-top: 10px !important;\n      overflow: hidden !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n    }\n    @media(max-width: 860px) {\n      .book { grid-template-columns: 1fr !important; transform: none !important; max-height: none !important; border-radius: 12px !important; }\n    }\n\n    /* \u2500\u2500 Pages \u2500\u2500 */\n    .parchment, .page-left, .page-right {\n      background: var(--panel) !important;\n      border: none !important;\n      border-radius: 0 !important;\n      box-shadow: none !important;\n      color: var(--ink) !important;\n      position: relative;\n      overflow-y: auto;\n      overflow-x: hidden;\n    }\n    /* Dot-texture paper grain */\n    .page-left::before, .page-right::before {\n      content: \"\" !important;\n      position: absolute !important; inset: 0 !important;\n      pointer-events: none !important; z-index: 0 !important;\n      opacity: .08 !important;\n      background-image: radial-gradient(circle, rgba(0,0,0,.25) 1px, transparent 1px) !important;\n      background-size: 12px 12px !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    /* Spine-edge shadow */\n    .page-left::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; right: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to right, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n    .page-right::after {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 0 !important; bottom: 0 !important; left: 0 !important;\n      width: 60px !important;\n      background: linear-gradient(to left, transparent 0%, rgba(100,60,10,.08) 40%, rgba(60,30,5,.22) 100%) !important;\n      pointer-events: none !important;\n      z-index: 2 !important;\n    }\n\n    /* Decorative corner brackets */\n    .page-inner { padding: 28px 30px !important; position: relative; }\n    .page-inner::before {\n      content: \"\" !important;\n      position: absolute !important;\n      top: 14px !important; left: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-left: 1.5px solid rgba(138,91,68,.45) !important;\n      border-top: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-inner::after {\n      content: \"\" !important;\n      position: absolute !important;\n      bottom: 14px !important; right: 14px !important;\n      width: 28px !important; height: 28px !important;\n      border-right: 1.5px solid rgba(138,91,68,.45) !important;\n      border-bottom: 1.5px solid rgba(138,91,68,.45) !important;\n      pointer-events: none !important;\n    }\n    .page-left  { border-right: none !important; background: var(--page-l) !important; }\n    .page-right { border-left:  none !important; background: var(--page-r) !important; }\n\n    .spine-inner, .spine-highlight, .spine-shadow,\n    .spine-title, .spine-rule, .spine-diamond, .spine-chapter { display: none !important; }\n\n    /* \u2500\u2500 Chapter label / subtitle \u2500\u2500 */\n    .chapter-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .42em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      margin-bottom: 5px !important;\n    }\n    .chapter-sub {\n      font-size: 17px !important;\n      font-style: italic !important;\n      color: var(--ink) !important;\n      margin-bottom: 0 !important;\n    }\n\n        /* \u2500\u2500 Divider \u2500\u2500 */\n    .ink-divider, hr.ink-divider {\n      border: none !important;\n      border-top: 1px solid rgba(200,180,120,.40) !important;\n      margin: 12px 0 !important;\n      opacity: 1 !important;\n    }\n\n    /* \u2500\u2500 Body text colour remaps \u2500\u2500 */\n    p, li, span { color: var(--ink) !important; }\n    [style*=\"color:var(--ink)\"] { color: var(--ink) !important; }\n    [style*=\"color:var(--ink-dim)\"] { color: var(--ink-dim) !important; }\n    /* Normalize stale light-yellow inline colors on parchment pages only. */\n    .parchment [style*=\"color:#c8b96e\"], .parchment [style*=\"color: #c8b96e\"],\n    .parchment [style*=\"color:#c8b880\"], .parchment [style*=\"color: #c8b880\"],\n    .parchment [style*=\"color:#f0d060\"], .parchment [style*=\"color: #f0d060\"],\n    .parchment [style*=\"color:#e8d8b0\"], .parchment [style*=\"color: #e8d8b0\"],\n    .parchment [style*=\"color:#f0e0c0\"], .parchment [style*=\"color: #f0e0c0\"],\n    .parchment [style*=\"color:#f0c080\"], .parchment [style*=\"color: #f0c080\"],\n    .parchment [style*=\"color:#a08858\"], .parchment [style*=\"color: #a08858\"],\n    .parchment [style*=\"color:#e8d8a8\"], .parchment [style*=\"color: #e8d8a8\"] { color: var(--ink) !important; }\n    [style*=\"background:rgba(200,184,128\"] { background: rgba(138,91,68,.08) !important; }\n    [style*=\"border-color:rgba(139,106,32\"] { border-color: rgba(138,91,68,.30) !important; }\n\n    /* \u2500\u2500 Story text \u2500\u2500 */\n    .story-text {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 17px !important;\n      line-height: 1.65 !important;\n      color: var(--ink) !important;\n      white-space: pre-line !important;\n    }\n    .story-text.drop-cap::first-letter {\n      font-size: 3.8em !important;\n      float: left !important;\n      line-height: .78 !important;\n      margin: .05em .12em 0 0 !important;\n      color: var(--gold) !important;\n      font-weight: 600 !important;\n    }\n\n    /* \u2500\u2500 Notice / outcome box \u2500\u2500 */\n    .notice-box {\n      border: 1px solid rgba(200,180,120,.50) !important;\n      background: rgba(30,20,15,.85) !important;\n      color: #f0d060 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .06em !important;\n      padding: 10px 14px !important;\n      border-radius: 0 !important;\n      margin-top: 14px !important;\n    }\n\n        /* \u2500\u2500 HUD (parchment-readable) \u2500\u2500 */\n    #hud { color: var(--ink); }\n    #hud p, #hud span, #hud div { color: var(--ink); }\n    /* seal-label: NO !important so inline color:${bc} wins for badge tint */\n    #hud .hud-badge-row .hud-seal-label { font-family: 'Cinzel', serif; font-weight: 600; letter-spacing: .04em; }\n    #hud .hud-chapter { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .62rem !important; letter-spacing: .08em !important; }\n    #hud .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .6rem !important; letter-spacing: .08em !important; }\n    #hud .stat-val { color: var(--ink) !important; font-family: 'JetBrains Mono',monospace !important; font-weight: 600; }\n    #hud .stat-bar-wrap { background: rgba(43,29,22,.18) !important; border-radius: 0 !important; }\n    #hud .stat-box { background: rgba(138,91,68,.10) !important; border: 1px solid rgba(138,91,68,.35) !important; border-radius: 0 !important; }\n    #hud .stat-box-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; letter-spacing: .08em !important; }\n    #hud .stat-box-val { color: var(--ink) !important; font-family: 'Cinzel',serif !important; font-weight: 600 !important; }\n    #hud button {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.40) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-family: 'JetBrains Mono',monospace !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    #hud button:hover { border-color: var(--gold-dim) !important; color: var(--gold-dim) !important; background: rgba(138,91,68,.06) !important; }\n    #hud div[onclick] {\n      background: rgba(138,91,68,.10) !important;\n      border: 1px solid rgba(138,91,68,.45) !important;\n      color: var(--ink) !important;\n      border-radius: 0 !important;\n      font-weight: 500;\n    }\n    /* Remap stale light-on-cream inline colors anywhere inside the HUD */\n    #hud [style*=\"color:#c8b96e\"], #hud [style*=\"color: #c8b96e\"],\n    #hud [style*=\"color:#c8b880\"], #hud [style*=\"color: #c8b880\"],\n    #hud [style*=\"color:#f0d060\"], #hud [style*=\"color: #f0d060\"],\n    #hud [style*=\"color:#e8d8b0\"], #hud [style*=\"color: #e8d8b0\"],\n    #hud [style*=\"color:#f0e0c0\"], #hud [style*=\"color: #f0e0c0\"],\n    #hud [style*=\"color:#f0c080\"], #hud [style*=\"color: #f0c080\"] { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Buttons / choices \u2014 warm parchment \u2500\u2500 */\n    button:not(.bm-signout), .choice, .combat-btn {\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important; letter-spacing: .08em !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n    }\n    button:hover, .choice:hover, .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Choices panel \u2500\u2500 */\n    .choices-label {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 10px !important;\n      letter-spacing: .38em !important;\n      text-transform: uppercase !important;\n      color: var(--ink-dim) !important;\n      margin-bottom: 12px !important;\n    }\n    .choices { display: flex; flex-direction: column; gap: 8px; }\n\n    button.choice, .choice {\n      background: rgba(244,234,215,.60) !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n      padding: 12px 14px !important;\n      text-align: left !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, transform .2s !important;\n      display: flex !important;\n      align-items: flex-start !important;\n      gap: 10px !important;\n      width: 100% !important;\n      font-family: 'Cormorant Garamond', serif !important;\n    }\n    button.choice:hover, .choice:hover {\n      border-color: var(--ice) !important;\n      background: rgba(138,91,68,.12) !important;\n      transform: translateX(4px) !important;\n    }\n    button.choice.danger, .choice.danger {\n      border-color: rgba(192,57,43,.35) !important;\n    }\n    button.choice.danger:hover, .choice.danger:hover {\n      border-color: var(--warn) !important;\n      background: rgba(192,57,43,.08) !important;\n    }\n    button.choice.locked, .choice.locked {\n      opacity: .45 !important;\n      cursor: default !important;\n      border-color: rgba(138,91,68,.15) !important;\n    }\n    .choice-arrow {\n      color: var(--gold) !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 13px !important;\n      flex-shrink: 0 !important;\n      margin-top: 1px !important;\n    }\n    button.choice.danger .choice-arrow, .choice.danger .choice-arrow { color: var(--warn) !important; }\n    .choice-body {\n      font-size: 17px !important;\n      color: var(--ink) !important;\n      display: flex !important;\n      flex-direction: column !important;\n    }\n    .choice-sub {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 9.5px !important;\n      letter-spacing: .06em !important;\n      color: var(--ink-dim) !important;\n      margin-top: 3px !important;\n    }\n\n    /* \u2500\u2500 Stat bars \u2500\u2500 */\n    .stat-bar-wrap { background: rgba(0,0,0,.08) !important; border-radius: 0 !important; }\n    .stat-key { color: var(--ink-dim) !important; font-family: 'JetBrains Mono',monospace !important; font-size: .58rem !important; letter-spacing: .08em !important; }\n    .stat-val { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Combat panel \u2500\u2500 */\n    .combat-panel {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 16px !important;\n      position: relative;\n    }\n    .combat-panel::before {\n      content: \"\"; position: absolute; top: -1px; left: -1px;\n      width: 12px; height: 12px;\n      border-top: 1px solid var(--gold); border-left: 1px solid var(--gold);\n    }\n    .combat-enemy-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }\n    .combat-enemy-icon { font-size: 2.5rem; }\n    .combat-enemy-name {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 20px !important; font-weight: 600 !important;\n      letter-spacing: .04em !important; color: var(--ink) !important;\n    }\n    .combat-log {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-style: italic !important;\n      font-size: 15px !important;\n      line-height: 1.55 !important;\n      color: var(--ink-dim) !important;\n      background: rgba(0,0,0,.06) !important;\n      border: 1px solid rgba(138,91,68,.20) !important;\n      border-radius: 0 !important;\n      padding: 10px 12px !important;\n      min-height: 3rem !important;\n      margin-bottom: 10px !important;\n    }\n    .combat-log em     { color: var(--gold) !important; font-style: italic; }\n    .combat-log strong { color: var(--warn) !important; font-style: normal; }\n    .stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }\n    .stat-bar-wrap {\n      flex: 1; height: 5px !important;\n      background: rgba(0,0,0,.08) !important;\n      border-radius: 0 !important; overflow: hidden;\n    }\n    .stat-bar { height: 100%; transition: width .4s, background .4s; }\n    .stat-key {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .58rem !important; letter-spacing: .08em !important;\n      color: var(--ink-dim) !important; min-width: 44px;\n    }\n    .stat-val {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; color: var(--ink) !important;\n      min-width: 50px; text-align: right;\n    }\n\n    /* \u2500\u2500 Combat action buttons \u2500\u2500 */\n    .combat-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .6rem !important; letter-spacing: .06em !important;\n      color: var(--ink) !important;\n      background: rgba(244,234,215,.50) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: .45rem .5rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, background .2s, color .2s !important;\n      display: flex !important; align-items: center !important; justify-content: center !important;\n    }\n    .combat-btn:hover:not(:disabled) {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.10) !important;\n    }\n    .combat-btn:disabled { opacity: .35 !important; cursor: not-allowed !important; }\n\n    /* stat-grid inside HUD */\n    .stat-grid {\n      display: grid;\n      grid-template-columns: repeat(3,1fr);\n      gap: 4px; margin-top: 6px;\n    }\n\n    /* \u2500\u2500 End screen \u2500\u2500 */\n    .end-box {\n      background: rgba(244,234,215,.80) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      padding: 20px !important;\n      position: relative;\n    }\n    .end-box::before { content:\"\"; position:absolute; top:-1px; left:-1px; width:14px; height:14px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }\n    .end-box::after  { content:\"\"; position:absolute; bottom:-1px; right:-1px; width:14px; height:14px; border-bottom:1px solid var(--gold); border-right:1px solid var(--gold); }\n    .end-title {\n      font-family: 'Cormorant Garamond', serif !important;\n      font-size: 22px !important; font-weight: 600 !important;\n      letter-spacing: .06em !important;\n      color: var(--gold) !important;\n      margin-bottom: 10px !important;\n    }\n    .end-sub {\n      font-style: italic !important;\n      font-size: 16px !important;\n      color: var(--ink-dim) !important;\n      line-height: 1.55 !important;\n      margin-bottom: 14px !important;\n    }\n    .end-btn {\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: .75rem !important;\n      letter-spacing: .14em !important;\n      text-transform: uppercase !important;\n      color: var(--ink) !important;\n      background: transparent !important;\n      border: 1px solid rgba(138,91,68,.35) !important;\n      border-radius: 0 !important;\n      padding: .55rem 1.2rem !important;\n      cursor: pointer !important;\n      transition: border-color .2s, color .2s, background .2s !important;\n      text-decoration: none !important;\n      display: inline-block !important;\n    }\n    .end-btn:hover {\n      border-color: var(--gold) !important;\n      color: var(--gold) !important;\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n    /* \u2500\u2500 Items panel \u2500\u2500 */\n    #items-panel, [id$=\"-items-panel\"] {\n      background: rgba(244,234,215,.70) !important;\n      border: 1px solid rgba(138,91,68,.25) !important;\n      border-radius: 0 !important;\n    }\n    [id$=\"-items-panel\"] p,\n    [id$=\"-items-panel\"] span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 animate-in \u2500\u2500 */\n    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }\n    .animate-in { animation: fadeIn .4s ease forwards; }\n    @keyframes animateShake {\n      0%,100%{transform:translateX(0)}\n      20%,60%{transform:translateX(-4px)}\n      40%,80%{transform:translateX(4px)}\n    }\n    .animate-shake { animation: animateShake .35s ease; }\n\n        /* \u2500\u2500 System overlay messages \u2500\u2500 */\n    .sys-overlay, [id=\"sys-overlay\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      font-size: 11px !important;\n      letter-spacing: .08em !important;\n      border-radius: 4px !important;\n      box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .sys-overlay span, [id=\"sys-overlay\"] span,\n    .sys-overlay p, [id=\"sys-overlay\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Toast \u2500\u2500 */\n    .toast, [class*=\"toast\"] {\n      background: rgba(20,15,10,.98) !important;\n      border: 1px solid rgba(240,200,80,.70) !important;\n      color: #f0e0a0 !important;\n      font-family: 'JetBrains Mono', monospace !important;\n      border-radius: 4px !important;\n      font-size: 11px !important;\n      text-shadow: 0 0 2px rgba(0,0,0,0.5) !important;\n    }\n    .toast span, [class*=\"toast\"] span,\n    .toast p, [class*=\"toast\"] p {\n      color: #f0e0a0 !important;\n    }\n\n    /* \u2500\u2500 Loot window \u2500\u2500 */\n    #loot-window {\n      background: rgba(241,228,207,.96) !important;\n      border-color: rgba(138,91,68,.40) !important;\n      border-radius: 0 !important;\n      color: var(--ink) !important;\n    }\n    #loot-window p, #loot-window span { color: var(--ink) !important; }\n\n    /* \u2500\u2500 Stat window modal \u2500\u2500 */\n    #stat-window > div {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n    #stat-window * { color: var(--ink) !important; }\n    #stat-window [style*=\"background:rgba(200\"] {\n      background: rgba(138,91,68,.07) !important;\n    }\n\n    /* \u2500\u2500 Judge image \u2500\u2500 */\n    #judge-img {\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      filter: drop-shadow(0 0 20px rgba(138,91,68,.20)) !important;\n    }\n\n    /* \u2500\u2500 combat-over \u2500\u2500 */\n    [id$=\"-combat-over\"] { color: var(--ink) !important; }\n    [id$=\"-combat-over\"] button {\n      font-family: 'JetBrains Mono', monospace !important;\n      color: var(--ink) !important;\n      background: rgba(138,91,68,.07) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n      cursor: pointer !important;\n      transition: border-color .15s, color .15s !important;\n    }\n    [id$=\"-combat-over\"] button:hover { border-color: var(--gold) !important; color: var(--gold) !important; }\n\n    /* \u2500\u2500 Modals \u2500\u2500 */\n    [id$=\"-window\"] > div, .end-box {\n      background: rgba(244,234,215,.97) !important;\n      border: 1px solid rgba(138,91,68,.30) !important;\n      border-radius: 0 !important;\n    }\n\n    /* \u2500\u2500 Right panel zone cards \u2500\u2500 */\n    #right-panel div[onclick] { border-radius: 0 !important; }\n\n    /* \u2500\u2500 Spine \u2014 warm book gutter \u2500\u2500 */\n    .spine {\n      background: linear-gradient(90deg,\n        rgba(232,210,170,.0)   0%,\n        rgba(200,170,120,.25)  15%,\n        rgba(160,120,70,.55)   30%,\n        rgba(90,55,20,.88)     43%,\n        rgba(40,20,5,1.0)      50%,\n        rgba(90,55,20,.88)     57%,\n        rgba(160,120,70,.55)   70%,\n        rgba(200,170,120,.25)  85%,\n        rgba(232,210,170,.0)   100%\n      ) !important;\n      border-left:  none !important;\n      border-right: none !important;\n      position: relative; z-index: 5;\n      width: 32px !important;\n      min-width: 32px !important;\n      margin: 0 !important;\n      overflow: visible;\n      box-shadow: none !important;\n    }\n    .spine::before {\n      content: \"\";\n      position: absolute;\n      top: 0; bottom: 0; left: 50%;\n      width: 1px;\n      transform: translateX(-50%);\n      background: linear-gradient(180deg,\n        transparent 0%,\n        rgba(43,29,22,.9) 8%,\n        rgba(43,29,22,.9) 92%,\n        transparent 100%);\n      z-index: 2;\n    }\n    .spine::after {\n      content: \"\";\n      position: absolute;\n      top: 2px; bottom: 2px; left: -3px;\n      width: 3px;\n      background: repeating-linear-gradient(\n        180deg,\n        rgba(138,91,68,.08) 0px,\n        rgba(138,91,68,.03) 1px,\n        rgba(0,0,0,.10)     1px,\n        rgba(0,0,0,.04)     2px\n      );\n      border-left: 1px solid rgba(138,91,68,.12);\n      z-index: 1;\n    }\n\n    /* \u2500\u2500 Scrollbar \u2500\u2500 */\n    ::-webkit-scrollbar { width: 5px; }\n    ::-webkit-scrollbar-track { background: rgba(43,29,22,.20); }\n    ::-webkit-scrollbar-thumb { background: rgba(138,91,68,.35); }\n    ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }\n\n    /* \u2500\u2500 Page-flip decorative animation \u2500\u2500 */\n    /* \u2500\u2500 Page-flip animation \u2014 triggered on navigation only \u2500\u2500 */\n    @keyframes bookPageFlip {\n      0%   { transform: perspective(1200px) rotateY(0deg);    opacity: 0; }\n      6%   { opacity: .92; }\n      50%  { transform: perspective(1200px) rotateY(-180deg); opacity: .92; }\n      80%  { opacity: 0; }\n      100% { transform: perspective(1200px) rotateY(-180deg); opacity: 0; }\n    }\n    .page-flip-decorator {\n      position: absolute;\n      top: 0; right: 0;\n      width: 50%; height: 100%;\n      transform-origin: left center;\n      pointer-events: none;\n      z-index: 40;\n      opacity: 0;\n      background: linear-gradient(to left, rgba(241,228,207,.96) 0%, rgba(230,215,190,.92) 60%, rgba(215,196,165,.72) 100%);\n      box-shadow: -4px 0 20px rgba(0,0,0,.15);\n    }\n    .page-flip-decorator.playing {\n      animation: bookPageFlip 0.55s cubic-bezier(0.4,0,0.2,1) forwards;\n    }\n    .page-flip-decorator::after { content: \"\"; }\n  "
 
 function installModuleStyle() {
   document.querySelectorAll('style[data-book-module-style]').forEach(el => el.remove())
@@ -37,17 +34,17 @@ function installModuleStyle() {
     /* ── Parchment combat panel: kill all residual yellow/gold inline colors ── */
     #right-panel .combat-enemy-name { color: var(--ink) !important; }
     #right-panel .combat-log        { color: var(--ink-dim) !important; }
-    #right-panel .combat-panel [style*="color:#2b1d16"],
+    #right-panel .combat-panel [style*="color:#c8b96e"],
     #right-panel .combat-panel [style*="color: #c8b96e"],
-    #right-panel .combat-panel [style*="color:#2b1d16"],
+    #right-panel .combat-panel [style*="color:#e8d8a8"],
     #right-panel .combat-panel [style*="color: #e8d8a8"],
     #right-panel .combat-panel [style*="color:#a08858"],
     #right-panel .combat-panel [style*="color: #a08858"],
-    #right-panel .combat-panel [style*="color:#2b1d16"],
+    #right-panel .combat-panel [style*="color:#ffd700"],
     #right-panel .combat-panel [style*="color: #ffd700"],
-    #right-panel .combat-panel [style*="color:#2b1d16"],
+    #right-panel .combat-panel [style*="color:#c8b880"],
     #right-panel .combat-panel [style*="color: #c8b880"],
-    #right-panel .combat-panel [style*="color:#2b1d16"],
+    #right-panel .combat-panel [style*="color:#f0d060"],
     #right-panel .combat-panel [style*="color: #f0d060"] { color: var(--ink-dim) !important; }
   `
   document.head.appendChild(style)
@@ -404,8 +401,8 @@ export async function mountChapter1(__mountOptions = {}) {
   function triggerForcedEyeEncounter(encounterType, resumeNextId) {
     const isSwarm   = encounterType === 'watcher_eye_swarm'
     const enemyData = isSwarm
-      ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.webp' }
-      : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.webp' }
+      ? { name:"Watcher's Eye Swarm", icon:'👁', hp:140, atk:14, xp:180, loot:[{itemKey:'rune_aero',qty:1},{itemKey:'rune_terra',qty:1}], img:'../assets/boss/watcher_eye_swarm.png' }
+      : { name:"Watcher's Eye",       icon:'👁', hp:60,  atk:12, xp:80,  loot:[{itemKey:'rune_aqua',qty:1}],                               img:'../assets/boss/watcher_eye.png' }
 
     const alertLines = isSwarm ? [
       "The sky fractures in seven places at once.",
@@ -465,37 +462,37 @@ export async function mountChapter1(__mountOptions = {}) {
           display: flex; align-items: center; gap: .75rem; margin-bottom: .6rem;
         }
         #eye-encounter-overlay .combat-enemy-name {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .combat-log {
-          color: #2b1d16 !important;
-          background: rgba(0,0,0,.06) !important;
-          border-color: rgba(139,106,32,.2) !important;
+          color: #f0ede8 !important;
+          background: rgba(0,0,0,.3) !important;
+          border-color: rgba(200,184,128,.15) !important;
           font-family: 'IM Fell English', serif;
           font-style: italic;
           min-height: 2.5rem;
         }
         #eye-encounter-overlay .combat-log em {
-          color: #6b4a2a !important;
+          color: #8fd8f0 !important;
         }
         #eye-encounter-overlay .combat-log strong {
           color: #e05555 !important;
         }
         #eye-encounter-overlay .stat-key {
-          color: #5c4638 !important;
+          color: #c8bfb8 !important;
         }
         #eye-encounter-overlay .stat-val {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .stat-bar-wrap {
           background: rgba(255,255,255,.08) !important;
         }
         #eye-encounter-overlay p[style*="color:var(--ink)"],
         #eye-encounter-overlay span[style*="color:var(--ink)"] {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay .combat-btn {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
           background: rgba(200,184,128,.08) !important;
           border-color: rgba(200,184,128,.25) !important;
         }
@@ -510,10 +507,10 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-skill-slots-row"] p,
         #eye-encounter-overlay [id$="-skill-slots-row"] span,
         #eye-encounter-overlay [id$="-skill-slots-row"] div {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay [id$="-skill-slots-row"] button {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
           background: rgba(200,184,128,.08) !important;
           border: 1px solid rgba(200,184,128,.25) !important;
         }
@@ -524,13 +521,13 @@ export async function mountChapter1(__mountOptions = {}) {
         #eye-encounter-overlay [id$="-items-panel"] p,
         #eye-encounter-overlay [id$="-items-panel"] span,
         #eye-encounter-overlay [id$="-items-panel"] div {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay [id$="-items-panel"] button {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay #combat-over {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
         #eye-encounter-overlay #combat-over button {
           color: #1a1208 !important;
@@ -539,17 +536,8 @@ export async function mountChapter1(__mountOptions = {}) {
         }
         /* FORCED ENGAGEMENT label */
         #eye-combat-phase > p {
-          color: #2b1d16 !important;
+          color: #f0ede8 !important;
         }
-        /* Option B — Eye combat panel uses the light parchment look, so ALL
-           text inside it must be dark ink to stay readable. Scoped to the
-           combat panel only; the black alert-phase intro stays light. */
-        #eye-encounter-overlay .combat-panel,
-        #eye-encounter-overlay .combat-panel * {
-          color: #2b1d16 !important;
-        }
-        #eye-encounter-overlay .combat-panel .combat-log strong { color: #a02020 !important; }
-        #eye-encounter-overlay .combat-panel .combat-log em { color: #6b4a2a !important; }
         /* ─────────────────────────────────────────────────────────────
            ESCAPE PARCHMENT GLOBALS
            The page-level "p, li, span { color: var(--ink) !important }"
@@ -834,17 +822,9 @@ export async function mountChapter1(__mountOptions = {}) {
     if (nodeId === 'garage_b4_dorian_won' && nextId === 'garage_b4_sentinel_fight') {
       window._dorianDefeated = true
     }
-    // Early-attack path: beating Dorian at garage_b3 also takes him out of the
-    // shadows, so he must not lurk during the later Sentinel fight.
-    if (nextId === 'garage_b3_dorian_beaten') {
-      window._dorianDefeated = true
-    }
-
-    // If Dorian was already defeated, skip the post-Sentinel ambush scene
-    // (garage_b4_clear shows him springing back out). Route straight to the
-    // quiet aftermath instead so a dead Dorian doesn't reappear.
-    if (nextId === 'garage_b4_clear' && window._dorianDefeated) {
-      nextId = 'garage_b4_after_dorian'
+    // Reset when leaving the garage arc entirely
+    if (nextId === 'garage_b4_clear' || nextId === 'garage_b5_summit') {
+      window._dorianDefeated = false
     }
 
     const cur = NODES[nodeId]
@@ -854,6 +834,17 @@ export async function mountChapter1(__mountOptions = {}) {
     const updates = { current_node: 'ch1_' + nextId }
     if (cur?.xp)     { updates.xp = oldXp + cur.xp; player.xp = updates.xp }
     if (cur?.hpLoss) { currentHp = Math.max(1, currentHp - cur.hpLoss); updates.hp = currentHp }
+
+    // Record meeting Marcus on the street so the garage scene can adapt its
+    // text instead of re-introducing him word-for-word.
+    if (nextId === 'search_team') {
+      const log = player.alliance_log || []
+      if (!log.includes('met_marcus')) {
+        log.push('met_marcus')
+        player.alliance_log = log
+        updates.alliance_log = log
+      }
+    }
 
     // ── Moral updates ─────────────────────────────────────────────────
     // Two sources: (a) choice.outcome === 'attack' is a hard -20, (b)
@@ -919,7 +910,7 @@ export async function mountChapter1(__mountOptions = {}) {
     if (node.sysMsg) window.showSysOverlay(node.sysMsg)
 
     const stEl = document.getElementById('story-text')
-    stEl.textContent = node.text || ''
+    stEl.textContent = (typeof node.text === 'function' ? node.text(player) : node.text) || ''
     stEl.className   = nodeId === 'opening' ? 'story-text drop-cap' : 'story-text'
 
     // Watcher image — teaser on pre_boss nodes, full on boss node
@@ -929,7 +920,7 @@ export async function mountChapter1(__mountOptions = {}) {
       if (!watcherImg) {
         const img = document.createElement('img')
         img.id    = 'watcher-img'
-        img.src   = '../assets/boss/the_watcher.webp'
+        img.src   = '../assets/boss/the_watcher.png'
         img.alt   = 'The Watcher'
         img.style.cssText = 'width:100%;max-width:320px;display:block;margin:1.5rem auto 0;border-radius:4px;opacity:0;transition:opacity 1s;filter:' + (nodeId==='boss'?'none':'brightness(.7) saturate(0.6)')
         document.getElementById('story-text').insertAdjacentElement('afterend', img)
@@ -1059,7 +1050,7 @@ export async function mountChapter1(__mountOptions = {}) {
       <p class="choices-label">Choose a Zone</p>
       <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:1rem">
         ${node.locations.map(loc => {
-          const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.webp','loc_market':'../assets/zones/zone_frozen_market.webp','loc_tower':'../assets/zones/zone_glass_tower.webp'}
+          const zMap = {'loc_garage':'../assets/zones/zone_parking_garage.png','loc_market':'../assets/zones/zone_frozen_market.png','loc_tower':'../assets/zones/zone_glass_tower.png'}
           const zImg = zMap[loc.id]
           const unlocked = isZoneUnlocked(loc.id)
           const guardian = ZONE_GUARDIANS[loc.id]
@@ -1122,9 +1113,9 @@ export async function mountChapter1(__mountOptions = {}) {
 
   function renderFarmZone(panel, loc) {
     const zoneImgs = {
-      'loc_garage': '../assets/zones/zone_parking_garage.webp',
-      'loc_market': '../assets/zones/zone_frozen_market.webp',
-      'loc_tower':  '../assets/zones/zone_glass_tower.webp',
+      'loc_garage': '../assets/zones/zone_parking_garage.png',
+      'loc_market': '../assets/zones/zone_frozen_market.png',
+      'loc_tower':  '../assets/zones/zone_glass_tower.png',
     }
     const zoneImg = zoneImgs[loc.id]
 
@@ -1142,32 +1133,32 @@ export async function mountChapter1(__mountOptions = {}) {
             return `<span style="font-family:'Share Tech Mono',monospace;font-size:.52rem;color:var(--ink-dim)">${label} ${pct}%</span>`
           }).join(' · ')
           const eImgs = {
-            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.webp',
-            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.webp',
-            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.webp',
-            'Static Crawler':         '../assets/enemy/enemy_static_crawler.webp',
-            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.webp',
-            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.webp',
-            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.webp',
-            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.webp',
-            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.webp',
-            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.webp',
-            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.webp',
-            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.webp',
-            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.webp',
-            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.webp',
-            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.webp',
-            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.webp',
-            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.webp',
-            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.webp',
-            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.webp',
-            'Dorian':                 '../assets/npc/dorian_normal.webp',
-            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.webp',
-            "Watcher's Eye":          '../assets/boss/watcher_eye.webp',
-            "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.webp',
-            'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.webp',
-            'The Surveyor':           '../assets/boss/the_surveyor.webp',
-            'The Unseen':             '../assets/boss/the_unseen.webp',
+            'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+            'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+            'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+            'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+            'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+            'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+            'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+            "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+            'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+            'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+            'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+            'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+            'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+            'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+            'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+            'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+            'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+            'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+            'Dorian':                 '../assets/npc/dorian_normal.png',
+            'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+            "Watcher's Eye":          '../assets/boss/watcher_eye.png',
+            "Watcher's Eye Swarm":    '../assets/boss/watcher_eye_swarm.png',
+            'Sentinel of the First Eye': '../assets/boss/sentinel_of_the_first_eye.png',
+            'The Surveyor':           '../assets/boss/the_surveyor.png',
+            'The Unseen':             '../assets/boss/the_unseen.png',
           }
           const eImg = eImgs[e.name]
           return `<div onclick="fightFarmEnemy(${i})"
@@ -1420,7 +1411,7 @@ export async function mountChapter1(__mountOptions = {}) {
         <div class="end-box">
           <p style="font-family:'Share Tech Mono',monospace;font-size:.5rem;color:var(--ink-dim);letter-spacing:.1em;margin-bottom:.4rem">${beatIdx + 1} / ${GARAGE_BEATS.length}</p>
           <p class="end-title" style="font-size:.95rem;margin-bottom:.6rem">${beat.title}</p>
-          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#2b1d16;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
+          <div id="story-text" style="font-family:'IM Fell English',serif;font-style:italic;font-size:.8rem;color:#f0ede8;line-height:1.65;margin-bottom:1rem;white-space:pre-line">${beat.text}</div>
           <button class="end-btn" id="beat-btn" style="display:block;width:100%">
             ${isLast ? '🔧 Enter Garage ›' : 'Continue ›'}
           </button>
@@ -1580,36 +1571,36 @@ export async function mountChapter1(__mountOptions = {}) {
         <div class="combat-enemy-row">
           ${(()=>{
             const EIMGS = {
-              'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.webp',
-              'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.webp',
-              'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.webp',
-              'Static Crawler':         '../assets/enemy/enemy_static_crawler.webp',
-              'Static Crawlers':        '../assets/enemy/enemy_static_crawler.webp',
-              'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.webp',
-              'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.webp',
-              'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.webp',
-              "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.webp',
-              'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.webp',
-              'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.webp',
-              'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.webp',
-              'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.webp',
-              'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.webp',
-              'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.webp',
-              'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.webp',
-              'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.webp',
-              'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.webp',
-              'System Enforcer':        '../assets/enemy/enemy_system_enforcer.webp',
-              'Dorian':                 '../assets/npc/dorian_normal.webp',
-              'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.webp',
-              "Watcher's Eye":              '../assets/boss/watcher_eye.webp',
-              "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.webp',
-              'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.webp',
-              'The Surveyor':               '../assets/boss/the_surveyor.webp',
-              'The Unseen':                 '../assets/boss/the_unseen.webp',
+              'Glitch Rat':              '../assets/enemy/enemy_glitch_rat.png',
+              'Glitch Rats x2':         '../assets/enemy/enemy_glitch_rat.png',
+              'Garage Glitch Rats':     '../assets/enemy/enemy_glitch_rat.png',
+              'Static Crawler':         '../assets/enemy/enemy_static_crawler.png',
+              'Static Crawlers':        '../assets/enemy/enemy_static_crawler.png',
+              'Static Crawlers x5':     '../assets/enemy/enemy_static_crawler.png',
+              'Pixel Shard':            '../assets/enemy/enemy_pixel_shard.png',
+              'Flicker Hound':          '../assets/enemy/enemy_flicker_hound.png',
+              "Lena's Flicker Hounds":  '../assets/enemy/enemy_flicker_hound.png',
+              'Pixel Drone':            '../assets/enemy/enemy_pixel_drone.png',
+              'Jury-Rigged Pixel Drones':'../assets/enemy/enemy_jury_rigged_pixel_drones.png',
+              'Fracture Wolf':          '../assets/enemy/enemy_fracture_wolf.png',
+              'Fracture Wolves':        '../assets/enemy/enemy_fracture_wolf.png',
+              'Market Creature Cluster':'../assets/enemy/enemy_market_creature_cluster_wolf.png',
+              'Fragment Cluster':       '../assets/enemy/enemy_fragment_cluster.png',
+              'Corrupted Sentry':       '../assets/enemy/enemy_corrupted_sentry.png',
+              'Lobby Corrupted Sentries':'../assets/enemy/enemy_corrupted_sentry.png',
+              'Void Sentinel':          '../assets/enemy/enemy_void_sentinel.png',
+              'System Enforcer':        '../assets/enemy/enemy_system_enforcer.png',
+              'Dorian':                 '../assets/npc/dorian_normal.png',
+              'Dorian (Betrayal)':      '../assets/npc/dorian_betrayal.png',
+              "Watcher's Eye":              '../assets/boss/watcher_eye.png',
+              "Watcher's Eye Swarm":        '../assets/boss/watcher_eye_swarm.png',
+              'Sentinel of the First Eye':  '../assets/boss/sentinel_of_the_first_eye.png',
+              'The Surveyor':               '../assets/boss/the_surveyor.png',
+              'The Unseen':                 '../assets/boss/the_unseen.png',
             }
-            if (isBoss) return '<img src=\'../assets/boss/the_watcher.webp\' alt=\'The Watcher\' style=\'width:120px;height:120px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
+            if (isBoss) return '<img src=\'../assets/boss/the_watcher.png\' alt=\'The Watcher\' style=\'width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 12px #00ffe740)\'>'
             const src = EIMGS[enemy.name]
-            if (src) return `<img src="${src}" alt="${enemy.name}" style="width:110px;height:110px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
+            if (src) return `<img src="${src}" alt="${enemy.name}" style="width:80px;height:80px;object-fit:contain;border-radius:6px;flex-shrink:0;filter:drop-shadow(0 0 8px rgba(0,0,0,.7))" onerror="this.outerHTML='<span class=\'combat-enemy-icon\'>${enemy.icon}</span>'">`
             return `<span class="combat-enemy-icon">${enemy.icon}</span>`
           })()}
           <div style="flex:1">
@@ -1677,9 +1668,6 @@ export async function mountChapter1(__mountOptions = {}) {
 
           <!-- Class skills — only renders if player has unlocked active-type skills -->
           <div id="${cid}-class-skills-row" style="margin-bottom:4px"></div>
-
-          <!-- Elemental keystones — auto-renders unlocked keystones as buttons -->
-          <div id="${cid}-keystone-row" style="margin-bottom:4px"></div>
 
           <!-- Utility row -->
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
@@ -1929,11 +1917,8 @@ export async function mountChapter1(__mountOptions = {}) {
           }
 
           if (isBoss) {
-            // Chapter 2 is NOT unlocked here — the drive (vehicle.js) is the real
-            // gate and unlocks the chapter on arrival. The boss only unlocks the
-            // DRIVE so the Drive button appears; finishing the drive unlocks Ch2.
-            const dru = player.drives_unlocked || []
-            if (!dru.includes(2)) { dru.push(2); updates.drives_unlocked = dru }
+            const unlocked = player.chapters_unlocked || [1]
+            if (!unlocked.includes(2)) updates.chapters_unlocked = [...unlocked, 2]
             // ── 1 SP for boss kill — only once ever ──
             const spKey = 'watcher_sp_claimed'
             const currentDefeated = updates.defeated_bosses || player.defeated_bosses || []
@@ -2099,8 +2084,6 @@ export async function mountChapter1(__mountOptions = {}) {
     Object.assign(BATTLE_SKILLS, NOTABLE_SKILLS)
 
     // ── Combat status effects ────────────────────────────────
-    let ksCooldowns = {}   // elemental keystone cooldowns { id: turnsLeft }
-    let turnCount = 0      // for Slow Bloom scaling
     let statusEffects = {
       playerATKBonus:  0,
       playerDEFBonus:  0,
@@ -2261,48 +2244,6 @@ export async function mountChapter1(__mountOptions = {}) {
       row.innerHTML = html
     }
 
-    // ── Elemental keystone action buttons (Ch1) ───────────────────────────
-    function renderKeystones() {
-      const row = $('keystone-row')
-      if (!row) return
-      let list = []
-      try { list = getUnlockedKeystones(player, ksCooldowns) } catch(_e) { list = [] }
-      if (!list.length) { row.innerHTML = ''; return }
-      row.innerHTML = '<div style="display:flex;gap:3px;flex-wrap:wrap">'
-        + list.map(k => {
-            const dim = k.available ? '' : 'opacity:.4;cursor:not-allowed;'
-            const cdTxt = k.available ? '' : ' ('+k.cooldown+')'
-            return '<button class="combat-btn" data-keystone="'+k.id+'" '+(k.available?'':'disabled ')
-              + 'style="font-size:.6rem;border-color:'+k.color+'99;color:'+k.color+';'+dim+'" '
-              + 'title="'+(k.desc||'').replace(/"/g,'&quot;')+'">✦ '+k.label+cdTxt+'</button>'
-          }).join('')
-        + '</div>'
-      row.querySelectorAll('[data-keystone]').forEach(btn => {
-        btn.addEventListener('click', () => useKeystoneLocal(btn.dataset.keystone))
-      })
-    }
-
-    async function useKeystoneLocal(id) {
-      if (over) return
-      if ((ksCooldowns[id]||0) > 0) return
-      let res
-      try {
-        res = applyKeystone(id, player, statusEffects, {
-          enemyHp, maxEnemyHp, currentHp, maxPlayerHp, playerATK: playerATK(), playerDEF: playerDEF(),
-        })
-      } catch(_e) { return }
-      const msgs = [...(res.messages||[])]
-      if (res.enemyDamage > 0) enemyHp = Math.max(0, enemyHp - res.enemyDamage)
-      if (res.healPlayer  > 0) currentHp = Math.min(maxPlayerHp, currentHp + res.healPlayer)
-      if (res.setStatus) for (const k of Object.keys(res.setStatus)) statusEffects[k] = res.setStatus[k]
-      ksCooldowns[id] = res.cooldown || 3
-      syncBars()
-      log(msgs.join('<br>'))
-      if (enemyHp <= 0) { await endCombat('win'); return }
-      if (res.consumesTurn) { setButtons(false); await doTurn('keystone_pass', null) }
-      else { renderKeystones() }
-    }
-
     // ── Class skill action buttons (Ch1 mirror of Ch2 renderClassSkills) ──
     // Renders a row of active class skills under the regular skill row.
     // Hidden if the player has no active class or no active-type skills.
@@ -2453,10 +2394,6 @@ export async function mountChapter1(__mountOptions = {}) {
       if (over) return
       setButtons(false)
       defending = false
-      turnCount++
-      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_aggr_3') && (playerAction==='defend'||playerAction==='keystone_pass')){
-        statusEffects.cfx_heldBreathStacks = Math.min(3, (statusEffects.cfx_heldBreathStacks||0)+1)
-      }
       const luckBonus  = Math.floor(eqLuck / 2)
       const unlocked   = player.skills_unlocked || []
 
@@ -2498,8 +2435,6 @@ export async function mountChapter1(__mountOptions = {}) {
       Object.keys(statusEffects.skillCooldowns).forEach(k => {
         if (statusEffects.skillCooldowns[k] > 0) statusEffects.skillCooldowns[k]--
       })
-      Object.keys(ksCooldowns).forEach(k => { if (ksCooldowns[k] > 0) ksCooldowns[k]-- })
-      ;['cfx_damageHalveTurns','cfx_fireReflectTurns','cfx_poisonReflectTurns','cfx_ironMaidenTurns','cfx_dodgeBuffTurns','cfx_untargetableTurns','cfx_worldTreeTurns'].forEach(k=>{ if((statusEffects[k]||0)>0) statusEffects[k]-- })
 
       // ── FF-Style Turn Order ───────────────────────────────────
       // Base speed comparison with jitter. Faster player goes first.
@@ -2550,11 +2485,7 @@ export async function mountChapter1(__mountOptions = {}) {
         // Wind dodge: Lv1 +20%, Lv10 +35%
         const windLv = unlocked.includes('wind_passive_dodge') ? _skillLvGlobal('wind_passive_dodge') : 0
         const windBonus = windLv > 0 ? 0.20 + (windLv - 1) * (0.15 / 9) : 0
-        // Elemental tree dodge: Misdirection/Drift/Tailwind nodes + Nightshade/Eye keystone buff.
-        let elDodge = (()=>{try{return elRaw(player,'dodge_chance_pct')}catch(_e){return 0}})()/100
-        if((statusEffects.cfx_dodgeBuffTurns||0) > 0) elDodge += 0.50
-        if((statusEffects.cfx_untargetableTurns||0) > 0) return 1
-        return Math.min(0.85, base + windBonus + elDodge)
+        return Math.min(0.55, base + windBonus)
       }
       function calcEnemyDodge() {
         const speedAdv = Math.max(0, eSPD - pSPD)
@@ -2568,9 +2499,6 @@ export async function mountChapter1(__mountOptions = {}) {
 
       // ── Player action ─────────────────────────────────────
       function resolvePlayerAction() {
-        // keystone_pass: the keystone already resolved; player takes no action,
-        // the enemy still gets its turn. Just return so no strike/skill fires.
-        if (playerAction === 'keystone_pass') return
         // Enemy dodge check (applies to attack actions only)
         const enemyDodged = (playerAction === 'strike' || playerAction === 'heavy') && Math.random() < calcEnemyDodge()
         if (enemyDodged) {
@@ -2608,60 +2536,22 @@ export async function mountChapter1(__mountOptions = {}) {
           const _bonusFlatDmg  = (typeof _clsAtk.bonusFlatDmg  === 'number') ? _clsAtk.bonusFlatDmg  : 0
 
           let dmg = Math.max(1, Math.round((baseATK + roll) * (backstab ? bsMult : 1) * flickerMult * _dmgMult + _bonusFlatDmg))
-          // Elemental tree: basic strike is physical (no element skill in Ch1),
-          // so damage% doesn't apply, but crit chance/damage from the trees do.
-          let _elCritCh = 0, _elCritDmg = 0
-          try { _elCritCh = elCritChance(player); _elCritDmg = elCritDmg(player) } catch(_e){}
-          const _totalCritChance = _critChanceAdd + _elCritCh
           let wasCrit = false
-          if (_totalCritChance > 0 && Math.random() < _totalCritChance) {
+          if (_critChanceAdd > 0 && Math.random() < _critChanceAdd) {
             wasCrit = true
-            dmg = Math.round(dmg * (1.5 + _elCritDmg))
-            messages.push('🎯 Critical strike!')
+            dmg = Math.round(dmg * 1.5)
+            messages.push('⚖ Judgment Chain — critical strike.')
             if (_defIgnoreFrac > 0 && (enemy.def || 0) > 0) {
               const defBonus = Math.round((enemy.def || 0) * _defIgnoreFrac)
               dmg += defBonus
               messages.push(`⚖ Executioner's Eye — pierced ${defBonus} DEF.`)
             }
           }
-          // ── Elemental tree offensive procs (ported from Ch2) ──
-          const _hasEl = id => Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes(id)
-          const _attEl = el => (player.attuned_element||player.element) === el
-          // Armor Pierce (Ferro): ignore a % of enemy DEF.
-          { const dip=(()=>{try{return elRaw(player,'def_ignore_pct')}catch(_e){return 0}})(); if(dip>0 && (enemy.def||0)>0){ const back=Math.round((enemy.def||0)*Math.min(0.9,dip/100)); if(back>0) dmg+=back } }
-          // Fault Line (Terra): ignore DEF per Stoneborn stack.
-          if(_hasEl('earth_aggr_3') && (statusEffects.cfx_stonebornStacks||0)>0 && (enemy.def||0)>0){ const ps=_attEl('earth')?0.30:0.15; const back=Math.round((enemy.def||0)*Math.min(0.9,ps*statusEffects.cfx_stonebornStacks)); if(back>0){ dmg+=back; messages.push('🪨 Fault Line — pierced '+back+' DEF.') } }
-          // Tailwind (Aero): next attack after dodge deals double.
-          if(statusEffects.cfx_tailwindNext){ dmg=Math.round(dmg*2); statusEffects.cfx_tailwindNext=false; messages.push('💨 Tailwind — twice as hard!') }
-          // Tremor (Terra): bonus damage from DEF.
-          { const gdp=(()=>{try{return elRaw(player,'guard_damage_pct')}catch(_e){return 0}})(); if(gdp>0){ const tb=Math.round(playerDEF()*(gdp/100)); if(tb>0){ dmg+=tb; messages.push('🪨 Tremor +'+tb+'.') } } }
-          // Slow Bloom (Flora): scale with turns elapsed.
-          if(_hasEl('plant_aggr_3')){ const per=_attEl('plant')?0.10:0.05; const cap=0.50+(()=>{try{return elRaw(player,'slow_bloom_cap_pct')}catch(_e){return 0}})()/100; const grow=Math.min(cap,per*(turnCount||0)); if(grow>0){ const gb=Math.round(dmg*grow); if(gb>0) dmg+=gb } }
-          // Held Breath (Aero): spend stored stacks.
-          if((statusEffects.cfx_heldBreathStacks||0)>0){ const per=0.25+(()=>{try{return elRaw(player,'held_breath_dmg_pct')}catch(_e){return 0}})()/100; const hb=Math.round(dmg*per*statusEffects.cfx_heldBreathStacks); if(hb>0){ dmg+=hb; messages.push('💨 Held Breath +'+hb+'!') } statusEffects.cfx_heldBreathStacks=0 }
-          // Unseen (Shadow): spend stealth stacks.
-          if((statusEffects.cfx_unseenStacks||0)>0){ const per=(()=>{try{return elRaw(player,'unseen_dmg_pct')}catch(_e){return 12}})()||12; const ub=Math.round(dmg*(per/100)*statusEffects.cfx_unseenStacks); if(ub>0){ dmg+=ub; messages.push('🌑 Unseen strike +'+ub+'.') } statusEffects.cfx_unseenStacks=0 }
-          // No Witnesses keystone: guaranteed crit.
-          if(statusEffects.cfx_guaranteedCrit){ dmg=Math.round(dmg*1.5); statusEffects.cfx_guaranteedCrit=false; messages.push('🌑 Guaranteed crit!') }
           const oldEnemyHp = enemyHp
           enemyHp          = Math.max(0, enemyHp - dmg)
           messages.push(backstab
             ? '⚡ Backstab Lv' + bsLv + '! You strike for <strong>' + dmg + '</strong> (' + Math.round(bsMult*10)/10 + '× dmg)!'
             : 'You strike for <strong>' + dmg + '</strong>.' + (ignoreDEF ? ' (DEF ignored)' : ''))
-
-          // ── Elemental tree post-hit procs (Ch1) ──
-          // Lifesteal (Flora): heal a share of damage dealt.
-          { let ls=(()=>{try{return elRaw(player,'lifesteal_pct')}catch(_e){return 0}})()/100; if((statusEffects.cfx_bloodflowerTurns||0)>0){ ls=Math.max(ls,statusEffects.cfx_bloodflowerPct||0.5); statusEffects.cfx_bloodflowerTurns-- } if(ls>0 && dmg>0){ const h=Math.round(dmg*ls); if(h>0){ currentHp=Math.min(maxPlayerHp,currentHp+h); messages.push('🌿 Lifesteal +'+h+' HP.') } } }
-          // Ember Memory (Ignis) stack application.
-          if(_hasEl('fire_aggr_3') || (statusEffects.cfx_emberStepTurns||0)>0){ const maxS=3+(()=>{try{return elRaw(player,'ember_memory_max_stacks')}catch(_e){return 0}})(); let add=0; if((statusEffects.cfx_emberStepTurns||0)>0){ add+=_attEl('fire')?2:1; statusEffects.cfx_emberStepTurns-- } if(_hasEl('fire_aggr_3') && Math.random()<(_attEl('fire')?0.30:0.15)) add+=1; if(add>0){ statusEffects.cfx_emberStacks=Math.min(maxS,(statusEffects.cfx_emberStacks||0)+add); messages.push('🔥 Ember Memory ('+statusEffects.cfx_emberStacks+').') } }
-          // Long Decay (Venin) stack application.
-          if(_hasEl('poison_aggr_3') || (statusEffects.cfx_plagueFangTurns||0)>0){ const maxS=3+(()=>{try{return elRaw(player,'long_decay_max_stacks')}catch(_e){return 0}})(); let add=0; if((statusEffects.cfx_plagueFangTurns||0)>0){ add+=_attEl('poison')?2:1; statusEffects.cfx_plagueFangTurns-- } if(_hasEl('poison_aggr_3') && Math.random()<(_attEl('poison')?0.30:0.15)) add+=1; if(add>0){ statusEffects.cfx_longDecayStacks=Math.min(maxS,(statusEffects.cfx_longDecayStacks||0)+add); messages.push('☠ Long Decay ('+statusEffects.cfx_longDecayStacks+').') } }
-          // Unseen (Shadow) stack gain.
-          if(_hasEl('shadow_aggr_3') && Math.random()<(_attEl('shadow')?0.30:0.15)){ const maxS=3+(()=>{try{return elRaw(player,'unseen_max_stacks')}catch(_e){return 0}})(); statusEffects.cfx_unseenStacks=Math.min(maxS,(statusEffects.cfx_unseenStacks||0)+1); messages.push('🌑 Unseen ('+statusEffects.cfx_unseenStacks+').') }
-          // Second Strike (Volt).
-          if(_hasEl('lightning_aggr_3') && Math.random()<(_attEl('lightning')?0.30:0.15)){ const bonus=(()=>{try{return elRaw(player,'second_strike_dmg_pct')}catch(_e){return 0}})()/100; const d2=Math.max(1,Math.round(playerATK()*(0.5+bonus))); enemyHp=Math.max(0,enemyHp-d2); messages.push('⚡ Second Strike — <strong>'+d2+'</strong>!') }
-          // Landslide (Terra) stun chance.
-          { const scp=(()=>{try{return elRaw(player,'stun_chance_pct')}catch(_e){return 0}})(); if(scp>0 && Math.random()<scp/100){ statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1); messages.push('🪨 Landslide — enemy stunned!') } }
 
           // ── Class skill: post-attack hook (deferred damage, hit counters) ─
           const _clsPost = ClsCombat.onPlayerAttackPost(player, statusEffects, enemy, dmg, wasCrit)
@@ -2795,10 +2685,6 @@ export async function mountChapter1(__mountOptions = {}) {
         } else if (playerAction === 'defend') {
           defending = true
           messages.push('You brace — defense doubled this turn.')
-          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_def_3')){
-            statusEffects.cfx_stonebornStacks = Math.min(3, (statusEffects.cfx_stonebornStacks||0)+1)
-            messages.push('🪨 Stoneborn — you harden ('+statusEffects.cfx_stonebornStacks+').')
-          }
           // Absorption: heal 15 HP if charged
           if (statusEffects.absorptionHeal) {
             const healAmt = statusEffects.absorptionHeal
@@ -2859,9 +2745,6 @@ export async function mountChapter1(__mountOptions = {}) {
           const sc = skillScale(skillKey)
           const skLv = getSkillLevel(skillKey)
           if (skLv < 10) messages.push('Skill Lv ' + skLv + ' — power ' + Math.round(sc*100) + '%')
-          // Elemental tree: damage multiplier for this skill's element.
-          let _elMult = 1
-          try { _elMult = elDamageMult(player, sk.el || 'physical') } catch(_e){}
 
           if (sk.fn === 'shadowStep') {
             statusEffects.ignoreEnemyDEF = true
@@ -2872,13 +2755,13 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.rockArmorTurns = 2
             messages.push('🪨 Rock Armor Lv' + skLv + ' — +' + defBonus + ' DEF for 2 turns!')
           } else if (sk.fn === 'earthquake') {
-            const dmg = Math.max(5, Math.round(playerATK() * 2 * sc * _elMult))
+            const dmg = Math.max(5, Math.round(playerATK() * 2 * sc))
             enemyHp   = Math.max(0, enemyHp - dmg)
             statusEffects.enemyStunTurns = 1
             messages.push('🌍 Earthquake Lv' + skLv + '! <strong>' + dmg + '</strong> dmg — stunned!')
           } else if (sk.fn === 'fireBlast') {
             const def = Math.floor((enemy.def||0) * 0.5)
-            const dmg = Math.max(1, Math.round(((25 * sc + playerATK()) - def) * _elMult))
+            const dmg = Math.max(1, Math.round((25 * sc + playerATK()) - def))
             enemyHp   = Math.max(0, enemyHp - dmg)
             messages.push('🔥 Fire Blast Lv' + skLv + ' — <strong>' + dmg + '</strong> (50% DEF ignored)!')
           } else if (sk.fn === 'infernoZone') {
@@ -2895,7 +2778,7 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.divineBarrierReflect = true
             messages.push('✨ Divine Barrier Lv' + skLv + ' — invulnerable this turn! Damage reflected.')
           } else if (sk.fn === 'lightningStrike') {
-            const dmg = Math.round((30 + playerATK() * 0.5) * sc * _elMult)
+            const dmg = Math.round((30 + playerATK() * 0.5) * sc)
             enemyHp   = Math.max(0, enemyHp - dmg)
             messages.push('⚡ Lightning Strike Lv' + skLv + ' — <strong>' + dmg + '</strong> (ignores shields)!')
           } else if (sk.fn === 'thunderstorm') {
@@ -3093,57 +2976,6 @@ export async function mountChapter1(__mountOptions = {}) {
             statusEffects.playerATKBonus = (statusEffects.playerATKBonus || 0) + atkBoost
             statusEffects.ignoreEnemyDEF = true
             messages.push('☠ Reaper Form — ATK +' + atkBoost + ', next attack ignores DEF!')
-          } else if (sk.fn === 'resonantBolt') {
-            const dmg = Math.round((30 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('✨ Resonant Bolt Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'standingChord') {
-            const dmg = Math.round((45 + playerATK()*0.5) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('✨ Standing Chord Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'shadowLance') {
-            const dmg = Math.round((28 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('🌑 Shadow Lance Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'venomSpit') {
-            const dmg = Math.round((24 + playerATK()*0.35) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            statusEffects.cfx_longDecayStacks = Math.min(3, (statusEffects.cfx_longDecayStacks||0)+1)
-            messages.push('☠ Venom Spit Lv'+skLv+' — <strong>'+dmg+'</strong> + Long Decay!')
-          } else if (sk.fn === 'waterJet') {
-            const dmg = Math.round((28 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('💧 Water Jet Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'stoneThrow') {
-            const dmg = Math.round((26 + playerATK()*0.4 + playerDEF()*0.3) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('🪨 Stone Throw Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'thornVolley') {
-            const dmg = Math.round((26 + playerATK()*0.4) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            const h = Math.round(dmg*0.2); currentHp = Math.min(maxPlayerHp, currentHp + h)
-            messages.push('🌿 Thorn Volley Lv'+skLv+' — <strong>'+dmg+'</strong> (+'+h+' HP)!')
-          } else if (sk.fn === 'bladeArc') {
-            const pierce = Math.round((enemy.def||0)*0.25)
-            const dmg = Math.round((28 + playerATK()*0.4 + pierce) * sc * _elMult); enemyHp = Math.max(0, enemyHp - dmg)
-            messages.push('⚙ Blade Arc Lv'+skLv+' — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'cinderstorm') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_emberStacks=Math.min(3,(statusEffects.cfx_emberStacks||0)+1); messages.push('🔥 Cinderstorm — <strong>'+dmg+'</strong> + Ember!')
-          } else if (sk.fn === 'maelstrom') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('💧 Maelstrom — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'tempest') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); if(Math.random()<0.4){statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1);messages.push('⚡ Tempest — <strong>'+dmg+'</strong> stunned!')}else messages.push('⚡ Tempest — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'resonanceBurst') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('✨ Resonance Burst — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'eclipse') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_unseenStacks=Math.min(3,(statusEffects.cfx_unseenStacks||0)+2); messages.push('🌑 Eclipse — <strong>'+dmg+'</strong> + Unseen!')
-          } else if (sk.fn === 'tectonicCrush') {
-            const dmg = Math.round((55+playerATK()*0.4+playerDEF()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.enemyStunTurns=Math.max(statusEffects.enemyStunTurns||0,1); messages.push('🪨 Tectonic Crush — <strong>'+dmg+'</strong> stunned!')
-          } else if (sk.fn === 'wildCyclone') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('💨 Wild Cyclone — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'carnivoreBloom') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); const h=Math.round(dmg*0.5); currentHp=Math.min(maxPlayerHp,currentHp+h); messages.push('🌿 Carnivore Bloom — <strong>'+dmg+'</strong> (+'+h+' HP)!')
-          } else if (sk.fn === 'annihilate') {
-            const dmg = Math.round((55+playerATK()*0.6)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('⚙ Annihilate — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'pandemic') {
-            const dmg = Math.round((55+playerATK()*0.5)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); statusEffects.cfx_longDecayStacks=Math.min(3,(statusEffects.cfx_longDecayStacks||0)+2); messages.push('☠ Pandemic — <strong>'+dmg+'</strong> + Long Decay!')
-          } else if (sk.fn === 'blightNova') {
-            const dmg = Math.round((38+playerATK()*0.45)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('☠ Blight Nova — <strong>'+dmg+'</strong>!')
-          } else if (sk.fn === 'umbralBurst') {
-            const dmg = Math.round((38+playerATK()*0.45)*sc*_elMult); enemyHp=Math.max(0,enemyHp-dmg); messages.push('🌑 Umbral Burst — <strong>'+dmg+'</strong>!')
           }
         }
       }
@@ -3168,18 +3000,8 @@ export async function mountChapter1(__mountOptions = {}) {
         if (statusEffects.ghostStep  || statusEffects.umbralVeil) dodgeChance = Math.max(dodgeChance, 0.15)
         if (statusEffects.nightshroud) { dodgeChance = 1.0; statusEffects.nightshroud = false }
 
-        // Parry (Ferro): independent chance to negate the attack and counter.
-        let _parried = false
-        { const pc=(()=>{try{return elRaw(player,'parry_chance_pct')}catch(_e){return 0}})()/100
-          if(pc>0 && Math.random()<pc){ _parried=true; const cnt=Math.max(1,Math.round(playerATK()*0.75)); enemyHp=Math.max(0,enemyHp-cnt); messages.push('⚙ Parry! You counter for <strong>'+cnt+'</strong>.') } }
-        if(_parried) dodgeChance = 1.0   // treat as a full dodge for damage negation
-
         if (Math.random() < dodgeChance) {
           messages.push('You <em>dodge</em> the attack!')
-          // Tailwind (Aero): on dodge, next attack deals double.
-          if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('wind_def_3')){ statusEffects.cfx_tailwindNext=true }
-          // Elemental: heal on dodge (Nightmend/Float nodes).
-          { const hod=(()=>{try{return elRaw(player,'hp_on_dodge')}catch(_e){return 0}})(); if(hod>0){ currentHp=Math.min(maxPlayerHp,currentHp+hod); messages.push('🌑 +'+hod+' HP (dodge).') } }
           // Flicker: next strike doubles
           if (statusEffects.flicker) { statusEffects.flickerReady = true }
           // Ghost Step / Umbral Veil: counter on dodge
@@ -3203,13 +3025,6 @@ export async function mountChapter1(__mountOptions = {}) {
         const eSPDReduced = (statusEffects.enemySPDReduction || 0)
         const totalDEF = playerDEF() + (statusEffects.playerDEFBonus||0)
         let eDmg       = Math.max(0, Math.round((enemy.atk * eATKMult + Math.floor(Math.random()*4) - totalDEF) * defMult))
-        // Elemental tree: resistance reduces incoming damage; keystone shields halve it.
-        try { eDmg = Math.max(0, Math.round(eDmg * elResistMult(player))) } catch(_e){}
-        if ((statusEffects.cfx_damageHalveTurns||0) > 0) { eDmg = Math.max(0, Math.round(eDmg * 0.5)) }
-        if ((statusEffects.cfx_stonebornStacks||0) > 0 && eDmg > 0) {
-          const perStack = ((player.attuned_element||player.element)==='earth') ? 0.16 : 0.08
-          eDmg = Math.max(0, Math.round(eDmg * (1 - Math.min(0.6, perStack*statusEffects.cfx_stonebornStacks))))
-        }
 
         // Water shield absorbs
         if (statusEffects.waterShield > 0 && eDmg > 0) {
@@ -3227,16 +3042,6 @@ export async function mountChapter1(__mountOptions = {}) {
           for (const m of _clsHit.messages) messages.push(m)
           eDmg = Math.round(eDmg * (_clsHit.dmgMult || 1))
           if (_clsHit.reflectAmount > 0) enemyHp = Math.max(0, enemyHp - _clsHit.reflectAmount)
-        }
-        // Elemental tree: reflect a share of damage taken (passive + keystone + metal).
-        if (eDmg > 0) {
-          let rf = 0
-          try { rf = elReflect(player) } catch(_e){}
-          let mr = 0; try { mr = elRaw(player,'metal_reflect_pct')/100 } catch(_e){}
-          if ((statusEffects.cfx_ironMaidenTurns||0) > 0) mr = Math.max(mr, 0.5)
-          if ((statusEffects.cfx_fireReflectTurns||0) > 0 || (statusEffects.cfx_poisonReflectTurns||0) > 0) rf = Math.max(rf, 0.25)
-          const totalRef = Math.min(0.6, rf + mr)
-          if (totalRef > 0) { const rb = Math.max(1, Math.round(eDmg * totalRef)); enemyHp = Math.max(0, enemyHp - rb); messages.push('✦ Reflect <strong>'+rb+'</strong> back!') }
         }
 
         // ── Class skill: HP-clamp guards (Monarch Throne / Loyal Guard) ──
@@ -3314,10 +3119,6 @@ export async function mountChapter1(__mountOptions = {}) {
 
       // Player stun gate (applied by enemyAI.js): if stunned, skip player
       // action this turn. Enemy still gets to act. The tick happens later.
-      // Rooted (Terra): immune to stun.
-      if(Array.isArray(player.elemental_unlocked) && player.elemental_unlocked.includes('earth_util_2')){
-        if((statusEffects.playerStunTurns||0)>0){ statusEffects.playerStunTurns=0; log('🪨 Rooted — you shrug off the stun.') }
-      }
       const playerStunned = (statusEffects.playerStunTurns||0) > 0
       if (playerStunned) {
         log('⚡ You are stunned and cannot act.')
@@ -3351,11 +3152,6 @@ export async function mountChapter1(__mountOptions = {}) {
         statusEffects.infernoTurns--
         messages.push('🔥 Inferno: ' + iDmg + ' dmg! (' + statusEffects.infernoTurns + ' left)')
       }
-      // ── Elemental stacking DoTs + regen (Ch1) ──
-      if((statusEffects.cfx_emberStacks||0) > 0 && enemyHp > 0){ const per=Math.round(4*(1+(()=>{try{return elRaw(player,'ember_memory_dmg_pct')}catch(_e){return 0}})()/100)); const d=per*statusEffects.cfx_emberStacks; enemyHp=Math.max(0,enemyHp-d); messages.push('🔥 Ember Memory — '+d+' ('+statusEffects.cfx_emberStacks+').'); statusEffects.cfx_emberStacks-- }
-      if((statusEffects.cfx_longDecayStacks||0) > 0 && enemyHp > 0){ const per=Math.round(4*(1+(()=>{try{return elRaw(player,'long_decay_dmg_pct')}catch(_e){return 0}})()/100)); const d=per*statusEffects.cfx_longDecayStacks; enemyHp=Math.max(0,enemyHp-d); messages.push('☠ Long Decay — '+d+' ('+statusEffects.cfx_longDecayStacks+').'); statusEffects.cfx_longDecayStacks-- }
-      { const hpr=(()=>{try{return elRaw(player,'hp_regen_combat')}catch(_e){return 0}})(); if(hpr>0 && currentHp<maxPlayerHp){ currentHp=Math.min(maxPlayerHp,currentHp+hpr); messages.push('🌿 Regen +'+hpr+' HP') } }
-      if((statusEffects.cfx_worldTreeTurns||0) > 0){ const wh=Math.round(maxPlayerHp*0.10); currentHp=Math.min(maxPlayerHp,currentHp+wh); statusEffects.cfx_worldTreeTurns--; messages.push('🌿 World Tree +'+wh+' HP') }
       if (statusEffects.regenTurns > 0 && currentHp > 0) {
         const regenLv  = _skillLvGlobal('water_passive_regen')
         const regenAmt = Math.round(5 + (regenLv - 1))
@@ -3471,32 +3267,6 @@ export async function mountChapter1(__mountOptions = {}) {
       }
 
       shake()
-      // ── Combat FX (Ch1) ─────────────────────────────────────────────
-      // Strike = fast slash, Heavy = slower heavy slash, attack skills get
-      // their per-skill/element FX, and defensive moves get a buff glow.
-      try {
-        const _enemyEl = panel.querySelector('.combat-enemy-row')
-        if (_enemyEl) {
-          const _DEFENSIVE_FNS = new Set(['foresight','ironWall','stoneSkin','guardStance','barrier','aegis'])
-          const _ATTACK_SKILL_FNS = new Set(['fireBlast','earthquake','earthSpike','lightningStrike','thunderstorm','tsunami','dashStrike','overgrowth','embersEnd','chaosEngine','resonantBolt','standingChord','shadowLance','umbralBurst','venomSpit','blightNova','waterJet','stoneThrow','thornVolley','bladeArc','cinderstorm','maelstrom','tempest','resonanceBurst','eclipse','tectonicCrush','wildCyclone','carnivoreBloom','annihilate','pandemic','preciseStrike'])
-          let _sk = null
-          if (playerAction === 'skill' && skillKey) {
-            _sk = BATTLE_SKILLS_REGISTRY[skillKey] || NOTABLE_SKILLS_REGISTRY[skillKey] || null
-          }
-          if (playerAction === 'strike') {
-            playHitFx(_enemyEl, 'physical', '__strike', 0.3)   // fast slash
-          } else if (playerAction === 'heavy') {
-            playHitFx(_enemyEl, 'physical', '__heavy', 0.65)    // slower heavy slash
-          } else if (playerAction === 'defend') {
-            playBuffFx(_enemyEl, 'physical')                    // brace glow
-          } else if (_sk) {
-            const _el = _sk.el || 'physical'
-            const _isDef = _DEFENSIVE_FNS.has(_sk.fn) || _sk.type === 'buff' || (_sk.type === 'active' && !_ATTACK_SKILL_FNS.has(_sk.fn))
-            if (_isDef) playBuffFx(_enemyEl, _el)                // defensive/buff skills (e.g. Hex Weave) glow
-            else        playHitFx(_enemyEl, _el, _sk.fn)         // attack skills hit
-          }
-        }
-      } catch(_fxe) { /* FX must never break combat */ }
       log(messages.join(' '), turnLabel)
       syncBars()
       // ── Class skill: turn-end hook (mark/silence countdown + DoT) ────
@@ -3506,7 +3276,6 @@ export async function mountChapter1(__mountOptions = {}) {
       for (const m of _clsTurn.messages) messages.push(m)
       renderSkillSlots()
       renderClassSkills()
-      renderKeystones()
 
       if (enemyHp <= 0) {
         // ── Class skill: kill hook (Final Sentence message) ────────────
@@ -3755,28 +3524,28 @@ export async function mountChapter1(__mountOptions = {}) {
       {
         item_key: 'watcher_eye_ring', name: "Watcher's Multi-Eye Ring", rarity: 'rare',
         item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_eye_ring.webp',
+        img: '../assets/sets/watcher_eye_ring.png',
         stats: ['insight_bonus','luck_bonus','atk_bonus'],
         special_effect: "Observer's Sight: First attack on an unseen enemy deals +25% damage. Reveals hidden enemies nearby.",
       },
       {
         item_key: 'watcher_band', name: "Watcher's Band", rarity: 'rare',
         item_type: 'accessory', icon: '💍',
-        img: '../assets/sets/watcher_band.webp',
+        img: '../assets/sets/watcher_band.png',
         stats: ['control_bonus','speed_bonus','atk_bonus'],
         special_effect: "Pattern Recognition: Consecutive hits on the same enemy stack +2% damage (max 20%).",
       },
       {
         item_key: 'watcher_cloak', name: "Watcher's Cloak", rarity: 'rare',
         item_type: 'armor', icon: '🧥',
-        img: '../assets/sets/watcher_cloak.webp',
+        img: '../assets/sets/watcher_cloak.png',
         stats: ['speed_bonus','insight_bonus','def_bonus','luck_bonus'],
         special_effect: "Phantom Step: After dodging, your next attack cannot be dodged. 15% chance to phase (50% dmg reduction).",
       },
       {
         item_key: 'watcher_crown', name: "Watcher's Crown", rarity: 'rare',
         item_type: 'armor', icon: '👑',
-        img: '../assets/sets/watcher_crown.webp',
+        img: '../assets/sets/watcher_crown.png',
         stats: ['insight_bonus','guard_bonus','def_bonus'],
         special_effect: "Observed: Enemies you hit take -10% ATK and +10% damage from you.",
       },
@@ -3784,7 +3553,6 @@ export async function mountChapter1(__mountOptions = {}) {
 
     renderSkillSlots()
     renderClassSkills()
-    renderKeystones()
     syncBars()
   }
 
