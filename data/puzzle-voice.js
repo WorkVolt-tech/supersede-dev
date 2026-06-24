@@ -63,12 +63,12 @@ function installStyles() {
       margin-top: 1rem;
     }
     .puzzle-voice-opt {
-      background: rgba(0,0,0,.4);
-      border: 1px solid rgba(180,140,90,.35);
+      background: rgba(20,15,10,.92) !important;
+      border: 1px solid rgba(180,140,90,.45) !important;
       padding: .75rem .85rem;
       cursor: pointer;
       transition: border-color .15s, background .15s, transform .1s;
-      color: #e8dcc2;
+      color: #e8dcc2 !important;
       font-family: 'Cormorant Garamond', serif;
       font-size: 1rem;
       line-height: 1.5;
