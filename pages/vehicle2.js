@@ -788,7 +788,9 @@ export async function mountVehicle(__mountOptions = {}) {
 
   requestAnimationFrame(loop)
 
-  return { player, cleanup() {} }
+  return { player, cleanup() {
+    document.getElementById('book-module-style-vehicle')?.remove();
+  } }
 }
 
 export default mountVehicle
