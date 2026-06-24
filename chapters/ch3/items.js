@@ -8,4 +8,9 @@ export const ITEM_IMAGES = {
   // item_voice_imprint — dropped by the Echo Beast. A captured fragment
   // of the receiver's recordings; visual is a waveform sealed in resin.
   'item_voice_imprint': '../assets/items/voice_imprint.png',
+
+  // item_mirror_shard — dropped by the optional Class Mirror super-boss. A
+  // fragment of the System's failed copy of the player; reflects a face that
+  // isn't quite theirs. Mythic accessory.
+  'item_mirror_shard': '../assets/items/mirror_shard.png',
 }
