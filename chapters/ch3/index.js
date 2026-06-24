@@ -24,6 +24,7 @@ import { runRiddle }     from '../../data/puzzle-riddle.js'
 import { runSequence }   from '../../data/puzzle-sequence.js'
 import { runVoiceDiscrimination } from '../../data/puzzle-voice.js'
 import { initEnemyState, resolveEnemyTurn } from '../../data/enemyAI.js'
+import { buildClassMirror, hasClassMirror, classMirrorName, classMirrorFlavor } from '../../data/ch3-class-mirror.js'
 import { ITEM_IMAGES } from './items.js'
 import { META, signalTier, signalTierMeta } from './config.js'
 import { NODES } from './nodes.js'
@@ -45,21 +46,7 @@ export async function mount(__mountOptions = {}) {
 
 async function mountCh3(__mountOptions = {}) {
   const host = __mountOptions.host || document.getElementById('book-module-host') || document.body
-  // Always call renderNav so the bookmark bar paints on every mount. The old
-  // `__mountOptions.player || await renderNav(...)` short-circuited renderNav
-  // entirely when the host passed the player in (notably arriving from the
-  // drive), leaving the nav blank and the page faded until a manual refresh.
-  // Await it so it's fully painted before the chapter proceeds. (Same fix as Ch2.)
-  let player = __mountOptions.player
-  if (player) {
-    try {
-      await window.renderNav(__mountOptions.navId || 'nav')
-    } catch (e) {
-      console.warn('[ch3] nav render failed', e)
-    }
-  } else {
-    player = await window.renderNav(__mountOptions.navId || 'nav')
-  }
+  const player = __mountOptions.player || await window.renderNav('nav')
   if (!player) throw new Error('Ch3 mount: no player')
 
   // ── Layout: parchment two-page book, story-left, HUD+choices right ──
@@ -458,6 +445,7 @@ async function mountCh3(__mountOptions = {}) {
       const ITEM_DEF = {
         rune_lux:          { name: 'Lux Rune',      item_type: 'material',  rarity: 'uncommon',  icon: '✨' },
         item_voice_imprint:{ name: 'Voice Imprint', item_type: 'accessory', rarity: 'legendary', icon: '📡' },
+        item_mirror_shard: { name: 'Mirror Shard',  item_type: 'accessory', rarity: 'mythic',    icon: '🪞' },
       }
       const def = ITEM_DEF[itemKey] || { name: itemKey, item_type: 'material', rarity: 'common', icon: '📦' }
       const { error } = await supabase.from('inventory').insert({
@@ -485,7 +473,11 @@ async function mountCh3(__mountOptions = {}) {
   // separate, larger task (Ch2's skill registry is ~1600 lines). This is
   // the core boss loop: Attack / Defend, status effects, loot, xp.
   function renderCombat(node) {
-    const enemy = node.enemy || { name: 'Unknown', hp: 100, atk: 10, def: 5, xp: 0, icon: '❓' }
+    // Class Mirror: the enemy is generated from the player's unlocked Ch2 class
+    // at fight time, so it always mirrors THIS player's chosen path.
+    const enemy = node.enemyFromClass
+      ? buildClassMirror(player)
+      : (node.enemy || { name: 'Unknown', hp: 100, atk: 10, def: 5, xp: 0, icon: '❓' })
 
     // Mirror renderHUD's stat formulas exactly so combat numbers match
     // the HUD the player just saw.
