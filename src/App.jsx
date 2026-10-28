@@ -14,6 +14,7 @@ import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
+import { chapterOneComplete, firstDriveComplete } from './game/progression'
 import './App.css'
 
 // Which screen shows is just a piece of state (`view`) — no URL routing,
@@ -28,6 +29,7 @@ export default function App() {
   const error = usePlayerStore(s => s.error)
   const loadPlayer = usePlayerStore(s => s.loadPlayer)
   const loadInventory = useInventoryStore(s => s.loadInventory)
+  const updatePlayer = usePlayerStore(s => s.updatePlayer)
 
   // Track the login session
   useEffect(() => {
@@ -53,6 +55,20 @@ export default function App() {
     setView('menu')
   }
 
+  function navigate(nextView) {
+    if (nextView === 'drive' && !chapterOneComplete(player)) return
+    if (nextView === 'ch2' && !firstDriveComplete(player)) return
+    setView(nextView)
+  }
+
+  async function finishDrive(result) {
+    if (result === 'win' && player) {
+      const chapters = [...new Set([...(player.chapters_unlocked || [1]), 2])]
+      await updatePlayer({ chapters_unlocked: chapters })
+    }
+    setView('menu')
+  }
+
   if (session === undefined) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
   if (!session) return <AuthPage />
   if (loading) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
@@ -66,7 +82,7 @@ export default function App() {
     'inventory-demo': <InventoryDemoPage />,
     puzzle: <PuzzleDemoPage />,
     'combat-demo': <CombatDemoPage />,
-    drive: <VehicleCanvas onComplete={() => setView('menu')} />,
+    drive: <VehicleCanvas onComplete={finishDrive} />,
   }
 
   const archivedSections = {
@@ -84,7 +100,7 @@ export default function App() {
   }
 
   if (view === 'menu' || !screens[view]) {
-    return <StartMenu player={player} onPick={setView} onSignOut={signOut} />
+    return <StartMenu player={player} onPick={navigate} onSignOut={signOut} />
   }
 
   const isChapter = view === 'ch1' || view === 'ch2'
@@ -94,7 +110,7 @@ export default function App() {
       title={view === 'ch1' ? 'Awakening' : 'Broken Alliances'}
       subtitle="Read, choose, and shape the world. Your journey is being recorded."
       left={screens[view]}
-      right={<PlayerRecord player={player} onNavigate={setView} />}
+      right={<PlayerRecord player={player} onNavigate={navigate} />}
       footer={`${view === 'ch1' ? 'I' : 'II'} · SuperSede · Living Archive`} />
   }
 

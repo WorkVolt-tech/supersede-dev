@@ -48,6 +48,7 @@ export default function VehicleCanvas({ onComplete }) {
     let score = 0
     let bossSpawned = false
     let bossActive = false
+    let bossDefeated = false
 
     stateRef.current = { player, enemies, bullets }
 
@@ -91,7 +92,7 @@ export default function VehicleCanvas({ onComplete }) {
       }
 
       spawnTimer--
-      if (spawnTimer <= 0 && !bossActive) { spawnEnemy(); spawnTimer = 55 }
+      if (spawnTimer <= 0 && !bossSpawned) { spawnEnemy(); spawnTimer = 55 }
       if (kills >= BOSS_AT_KILLS && !bossSpawned) {
         bossSpawned = true; bossActive = true
         spawnEnemy(HUNTER_CAPTAIN)
@@ -120,6 +121,7 @@ export default function VehicleCanvas({ onComplete }) {
 
         if (e.y > canvas.height + 60) {
           e.dead = true
+          if (e.isBoss) { cancelled = true; setGameOver('lose') }
         } else if (e.y > player.y - 20 && Math.abs(e.x - player.x) < e.sz + player.w / 2) {
           player.hp = Math.max(0, player.hp - e.atk)
           e.dead = true
@@ -134,7 +136,7 @@ export default function VehicleCanvas({ onComplete }) {
           if (Math.sqrt(dx * dx + dy * dy) < e.sz) {
             e.hp--
             b.hit = true
-            if (e.hp <= 0) { e.dead = true; kills++; score += e.score }
+            if (e.hp <= 0) { e.dead = true; kills++; score += e.score; if (e.isBoss) bossDefeated = true }
           }
         }
       }
@@ -166,7 +168,7 @@ export default function VehicleCanvas({ onComplete }) {
       }
 
       if (player.hp <= 0 && !gameOver) { cancelled = true; setGameOver('lose') }
-      if (bossSpawned && !bossActive && kills >= BOSS_AT_KILLS && enemies.length === 0 && !gameOver) {
+      if (bossSpawned && bossDefeated && !bossActive && enemies.length === 0 && !gameOver) {
         cancelled = true; setGameOver('win')
       }
     }

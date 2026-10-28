@@ -24,6 +24,8 @@
 .reading-page .choice-sub { color:#795e43; font-size:13px; }
 .reading-chapter { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--book-line); background:transparent; padding:18px 6px; color:var(--book-ink); cursor:pointer; font:23px 'Cormorant Garamond',serif; }
 .reading-chapter:hover { background:rgba(176,126,52,.1); }
+.reading-chapter:disabled { opacity:.48; cursor:not-allowed; }
+.reading-chapter:disabled:hover { background:transparent; }
 .reading-chapter small { display:block; font:italic 15px 'Cormorant Garamond',serif; color:#795f47; margin-top:3px; }
 .reading-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px 12px; padding:20px 0; border-top:1px solid var(--book-line); border-bottom:1px solid var(--book-line); }
 .reading-stat-value { font-size:24px; color:var(--book-ink); }
