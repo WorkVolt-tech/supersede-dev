@@ -1,0 +1,101 @@
+.formation-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  font-family: 'Share Tech Mono', monospace;
+  color: #e8dcc2;
+}
+
+.formation-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.formation-row.enemy { flex-direction: row-reverse; }
+
+.formation-slot {
+  width: 64px; height: 84px;
+  border: 1px solid rgba(200,184,128,.25);
+  border-radius: 6px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(0,0,0,.2);
+}
+.formation-slot.legal-target {
+  border-color: #c8604a;
+  box-shadow: 0 0 10px rgba(200,96,74,.5);
+  cursor: pointer;
+}
+.formation-slot.legal-target:hover { background: rgba(200,96,74,.15); }
+.formation-rank-num {
+  position: absolute; top: 2px; left: 4px;
+  font-size: 8px; color: #6a5635;
+}
+
+.formation-combatant {
+  width: 92%; height: 90%;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  background: linear-gradient(180deg, rgba(60,48,32,.9), rgba(30,24,16,.9));
+  border: 1px solid rgba(200,184,128,.4);
+}
+.formation-combatant:active { cursor: grabbing; }
+.formation-combatant.enemy-combatant { border-color: rgba(200,96,74,.5); }
+.formation-combatant-icon { font-size: 1.3rem; }
+.formation-combatant-name { font-size: 7px; color: #c8b96e; text-align: center; line-height: 1.1; }
+.formation-hp-bar {
+  width: 85%; height: 3px;
+  background: rgba(0,0,0,.5);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.formation-hp-fill { height: 100%; background: #5ec45e; transition: width .3s; }
+.formation-hp-fill.low { background: #e05555; }
+
+.formation-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: #6a5635;
+  letter-spacing: .08em;
+  padding: 0 4px;
+}
+
+/* ── Turn queue ───────────────────────────────────────────────────── */
+.turn-queue {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: .5rem .75rem;
+  background: rgba(0,0,0,.3);
+  border: 1px solid rgba(200,184,128,.2);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+.turn-queue-label { font-size: 8px; color: #6a5635; letter-spacing: .1em; margin-right: 4px; }
+.turn-queue-item {
+  width: 28px; height: 28px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .9rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(200,184,128,.3);
+  background: rgba(60,48,32,.6);
+}
+.turn-queue-item.active {
+  border-color: #c8b96e;
+  box-shadow: 0 0 8px rgba(200,184,128,.5);
+  transform: scale(1.15);
+}
+.turn-queue-item.enemy-turn { border-color: rgba(200,96,74,.5); }
