@@ -12,6 +12,7 @@ import InventoryDemoPage from './pages/InventoryDemoPage'
 import CombatDemoPage from './pages/CombatDemoPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
+import BookShell from './components/book/BookShell'
 import './App.css'
 
 // Which screen shows is just a piece of state (`view`) — no URL routing,
@@ -69,6 +70,28 @@ export default function App() {
 
   if (view === 'menu' || !screens[view]) {
     return <StartMenu player={player} onPick={setView} onSignOut={signOut} />
+  }
+
+  const isChapter = view === 'ch1' || view === 'ch2'
+  if (isChapter) {
+    return <BookShell
+      eyebrow={`The story · ${view === 'ch1' ? 'Chapter I' : 'Chapter II'}`}
+      title={view === 'ch1' ? 'Awakening' : 'Broken Alliances'}
+      subtitle="Read, choose, and shape the world. Your journey is being recorded."
+      left={screens[view]}
+      right={<>
+        <span className="reading-page-heading">Your journey</span>
+        <h2>{player.username}</h2>
+        <div className="reading-stat-grid">
+          <div><span className="reading-stat-label">Level</span><span className="reading-stat-value">{player.level || 1}</span></div>
+          <div><span className="reading-stat-label">Health</span><span className="reading-stat-value">{player.hp ?? 100} / {player.max_hp ?? 100}</span></div>
+        </div>
+        <p className="reading-quote">The page changes with your decisions. Your story is never merely observed.</p>
+        <span className="reading-page-heading" style={{ marginTop: 30 }}>Archive actions</span>
+        <button className="reading-action" onClick={() => setView('inventory')}>Open inventory</button>
+        <button className="reading-action" onClick={() => setView('menu')}>← Table of contents</button>
+      </>}
+      footer={`${view === 'ch1' ? 'I' : 'II'} · SuperSede · Living Archive`} />
   }
 
   return (
