@@ -1,1 +1,8 @@
 #root { width: 100%; }
+.reset-overlay { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; background:rgba(8,5,2,.88); padding:20px; }
+.reset-panel { width:min(440px,100%); padding:28px; border:1px solid #b58b46; background:#f4ead7; color:#2b1d16; font:19px/1.4 'Cormorant Garamond',Georgia,serif; box-shadow:0 30px 80px #000a; }
+.reset-panel h2 { margin:0 0 12px; font-size:30px; }
+.reset-panel button { display:block; width:100%; margin-top:12px; padding:12px; border:1px solid #9d8062; background:transparent; color:#2b1d16; cursor:pointer; font:12px 'JetBrains Mono',monospace; }
+.reset-panel button:first-of-type { background:#603729; color:#f4ead7; }
+.reset-panel button:disabled { opacity:.5; cursor:wait; }
+.reset-error { color:#a02020; font-size:15px; }

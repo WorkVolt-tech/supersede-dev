@@ -17,7 +17,7 @@ const ENTRIES = [
   { view: 'combat-demo', label: 'Ranked Combat', sub: 'Darkest Dungeon style' },
 ]
 
-export default function StartMenu({ player, onPick, onSignOut }) {
+export default function StartMenu({ player, onPick, onSignOut, onReset }) {
   const chapters = ENTRIES.filter(e => ['ch1','drive','ch2'].includes(e.view))
   const systems = ENTRIES.filter(e => e.view && !['ch1','drive','ch2'].includes(e.view))
   return (
@@ -35,6 +35,7 @@ export default function StartMenu({ player, onPick, onSignOut }) {
         <span className="reading-page-heading" style={{ marginTop: 28 }}>Additional activities</span>
         {systems.map(e => <button className="reading-action" key={e.view} title={e.sub} onClick={() => onPick(e.view)}>{e.label}</button>)}
         <button className="reading-action" onClick={onSignOut}>Sign out</button>
+        <button className="reading-action" onClick={onReset}>Reset my character</button>
       </>}
       footer="The archive remembers · SuperSede" />
   )
