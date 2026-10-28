@@ -17,6 +17,7 @@ import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
 import { calcATK, calcDEF, calcMaxHp } from '../../game/playerStats'
+import { grantXp } from '../../game/progression'
 import './CombatScreen.css'
 
 function HpBar({ hp, maxHp }) {
@@ -60,6 +61,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const end = ClsCombat.onCombatEnd(player, statusEffectsRef.current, outcome === 'win' ? 'victory' : 'defeat')
     if (end?.dbUpdates) Object.assign(dbUpdatesRef.current, end.dbUpdates)
     const finalUpdates = { ...dbUpdatesRef.current, hp: outcome === 'win' ? currentHp : Math.max(1, currentHp) }
+    if (outcome === 'win') {
+      const rewards = grantXp({ ...player, hp: finalUpdates.hp, ...finalUpdates }, enemyData.xp || 0)
+      Object.assign(finalUpdates, rewards)
+      pushLog(`Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`)
+    }
     await updatePlayer(finalUpdates)
     setTimeout(() => {
       if (outcome === 'win') onWin?.()
