@@ -13,6 +13,7 @@ import CombatDemoPage from './pages/CombatDemoPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
+import PlayerRecord from './components/book/PlayerRecord'
 import './App.css'
 
 // Which screen shows is just a piece of state (`view`) — no URL routing,
@@ -68,6 +69,20 @@ export default function App() {
     drive: <VehicleCanvas onComplete={() => setView('menu')} />,
   }
 
+  const archivedSections = {
+    skills: ['Skills', 'The original skill tree and upgrade interface have not yet been migrated to React. Your character and progress are preserved.'],
+    trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
+    lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
+    badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
+  }
+
+  if (archivedSections[view]) {
+    const [title, description] = archivedSections[view]
+    return <BookShell eyebrow="Archive · Game systems" title={title} subtitle="Your original game systems are being reunited with the reader."
+      left={<><h2>{title}</h2><p className="story-text">{description}</p><button className="reading-action" onClick={() => setView('menu')}>← Return to chapters</button></>}
+      right={<PlayerRecord player={player} onNavigate={setView} />} />
+  }
+
   if (view === 'menu' || !screens[view]) {
     return <StartMenu player={player} onPick={setView} onSignOut={signOut} />
   }
@@ -79,18 +94,7 @@ export default function App() {
       title={view === 'ch1' ? 'Awakening' : 'Broken Alliances'}
       subtitle="Read, choose, and shape the world. Your journey is being recorded."
       left={screens[view]}
-      right={<>
-        <span className="reading-page-heading">Your journey</span>
-        <h2>{player.username}</h2>
-        <div className="reading-stat-grid">
-          <div><span className="reading-stat-label">Level</span><span className="reading-stat-value">{player.level || 1}</span></div>
-          <div><span className="reading-stat-label">Health</span><span className="reading-stat-value">{player.hp ?? 100} / {player.max_hp ?? 100}</span></div>
-        </div>
-        <p className="reading-quote">The page changes with your decisions. Your story is never merely observed.</p>
-        <span className="reading-page-heading" style={{ marginTop: 30 }}>Archive actions</span>
-        <button className="reading-action" onClick={() => setView('inventory')}>Open inventory</button>
-        <button className="reading-action" onClick={() => setView('menu')}>← Table of contents</button>
-      </>}
+      right={<PlayerRecord player={player} onNavigate={setView} />}
       footer={`${view === 'ch1' ? 'I' : 'II'} · SuperSede · Living Archive`} />
   }
 
