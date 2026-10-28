@@ -1,5 +1,6 @@
 import '../auth/auth.css'
 import BookShell from '../book/BookShell'
+import PlayerRecord from '../book/PlayerRecord'
 
 // Edit this list to add/remove/rename menu entries — one line each.
 const ENTRIES = [
@@ -26,13 +27,8 @@ export default function StartMenu({ player, onPick, onSignOut }) {
         <p className="reading-quote">Every choice leaves an imprint. Every encounter writes the next page.</p>
       </>}
       right={<>
-        <span className="reading-page-heading">Adventurer's record</span>
-        <h2>{player.username}</h2>
-        <div className="reading-stat-grid">
-          <div><span className="reading-stat-label">Level</span><span className="reading-stat-value">{player.level || 1}</span></div>
-          <div><span className="reading-stat-label">Health</span><span className="reading-stat-value">{player.hp ?? 100} / {player.max_hp ?? 100}</span></div>
-        </div>
-        <span className="reading-page-heading" style={{ marginTop: 28 }}>Adventurer's tools</span>
+        <PlayerRecord player={player} onNavigate={onPick} />
+        <span className="reading-page-heading" style={{ marginTop: 28 }}>Additional activities</span>
         {systems.map(e => <button className="reading-action" key={e.view} title={e.sub} onClick={() => onPick(e.view)}>{e.label}</button>)}
         <button className="reading-action" onClick={onSignOut}>Sign out</button>
       </>}
