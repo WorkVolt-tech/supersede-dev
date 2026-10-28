@@ -15,6 +15,7 @@ import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
 import { chapterOneComplete, firstDriveComplete } from './game/progression'
+import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
 
 // Which screen shows is just a piece of state (`view`) — no URL routing,
@@ -23,6 +24,9 @@ import './App.css'
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = still checking
   const [view, setView] = useState('menu')
+  const [resetDialog, setResetDialog] = useState(false)
+  const [resetBusy, setResetBusy] = useState(false)
+  const [resetError, setResetError] = useState('')
 
   const player = usePlayerStore(s => s.player)
   const loading = usePlayerStore(s => s.loading)
@@ -53,6 +57,23 @@ export default function App() {
     await supabase.auth.signOut()
     usePlayerStore.setState({ player: null, loading: true, error: null })
     setView('menu')
+  }
+
+  async function confirmReset() {
+    if (!player || resetBusy) return
+    setResetBusy(true)
+    setResetError('')
+    try {
+      await resetOwnCharacter(player)
+      await loadPlayer(session.user.id)
+      await loadInventory(player.id)
+      setView('menu')
+      setResetDialog(false)
+    } catch (error) {
+      setResetError(error.message || 'Reset failed. Please try again.')
+    } finally {
+      setResetBusy(false)
+    }
   }
 
   function navigate(nextView) {
@@ -100,7 +121,18 @@ export default function App() {
   }
 
   if (view === 'menu' || !screens[view]) {
-    return <StartMenu player={player} onPick={navigate} onSignOut={signOut} />
+    return <>
+      <StartMenu player={player} onPick={navigate} onSignOut={signOut} onReset={() => { setResetError(''); setResetDialog(true) }} />
+      {resetDialog && <div className="reset-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+        <div className="reset-panel">
+          <h2 id="reset-title">Begin again?</h2>
+          <p>This permanently resets your character to Level 1, 0 XP and the beginning of Chapter 1. Your inventory, gold, reputation and unlocks will be cleared. Your account and username stay.</p>
+          {resetError && <p role="alert" className="reset-error">{resetError}</p>}
+          <button disabled={resetBusy} onClick={confirmReset}>{resetBusy ? 'Resetting…' : 'Yes, reset my character'}</button>
+          <button disabled={resetBusy} onClick={() => setResetDialog(false)}>Cancel</button>
+        </div>
+      </div>}
+    </>
   }
 
   const isChapter = view === 'ch1' || view === 'ch2'
