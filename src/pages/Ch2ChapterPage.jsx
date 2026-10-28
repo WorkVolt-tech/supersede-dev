@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { usePlayerStore } from '../store/usePlayerStore'
-import { useInventoryStore } from '../store/useInventoryStore'
 import { useStoryEngine } from '../hooks/useStoryEngine'
 import StoryNode from '../components/story/StoryNode'
 import DistrictHubCh2 from '../components/hub/DistrictHubCh2'
@@ -9,17 +8,10 @@ import { ZONES } from '../data/ch2/config'
 
 const ZONE_IDS = ZONES.map(z => z.id)
 
-export default function Ch2ChapterPage({ userId }) {
+// Player + inventory are loaded once by App.jsx before any page renders.
+export default function Ch2ChapterPage() {
   const player = usePlayerStore(s => s.player)
-  const loading = usePlayerStore(s => s.loading)
-  const error = usePlayerStore(s => s.error)
-  const loadPlayer = usePlayerStore(s => s.loadPlayer)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
-  const loadInventory = useInventoryStore(s => s.loadInventory)
-
-  useEffect(() => {
-    if (userId) { loadPlayer(userId); loadInventory(userId) }
-  }, [userId, loadPlayer, loadInventory])
 
   const { currentNodeId, currentNode, goTo } = useStoryEngine(CH2_NODES, 'ch2')
 
@@ -36,8 +28,6 @@ export default function Ch2ChapterPage({ userId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentNodeId, player])
 
-  if (loading) return <p className="story-text">Loading…</p>
-  if (error) return <p className="story-text">Error: {error}</p>
   if (!player) return <p className="story-text">No player loaded.</p>
 
   if (currentNodeId === 'district_hub') {

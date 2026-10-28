@@ -8,17 +8,20 @@ export const usePlayerStore = create((set, get) => ({
 
   async loadPlayer(userId) {
     set({ loading: true, error: null })
+    // players are keyed by user_id (the auth account), same as the old
+    // auth.html / setup.html. maybeSingle() so "no player yet" is a normal
+    // result (-> character setup), not an error.
     const { data, error } = await supabase
       .from('players')
       .select('*')
-      .eq('id', userId)
-      .single()
+      .eq('user_id', userId)
+      .maybeSingle()
     if (error) {
       set({ loading: false, error: error.message })
       return null
     }
-    set({ player: data, loading: false })
-    return data
+    set({ player: data || null, loading: false })
+    return data || null
   },
 
   async updatePlayer(updates) {
