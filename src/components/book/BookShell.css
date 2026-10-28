@@ -26,6 +26,15 @@
 .reading-chapter:hover { background:rgba(176,126,52,.1); }
 .reading-chapter:disabled { opacity:.48; cursor:not-allowed; }
 .reading-chapter:disabled:hover { background:transparent; }
+.reading-chapter-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 6px; border-bottom:1px solid var(--book-line); }
+.reading-chapter-details { min-width:0; color:var(--book-ink); font:23px 'Cormorant Garamond',serif; }
+.reading-chapter-details small { display:block; font:italic 15px 'Cormorant Garamond',serif; color:#795f47; margin-top:3px; }
+.reading-chapter-details .reading-chapter-hint { font:9px 'JetBrains Mono',monospace; color:#947d5c; margin-top:8px; }
+.reading-chapter-actions { display:flex; gap:6px; flex-shrink:0; }
+.reading-chapter-actions button { border:1px solid var(--book-line); background:transparent; color:var(--book-ink); padding:9px 8px; cursor:pointer; font:10px 'JetBrains Mono',monospace; white-space:nowrap; }
+.reading-chapter-actions button:hover:not(:disabled) { border-color:var(--book-gold); background:rgba(176,126,52,.1); }
+.reading-chapter-actions button:disabled { opacity:.4; cursor:not-allowed; }
+@media(max-width:480px) { .reading-chapter-row { align-items:flex-start; flex-direction:column; } .reading-chapter-actions { width:100%; } .reading-chapter-actions button { flex:1; } }
 .reading-chapter small { display:block; font:italic 15px 'Cormorant Garamond',serif; color:#795f47; margin-top:3px; }
 .reading-stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:22px 12px; padding:20px 0; border-top:1px solid var(--book-line); border-bottom:1px solid var(--book-line); }
 .reading-stat-value { font-size:24px; color:var(--book-ink); }
