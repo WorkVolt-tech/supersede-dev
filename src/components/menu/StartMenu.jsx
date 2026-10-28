@@ -1,13 +1,14 @@
 import '../auth/auth.css'
 import BookShell from '../book/BookShell'
 import PlayerRecord from '../book/PlayerRecord'
-import { chapterOneComplete, firstDriveComplete } from '../../game/progression'
+import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from '../../game/progression'
 
 // Edit this list to add/remove/rename menu entries — one line each.
 const ENTRIES = [
   { section: 'Story' },
   { view: 'ch1', label: 'Chapter 1', sub: 'Awakening' },
   { view: 'ch2', label: 'Chapter 2', sub: 'Broken Alliances — zones, alliances, Twin Judges' },
+  { view: 'ch3', label: 'Chapter 3', sub: 'Signal Hunters — the System is listening' },
   { section: 'Systems' },
   { view: 'inventory', label: 'Inventory', sub: 'Your real items — drag to equip' },
   { section: 'Demos' },
@@ -17,21 +18,22 @@ const ENTRIES = [
 ]
 
 export default function StartMenu({ player, onPick, onSignOut, onReset }) {
-  const chapters = ENTRIES.filter(e => ['ch1','ch2'].includes(e.view))
-  const systems = ENTRIES.filter(e => e.view && !['ch1','ch2'].includes(e.view))
+  const chapters = ENTRIES.filter(e => ['ch1','ch2','ch3'].includes(e.view))
+  const systems = ENTRIES.filter(e => e.view && !['ch1','ch2','ch3'].includes(e.view))
   return (
     <BookShell eyebrow="Table of contents" title="The Archive" subtitle="Select a chapter. Your choices and inventory travel with you."
       left={<>
         <h2>Where shall the story take you?</h2>
         {chapters.map(e => {
           if (e.view === 'ch1') return <button className="reading-chapter" key={e.view} onClick={() => onPick(e.view)}>{e.label}<small>{e.sub}</small></button>
-          const driveLocked = !chapterOneComplete(player)
-          const chapterLocked = !firstDriveComplete(player)
+          const isCh3 = e.view === 'ch3'
+          const driveLocked = isCh3 ? !chapterTwoComplete(player) : !chapterOneComplete(player)
+          const chapterLocked = isCh3 ? !secondDriveComplete(player) : !firstDriveComplete(player)
           return <div className="reading-chapter-row" key={e.view}>
-            <div className="reading-chapter-details"><span>{e.label}</span><small>{e.sub}</small><small className="reading-chapter-hint">{driveLocked ? 'Complete Chapter 1 to unlock the drive' : chapterLocked ? 'Complete the drive to enter Chapter 2' : 'Chapter 2 is ready'}</small></div>
+            <div className="reading-chapter-details"><span>{e.label}</span><small>{e.sub}</small><small className="reading-chapter-hint">{driveLocked ? `Complete Chapter ${isCh3 ? 2 : 1} to unlock the drive` : chapterLocked ? `Complete the drive to unlock Chapter ${isCh3 ? 3 : 2}` : isCh3 ? 'Chapter 3 story is awaiting migration' : 'Chapter 2 is ready'}</small></div>
             <div className="reading-chapter-actions">
-              <button disabled={driveLocked} onClick={() => onPick('drive')}>{driveLocked ? '🔒 ' : ''}Drive ›</button>
-              <button disabled={chapterLocked} onClick={() => onPick('ch2')}>{chapterLocked ? '🔒 ' : ''}Chapter ›</button>
+              <button disabled={driveLocked} onClick={() => onPick(isCh3 ? 'drive3' : 'drive')}>{driveLocked ? '🔒 ' : ''}Drive ›</button>
+              <button disabled={chapterLocked} onClick={() => onPick(e.view)}>{chapterLocked ? '🔒 ' : ''}Chapter ›</button>
             </div>
           </div>
         })}

@@ -31,6 +31,11 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
 
+    if (NODES[resolvedId]?.type === 'end' && Array.isArray(player.chapters_completed)) {
+      const chapterNumber = chapterPrefix === 'ch1' ? 1 : chapterPrefix === 'ch2' ? 2 : null
+      if (chapterNumber) updates.chapters_completed = [...new Set([...player.chapters_completed, chapterNumber])]
+    }
+
     if (cur?.xp) Object.assign(updates, grantXp(player, cur.xp))
 
     let moralDelta = 0

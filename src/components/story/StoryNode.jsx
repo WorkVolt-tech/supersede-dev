@@ -30,7 +30,7 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
   if (node.type === 'end') {
     return (
       <div className="story-node">
-        <p className="story-text">{node.text || 'The Watcher has fallen. Chapter I is complete. Your next challenge awaits on the road: survive the first drive to unlock Chapter II.'}</p>
+        <p className="story-text">{node.text || (node.id === 'chapter_end_ch2' ? 'The Twin Judges have fallen. Chapter II is complete. The road to Chapter III is now open.' : 'The Watcher has fallen. Chapter I is complete. Your next challenge awaits on the road: survive the first drive to unlock Chapter II.')}</p>
         <p className="choices-label">— Chapter Complete —</p>
       </div>
     )

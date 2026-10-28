@@ -18,7 +18,7 @@ const HUNTER_CAPTAIN = {
 
 const BOSS_AT_KILLS = 15
 
-export default function VehicleCanvas({ onComplete }) {
+export default function VehicleCanvas({ onComplete, destination = 2 }) {
   const canvasRef = useRef(null)
   const { getSprite } = useSprites()
   const [hud, setHud] = useState({ hp: 100, maxHp: 100, kills: 0, score: 0, bossActive: false })
@@ -195,7 +195,7 @@ export default function VehicleCanvas({ onComplete }) {
         fontFamily: 'monospace', fontSize: 12, pointerEvents: 'none', textShadow: '0 1px 2px #000',
       }}>
         <span>HULL {hud.hp}/{hud.maxHp}</span>
-        <span>{hud.bossActive ? '⚠ HUNTER CAPTAIN' : `KILLS ${hud.kills}/${BOSS_AT_KILLS}`}</span>
+        <span>{hud.bossActive ? '⚠ HUNTER CAPTAIN' : `TO CHAPTER ${destination} · KILLS ${hud.kills}/${BOSS_AT_KILLS}`}</span>
         <span>SCORE {hud.score}</span>
       </div>
       {gameOver && (

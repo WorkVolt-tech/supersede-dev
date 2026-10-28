@@ -14,7 +14,7 @@ import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
-import { chapterOneComplete, firstDriveComplete } from './game/progression'
+import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
 
@@ -78,13 +78,15 @@ export default function App() {
 
   function navigate(nextView) {
     if (nextView === 'drive' && !chapterOneComplete(player)) return
+    if (nextView === 'drive3' && !chapterTwoComplete(player)) return
     if (nextView === 'ch2' && !firstDriveComplete(player)) return
+    if (nextView === 'ch3' && !secondDriveComplete(player)) return
     setView(nextView)
   }
 
-  async function finishDrive(result) {
+  async function finishDrive(result, destination) {
     if (result === 'win' && player) {
-      const chapters = [...new Set([...(player.chapters_unlocked || [1]), 2])]
+      const chapters = [...new Set([...(player.chapters_unlocked || [1]), destination])]
       await updatePlayer({ chapters_unlocked: chapters })
     }
     setView('menu')
@@ -103,7 +105,8 @@ export default function App() {
     'inventory-demo': <InventoryDemoPage />,
     puzzle: <PuzzleDemoPage />,
     'combat-demo': <CombatDemoPage />,
-    drive: <VehicleCanvas onComplete={finishDrive} />,
+    drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} />,
+    drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} />,
   }
 
   const archivedSections = {
@@ -111,6 +114,7 @@ export default function App() {
     trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
     lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
     badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
+    ch3: ['Chapter 3 · Signal Hunters', 'Chapter 3 has been unlocked, but its original story engine has not yet been migrated to React. The cipher puzzle is available under Additional Activities while the full chapter is being rebuilt.'],
   }
 
   if (archivedSections[view]) {
@@ -149,7 +153,7 @@ export default function App() {
   return (
     <>
       <div className="back-bar"><button onClick={() => setView('menu')}>← Menu</button></div>
-      <div style={{ padding: view === 'drive' ? 0 : '3rem 1rem 2rem', maxWidth: view === 'drive' ? 'none' : 720, margin: '0 auto' }}>
+      <div style={{ padding: ['drive','drive3'].includes(view) ? 0 : '3rem 1rem 2rem', maxWidth: ['drive','drive3'].includes(view) ? 'none' : 720, margin: '0 auto' }}>
         {screens[view]}
       </div>
     </>

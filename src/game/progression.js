@@ -1,11 +1,19 @@
 import { resolveLevelUp } from './leveling'
 
 export function chapterOneComplete(player) {
-  return player?.current_node === 'ch1_chapter_end' || (player?.chapters_unlocked || []).includes(2)
+  return player?.current_node === 'ch1_chapter_end' || (player?.chapters_completed || []).includes(1) || (player?.chapters_unlocked || []).includes(2)
 }
 
 export function firstDriveComplete(player) {
   return (player?.chapters_unlocked || []).includes(2)
+}
+
+export function chapterTwoComplete(player) {
+  return player?.current_node === 'ch2_chapter_end_ch2' || (player?.chapters_completed || []).includes(2) || (player?.chapters_unlocked || []).includes(3)
+}
+
+export function secondDriveComplete(player) {
+  return (player?.chapters_unlocked || []).includes(3)
 }
 
 export function grantXp(player, amount) {
