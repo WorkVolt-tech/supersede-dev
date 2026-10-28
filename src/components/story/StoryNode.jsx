@@ -13,6 +13,8 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
 
   if (node.type === 'combat' || node.type === 'boss') {
     return (
+      <div className="story-encounter">
+      {node.text && <p className="story-text">{node.text}</p>}
       <CombatScreen
         enemyData={node.enemy}
         isBoss={node.type === 'boss'}
@@ -21,13 +23,14 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
         onLose={() => goTo(node.onLose)}
         onEscape={node.onEscape ? () => goTo(node.onEscape) : null}
       />
+      </div>
     )
   }
 
   if (node.type === 'end') {
     return (
       <div className="story-node">
-        <p className="story-text">{node.text}</p>
+        <p className="story-text">{node.text || 'The Watcher has fallen. Chapter I is complete. Your next challenge awaits on the road: survive the first drive to unlock Chapter II.'}</p>
         <p className="choices-label">— Chapter Complete —</p>
       </div>
     )
