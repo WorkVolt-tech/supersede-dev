@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient'
 export function freshStartFields(player) {
   const defaults = {
     level: 1, xp: 0, hp: 100, max_hp: 100, gold: 0,
-    current_node: null, current_chapter: 1, chapters_unlocked: [1],
+    current_node: 'ch1_opening', current_chapter: 1, chapters_unlocked: [1],
     moral_score: 0, badge: 'neutral', reputation: 'neutral',
     pvp_kills: 0, helps_given: 0, insight: 0,
     alliance_log: [], ch2_elements_attempted: [],
