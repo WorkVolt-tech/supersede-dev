@@ -1,7 +1,0 @@
-Drag the contents of your existing game "assets" folder into THIS folder.
-
-After you do, this folder should contain subfolders like:
-  armor/   boss/   enemy/   (and video/, items/, etc. -- whatever you have)
-
-Then delete this note file (optional). The game already points at
-these exact paths, e.g. /assets/boss/the_watcher.webp
