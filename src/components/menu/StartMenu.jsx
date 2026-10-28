@@ -1,4 +1,5 @@
 import '../auth/auth.css'
+import BookShell from '../book/BookShell'
 
 // Edit this list to add/remove/rename menu entries — one line each.
 const ENTRIES = [
@@ -15,20 +16,26 @@ const ENTRIES = [
 ]
 
 export default function StartMenu({ player, onPick, onSignOut }) {
+  const chapters = ENTRIES.filter(e => e.view === 'ch1' || e.view === 'ch2')
+  const systems = ENTRIES.filter(e => e.view && e.view !== 'ch1' && e.view !== 'ch2')
   return (
-    <div className="auth-outer">
-      <div className="auth-card">
-        <p className="auth-sys">SUPERSEDE</p>
-        <h1 className="auth-title">Welcome, {player.username}</h1>
-        <p className="auth-sub">Level {player.level || 1} · {player.hp ?? 100}/{player.max_hp ?? 100} HP</p>
-        <div className="menu-list">
-          {ENTRIES.map((e, i) => e.section
-            ? <p key={i} className="menu-section">{e.section}</p>
-            : <button key={e.view} className="menu-btn" onClick={() => onPick(e.view)}>{e.label}<small>{e.sub}</small></button>
-          )}
+    <BookShell eyebrow="Table of contents" title="The Archive" subtitle="Select a chapter. Your choices and inventory travel with you."
+      left={<>
+        <h2>Where shall the story take you?</h2>
+        {chapters.map(e => <button className="reading-chapter" key={e.view} onClick={() => onPick(e.view)}>{e.label}<small>{e.sub}</small></button>)}
+        <p className="reading-quote">Every choice leaves an imprint. Every encounter writes the next page.</p>
+      </>}
+      right={<>
+        <span className="reading-page-heading">Adventurer's record</span>
+        <h2>{player.username}</h2>
+        <div className="reading-stat-grid">
+          <div><span className="reading-stat-label">Level</span><span className="reading-stat-value">{player.level || 1}</span></div>
+          <div><span className="reading-stat-label">Health</span><span className="reading-stat-value">{player.hp ?? 100} / {player.max_hp ?? 100}</span></div>
         </div>
-        <button className="auth-switch menu-signout" onClick={onSignOut}>Sign out</button>
-      </div>
-    </div>
+        <span className="reading-page-heading" style={{ marginTop: 28 }}>Adventurer's tools</span>
+        {systems.map(e => <button className="reading-action" key={e.view} title={e.sub} onClick={() => onPick(e.view)}>{e.label}</button>)}
+        <button className="reading-action" onClick={onSignOut}>Sign out</button>
+      </>}
+      footer="The archive remembers · SuperSede" />
   )
 }
