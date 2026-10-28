@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { usePlayerStore } from '../store/usePlayerStore'
 import { applyMoralChange } from '../game/reputation'
+import { grantXp } from '../game/progression'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -30,7 +31,7 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
 
-    if (cur?.xp) updates.xp = (player.xp || 0) + cur.xp
+    if (cur?.xp) Object.assign(updates, grantXp(player, cur.xp))
 
     let moralDelta = 0
     if (choice.outcome === 'attack') moralDelta -= 20
