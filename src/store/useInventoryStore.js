@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient'
-import { SLOTS } from '../game/equipmentSlots'
+import { SLOTS, equipmentSubtype, isTwoHandedWeapon } from '../game/equipmentSlots'
 
 export const useInventoryStore = create((set, get) => ({
   items: [],
@@ -22,19 +22,19 @@ export const useInventoryStore = create((set, get) => ({
     const slotDef = SLOTS.find(s => s.key === slotKey)
     if (!item || !slotDef) return { ok: false, reason: 'Invalid item or slot.' }
 
-    if (!slotDef.accepts.includes(item.subtype || item.item_type)) {
+    if (!slotDef.accepts.includes(equipmentSubtype(item))) {
       return { ok: false, reason: `${item.name} can't go in ${slotDef.label}.` }
     }
 
     const current = items.find(i => i.equipped_slot === slotKey)
-    if (slotKey === 'offhand' && items.some(i => i.equipped_slot === 'mainhand' && i.two_handed)) {
+    if (slotKey === 'offhand' && items.some(i => i.equipped_slot === 'mainhand' && isTwoHandedWeapon(i))) {
       return { ok: false, reason: 'Unequip your two-handed weapon first.' }
     }
     if (current) {
       const { error } = await supabase.from('inventory').update({ equipped_slot: null }).eq('id', current.id)
       if (error) return { ok:false, reason:error.message }
     }
-    if (item.two_handed && slotKey === 'mainhand') {
+    if (isTwoHandedWeapon(item) && slotKey === 'mainhand') {
       const oh = items.find(i => i.equipped_slot === 'offhand')
       if (oh) {
         const { error } = await supabase.from('inventory').update({ equipped_slot: null }).eq('id', oh.id)
@@ -48,7 +48,7 @@ export const useInventoryStore = create((set, get) => ({
       items: items.map(i => {
         if (i.id === itemId) return { ...i, equipped_slot: slotKey }
         if (current && i.id === current.id) return { ...i, equipped_slot: null }
-        if (item.two_handed && slotKey === 'mainhand' && i.equipped_slot === 'offhand') return { ...i, equipped_slot: null }
+        if (isTwoHandedWeapon(item) && slotKey === 'mainhand' && i.equipped_slot === 'offhand') return { ...i, equipped_slot: null }
         return i
       }),
     })
