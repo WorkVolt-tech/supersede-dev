@@ -2,10 +2,13 @@ import { useState, useCallback } from 'react'
 import { usePlayerStore } from '../store/usePlayerStore'
 import { applyMoralChange } from '../game/reputation'
 import { grantXp } from '../game/progression'
+import { grantLoot } from '../game/loot'
+import { useInventoryStore } from '../store/useInventoryStore'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
+  const loadInventory = useInventoryStore(s => s.loadInventory)
 
   const startId = player?.current_node?.startsWith(chapterPrefix + '_')
     ? player.current_node.replace(chapterPrefix + '_', '')
@@ -54,9 +57,18 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       }
     }
 
+    if (cur?.rewards?.length) {
+      try {
+        await grantLoot(player.id, cur.rewards)
+        await loadInventory(player.id)
+      } catch (error) {
+        console.error('Could not grant story rewards:', error)
+        return
+      }
+    }
     await updatePlayer(updates)
     setCurrentNodeId(resolvedId)
-  }, [NODES, chapterPrefix, currentNodeId, player, updatePlayer])
+  }, [NODES, chapterPrefix, currentNodeId, player, updatePlayer, loadInventory])
 
   return { currentNodeId, currentNode, goTo }
 }
