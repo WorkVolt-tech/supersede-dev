@@ -16,6 +16,7 @@ import PlayerRecord from './components/book/PlayerRecord'
 import FarmingAreas from './components/farming/FarmingAreas'
 import SkillsScreen from './components/skills/SkillsScreen'
 import ProfessionScreen from './components/professions/ProfessionScreen'
+import ProfessionHalls from './components/professions/ProfessionHalls'
 import ForgerAdventure from './components/professions/ForgerAdventure'
 import MinerAdventure from './components/professions/MinerAdventure'
 import MerchantAdventure from './components/professions/MerchantAdventure'
@@ -135,8 +136,9 @@ export default function App() {
   if (view === 'merchant-adventure') return <BookShell eyebrow="Profession · Merchant" title="The Golden Exchange" subtitle="Trade, negotiation, and survival." left={<MerchantAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'miner-adventure') return <BookShell eyebrow="Profession · Miner" title="Beneath the Broken Earth" subtitle="The first mining expedition." left={<MinerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'forger-adventure') return <BookShell eyebrow="Profession · Forger" title="The Trial of Steel" subtitle="The first of eight profession adventures." left={<ForgerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
+  if (view === 'profession-halls') return <BookShell eyebrow="The District · Guilds & Crafts" title="Profession District" subtitle="Trade halls, workshops, and resident specialists." left={<ProfessionHalls player={player} onReturn={()=>setView('professions')} onNavigate={navigate}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'professions') return <BookShell eyebrow="Chapter III · Trade & craft" title="Professions" subtitle="Choose your craft after completing Chapter II."
-    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onAdventure={()=>setView('forger-adventure')} onMinerAdventure={()=>setView('miner-adventure')} onMerchantAdventure={()=>setView('merchant-adventure')} onAlchemistAdventure={()=>setView('alchemist-adventure')} onHunterAdventure={()=>setView('hunter-adventure')} onPathfinderAdventure={()=>setView('pathfinder-adventure')} onEngineerAdventure={()=>setView('engineer-adventure')} onResonanceWeaverAdventure={()=>setView('resonance-weaver-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
+    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onHalls={()=>setView('profession-halls')} onAdventure={()=>setView('forger-adventure')} onMinerAdventure={()=>setView('miner-adventure')} onMerchantAdventure={()=>setView('merchant-adventure')} onAlchemistAdventure={()=>setView('alchemist-adventure')} onHunterAdventure={()=>setView('hunter-adventure')} onPathfinderAdventure={()=>setView('pathfinder-adventure')} onEngineerAdventure={()=>setView('engineer-adventure')} onResonanceWeaverAdventure={()=>setView('resonance-weaver-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
 
   if (archivedSections[view]) {
     const [title, description] = archivedSections[view]
