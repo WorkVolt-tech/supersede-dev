@@ -20,6 +20,7 @@ import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStat
 import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
+import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
 
 function HpBar({ hp, maxHp }) {
@@ -174,7 +175,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const newEnemyHp = Math.max(0, foeHp - dmg)
     setEnemyHp(newEnemyHp)
 
-    const msgs = [`You strike for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || [])]
+    const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
+    const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
+    const verb = ranged ? 'You shoot' : 'You strike'
+    const msgs = [`${verb} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || [])]
     if (atkResult?.dbUpdates) Object.assign(dbUpdatesRef.current, atkResult.dbUpdates)
 
     const postResult = ClsCombat.onPlayerAttackPost(combatPlayer, statusEffectsRef.current, enemyData, dmg, wasCrit)
