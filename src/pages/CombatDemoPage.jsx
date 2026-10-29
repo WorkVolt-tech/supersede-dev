@@ -18,12 +18,6 @@ const HERO = {
     { id: 'snipe',  label: 'Snipe',  sub: 'Any rank, only hits rank 3-4', targetRanks: [3, 4], dmg: 9 },
   ],
 }
-const YARA = {
-  id: 'yara', name: 'Yara', icon: '🧕', hp: 40, maxHp: 40, spd: 8,
-  skills: [
-    { id: 'mend', label: 'Mend', sub: 'Any rank, heals any ally', targetsAllies: true, heal: 10 },
-  ],
-}
 const ENEMIES = [
   { id: 'e1', name: 'Looter', icon: '👹', hp: 24, maxHp: 24, spd: 4 },
   { id: 'e2', name: 'Hunter Scout', icon: '🏹', hp: 30, maxHp: 30, spd: 5 },
@@ -31,7 +25,7 @@ const ENEMIES = [
 ]
 
 export default function CombatDemoPage() {
-  const [playerFormation, setPlayerFormation] = useState(() => createFormation([HERO, YARA]))
+  const [playerFormation, setPlayerFormation] = useState(() => createFormation([HERO]))
   const [enemyFormation, setEnemyFormation] = useState(() => createFormation(ENEMIES))
   const [turnOrder, setTurnOrder] = useState([])
   const [turnIndex, setTurnIndex] = useState(0)
@@ -131,6 +125,7 @@ export default function CombatDemoPage() {
 
   return (
     <div className="combat-demo">
+      <p className="combat-demo-note">Training simulation · Not part of the story. Party members join only when you meet and recruit them.</p>
       <TurnQueue order={turnOrder} activeIndex={turnIndex} />
       <Formation
         playerFormation={playerFormation}
