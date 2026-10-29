@@ -34,5 +34,6 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
     </div>
+    <button className="reading-action" onClick={() => onNavigate('farming')}>⚔ Chapter 1 farming areas</button>
   </>
 }
