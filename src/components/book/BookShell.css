@@ -40,6 +40,8 @@
 .reading-stat-value { font-size:24px; color:var(--book-ink); }
 .reading-action { display:block; width:100%; text-align:left; margin-top:8px; padding:10px 12px; border:1px solid var(--book-line); background:transparent; color:var(--book-ink); font:10px 'JetBrains Mono',monospace; letter-spacing:.12em; cursor:pointer; }
 .reading-action:hover { border-color:var(--book-gold); background:rgba(176,126,52,.09); }
+.reading-action:disabled { opacity:.52; cursor:not-allowed; }
+.reading-action:disabled:hover { border-color:var(--book-line); background:transparent; }
 .reading-quote { border-left:2px solid var(--book-gold); margin:28px 0 0; padding:10px 16px; font:italic 19px/1.45 'Cormorant Garamond',serif; }
 .reading-footer { text-align:center; margin-top:24px; color:#927c58; font:10px 'JetBrains Mono',monospace; letter-spacing:.15em; }
 .reading-meter-label { display:flex; justify-content:space-between; margin:16px 0 6px; color:#5d4633; font:10px 'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; }
