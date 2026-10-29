@@ -14,6 +14,11 @@ const ZONE_GUARDIANS = {
   loc_market: 'surveyor',
   loc_tower: 'unseen',
 }
+const RANGED_ZONE_DROPS = {
+  loc_garage: [{itemKey:'improvised_bow',chance:.06},{itemKey:'rusted_pistol',chance:.04}],
+  loc_market: [{itemKey:'salvaged_crossbow',chance:.05}],
+  loc_tower: [{itemKey:'security_rifle',chance:.05}],
+}
 
 export default function FarmingAreas({ onReturn }) {
   const player = usePlayerStore(s => s.player)
@@ -25,7 +30,8 @@ export default function FarmingAreas({ onReturn }) {
 
   function beginFight(area) {
     if (!isUnlocked(area)) return
-    const enemy = area.enemies[Math.floor(Math.random() * area.enemies.length)]
+    const spawn = area.enemies[Math.floor(Math.random() * area.enemies.length)]
+    const enemy = {...spawn,loot:[...(spawn.loot||[]),...(RANGED_ZONE_DROPS[area.id]||[])]}
     setMessage('')
     setEncounter({ enemy, area, key: `${area.id}-${Date.now()}` })
   }
