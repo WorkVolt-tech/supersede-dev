@@ -36,6 +36,9 @@ export default function DistrictHubCh2({ player, goTo }) {
           )
         })}
       </div>
+      <button className="choice" onClick={() => goTo('farming_grounds_hub')} style={{ width: '100%' }}>
+        <span className="choice-arrow">→</span><span className="choice-body">Enter Farming Grounds · rare profession discoveries</span>
+      </button>
       <button className="choice" onClick={() => goTo('pre_boss_gate')} style={{ width: '100%' }}>
         <span className="choice-arrow">→</span>
         <span className="choice-body">Face the Twin Judges</span>
