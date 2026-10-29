@@ -12,6 +12,7 @@
 .skills-section-label { margin-top:9px; }
 .skills-tabs.elemental,.skills-tabs.class-tabs { padding-top:7px; }
 .skills-tabs.class-tabs button { font-size:10px; padding:7px 10px; }
+.skills-locked-class { color:#a99270; font:12px 'JetBrains Mono',monospace; margin:8px 0 16px; }
 .skills-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(230px,310px); gap:16px; margin-top:16px; min-height:600px; }
 .skills-tree-column,.skills-detail { border:1px solid #685035; background:#181410; min-width:0; }
 .skills-tree-heading { padding:16px 20px; border-bottom:1px solid #5c4933; }
