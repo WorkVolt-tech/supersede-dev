@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient'
 import { SLOTS, equipmentSubtype, isTwoHandedWeapon } from '../game/equipmentSlots'
+import { findRuneword, RUNE_NAMES, normalizedItem } from '../game/runes'
 
 export const useInventoryStore = create((set, get) => ({
   items: [],
@@ -13,7 +14,33 @@ export const useInventoryStore = create((set, get) => ({
       .select('*')
       .eq('player_id', playerId)
       .order('obtained_at', { ascending: false })
-    set({ items: data || [], loading: false })
+    set({ items: (data || []).map(normalizedItem), loading: false })
+  },
+
+  async socketRune(itemId, runeId) {
+    const { items } = get()
+    const item = items.find(i=>i.id===itemId)
+    const rune = items.find(i=>i.id===runeId)
+    if (!item || !rune || item.player_id!==rune.player_id) return {ok:false,reason:'Item or rune not found.'}
+    if (!['weapon','armor','accessory'].includes(item.item_type)) return {ok:false,reason:'Only equipment accepts runes.'}
+    const runeName = rune.item_key?.replace(/^rune_/, '')
+    if (!rune.item_key?.startsWith('rune_') || !RUNE_NAMES.includes(runeName)) return {ok:false,reason:'Select a rune.'}
+    const used = (item.socketed_runes || []).length
+    if (!item.sockets_total || used>=item.sockets_total) return {ok:false,reason:'No empty sockets.'}
+    const socketed_runes = [...(item.socketed_runes || []),runeName]
+    const rw = findRuneword(socketed_runes,item.item_type,item.sockets_total)
+    const { error } = await supabase.from('inventory').update({socketed_runes,sockets_used:socketed_runes.length,runeword_name:rw?.name||null}).eq('id',itemId).eq('player_id',item.player_id)
+    if (error) return {ok:false,reason:error.message}
+    const qty = rune.quantity || 1
+    const { error: consumeError } = qty>1
+      ? await supabase.from('inventory').update({quantity:qty-1}).eq('id',runeId).eq('player_id',item.player_id)
+      : await supabase.from('inventory').delete().eq('id',runeId).eq('player_id',item.player_id)
+    if (consumeError) {
+      await supabase.from('inventory').update({socketed_runes:item.socketed_runes||[],sockets_used:used,runeword_name:item.runeword_name||null}).eq('id',itemId).eq('player_id',item.player_id)
+      return {ok:false,reason:consumeError.message}
+    }
+    await get().loadInventory(item.player_id)
+    return {ok:true,reason:rw ? `✦ ${rw.name} activated!` : `Rune socketed (${socketed_runes.length}/${item.sockets_total}).`}
   },
 
   async equipItem(itemId, slotKey) {
