@@ -16,7 +16,8 @@ import { usePlayerStore } from '../../store/usePlayerStore'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
-import { calcATK, calcDEF, calcMaxHp } from '../../game/playerStats'
+import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStats } from '../../game/playerStats'
+import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
 import './CombatScreen.css'
@@ -52,6 +53,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
   const equipped = items.filter(i => i.equipped_slot)
+  const effective = getEffectiveStats(player,equipped)
+  const combatPlayer = getCombatPlayer(player,equipped)
 
   const maxPlayerHp = calcMaxHp(player, equipped)
   const [currentHp, setCurrentHp] = useState(player.hp ?? maxPlayerHp)
@@ -67,7 +70,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const dbUpdatesRef = useRef({})
 
   useEffect(() => {
-    const r = ClsCombat.onCombatStart(player, statusEffectsRef.current)
+    const r = ClsCombat.onCombatStart(combatPlayer, statusEffectsRef.current)
     if (r?.messages?.length) pushLog(r.messages[0])
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -77,7 +80,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   async function endCombat(outcome, hpAtEnd = currentHp) {
     setResult(outcome)
-    const end = ClsCombat.onCombatEnd(player, statusEffectsRef.current, outcome === 'win' ? 'victory' : 'defeat')
+    const end = ClsCombat.onCombatEnd(combatPlayer, statusEffectsRef.current, outcome === 'win' ? 'victory' : 'defeat')
     if (end?.dbUpdates) Object.assign(dbUpdatesRef.current, end.dbUpdates)
     const finalUpdates = { ...dbUpdatesRef.current, hp: outcome === 'win' ? hpAtEnd : Math.max(1, hpAtEnd) }
     if (outcome === 'win') {
@@ -88,7 +91,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     await updatePlayer(finalUpdates)
     if (outcome === 'win' && enemyData.loot?.length) {
       try {
-        const drops = await grantLoot(player.id, enemyData.loot)
+        const drops = await grantLoot(player.id, enemyData.loot, effective.core.luck)
         await loadInventory(player.id)
         if (drops.length) pushLog('Loot: '+drops.map(d => `${d.icon || '📦'} ${d.name} ×${d.qty}`).join(' · '))
       } catch (error) {
@@ -125,8 +128,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // the vanilla engines did. Real return shape is {dmgMult, reflectAmount,
     // messages} — not a flat "final damage" field, so apply the multiplier
     // ourselves.
-    const hitResult = ClsCombat.onPlayerHit(player, statusEffectsRef.current, enemyData, aiDmg, maxPlayerHp)
-    const finalDmg = Math.max(0, Math.round(aiDmg * (hitResult?.dmgMult ?? 1)))
+    const hitResult = ClsCombat.onPlayerHit(combatPlayer, statusEffectsRef.current, enemyData, aiDmg, maxPlayerHp)
+    let finalDmg = Math.max(0, Math.round(aiDmg * (hitResult?.dmgMult ?? 1) * resistMult(combatPlayer)))
+    const dodgeChance = Math.min(.25,Math.max(0,effective.core.agility)*.01)
+    if (finalDmg > 0 && Math.random() < dodgeChance) {
+      finalDmg = 0
+      messages.push('You evade the attack!')
+    }
     if (hitResult?.messages?.length) messages.push(...hitResult.messages)
 
     let nextHp = Math.max(0, playerHp - finalDmg)
@@ -137,11 +145,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       foeHp = Math.max(0, foeHp - hitResult.reflectAmount)
       messages.push(`${hitResult.reflectAmount} damage reflected back.`)
     }
+    const elementalReflect = Math.round(finalDmg * reflectFraction(combatPlayer))
+    if (elementalReflect > 0) {
+      foeHp = Math.max(0,foeHp-elementalReflect)
+      messages.push(`${elementalReflect} elemental damage reflected.`)
+    }
     messages.forEach(pushLog)
 
     // Real return shape is {messages, damageToEnemy, healToPlayer} — DoT and
     // regen status effects tick here, not via a dbUpdates field.
-    const turnEnd = ClsCombat.onTurnEnd(player, statusEffectsRef.current)
+    const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
     if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
     if (turnEnd?.damageToEnemy > 0) foeHp = Math.max(0, foeHp - turnEnd.damageToEnemy)
     if (turnEnd?.healToPlayer > 0 && nextHp > 0) nextHp = Math.min(maxPlayerHp, nextHp + turnEnd.healToPlayer)
@@ -154,25 +167,27 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function playerAttack(foeHp) {
     const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) + Math.floor(Math.random() * 4))
-    const atkResult = ClsCombat.onPlayerAttack(player, statusEffectsRef.current, enemyData, base)
-    const dmg = Math.max(0, Math.round(base * (atkResult?.dmgMult ?? 1)))
+    const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
+    const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
+    const wasCrit = atkResult?.wasCrit || Math.random() < critChance
+    const dmg = Math.max(0, Math.round(base * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
     const newEnemyHp = Math.max(0, foeHp - dmg)
     setEnemyHp(newEnemyHp)
 
-    const msgs = [`You strike for ${dmg}.`, ...(atkResult?.messages || [])]
+    const msgs = [`You strike for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || [])]
     if (atkResult?.dbUpdates) Object.assign(dbUpdatesRef.current, atkResult.dbUpdates)
 
-    const postResult = ClsCombat.onPlayerAttackPost(player, statusEffectsRef.current, enemyData, dmg, atkResult?.wasCrit)
+    const postResult = ClsCombat.onPlayerAttackPost(combatPlayer, statusEffectsRef.current, enemyData, dmg, wasCrit)
     if (postResult?.messages?.length) msgs.push(...postResult.messages)
     if (postResult?.dbUpdates) Object.assign(dbUpdatesRef.current, postResult.dbUpdates)
 
-    const hpChange = ClsCombat.onEnemyHpChange(player, statusEffectsRef.current, enemyData, foeHp, newEnemyHp, enemyData.hp)
+    const hpChange = ClsCombat.onEnemyHpChange(combatPlayer, statusEffectsRef.current, enemyData, foeHp, newEnemyHp, enemyData.hp)
     if (hpChange?.messages?.length) msgs.push(...hpChange.messages)
 
     msgs.forEach(pushLog)
 
     if (newEnemyHp <= 0) {
-      const killResult = ClsCombat.onKill(player, statusEffectsRef.current, enemyData)
+      const killResult = ClsCombat.onKill(combatPlayer, statusEffectsRef.current, enemyData)
       if (killResult?.messages?.length) killResult.messages.forEach(pushLog)
       if (killResult?.dbUpdates) Object.assign(dbUpdatesRef.current, killResult.dbUpdates)
       return newEnemyHp
@@ -181,7 +196,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   }
 
   function playerSkill(skillId, foeHp, playerHp) {
-    const r = ClsCombat.onActiveSkill(skillId, player, statusEffectsRef.current, enemyData)
+    const r = ClsCombat.onActiveSkill(skillId, combatPlayer, statusEffectsRef.current, enemyData)
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     if (typeof r?.enemyDamage === 'number' && r.enemyDamage > 0) foeHp = Math.max(0, foeHp - r.enemyDamage)
@@ -205,7 +220,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     let playerHp = currentHp
     let foeHp = enemyHp
-    const playerSpeed = (player.speed ?? player.spd ?? 5) + (statusEffectsRef.current.playerSPDBonus || 0)
+    const playerSpeed = calcSPD(player,equipped) + (statusEffectsRef.current.playerSPDBonus || 0)
     const enemySpeed = enemyData.speed ?? enemyData.spd ?? enemyData.agility ?? 5
     const enemyFirst = enemySpeed > playerSpeed
     const defendAction = action === 'defend'
@@ -241,7 +256,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setBusy(false)
   }
 
-  const activeSkills = ClsCombat.getActiveClassSkills(player, statusEffectsRef.current) || []
+  const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
