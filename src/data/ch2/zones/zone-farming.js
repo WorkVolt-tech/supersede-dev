@@ -124,6 +124,12 @@ export function randomizeFarmingWaves() {
     const isLast = idx === 4
     WAVE_NODES[key].enemy = {
       ...base,
+      // Rare, repeatable Chapter II profession discoveries.
+      // Awarded through the normal combat loot pipeline, not directly by UI.
+      loot: [
+        ...(base.loot || []),
+        { itemKey: 'profession_token_' + ['merchant','miner','forger','alchemist','hunter','pathfinder','engineer','resonance_weaver'][Math.floor(Math.random()*8)], chance: 0.12, qty: 1 },
+      ],
       // Wave 5 gets a 15% boost to HP + XP for "boss" feel.
       hp: isLast ? Math.round(base.hp * 1.15) : base.hp,
       xp: isLast ? Math.round(base.xp * 1.15) : base.xp,
