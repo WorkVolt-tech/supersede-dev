@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { PROFESSIONS, professionUnlocked, professionPointsAtLevel, professionSwitchCost } from '../../game/professions'
 import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTrees'
 
-export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure,onPathfinderAdventure,onEngineerAdventure,onResonanceWeaverAdventure}) {
+export default function ProfessionScreen({player,onReturn,onHalls,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure,onPathfinderAdventure,onEngineerAdventure,onResonanceWeaverAdventure}) {
   const [status,setStatus] = useState(null)
   const [progress,setProgress] = useState([])
   const [discoveries,setDiscoveries] = useState([])
@@ -76,6 +76,7 @@ export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdv
 
   return <section className="story-text" style={{padding:'1rem'}}>
     <h2>⚒️ Professions</h2>
+    <button className="reading-action" onClick={onHalls}>🏛️ Visit the Profession District · NPC halls and rotating showcases</button>
     {!professionUnlocked(player) && <p>🔒 Profession activation unlocks after Chapter 2. Collect profession discovery items in Chapter 2 farming areas; discoveries can be registered now.</p>}
     <>
       <p>Choose one active profession. Profession XP and levels are independent of your combat class.</p>
