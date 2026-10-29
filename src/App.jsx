@@ -7,7 +7,6 @@ import SetupPage from './components/auth/SetupPage'
 import StartMenu from './components/menu/StartMenu'
 import ChapterPage from './pages/ChapterPage'
 import Ch2ChapterPage from './pages/Ch2ChapterPage'
-import PuzzleDemoPage from './pages/PuzzleDemoPage'
 import InventoryDemoPage from './pages/InventoryDemoPage'
 import CombatDemoPage from './pages/CombatDemoPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
@@ -106,7 +105,6 @@ export default function App() {
     farming: <FarmingAreas onReturn={() => setView('menu')} />,
     inventory: <InventoryScreen />,
     'inventory-demo': <InventoryDemoPage />,
-    puzzle: <PuzzleDemoPage />,
     'combat-demo': <CombatDemoPage />,
     drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} />,
     drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} />,
@@ -116,7 +114,7 @@ export default function App() {
     trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
     lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
     badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
-    ch3: ['Chapter 3 · Signal Hunters', 'Chapter 3 has been unlocked, but its original story engine has not yet been migrated to React. The cipher puzzle is available under Additional Activities while the full chapter is being rebuilt.'],
+    ch3: ['Chapter 3 · Signal Hunters', 'Chapter 3 has been unlocked, but its original story engine has not yet been migrated to React. Its cipher puzzle will appear at the appropriate story moment when the chapter is restored.'],
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
