@@ -4,6 +4,7 @@ import { applyMoralChange } from '../game/reputation'
 import { grantXp } from '../game/progression'
 import { grantLoot } from '../game/loot'
 import { useInventoryStore } from '../store/useInventoryStore'
+import { getJudgesForm } from '../game/judgesClassRules'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -55,6 +56,23 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       if (choice.allianceTagRepeatable || !log.includes(tag)) {
         updates.alliance_log = [...log, tag]
       }
+    }
+
+    // Record boss victories only on the win route, never on defeat/escape.
+    if (cur?.bossKey && nextId === cur.onWin) {
+      const defeated = [...new Set([...(player.defeated_bosses || []), cur.bossKey])]
+      if (cur.bossKey === 'twin_judges') {
+        const form = getJudgesForm(player)
+        const rewardTag = 'judges_sp_' + form
+        if (!defeated.includes(rewardTag)) {
+          defeated.push(rewardTag)
+          updates.skill_points = (player.skill_points || 0) + 1
+          updates.sp_claimed = (player.sp_claimed || 0) + 1
+        }
+        const log = (updates.alliance_log || player.alliance_log || []).filter(tag => !tag.startsWith('class_form_'))
+        updates.alliance_log = [...new Set([...log, 'class_picker_unlocked', 'class_form_' + form])]
+      }
+      updates.defeated_bosses = defeated
     }
 
     if (cur?.rewards?.length) {
