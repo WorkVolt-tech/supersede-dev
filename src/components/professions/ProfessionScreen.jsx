@@ -14,7 +14,7 @@ export default function ProfessionScreen({player,onReturn}) {
   const [expandedBranch,setExpandedBranch] = useState(null)
 
   async function refresh() {
-    if (!player || !professionUnlocked(player)) {setLoading(false);return}
+    if (!player) {setLoading(false);return}
     const [s,p,u,i] = await Promise.all([
       supabase.from('profession_status').select('*').eq('player_id',player.id).maybeSingle(),
       supabase.from('profession_progress').select('*').eq('player_id',player.id),
