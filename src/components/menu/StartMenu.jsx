@@ -15,7 +15,7 @@ const ENTRIES = [
   { section: 'Demos' },
   { view: 'puzzle', label: 'Drag Puzzle', sub: 'Ch3 keypad cipher' },
   { view: 'inventory-demo', label: 'Inventory (sample items)', sub: 'Try drag-and-drop with fake gear' },
-  { view: 'combat-demo', label: 'Ranked Combat', sub: 'Darkest Dungeon style' },
+  { view: 'combat-demo', label: 'Combat Formation Test', sub: 'Optional rank-and-position training simulation; no story characters' },
 ]
 
 export default function StartMenu({ player, onPick, onSignOut, onReset }) {
