@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
+import { STANDARD_WEAPONS } from './runes'
 
 const FALLBACK_ITEMS = {
   scrap_metal: { name:'Scrap Metal', item_type:'material', icon:'⚙️' },
@@ -30,12 +31,12 @@ export async function grantLoot(playerId, drops = [], luck = 0) {
     if (!key) continue
     const qty = Math.max(1, Math.floor(Number(drop.qty || 1)))
     const { data: catalog } = await supabase.from('items').select('*').eq('item_key', key).maybeSingle()
-    const item = { name:key.replace(/_/g,' '), item_type:'material', icon:'📦', rarity:'common', ...FALLBACK_ITEMS[key], ...(catalog || {}) }
+    const item = { name:key.replace(/_/g,' '), item_type:'material', icon:'📦', rarity:'common', ...FALLBACK_ITEMS[key], ...(catalog || {}), ...(STANDARD_WEAPONS[key] || {}) }
     const row = Object.fromEntries(ITEM_COLUMNS.filter(k => item[k] !== undefined).map(k => [k,item[k]]))
     row.player_id = playerId
     row.item_key = key
     row.quantity = STACKABLE.has(item.item_type) ? qty : 1
-    row.sockets_total = 0
+    row.sockets_total = ['weapon','armor','accessory'].includes(item.item_type) ? 1 + Math.floor(Math.random()*3) : 0
     row.sockets_used = 0
     row.socketed_runes = []
 
