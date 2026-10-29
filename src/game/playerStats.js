@@ -1,6 +1,7 @@
 // One stat calculation shared by the record, equipment screen, and combat.
 // Skill-tree purchases already update player core columns; don't count them twice.
 import { rawBonus } from './elementalBonuses.js'
+import { findRuneword, normalizedItem } from './runes.js'
 
 export const CORE_STATS = ['atk','def','power','guard','speed','control','insight','luck','agility']
 const DEFAULTS = { atk:1, def:0, power:0, guard:0, speed:0, control:0, insight:0, luck:0, agility:0 }
@@ -10,8 +11,11 @@ export function getEquipmentBonuses(equippedItems = []) {
   const bonuses = Object.fromEntries([...CORE_STATS,'max_hp'].map(key => [key,0]))
   for (const item of equippedItems) {
     if (!item.equipped_slot) continue
+    const normalized = normalizedItem(item)
+    const runeword = findRuneword(item.socketed_runes || [], item.item_type, item.sockets_total)
     for (const key of Object.keys(bonuses)) {
-      bonuses[key] += number(item[key === 'max_hp' ? 'max_hp_bonus' : key + '_bonus'])
+      const column = key === 'max_hp' ? 'max_hp_bonus' : key + '_bonus'
+      bonuses[key] += number(normalized[column]) + number(runeword?.stats[column])
     }
   }
   return bonuses
