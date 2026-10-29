@@ -51,6 +51,10 @@
 .reading-minor-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:20px; }
 .reading-minor-stats div { border:1px solid var(--book-line); padding:8px 3px; font:9px 'JetBrains Mono',monospace; text-align:center; color:#6b533c; }
 .reading-minor-stats b { display:block; font:600 18px 'Cormorant Garamond',serif; color:var(--book-ink); margin-top:3px; }
+.reading-stat-summary { color:#654a32; font:12px 'JetBrains Mono',monospace; line-height:1.5; }
+.reading-attribute-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin:12px 0; }
+.reading-attribute-grid div { border:1px solid var(--book-line); text-align:center; color:#76593e; padding:7px 2px; font:10px 'JetBrains Mono',monospace; }
+.reading-attribute-grid strong { display:block; font:600 19px 'Cormorant Garamond',serif; color:var(--book-ink); }
 .reading-quick-nav { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
 .reading-quick-nav .reading-action { margin:0; text-transform:uppercase; text-align:center; padding:10px 4px; }
 @media(max-width:760px) { .reading-scene { padding:12px 12px 36px; } .reading-heading { align-items:start; flex-direction:column; gap:8px; } .reading-heading p { text-align:left; } .reading-book { display:block; transform:none; } .reading-page { padding:25px 22px; } .reading-page-left { border-right:1px solid var(--book-line); border-bottom:0; } .reading-page-right { border-left:1px solid var(--book-line); border-top:0; } .reading-spine { height:14px; background:linear-gradient(180deg,rgba(0,0,0,.15),rgba(0,0,0,.4),rgba(0,0,0,.12)); } .reading-page-left::after,.reading-page-right::before { display:none; } }
