@@ -14,6 +14,7 @@ import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
+import FarmingAreas from './components/farming/FarmingAreas'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
@@ -101,6 +102,7 @@ export default function App() {
   const screens = {
     ch1: <ChapterPage />,
     ch2: <Ch2ChapterPage />,
+    farming: <FarmingAreas onReturn={() => setView('menu')} />,
     inventory: <InventoryScreen />,
     'inventory-demo': <InventoryDemoPage />,
     puzzle: <PuzzleDemoPage />,
@@ -138,6 +140,14 @@ export default function App() {
       </div>}
     </>
   }
+
+  if (view === 'farming') return <BookShell
+    eyebrow="Chapter I · System hunting grounds"
+    title="Farming Areas"
+    subtitle="The district is alive with strange entities. Choose your next encounter."
+    left={screens[view]}
+    right={<PlayerRecord player={player} onNavigate={navigate} />}
+  />
 
   const isChapter = view === 'ch1' || view === 'ch2'
   if (isChapter) {
