@@ -7,9 +7,14 @@
 // for every other fight.
 import ChoiceList from './ChoiceList'
 import CombatScreen from '../combat/CombatScreen'
+import ClassChoice from './ClassChoice'
 
 export default function StoryNode({ node, player, goTo, judgeCtx }) {
   if (!node) return <p className="story-text">Error: node not found.</p>
+
+  if (node.type === 'class_choice') {
+    return <ClassChoice player={player} onContinue={() => goTo(node.onContinue)} />
+  }
 
   if (node.type === 'combat' || node.type === 'boss') {
     return (
