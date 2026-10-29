@@ -78,6 +78,7 @@ export default function App() {
   }
 
   function navigate(nextView) {
+    if (nextView === 'farming' && !chapterOneComplete(player)) return
     if (nextView === 'drive' && !chapterOneComplete(player)) return
     if (nextView === 'drive3' && !chapterTwoComplete(player)) return
     if (nextView === 'ch2' && !firstDriveComplete(player)) return
