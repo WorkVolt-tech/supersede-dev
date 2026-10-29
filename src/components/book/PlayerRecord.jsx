@@ -56,5 +56,6 @@ export default function PlayerRecord({ player, onNavigate }) {
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
     </div>
     <button className="reading-action" onClick={() => onNavigate('farming')}>⚔ Chapter 1 farming areas</button>
+    <button className="reading-action" onClick={() => onNavigate('professions')}>⚒ Professions · {((player?.chapters_unlocked || []).includes(3)) ? 'Available' : 'Unlock in Chapter 3'}</button>
   </>
 }
