@@ -10,6 +10,7 @@ const ENTRIES = [
   { view: 'ch2', label: 'Chapter 2', sub: 'Broken Alliances — zones, alliances, Twin Judges' },
   { view: 'ch3', label: 'Chapter 3', sub: 'Signal Hunters — the System is listening' },
   { section: 'Systems' },
+  { view: 'skills', label: 'Skills & Classes', sub: 'Skill trees, elemental paths, class progression and battle skills' },
   { view: 'inventory', label: 'Inventory', sub: 'Your real items — drag to equip' },
   { section: 'Demos' },
   { view: 'puzzle', label: 'Drag Puzzle', sub: 'Ch3 keypad cipher' },
