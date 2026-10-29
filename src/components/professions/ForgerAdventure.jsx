@@ -9,7 +9,7 @@ const SCENES = [
  {title:'Lesson II · Hammer and Anvil',text:'Varrin sets a blade blank before you. Every strike changes its balance.',actions:[['Strike carefully and rotate the blade','controlled_strikes'],['Hammer as quickly as possible','wild_strikes']]},
  {title:'Lesson III · The Quench',text:'The blade glows red. The final cooling will determine whether it survives.',actions:[['Quench gradually and inspect the edge','quench_gradually'],['Drop the entire blade into ice water','shock_quench']]},
  {title:'Kael · Rival at the Anvil',text:'Kael laughs at your plain design. His silver-trimmed sword sparkles under the light, but its center of mass looks wrong.',actions:[['Prioritize balance and a reliable edge','balance_over_flash'],['Add elaborate decorations to impress the judges','ornament']]},
- {title:'Field Trial · The Scrapbound',text:'Varrin leads you to a ruined foundry. A Scrapbound construct lurches from a collapsed furnace. “A forged blade is only proven when it survives a fight.”',actions:[]},
+ {title:'Field Trial · The Scrapbound',text:'Varrin gives you the Apprentice Trial Blade you forged. It is now in your inventory; equip it before the fight if you want to use it. At the ruined foundry, a Scrapbound construct lurches from the furnace. “A forged blade is only proven when it survives a fight.”',actions:[]},
  {title:'Apprentice of Steel',text:'Your first Trial of Steel is complete. Kael watches in silence as Varrin welcomes you to the guild. New profession quests will open in later adventures.',actions:[]},
 ]
 const TRIAL_ENEMY={name:'Scrapbound Construct',icon:'⚙️',hp:85,atk:12,def:4,xp:0,loot:[]}
