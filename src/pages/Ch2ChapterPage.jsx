@@ -6,6 +6,7 @@ import DistrictHubCh2 from '../components/hub/DistrictHubCh2'
 import { NODES as CH2_NODES } from '../data/ch2/nodes'
 import { ZONES } from '../data/ch2/config'
 import ClassChoice from '../components/story/ClassChoice'
+import { randomizeFarmingWaves } from '../data/ch2/zones/zone-farming'
 import { canChooseJudgesClass } from '../game/judgesClassRules'
 
 const ZONE_IDS = ZONES.map(z => z.id)
@@ -21,6 +22,14 @@ export default function Ch2ChapterPage() {
   // elementsAttempted scenario check. Records a zone the first time its
   // root node is entered.
   const trackedRef = useRef(new Set())
+  const farmingRun = useRef(false)
+  useEffect(() => {
+    if (currentNodeId === 'farming_grounds_hub') farmingRun.current = false
+    if (currentNodeId === 'farming_wave_1' && !farmingRun.current) {
+      randomizeFarmingWaves()
+      farmingRun.current = true
+    }
+  }, [currentNodeId])
   useEffect(() => {
     if (!player || !ZONE_IDS.includes(currentNodeId)) return
     const already = player.ch2_elements_attempted || []
