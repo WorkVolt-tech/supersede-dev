@@ -1,0 +1,11 @@
+.farming-cards { display:flex; flex-direction:column; gap:16px; }
+.farming-card { border:1px solid rgba(129,91,48,.32); background:#eee0c7; overflow:hidden; }
+.farming-card img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+.farming-card-content { padding:16px; }
+.farming-card h3 { font:600 26px 'Cormorant Garamond',Georgia,serif; margin:4px 0; color:#2b1d16; }
+.farming-card p { margin:5px 0 12px; font:16px/1.35 'Cormorant Garamond',Georgia,serif; color:#5f4937; }
+.farming-card .farming-enemies { font-size:13px; }
+.farming-difficulty { font:10px 'JetBrains Mono',monospace; letter-spacing:.15em; text-transform:uppercase; }
+.farming-message { color:#557040; border-left:2px solid #557040; padding-left:10px; }
+.farming-encounter-heading h2 { margin:7px 0; }
+.farming-encounter-heading p { margin:0 0 16px; }
