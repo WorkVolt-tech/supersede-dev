@@ -38,3 +38,25 @@
 .combat-result { text-align: center; font-size: 16px; font-weight: 700; letter-spacing: .1em; padding: .5rem; border-radius: 4px; }
 .combat-result.win { color: #7dd87d; background: rgba(80,180,80,.12); }
 .combat-result.lose { color: #e07070; background: rgba(180,60,60,.12); }
+
+/* Combat is also rendered on the light parchment pages of the reading book.
+   Override the dark-screen palette there so actions and event text stay legible. */
+.reading-page .combat-screen { color: #2b1d16; }
+.reading-page .combat-name { color: #76501c; }
+.reading-page .combat-hp-num,
+.reading-page .combat-action-sub { color: #654a32; }
+.reading-page .combat-action-btn {
+  background: #67553d;
+  border-color: #67553d;
+  color: #fff8eb;
+}
+.reading-page .combat-action-btn:hover:not(:disabled) { background: #4d3b2b; }
+.reading-page .combat-log {
+  color: #2b1d16;
+  background: #e3d3b7;
+  border: 1px solid #b9a181;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.reading-page .combat-result.win { color: #24652c; }
+.reading-page .combat-result.lose { color: #9a2929; }
