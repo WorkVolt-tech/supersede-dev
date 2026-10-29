@@ -6,6 +6,10 @@ const FALLBACK_ITEMS = {
   medkit: { name:'Medkit', item_type:'consumable', icon:'🧰', hp_restore:50 },
   energy_drink: { name:'Energy Drink', item_type:'consumable', icon:'🥤' },
   rare_component: { name:'Rare Component', item_type:'material', icon:'🔮', rarity:'rare' },
+  improvised_bow: { name:'Improvised Bow', item_type:'weapon', subtype:'bow', icon:'🏹', rarity:'common', atk_bonus:3, speed_bonus:1, two_handed:true },
+  rusted_pistol: { name:'Rusted Pistol', item_type:'weapon', subtype:'pistol', icon:'🔫', rarity:'uncommon', atk_bonus:4, luck_bonus:1 },
+  salvaged_crossbow: { name:'Salvaged Crossbow', item_type:'weapon', subtype:'crossbow', icon:'🏹', rarity:'rare', atk_bonus:7, control_bonus:1, two_handed:true },
+  security_rifle: { name:'Security Rifle', item_type:'weapon', subtype:'rifle', icon:'🔫', rarity:'rare', atk_bonus:9, insight_bonus:1, two_handed:true },
 }
 const STACKABLE = new Set(['consumable', 'material', 'key'])
 const ITEM_COLUMNS = ['item_key','name','item_type','subtype','rarity','icon','atk_bonus','def_bonus','max_hp_bonus',
