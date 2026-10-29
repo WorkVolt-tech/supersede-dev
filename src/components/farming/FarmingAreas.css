@@ -1,6 +1,7 @@
 .farming-cards { display:flex; flex-direction:column; gap:16px; }
 .farming-card { border:1px solid rgba(129,91,48,.32); background:#eee0c7; overflow:hidden; }
 .farming-card img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+.farming-encounter-art { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid rgba(129,91,48,.4); margin-bottom:14px; }
 .farming-card-content { padding:16px; }
 .farming-card h3 { font:600 26px 'Cormorant Garamond',Georgia,serif; margin:4px 0; color:#2b1d16; }
 .farming-card p { margin:5px 0 12px; font:16px/1.35 'Cormorant Garamond',Georgia,serif; color:#5f4937; }
