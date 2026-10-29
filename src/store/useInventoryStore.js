@@ -21,10 +21,10 @@ export const useInventoryStore = create((set, get) => ({
     const { items } = get()
     const item = items.find(i=>i.id===itemId)
     const rune = items.find(i=>i.id===runeId)
-    if (!item || !rune || item.player_id!==rune.player_id) return {ok:false,reason:'Item or rune not found.'}
-    if (!['weapon','armor','accessory'].includes(item.item_type)) return {ok:false,reason:'Only equipment accepts runes.'}
+    if (!item || !rune || item.player_id!==rune.player_id) return {ok:false,reason:'Equipment or fragment not found.'}
+    if (!['weapon','armor','accessory'].includes(item.item_type)) return {ok:false,reason:'Only equipment accepts fragments.'}
     const runeName = rune.item_key?.replace(/^rune_/, '')
-    if (!rune.item_key?.startsWith('rune_') || !RUNE_NAMES.includes(runeName)) return {ok:false,reason:'Select a rune.'}
+    if (!rune.item_key?.startsWith('rune_') || !RUNE_NAMES.includes(runeName)) return {ok:false,reason:'Select a fragment.'}
     const used = (item.socketed_runes || []).length
     if (!item.sockets_total || used>=item.sockets_total) return {ok:false,reason:'No empty sockets.'}
     const socketed_runes = [...(item.socketed_runes || []),runeName]
@@ -40,7 +40,7 @@ export const useInventoryStore = create((set, get) => ({
       return {ok:false,reason:consumeError.message}
     }
     await get().loadInventory(item.player_id)
-    return {ok:true,reason:rw ? `✦ ${rw.name} activated!` : `Rune socketed (${socketed_runes.length}/${item.sockets_total}).`}
+    return {ok:true,reason:rw ? `✦ ${rw.name} Resonance activated!` : `Fragment inserted (${socketed_runes.length}/${item.sockets_total}).`}
   },
 
   async equipItem(itemId, slotKey) {
