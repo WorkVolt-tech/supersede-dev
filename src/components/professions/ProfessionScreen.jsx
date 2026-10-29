@@ -6,6 +6,8 @@ import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTr
 export default function ProfessionScreen({player,onReturn}) {
   const [status,setStatus] = useState(null)
   const [progress,setProgress] = useState([])
+  const [discoveries,setDiscoveries] = useState([])
+  const [ownedTokens,setOwnedTokens] = useState([])
   const [loading,setLoading] = useState(true)
   const [busy,setBusy] = useState(false)
   const [message,setMessage] = useState('')
@@ -13,13 +15,17 @@ export default function ProfessionScreen({player,onReturn}) {
 
   async function refresh() {
     if (!player || !professionUnlocked(player)) {setLoading(false);return}
-    const [s,p] = await Promise.all([
+    const [s,p,u,i] = await Promise.all([
       supabase.from('profession_status').select('*').eq('player_id',player.id).maybeSingle(),
       supabase.from('profession_progress').select('*').eq('player_id',player.id),
+      supabase.from('profession_unlocks').select('profession_key').eq('player_id',player.id),
+      supabase.from('inventory').select('item_key,quantity').eq('player_id',player.id).like('item_key','profession_token_%'),
     ])
     setStatus(s.data||null)
     setProgress(p.data||[])
-    setMessage(s.error?.message || p.error?.message || '')
+    setDiscoveries((u.data||[]).map(x=>x.profession_key))
+    setOwnedTokens((i.data||[]).filter(x=>x.quantity>0).map(x=>x.item_key.replace('profession_token_','')))
+    if(s.error||p.error||u.error||i.error) setMessage(s.error?.message || p.error?.message || u.error?.message || i.error?.message || '')
     setLoading(false)
   }
 
@@ -34,6 +40,14 @@ export default function ProfessionScreen({player,onReturn}) {
     const {error} = await supabase.rpc('choose_profession',{target_player:player.id,target_profession:key})
     setMessage(error?.message || `${PROFESSIONS.find(p=>p.key===key)?.name} selected.`)
     await refresh()
+    setBusy(false)
+  }
+
+  async function discover(key) {
+    setBusy(true)
+    const {error}=await supabase.rpc('discover_profession',{target_player:player.id,target_profession:key})
+    await refresh()
+    setMessage(error?.message||'Profession discovered! Available to activate after Chapter 2.')
     setBusy(false)
   }
 
@@ -62,7 +76,8 @@ export default function ProfessionScreen({player,onReturn}) {
 
   return <section className="story-text" style={{padding:'1rem'}}>
     <h2>⚒️ Professions</h2>
-    {!professionUnlocked(player) ? <p>🔒 Professions unlock after completing Chapter 2 and opening Chapter 3. Continue the story to become eligible.</p> : <>
+    {!professionUnlocked(player) && <p>🔒 Profession activation unlocks after Chapter 2. Collect profession discovery items in Chapter 2 farming areas; discoveries can be registered now.</p>}
+    <>
       <p>Choose one active profession. Profession XP and levels are independent of your combat class.</p>
       {loading ? <p>Loading professions…</p> : <>
         {status?.active_profession && <p><strong>Active profession:</strong> {PROFESSIONS.find(p=>p.key===status.active_profession)?.name} · Level {progress.find(p=>p.profession_key===status.active_profession)?.level||1} · {progress.find(p=>p.profession_key===status.active_profession)?.xp||0} XP · {professionPointsAtLevel(progress.find(p=>p.profession_key===status.active_profession)?.level||1)} earned specialization points</p>}
@@ -71,7 +86,9 @@ export default function ProfessionScreen({player,onReturn}) {
             <h3>{profession.icon} {profession.name}</h3>
             <p>{profession.description}</p>
             {progress.some(p=>p.profession_key===profession.key) && <p>Saved level: {progress.find(p=>p.profession_key===profession.key).level}</p>}
-            <button className="reading-action" disabled={busy || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Choose profession'}</button>
+            <p>{discoveries.includes(profession.key)?'✓ Discovered':ownedTokens.includes(profession.key)?'Discovery item found':'🔒 Discovery item missing'}</p>
+            {ownedTokens.includes(profession.key)&&!discoveries.includes(profession.key) && <button className="reading-action" disabled={busy} onClick={()=>discover(profession.key)}>Discover profession</button>}
+            <button className="reading-action" disabled={busy || !professionUnlocked(player) || !discoveries.includes(profession.key) || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Activate profession'}</button>
           </div>)}
         </div>
         {active && <section style={{marginTop:24}}>
