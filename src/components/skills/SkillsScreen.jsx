@@ -73,7 +73,7 @@ export default function SkillsScreen({ onReturn }) {
   function available(node) {
     if (node.type==='start') return false
     if (unlocked.includes(node.id)) return false
-    if (isClass) return isClassNodeAvailable(player, classKey, node.id)
+    if (isClass) return player.active_class===classKey && isClassNodeAvailable(player, classKey, node.id)
     if (isElement && !isElementUnlocked(elementKey, player)) return false
     return prerequisitesMet(node)
   }
@@ -133,9 +133,11 @@ export default function SkillsScreen({ onReturn }) {
       {Object.values(ELEMENT_TREES).map(el => <button key={el.key} className={tab==='element:'+el.key?'active':''} onClick={() => choose('element:'+el.key)}>{el.sigil} {el.label}{!isElementUnlocked(el.key,player)?' 🔒':''}</button>)}
     </nav>
     <div className="skills-section-label">Class paths · chosen through the Judges' story</div>
-    <nav className="skills-tabs class-tabs" aria-label="Classes">
-      {Object.values(CLASSES).map(c => <button key={c.key} className={tab==='class:'+c.key?'active':''} onClick={() => choose('class:'+c.key)}>{c.name}{player.active_class===c.key?' ★':''}</button>)}
-    </nav>
+    {player.active_class
+      ? <nav className="skills-tabs class-tabs" aria-label="Classes">
+          <button className={tab==='class:'+player.active_class?'active':''} onClick={() => choose('class:'+player.active_class)}>{CLASSES[player.active_class]?.name || player.active_class} ★</button>
+        </nav>
+      : <p className="skills-locked-class">Hidden classes remain unknown until the Twin Judges render their verdict.</p>}
     <section className="skills-workspace">
       <div className="skills-tree-column">
         <div className="skills-tree-heading">
