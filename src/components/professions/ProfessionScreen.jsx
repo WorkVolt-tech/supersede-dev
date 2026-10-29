@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { PROFESSIONS, professionUnlocked, professionPointsAtLevel, professionSwitchCost } from '../../game/professions'
 import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTrees'
 
-export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure}) {
+export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure,onPathfinderAdventure}) {
   const [status,setStatus] = useState(null)
   const [progress,setProgress] = useState([])
   const [discoveries,setDiscoveries] = useState([])
@@ -91,6 +91,7 @@ export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdv
             <button className="reading-action" disabled={busy || !professionUnlocked(player) || !discoveries.includes(profession.key) || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Activate profession'}</button>
           </div>)}
         </div>
+        {active==='pathfinder'&&professionUnlocked(player)&&discoveries.includes('pathfinder')&&<button className="reading-action" onClick={onPathfinderAdventure}>🧭 Enter Pathfinder Chapter · The Forgotten World</button>}
         {active==='hunter'&&professionUnlocked(player)&&discoveries.includes('hunter')&&<button className="reading-action" onClick={onHunterAdventure}>🏹 Enter Hunter Chapter · The Apex Hunt</button>}
         {active==='alchemist'&&professionUnlocked(player)&&discoveries.includes('alchemist')&&<button className="reading-action" onClick={onAlchemistAdventure}>⚗️ Enter Alchemist Chapter · The Forbidden Formula</button>}
         {active==='merchant'&&professionUnlocked(player)&&discoveries.includes('merchant')&&<button className="reading-action" onClick={onMerchantAdventure}>🪙 Enter Merchant Chapter · The Golden Exchange</button>}
