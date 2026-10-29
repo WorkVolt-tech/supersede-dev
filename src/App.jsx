@@ -15,6 +15,7 @@ import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
 import FarmingAreas from './components/farming/FarmingAreas'
 import SkillsScreen from './components/skills/SkillsScreen'
+import ProfessionScreen from './components/professions/ProfessionScreen'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
@@ -118,6 +119,8 @@ export default function App() {
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
+  if (view === 'professions') return <BookShell eyebrow="Chapter III · Trade & craft" title="Professions" subtitle="Choose your craft after completing Chapter II."
+    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
 
   if (archivedSections[view]) {
     const [title, description] = archivedSections[view]
