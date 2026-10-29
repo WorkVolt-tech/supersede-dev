@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { useInventoryStore } from '../../store/useInventoryStore'
-import { SLOTS, RARITY } from '../../game/equipmentSlots'
+import { SLOTS, RARITY, equipmentSubtype } from '../../game/equipmentSlots'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { calcMaxHp } from '../../game/playerStats'
 import './InventoryScreen.css'
@@ -152,7 +152,7 @@ export default function InventoryScreen() {
           {selected.special_effect && <p>{selected.special_effect}</p>}
           {selected.equipped_slot
             ? <button className="inv-action" onClick={async()=>{const r=await unequipSlot(selected.equipped_slot);setMessage(r?.ok?'Unequipped.':r?.reason)}}>Unequip</button>
-            : SLOTS.filter(slot=>slot.accepts.includes(selected.subtype||selected.item_type)).map(slot=>
+            : SLOTS.filter(slot=>slot.accepts.includes(equipmentSubtype(selected))).map(slot=>
               <button className="inv-action" key={slot.key} onClick={()=>equipSelected(slot.key)}>Equip · {slot.label}</button>)}
           {selected.item_type==='consumable' && <button className="inv-action" onClick={useSelected}>Use item</button>}
         </> : <p>Select an item to see its properties and available actions.</p>}
