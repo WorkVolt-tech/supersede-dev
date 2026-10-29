@@ -19,6 +19,7 @@ import ProfessionScreen from './components/professions/ProfessionScreen'
 import ForgerAdventure from './components/professions/ForgerAdventure'
 import MinerAdventure from './components/professions/MinerAdventure'
 import MerchantAdventure from './components/professions/MerchantAdventure'
+import AlchemistAdventure from './components/professions/AlchemistAdventure'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
@@ -122,11 +123,12 @@ export default function App() {
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
+  if (view === 'alchemist-adventure') return <BookShell eyebrow="Profession · Alchemist" title="The Forbidden Formula" subtitle="A laboratory where one mistake changes everything." left={<AlchemistAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'merchant-adventure') return <BookShell eyebrow="Profession · Merchant" title="The Golden Exchange" subtitle="Trade, negotiation, and survival." left={<MerchantAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'miner-adventure') return <BookShell eyebrow="Profession · Miner" title="Beneath the Broken Earth" subtitle="The first mining expedition." left={<MinerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'forger-adventure') return <BookShell eyebrow="Profession · Forger" title="The Trial of Steel" subtitle="The first of eight profession adventures." left={<ForgerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'professions') return <BookShell eyebrow="Chapter III · Trade & craft" title="Professions" subtitle="Choose your craft after completing Chapter II."
-    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onAdventure={()=>setView('forger-adventure')} onMinerAdventure={()=>setView('miner-adventure')} onMerchantAdventure={()=>setView('merchant-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
+    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onAdventure={()=>setView('forger-adventure')} onMinerAdventure={()=>setView('miner-adventure')} onMerchantAdventure={()=>setView('merchant-adventure')} onAlchemistAdventure={()=>setView('alchemist-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
 
   if (archivedSections[view]) {
     const [title, description] = archivedSections[view]
