@@ -30,7 +30,8 @@ export default function InventoryScreen() {
   const itemStats = selected ? [
     ['Attack',selected.atk_bonus],['Defense',selected.def_bonus],['Max HP',selected.max_hp_bonus],
     ['Power',selected.power_bonus],['Guard',selected.guard_bonus],['Speed',selected.speed_bonus],
-    ['Insight',selected.insight_bonus],['Healing',selected.hp_restore],
+    ['Control',selected.control_bonus],['Insight',selected.insight_bonus],['Luck',selected.luck_bonus],
+    ['Agility',selected.agility_bonus],['Healing',selected.hp_restore],
   ].filter(([,value])=>Number(value)>0) : []
 
   async function equipSelected(slotKey) {
