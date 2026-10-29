@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { PROFESSIONS, professionUnlocked, professionPointsAtLevel, professionSwitchCost } from '../../game/professions'
+import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTrees'
 
 export default function ProfessionScreen({player,onReturn}) {
   const [status,setStatus] = useState(null)
@@ -8,6 +9,7 @@ export default function ProfessionScreen({player,onReturn}) {
   const [loading,setLoading] = useState(true)
   const [busy,setBusy] = useState(false)
   const [message,setMessage] = useState('')
+  const [expandedBranch,setExpandedBranch] = useState(null)
 
   async function refresh() {
     if (!player || !professionUnlocked(player)) {setLoading(false);return}
@@ -35,6 +37,29 @@ export default function ProfessionScreen({player,onReturn}) {
     setBusy(false)
   }
 
+  async function invest(branch) {
+    setBusy(true)
+    const {error} = await supabase.rpc('invest_profession_point',{target_player:player.id,branch_key:branch})
+    await refresh()
+    setMessage(error?.message || 'Specialization point allocated.')
+    setBusy(false)
+  }
+
+  async function respecialize() {
+    if (!window.confirm('Reset specialization? Lose 15% profession XP and start a 24-hour cooldown?')) return
+    setBusy(true)
+    const {error} = await supabase.rpc('reset_profession_specialization',{target_player:player.id})
+    await refresh()
+    setMessage(error?.message || 'Specialization reset successfully.')
+    setBusy(false)
+  }
+
+  const active = status?.active_profession
+  const current = progress.find(p=>p.profession_key===active)
+  const history = current?.allocation_history || []
+  const points = professionPointsAtLevel(current?.level||1)
+  const ranks = activeProfessionRanks(history,current?.level||1)
+
   return <section className="story-text" style={{padding:'1rem'}}>
     <h2>⚒️ Professions</h2>
     {!professionUnlocked(player) ? <p>🔒 Professions unlock after completing Chapter 2 and opening Chapter 3. Continue the story to become eligible.</p> : <>
@@ -49,6 +74,28 @@ export default function ProfessionScreen({player,onReturn}) {
             <button className="reading-action" disabled={busy || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Choose profession'}</button>
           </div>)}
         </div>
+        {active && <section style={{marginTop:24}}>
+          <h3>Specialization · {PROFESSIONS.find(p=>p.key===active)?.name}</h3>
+          <p><strong>{Math.max(0,points-history.length)} available</strong> · {history.length} spent · {points} earned · 20 maximum</p>
+          {history.length>points && <p role="status">{history.length-points} previously purchased ranks are inactive until profession levels are regained.</p>}
+          <p>Earn one point every five profession levels. Ranks are purchased sequentially; no branch can exceed rank 10.</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12}}>
+          {Object.entries(PROFESSION_TREES[active]||{}).map(([key,branch])=>{
+            const purchased=history.filter(v=>v===key).length
+            const enabled=ranks[key]||0
+            return <div key={key} style={{border:'1px solid #a9927055',padding:12,borderRadius:5}}>
+              <h4>{branch.name} · {enabled}/10 active</h4>
+              <button className="reading-action" onClick={()=>setExpandedBranch(expandedBranch===key?null:key)}>{expandedBranch===key?'Hide':'Show'} upgrades</button>
+              <button className="reading-action" disabled={busy||history.length>=points||purchased>=10} onClick={()=>invest(key)}>Invest one point</button>
+              {expandedBranch===key && <ol style={{paddingLeft:22}}>{branch.ranks.map(rank=><li key={rank.rank} style={{marginBottom:8,opacity:rank.rank<=enabled?1:.65}}>
+                <strong>{rank.name}</strong> {rank.rank<=enabled?'✓ Active':rank.rank<=purchased?'(inactive)':'(locked)'}<div>{rank.effect}</div>
+              </li>)}</ol>}
+            </div>
+          })}
+          </div>
+          <button className="reading-action" disabled={busy||history.length===0||new Date(current?.respec_available_at||0)>new Date()} onClick={respecialize}>Reset specialization · −15% XP</button>
+          {new Date(current?.respec_available_at||0)>new Date() && <p>Reset available after {new Date(current.respec_available_at).toLocaleString()}.</p>}
+        </section>}
       </>}
     </>}
     {message && <p role="status">{message}</p>}
