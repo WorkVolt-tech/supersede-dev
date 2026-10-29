@@ -38,3 +38,4 @@
   flex-direction: column-reverse;
 }
 .combat-demo-hint { font-size: 10px; color: #6a5635; text-align: center; }
+.combat-demo-note { padding:10px 14px; border:1px solid #7a5c3b; background:#281e15; color:#e9d2a9; font:12px/1.5 'Share Tech Mono',monospace; }
