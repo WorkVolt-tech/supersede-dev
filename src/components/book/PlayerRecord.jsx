@@ -30,6 +30,15 @@ export default function PlayerRecord({ player, onNavigate }) {
       <div>PvP kills <b>{player.pvp_kills ?? 0}</b></div>
       <div>Helps given <b>{player.helps_given ?? 0}</b></div>
     </div>
+    <span className="reading-page-heading" style={{marginTop:22}}>Attributes &amp; skill points</span>
+    <p className="reading-stat-summary"><strong>{player.skill_points ?? 0}</strong> unspent skill points · <strong>{player.resonance_shards ?? 0}</strong> resonance shards</p>
+    <div className="reading-attribute-grid">
+      {[
+        ['Attack',player.atk],['Defense',player.def],['Power',player.power],['Guard',player.guard],
+        ['Speed',player.speed],['Control',player.control],['Insight',player.insight],['Luck',player.luck],
+      ].map(([label,value])=><div key={label}>{label}<strong>{value ?? 0}</strong></div>)}
+    </div>
+    <button className="reading-action" onClick={()=>onNavigate('skills')}>⬡ View and spend skill points</button>
     <span className="reading-page-heading" style={{marginTop:26}}>Archive &amp; systems</span>
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
