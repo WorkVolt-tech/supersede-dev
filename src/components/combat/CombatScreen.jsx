@@ -18,6 +18,7 @@ import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
 import { calcATK, calcDEF, calcMaxHp } from '../../game/playerStats'
 import { grantXp } from '../../game/progression'
+import { grantLoot } from '../../game/loot'
 import './CombatScreen.css'
 
 function HpBar({ hp, maxHp }) {
@@ -49,6 +50,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const player = usePlayerStore(s => s.player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
+  const loadInventory = useInventoryStore(s => s.loadInventory)
   const equipped = items.filter(i => i.equipped_slot)
 
   const maxPlayerHp = calcMaxHp(player, equipped)
@@ -84,6 +86,15 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       pushLog(`Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`)
     }
     await updatePlayer(finalUpdates)
+    if (outcome === 'win' && enemyData.loot?.length) {
+      try {
+        const drops = await grantLoot(player.id, enemyData.loot)
+        await loadInventory(player.id)
+        if (drops.length) pushLog('Loot: '+drops.map(d => `${d.icon || '📦'} ${d.name} ×${d.qty}`).join(' · '))
+      } catch (error) {
+        pushLog('Loot could not be saved: '+error.message)
+      }
+    }
     setTimeout(() => {
       if (outcome === 'win') onWin?.()
       else if (outcome === 'escape') onEscape?.()
