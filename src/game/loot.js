@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient'
-import { STANDARD_WEAPONS } from './runes'
+import { STANDARD_WEAPONS, fragmentName } from './runes'
 
 const FALLBACK_ITEMS = {
   scrap_metal: { name:'Scrap Metal', item_type:'material', icon:'⚙️' },
@@ -47,7 +47,7 @@ export async function grantLoot(playerId, drops = [], luck = 0) {
       if (existing?.length) {
         const { error } = await supabase.from('inventory').update({ quantity:(existing[0].quantity || 1)+qty }).eq('id',existing[0].id)
         if (error) throw new Error(error.message)
-        earned.push({ name:item.name, icon:item.icon, qty })
+        earned.push({ name:key.startsWith('rune_') ? fragmentName(key) : item.name, icon:item.icon, qty })
         continue
       }
     }
@@ -55,7 +55,7 @@ export async function grantLoot(playerId, drops = [], luck = 0) {
       const { error } = await supabase.from('inventory').insert(row)
       if (error) throw new Error(error.message)
     }
-    earned.push({ name:item.name, icon:item.icon, qty })
+    earned.push({ name:key.startsWith('rune_') ? fragmentName(key) : item.name, icon:item.icon, qty })
   }
   return earned
 }
