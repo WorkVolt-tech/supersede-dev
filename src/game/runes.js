@@ -1,5 +1,9 @@
-// Recipes restored from the original Supersede inventory. Rune order does not matter.
+// Resonance recipes restored from Supersede. Legacy rune IDs remain stable for saved games.
 export const RUNE_NAMES = ['ignis','aqua','terra','aero','umbra','lux','venin','ferro','flora','volt']
+export function fragmentName(key) {
+  const element = String(key || '').replace(/^rune_|^fragment_/, '')
+  return `${element.charAt(0).toUpperCase()}${element.slice(1)} Fragment`
+}
 const recipes = [
   // Weapon: 2 sockets
   ['weapon','ignis ignis','Ember Core','power:2 atk:2'],
@@ -102,6 +106,8 @@ export const RUNEWORDS = recipes.map(([slot, sequence, name, values]) => ({
   slot, name, runes:sequence.split(' ').sort(),
   stats:Object.fromEntries(values.split(' ').map(value => { const [stat,n] = value.split(':'); return [stat+'_bonus',Number(n)] })),
 }))
+export const RESONANCES = RUNEWORDS
+export const findResonance = findRuneword
 
 export function findRuneword(runes, slot, socketsTotal) {
   if (!runes?.length || runes.length !== Number(socketsTotal)) return null
