@@ -13,7 +13,6 @@ const ENTRIES = [
   { view: 'skills', label: 'Skills & Classes', sub: 'Skill trees, elemental paths, class progression and battle skills' },
   { view: 'inventory', label: 'Inventory', sub: 'Your real items — drag to equip' },
   { section: 'Demos' },
-  { view: 'puzzle', label: 'Drag Puzzle', sub: 'Ch3 keypad cipher' },
   { view: 'inventory-demo', label: 'Inventory (sample items)', sub: 'Try drag-and-drop with fake gear' },
   { view: 'combat-demo', label: 'Combat Formation Test', sub: 'Optional rank-and-position training simulation; no story characters' },
 ]
