@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { NODES } from '../../data/ch1/nodes'
 import CombatScreen from '../combat/CombatScreen'
 import { usePlayerStore } from '../../store/usePlayerStore'
-import { chapterOneComplete } from '../../game/progression'
 import './FarmingAreas.css'
 
 const images = {
@@ -10,18 +9,22 @@ const images = {
   loc_market: '/assets/zones/zone_frozen_market.webp',
   loc_tower: '/assets/zones/zone_glass_tower.webp',
 }
+const ZONE_GUARDIANS = {
+  loc_garage: 'sentinel',
+  loc_market: 'surveyor',
+  loc_tower: 'unseen',
+}
 
 export default function FarmingAreas({ onReturn }) {
   const player = usePlayerStore(s => s.player)
   const [encounter, setEncounter] = useState(null)
   const [message, setMessage] = useState('')
   const locations = NODES.farming_hub.locations
-  if (!chapterOneComplete(player)) return <div className="farming-areas">
-    <p className="story-text">🔒 These hunting grounds unlock after you complete Chapter 1 of the story.</p>
-    <button className="reading-action" onClick={onReturn}>← Return to the archive</button>
-  </div>
+  const clearedGuardians = player?.defeated_bosses || []
+  const isUnlocked = area => clearedGuardians.includes(ZONE_GUARDIANS[area.id])
 
   function beginFight(area) {
+    if (!isUnlocked(area)) return
     const enemy = area.enemies[Math.floor(Math.random() * area.enemies.length)]
     setMessage('')
     setEncounter({ enemy, area, key: `${area.id}-${Date.now()}` })
@@ -41,17 +44,20 @@ export default function FarmingAreas({ onReturn }) {
   </div>
 
   return <div className="farming-areas">
-    <p className="story-text">Three districts are active with System entities. Choose where to hunt; defeated enemies award XP and any listed loot.</p>
+    <p className="story-text">Explore the district's farming grounds. Each area unlocks for repeatable hunts once you defeat its guardian in the Chapter 1 story.</p>
     {message && <p className="farming-message" role="status">{message}</p>}
     <div className="farming-cards">
-      {locations.map(area => <article className="farming-card" key={area.id}>
+      {locations.map(area => <article className={`farming-card ${isUnlocked(area) ? '' : 'farming-card-locked'}`} key={area.id}>
         <img src={images[area.id]} alt={`${area.name} environment artwork`} loading="lazy" />
         <div className="farming-card-content">
           <span className="farming-difficulty" style={{ color: area.color }}>{area.level} · System activity</span>
           <h3>{area.name}</h3>
           <p>{area.desc}</p>
           <p className="farming-enemies">{area.enemies.map(e => `${e.icon} ${e.name}`).join(' · ')}</p>
-          <button className="reading-action" onClick={() => beginFight(area)}>Hunt here ›</button>
+          {isUnlocked(area)
+            ? <button className="reading-action" onClick={() => beginFight(area)}>Enter hunting ground ›</button>
+            : <><p className="farming-locked-note">🔒 Complete the {area.name} storyline and defeat its guardian to unlock farming here.</p>
+                <button className="reading-action" disabled>Locked · Story completion required</button></>}
         </div>
       </article>)}
     </div>
