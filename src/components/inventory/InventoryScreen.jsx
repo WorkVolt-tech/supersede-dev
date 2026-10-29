@@ -31,7 +31,7 @@ export default function InventoryScreen() {
   const unequippedItems = items.filter(i => !i.equipped_slot)
   const selected = items.find(i => i.id===selectedId)
   const displayItem = selected && normalizedItem(selected)
-  const runeword = selected && findResonance(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
+  const resonance = selected && findResonance(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
   const runes = items.filter(i=>i.item_key?.startsWith('rune_') && (i.quantity||1)>0)
   const filteredItems = unequippedItems.filter(i => filter==='all' || i.item_type===filter)
   const itemStats = selected ? [
@@ -159,7 +159,7 @@ export default function InventoryScreen() {
           {Number(selected.sockets_total)>0 && <div className="inv-socket-panel">
             <p><strong>Fragment slots:</strong> {(selected.socketed_runes||[]).length}/{selected.sockets_total}</p>
             <p>{Array.from({length:selected.sockets_total},(_,i)=>selected.socketed_runes?.[i] ? `◆ ${fragmentName(selected.socketed_runes[i])}` : '◇ Empty').join(' · ')}</p>
-            {runeword && <><p className="inv-runeword">✦ {runeword.name} Resonance</p><div className="inv-stats">{Object.entries(runeword.stats).map(([key,value])=><span key={key}>{key.replace('_bonus','').replace('_',' ')} +{value}</span>)}</div></>}
+            {resonance && <><p className="inv-runeword">✦ {resonance.name} Resonance</p><div className="inv-stats">{Object.entries(resonance.stats).map(([key,value])=><span key={key}>{key.replace('_bonus','').replace('_',' ')} +{value}</span>)}</div></>}
             {(selected.socketed_runes||[]).length<selected.sockets_total && <>
               <p>Select a fragment to permanently insert it:</p>
               {runes.map(r=><button className="inv-action" key={r.id} onClick={async()=>{const result=await socketRune(selected.id,r.id);setMessage(result.reason)}}>{r.icon||'◆'} {fragmentName(r.item_key)} ×{r.quantity||1}</button>)}
