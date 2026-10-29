@@ -1,18 +1,25 @@
 import { useState } from 'react'
 import { NODES } from '../../data/ch1/nodes'
 import CombatScreen from '../combat/CombatScreen'
+import { usePlayerStore } from '../../store/usePlayerStore'
+import { chapterOneComplete } from '../../game/progression'
 import './FarmingAreas.css'
 
 const images = {
-  loc_garage: '/images/farming/garage.png',
-  loc_market: '/images/farming/market.png',
-  loc_tower: '/images/farming/tower.png',
+  loc_garage: '/assets/zones/zone_parking_garage.webp',
+  loc_market: '/assets/zones/zone_frozen_market.webp',
+  loc_tower: '/assets/zones/zone_glass_tower.webp',
 }
 
 export default function FarmingAreas({ onReturn }) {
+  const player = usePlayerStore(s => s.player)
   const [encounter, setEncounter] = useState(null)
   const [message, setMessage] = useState('')
   const locations = NODES.farming_hub.locations
+  if (!chapterOneComplete(player)) return <div className="farming-areas">
+    <p className="story-text">🔒 These hunting grounds unlock after you complete Chapter 1 of the story.</p>
+    <button className="reading-action" onClick={onReturn}>← Return to the archive</button>
+  </div>
 
   function beginFight(area) {
     const enemy = area.enemies[Math.floor(Math.random() * area.enemies.length)]
@@ -21,6 +28,7 @@ export default function FarmingAreas({ onReturn }) {
   }
 
   if (encounter) return <div className="farming-encounter" key={encounter.key}>
+    <img className="farming-encounter-art" src={images[encounter.area.id]} alt={`${encounter.area.name} — the battlefield`} />
     <div className="farming-encounter-heading">
       <span>{encounter.area.icon} {encounter.area.name}</span>
       <h2>{encounter.enemy.icon} {encounter.enemy.name}</h2>
@@ -37,7 +45,7 @@ export default function FarmingAreas({ onReturn }) {
     {message && <p className="farming-message" role="status">{message}</p>}
     <div className="farming-cards">
       {locations.map(area => <article className="farming-card" key={area.id}>
-        <img src={images[area.id]} alt={`${area.name} environment`} loading="lazy" />
+        <img src={images[area.id]} alt={`${area.name} environment artwork`} loading="lazy" />
         <div className="farming-card-content">
           <span className="farming-difficulty" style={{ color: area.color }}>{area.level} · System activity</span>
           <h3>{area.name}</h3>
