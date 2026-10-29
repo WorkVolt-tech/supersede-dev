@@ -1,6 +1,8 @@
 .farming-cards { display:flex; flex-direction:column; gap:16px; }
 .farming-card { border:1px solid rgba(129,91,48,.32); background:#eee0c7; overflow:hidden; }
 .farming-card img { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; }
+.farming-card-locked img { filter:saturate(.55) brightness(.7); }
+.farming-card .farming-locked-note { color:#8b4b33; font:12px/1.5 'JetBrains Mono',monospace; }
 .farming-encounter-art { display:block; width:100%; aspect-ratio:16/9; object-fit:cover; border:1px solid rgba(129,91,48,.4); margin-bottom:14px; }
 .farming-card-content { padding:16px; }
 .farming-card h3 { font:600 26px 'Cormorant Garamond',Georgia,serif; margin:4px 0; color:#2b1d16; }
