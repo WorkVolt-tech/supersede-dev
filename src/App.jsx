@@ -17,6 +17,7 @@ import FarmingAreas from './components/farming/FarmingAreas'
 import SkillsScreen from './components/skills/SkillsScreen'
 import ProfessionScreen from './components/professions/ProfessionScreen'
 import ForgerAdventure from './components/professions/ForgerAdventure'
+import MinerAdventure from './components/professions/MinerAdventure'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
@@ -120,9 +121,10 @@ export default function App() {
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
+  if (view === 'miner-adventure') return <BookShell eyebrow="Profession · Miner" title="Beneath the Broken Earth" subtitle="The first mining expedition." left={<MinerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'forger-adventure') return <BookShell eyebrow="Profession · Forger" title="The Trial of Steel" subtitle="The first of eight profession adventures." left={<ForgerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'professions') return <BookShell eyebrow="Chapter III · Trade & craft" title="Professions" subtitle="Choose your craft after completing Chapter II."
-    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onAdventure={()=>setView('forger-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
+    left={<ProfessionScreen player={player} onReturn={()=>setView('menu')} onAdventure={()=>setView('forger-adventure')} onMinerAdventure={()=>setView('miner-adventure')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
 
   if (archivedSections[view]) {
     const [title, description] = archivedSections[view]
