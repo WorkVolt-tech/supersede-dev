@@ -24,6 +24,8 @@ export function grantXp(player, amount) {
     // The existing schema has max_hp; HP rises at each level as well.
     updates.max_hp = (player.max_hp || 100) + result.levelsGained * 10
     updates.hp = Math.min(updates.max_hp, (player.hp ?? 100) + result.levelsGained * 10)
+    updates.skill_points = (player.skill_points || 0) + result.levelsGained
+    updates.sp_claimed = (player.sp_claimed || 0) + result.levelsGained
   }
   return updates
 }
