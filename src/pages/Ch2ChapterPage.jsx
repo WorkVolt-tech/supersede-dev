@@ -5,6 +5,8 @@ import StoryNode from '../components/story/StoryNode'
 import DistrictHubCh2 from '../components/hub/DistrictHubCh2'
 import { NODES as CH2_NODES } from '../data/ch2/nodes'
 import { ZONES } from '../data/ch2/config'
+import ClassChoice from '../components/story/ClassChoice'
+import { canChooseJudgesClass } from '../game/judgesClassRules'
 
 const ZONE_IDS = ZONES.map(z => z.id)
 
@@ -32,6 +34,12 @@ export default function Ch2ChapterPage() {
 
   if (currentNodeId === 'district_hub') {
     return <DistrictHubCh2 player={player} goTo={goTo} />
+  }
+
+  // Legacy characters may already be at the Chapter 2 ending from before
+  // the class-selection screen was restored. Offer their earned choice here.
+  if (currentNodeId === 'chapter_end_ch2' && canChooseJudgesClass(player)) {
+    return <ClassChoice player={player} onContinue={() => goTo('chapter_end_ch2')} />
   }
 
   // judgeCtx — only meaningful for boss_judges; harmless to compute and
