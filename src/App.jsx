@@ -15,6 +15,7 @@ import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
 import FarmingAreas from './components/farming/FarmingAreas'
+import SkillsScreen from './components/skills/SkillsScreen'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
 import './App.css'
@@ -112,12 +113,13 @@ export default function App() {
   }
 
   const archivedSections = {
-    skills: ['Skills', 'The original skill tree and upgrade interface have not yet been migrated to React. Your character and progress are preserved.'],
     trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
     lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
     badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
     ch3: ['Chapter 3 · Signal Hunters', 'Chapter 3 has been unlocked, but its original story engine has not yet been migrated to React. The cipher puzzle is available under Additional Activities while the full chapter is being rebuilt.'],
   }
+
+  if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
 
   if (archivedSections[view]) {
     const [title, description] = archivedSections[view]
