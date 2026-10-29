@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient'
 import { SLOTS, equipmentSubtype, isTwoHandedWeapon } from '../game/equipmentSlots'
-import { findRuneword, RUNE_NAMES, normalizedItem } from '../game/runes'
+import { findResonance, RUNE_NAMES, normalizedItem } from '../game/runes'
 
 export const useInventoryStore = create((set, get) => ({
   items: [],
@@ -28,7 +28,7 @@ export const useInventoryStore = create((set, get) => ({
     const used = (item.socketed_runes || []).length
     if (!item.sockets_total || used>=item.sockets_total) return {ok:false,reason:'No empty sockets.'}
     const socketed_runes = [...(item.socketed_runes || []),runeName]
-    const rw = findRuneword(socketed_runes,item.item_type,item.sockets_total)
+    const rw = findResonance(socketed_runes,item.item_type,item.sockets_total)
     const { error } = await supabase.from('inventory').update({socketed_runes,sockets_used:socketed_runes.length,runeword_name:rw?.name||null}).eq('id',itemId).eq('player_id',item.player_id)
     if (error) return {ok:false,reason:error.message}
     const qty = rune.quantity || 1
