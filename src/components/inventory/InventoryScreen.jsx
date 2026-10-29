@@ -4,6 +4,7 @@ import { useInventoryStore } from '../../store/useInventoryStore'
 import { SLOTS, RARITY, equipmentSubtype } from '../../game/equipmentSlots'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { calcMaxHp } from '../../game/playerStats'
+import { findRuneword, normalizedItem } from '../../game/runes'
 import './InventoryScreen.css'
 
 export default function InventoryScreen() {
@@ -11,6 +12,7 @@ export default function InventoryScreen() {
   const equipItem = useInventoryStore(s => s.equipItem)
   const unequipSlot = useInventoryStore(s => s.unequipSlot)
   const consumeItem = useInventoryStore(s => s.consumeItem)
+  const socketRune = useInventoryStore(s => s.socketRune)
   const player = usePlayerStore(s => s.player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const [selectedId, setSelectedId] = useState(null)
@@ -26,12 +28,15 @@ export default function InventoryScreen() {
   )
   const unequippedItems = items.filter(i => !i.equipped_slot)
   const selected = items.find(i => i.id===selectedId)
+  const displayItem = selected && normalizedItem(selected)
+  const runeword = selected && findRuneword(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
+  const runes = items.filter(i=>i.item_key?.startsWith('rune_') && (i.quantity||1)>0)
   const filteredItems = unequippedItems.filter(i => filter==='all' || i.item_type===filter)
   const itemStats = selected ? [
-    ['Attack',selected.atk_bonus],['Defense',selected.def_bonus],['Max HP',selected.max_hp_bonus],
-    ['Power',selected.power_bonus],['Guard',selected.guard_bonus],['Speed',selected.speed_bonus],
-    ['Control',selected.control_bonus],['Insight',selected.insight_bonus],['Luck',selected.luck_bonus],
-    ['Agility',selected.agility_bonus],['Healing',selected.hp_restore],
+    ['Attack',displayItem.atk_bonus],['Defense',displayItem.def_bonus],['Max HP',displayItem.max_hp_bonus],
+    ['Power',displayItem.power_bonus],['Guard',displayItem.guard_bonus],['Speed',displayItem.speed_bonus],
+    ['Control',displayItem.control_bonus],['Insight',displayItem.insight_bonus],['Luck',displayItem.luck_bonus],
+    ['Agility',displayItem.agility_bonus],['Healing',displayItem.hp_restore],
   ].filter(([,value])=>Number(value)>0) : []
 
   async function equipSelected(slotKey) {
@@ -149,6 +154,16 @@ export default function InventoryScreen() {
           <h3>{selected.icon || '📦'} {selected.name}</h3>
           <p className="inv-meta">{selected.rarity || 'common'} · {selected.subtype || selected.item_type} · ×{selected.quantity||1}</p>
           {itemStats.length>0 && <div className="inv-stats">{itemStats.map(([label,value])=><span key={label}>{label} +{value}</span>)}</div>}
+          {Number(selected.sockets_total)>0 && <div className="inv-socket-panel">
+            <p><strong>Rune sockets:</strong> {(selected.socketed_runes||[]).length}/{selected.sockets_total}</p>
+            <p>{Array.from({length:selected.sockets_total},(_,i)=>selected.socketed_runes?.[i] ? `◆ ${selected.socketed_runes[i]}` : '◇ Empty').join(' · ')}</p>
+            {runeword && <><p className="inv-runeword">✦ {runeword.name}</p><div className="inv-stats">{Object.entries(runeword.stats).map(([key,value])=><span key={key}>{key.replace('_bonus','').replace('_',' ')} +{value}</span>)}</div></>}
+            {(selected.socketed_runes||[]).length<selected.sockets_total && <>
+              <p>Select a rune to permanently socket it:</p>
+              {runes.map(r=><button className="inv-action" key={r.id} onClick={async()=>{const result=await socketRune(selected.id,r.id);setMessage(result.reason)}}>{r.icon||'◆'} {r.name} ×{r.quantity||1}</button>)}
+              {!runes.length && <p>No runes available. Find them as drops.</p>}
+            </>}
+          </div>}
           {selected.special_effect && <p>{selected.special_effect}</p>}
           {selected.equipped_slot
             ? <button className="inv-action" onClick={async()=>{const r=await unequipSlot(selected.equipped_slot);setMessage(r?.ok?'Unequipped.':r?.reason)}}>Unequip</button>
