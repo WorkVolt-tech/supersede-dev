@@ -102,18 +102,15 @@ const recipes = [
   ['accessory','lux umbra','Twilight Loop','insight:2 power:1 guard:1'],
 ]
 
-export const RUNEWORDS = recipes.map(([slot, sequence, name, values]) => ({
+export const RESONANCES = recipes.map(([slot, sequence, name, values]) => ({
   slot, name, runes:sequence.split(' ').sort(),
   stats:Object.fromEntries(values.split(' ').map(value => { const [stat,n] = value.split(':'); return [stat+'_bonus',Number(n)] })),
 }))
-export const RESONANCES = RUNEWORDS
-export const findResonance = findRuneword
-
-export function findRuneword(runes, slot, socketsTotal) {
+export function findResonance(runes, slot, socketsTotal) {
   if (!runes?.length || runes.length !== Number(socketsTotal)) return null
   const key = [...runes].sort().join('+')
-  return RUNEWORDS.find(recipe => recipe.slot===slot && recipe.runes.join('+')===key)
-    || RUNEWORDS.find(recipe => recipe.slot==='any' && recipe.runes.join('+')===key) || null
+  return RESONANCES.find(recipe => recipe.slot===slot && recipe.runes.join('+')===key)
+    || RESONANCES.find(recipe => recipe.slot==='any' && recipe.runes.join('+')===key) || null
 }
 
 export const STANDARD_WEAPONS = {
