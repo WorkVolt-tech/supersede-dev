@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { PROFESSIONS, professionUnlocked, professionPointsAtLevel, professionSwitchCost } from '../../game/professions'
 import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTrees'
 
-export default function ProfessionScreen({player,onReturn}) {
+export default function ProfessionScreen({player,onReturn,onAdventure}) {
   const [status,setStatus] = useState(null)
   const [progress,setProgress] = useState([])
   const [discoveries,setDiscoveries] = useState([])
@@ -91,6 +91,7 @@ export default function ProfessionScreen({player,onReturn}) {
             <button className="reading-action" disabled={busy || !professionUnlocked(player) || !discoveries.includes(profession.key) || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Activate profession'}</button>
           </div>)}
         </div>
+        {active==='forger'&&professionUnlocked(player)&&discoveries.includes('forger')&&<button className="reading-action" onClick={onAdventure}>🔨 Enter Forger Chapter · The Trial of Steel</button>}
         {active && <section style={{marginTop:24}}>
           <h3>Specialization · {PROFESSIONS.find(p=>p.key===active)?.name}</h3>
           <p><strong>{Math.max(0,points-history.length)} available</strong> · {history.length} spent · {points} earned · 20 maximum</p>
