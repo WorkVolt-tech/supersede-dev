@@ -3,7 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { PROFESSIONS, professionUnlocked, professionPointsAtLevel, professionSwitchCost } from '../../game/professions'
 import { PROFESSION_TREES, activeProfessionRanks } from '../../game/professionTrees'
 
-export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure,onPathfinderAdventure,onEngineerAdventure}) {
+export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdventure,onMerchantAdventure,onAlchemistAdventure,onHunterAdventure,onPathfinderAdventure,onEngineerAdventure,onResonanceWeaverAdventure}) {
   const [status,setStatus] = useState(null)
   const [progress,setProgress] = useState([])
   const [discoveries,setDiscoveries] = useState([])
@@ -91,6 +91,7 @@ export default function ProfessionScreen({player,onReturn,onAdventure,onMinerAdv
             <button className="reading-action" disabled={busy || !professionUnlocked(player) || !discoveries.includes(profession.key) || status?.active_profession===profession.key} onClick={()=>choose(profession.key)}>{status?.active_profession===profession.key?'Active':'Activate profession'}</button>
           </div>)}
         </div>
+        {active==='resonance_weaver'&&professionUnlocked(player)&&discoveries.includes('resonance_weaver')&&<button className="reading-action" onClick={onResonanceWeaverAdventure}>💠 Enter Resonance Weaver Chapter · The Shattered Harmony</button>}
         {active==='engineer'&&professionUnlocked(player)&&discoveries.includes('engineer')&&<button className="reading-action" onClick={onEngineerAdventure}>🔧 Enter Engineer Chapter · Rise of the Machines</button>}
         {active==='pathfinder'&&professionUnlocked(player)&&discoveries.includes('pathfinder')&&<button className="reading-action" onClick={onPathfinderAdventure}>🧭 Enter Pathfinder Chapter · The Forgotten World</button>}
         {active==='hunter'&&professionUnlocked(player)&&discoveries.includes('hunter')&&<button className="reading-action" onClick={onHunterAdventure}>🏹 Enter Hunter Chapter · The Apex Hunt</button>}
