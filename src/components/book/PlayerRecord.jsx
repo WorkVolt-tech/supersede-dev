@@ -1,11 +1,16 @@
 import { getMoralTier, getMoralBarPct, getBadgeMeta } from '../../game/reputation'
 import { xpProgress } from '../../game/leveling'
+import { useInventoryStore } from '../../store/useInventoryStore'
+import { getEffectiveStats } from '../../game/playerStats'
 
 const clamp = (v) => Math.max(0, Math.min(100, v))
 
 export default function PlayerRecord({ player, onNavigate }) {
+  const items = useInventoryStore(s => s.items)
+  const equipped = items.filter(i => i.equipped_slot)
+  const stats = getEffectiveStats(player, equipped)
   const hp = Number(player.hp ?? 100)
-  const maxHp = Math.max(1, Number(player.max_hp ?? 100))
+  const maxHp = stats.maxHp
   const tier = getMoralTier(player.moral_score)
   const badge = getBadgeMeta(player.badge)
   const progress = xpProgress(player)
@@ -26,17 +31,24 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-moral-track"><span style={{left:`${getMoralBarPct(player.moral_score)}%`}} /></div>
     <div className="reading-meter-endpoints"><span>Villain</span><span>Hero</span></div>
     <div className="reading-minor-stats">
-      <div>Insight <b>{player.insight ?? 0}</b></div>
+      <div>Insight <b>{stats.core.insight}</b></div>
       <div>PvP kills <b>{player.pvp_kills ?? 0}</b></div>
       <div>Helps given <b>{player.helps_given ?? 0}</b></div>
     </div>
     <span className="reading-page-heading" style={{marginTop:22}}>Attributes &amp; skill points</span>
     <p className="reading-stat-summary"><strong>{player.skill_points ?? 0}</strong> unspent skill points · <strong>{player.resonance_shards ?? 0}</strong> resonance shards</p>
+    <div className="reading-derived-grid">
+      <div>Combat ATK <strong>{stats.attack}</strong></div>
+      <div>Combat DEF <strong>{stats.defense}</strong></div>
+      <div>Initiative <strong>{stats.initiative}</strong></div>
+    </div>
     <div className="reading-attribute-grid">
       {[
-        ['Attack',player.atk],['Defense',player.def],['Power',player.power],['Guard',player.guard],
-        ['Speed',player.speed],['Control',player.control],['Insight',player.insight],['Luck',player.luck],
-      ].map(([label,value])=><div key={label}>{label}<strong>{value ?? 0}</strong></div>)}
+        ['Attack','atk'],['Defense','def'],['Power','power'],['Guard','guard'],
+        ['Speed','speed'],['Control','control'],['Insight','insight'],['Luck','luck'],['Agility','agility'],
+      ].map(([label,key])=><div key={key}>{label}<strong>{stats.core[key]}</strong>
+        {stats.equipment[key] !== 0 && <small>{stats.base[key]} base {stats.equipment[key]>0?'+':''}{stats.equipment[key]} gear</small>}
+      </div>)}
     </div>
     <button className="reading-action" onClick={()=>onNavigate('skills')}>⬡ View and spend skill points</button>
     <span className="reading-page-heading" style={{marginTop:26}}>Archive &amp; systems</span>
