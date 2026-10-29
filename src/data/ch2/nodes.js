@@ -1639,8 +1639,13 @@ The fight begins.`,
       loot: [{ itemKey: 'judges_seal', qty: 1 }, { itemKey: 'rune_lux', qty: 1 }],
     },
     bossKey: 'twin_judges',
-    onWin:  'chapter_end_ch2',
+    onWin:  'class_choice',
     onLose: 'pre_boss_ch2',
+  },
+
+  class_choice: {
+    id: 'class_choice', type: 'class_choice',
+    onContinue: 'chapter_end_ch2',
   },
 
   // ═══════════════════════════════
