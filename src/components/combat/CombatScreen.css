@@ -5,6 +5,16 @@
   flex-direction: column;
   gap: 1rem;
 }
+.combat-encounter-title {
+  text-align: center; font-size: 13px; font-weight: 700;
+  letter-spacing: .22em; color: #b95646;
+  border-top: 1px solid currentColor; border-bottom: 1px solid currentColor;
+  padding: 9px 0;
+}
+.combat-turn-banner {
+  text-align: center; color: #c8b96e; font-size: 10px;
+  letter-spacing: .12em; text-transform: uppercase;
+}
 .combat-panel {
   display: flex;
   justify-content: space-between;
@@ -35,6 +45,9 @@
   border-radius: 4px; padding: .5rem .75rem; max-height: 100px; overflow-y: auto;
   display: flex; flex-direction: column-reverse;
 }
+.combat-log p { margin: 3px 0; }
+.combat-log em { font-style: italic; }
+.combat-log strong { font-weight: 700; }
 .combat-result { text-align: center; font-size: 16px; font-weight: 700; letter-spacing: .1em; padding: .5rem; border-radius: 4px; }
 .combat-result.win { color: #7dd87d; background: rgba(80,180,80,.12); }
 .combat-result.lose { color: #e07070; background: rgba(180,60,60,.12); }
@@ -42,6 +55,8 @@
 /* Combat is also rendered on the light parchment pages of the reading book.
    Override the dark-screen palette there so actions and event text stay legible. */
 .reading-page .combat-screen { color: #2b1d16; }
+.reading-page .combat-encounter-title { color: #8f352b; }
+.reading-page .combat-turn-banner { color: #76501c; }
 .reading-page .combat-name { color: #76501c; }
 .reading-page .combat-hp-num,
 .reading-page .combat-action-sub { color: #654a32; }
