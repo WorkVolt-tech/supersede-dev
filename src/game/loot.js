@@ -12,10 +12,16 @@ const ITEM_COLUMNS = ['item_key','name','item_type','subtype','rarity','icon','a
   'hp_restore','two_handed','element','power_bonus','guard_bonus','control_bonus','speed_bonus',
   'insight_bonus','luck_bonus','agility_bonus','special_effect']
 
-export async function grantLoot(playerId, drops = []) {
+export async function grantLoot(playerId, drops = [], luck = 0) {
   if (!playerId || !Array.isArray(drops) || !drops.length) return []
   const earned = []
   for (const drop of drops) {
+    // Explicit chance values are weighted drops. Story rewards without a
+    // chance remain guaranteed. Luck improves odds by 5% per point.
+    if (typeof drop.chance === 'number') {
+      const chance = Math.max(0,Math.min(1,drop.chance * (1+Math.max(0,Number(luck)||0)*.05)))
+      if (Math.random() >= chance) continue
+    }
     const key = drop.itemKey || drop.item_key
     if (!key) continue
     const qty = Math.max(1, Math.floor(Number(drop.qty || 1)))
