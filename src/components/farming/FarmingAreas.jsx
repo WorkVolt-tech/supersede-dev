@@ -33,7 +33,7 @@ export default function FarmingAreas({ onReturn }) {
   </div>
 
   return <div className="farming-areas">
-    <p className="story-text">Three districts are active with System entities. Choose where to hunt; defeated enemies award XP. Equipment drops are still being restored.</p>
+    <p className="story-text">Three districts are active with System entities. Choose where to hunt; defeated enemies award XP and any listed loot.</p>
     {message && <p className="farming-message" role="status">{message}</p>}
     <div className="farming-cards">
       {locations.map(area => <article className="farming-card" key={area.id}>
