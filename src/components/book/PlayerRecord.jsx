@@ -1,5 +1,6 @@
 import { getMoralTier, getMoralBarPct, getBadgeMeta } from '../../game/reputation'
 import { xpProgress } from '../../game/leveling'
+import { chapterOneComplete } from '../../game/progression'
 
 const clamp = (v) => Math.max(0, Math.min(100, v))
 
@@ -43,6 +44,8 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
     </div>
-    <button className="reading-action" onClick={() => onNavigate('farming')}>⚔ Chapter 1 farming areas</button>
+    <button className="reading-action" disabled={!chapterOneComplete(player)} onClick={() => onNavigate('farming')}>
+      {chapterOneComplete(player) ? '⚔ Chapter 1 farming areas' : '🔒 Chapter 1 farming areas · Complete Chapter 1 first'}
+    </button>
   </>
 }
