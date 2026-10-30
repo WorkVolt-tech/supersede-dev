@@ -22,7 +22,7 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
       {node.text && <p className="story-text">{node.text}</p>}
       <CombatScreen
         enemyData={node.enemy}
-        isBoss={node.type === 'boss'}
+        isBoss={node.type === 'boss' || Boolean(node.bossKey)}
         judgeCtx={node.type === 'boss' ? judgeCtx : undefined}
         onWin={() => goTo(node.onWin)}
         onLose={() => goTo(node.onLose)}
