@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <title>SuperSede — Battle Lab (Prototype)</title>
+  <style>
+    :root { font-family: system-ui,-apple-system,Segoe UI,sans-serif; color:#ece5d4; background:#0f111b; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background: radial-gradient(ellipse at top,#2b2036 0,#121521 52%,#0e111a 100%); }
+    main { width:min(980px,calc(100% - 28px)); margin:24px auto 60px; }
+    h1 { font-family:Georgia,serif; letter-spacing:.035em; font-size:clamp(26px,4.3vw,40px); margin:6px 0 3px; }
+    h2 { font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:#ebd39b; margin:0 0 12px; }
+    p { line-height:1.5; }
+    .eyebrow { font-size:11px; font-weight:700; letter-spacing:.22em; text-transform:uppercase; color:#e1b66c; }
+    .lead { color:#c7bdaf; max-width:740px; font-size:14px; }
+    .panel { background:rgba(19,23,36,.86); border:1px solid #504059; border-radius:14px; padding:18px; margin-top:18px; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; }
+    .toolbar fieldset { border:0; padding:0; margin:0; min-width:230px; flex:1 1 240px; }
+    .toolbar legend { padding:0 0 8px; color:#e6ce9c; font-weight:700; font-size:12px; }
+    .choices { display:flex; flex-wrap:wrap; gap:6px; }
+    button { font:inherit; }
+    .pill { color:#dfd9d1; background:#282739; padding:9px 12px; border:1px solid #64586f; border-radius:8px; cursor:pointer; font-size:12px; }
+    .pill[aria-pressed=true] { background:#7c5330; border-color:#e7ba78; color:#fff7e9; }
+    .pill:focus-visible,.cell:focus-visible,.action:focus-visible,.mainbtn:focus-visible { outline:3px solid #ffe3a4; outline-offset:2px; }
+    .pill:disabled,.cell:disabled,.action:disabled { opacity:.45; cursor:not-allowed; }
+    .hud { display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+    .stat { background:#252638; border:1px solid #44425a; border-radius:8px; padding:10px 12px; font-size:13px; }
+    .stat strong { color:#f8cf80; }
+    .fieldheads { display:grid; grid-template-columns:1fr 1fr; text-align:center; gap:8px; margin-bottom:8px; color:#c9beab; font-size:12px; font-weight:700; letter-spacing:.12em; }
+    .board { display:grid; gap:7px; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); }
+    .cell { min-width:0; aspect-ratio:1.28; min-height:60px; border:1px solid #53566c; border-radius:9px; background:linear-gradient(155deg,#2b2c42,#1e2335); color:#e8e7ee; cursor:pointer; position:relative; display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; padding:4px; }
+    .cell.enemy { background:linear-gradient(155deg,#412532,#292231); border-color:#805164; }
+    .cell.front-border { border-left:3px solid #e1b66c; }
+    .cell.hero { background:#284c54; border-color:#76d5c4; }
+    .cell.reachable { border-color:#7cbdeb; box-shadow:inset 0 0 0 2px #3e7ba8; }
+    .cell.targetable { border-color:#edbc69; box-shadow:inset 0 0 0 2px #b0793f; background:#593b36; }
+    .cell.unit { font-size:20px; }
+    .cell small { color:#b5b7c3; font-size:clamp(8px,1.4vw,11px); }
+    .cell.targetable small { color:#ffe2a8; }
+    .cell .hp { font-size:10px; color:#ffe5dc; }
+    .ranks { display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); margin:6px 0; color:#9b95a9; font-size:10px; text-align:center; }
+    .actions { display:flex; flex-wrap:wrap; gap:8px; }
+    .action { text-align:left; flex:1 1 135px; min-height:62px; padding:10px 12px; cursor:pointer; border:1px solid #5a526d; border-radius:10px; background:#252536; color:#e9e2d7; }
+    .action[aria-pressed=true] { background:#443247; border-color:#e4b97e; }
+    .action b,.action span { display:block; }
+    .action span { font-size:11px; color:#b5abbe; padding-top:3px; }
+    .bottom { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:12px 0 0; }
+    .mainbtn { border-radius:8px; padding:10px 14px; background:#855934; border:1px solid #c99a61; color:#fff5e3; cursor:pointer; }
+    .mainbtn.secondary { background:#293448; border-color:#5b799c; }
+    .status { flex:1 1 240px; font-size:13px; color:#e5cfaa; min-height:25px; }
+    .log { max-height:176px; overflow:auto; margin:0; padding-left:20px; color:#c6bdcc; font-size:12px; line-height:1.7; }
+    .hint { color:#bbb3c1; font-size:12px; margin:0 0 12px; }
+    .disclaimer { color:#b5a9b5; font-size:12px; margin-top:16px; }
+    @media(max-width:560px){ .panel{padding:12px} .board{gap:4px}.cell{min-height:48px;aspect-ratio:1; border-radius:5px}.cell.unit{font-size:16px}.cell small{font-size:8px}.cell .hp{font-size:9px} .ranks{font-size:9px} }
+  </style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">SUPERSEDE · EXPERIMENTAL · NOT LIVE COMBAT</div>
+  <h1>Battle Lab</h1>
+  <p class="lead">A playable position-based combat sketch: two lanes, three depth ranks per side, positional attacks and several movement-cost rules. Experiment here without changing your character, saved progress, or existing battles.</p>
+
+  <section class="panel toolbar" aria-label="Battle Lab configuration">
+    <fieldset>
+      <legend>Spaces per side</legend>
+      <div class="choices" id="size-options">
+        <button type="button" class="pill" data-size="3" aria-pressed="true">6 spaces · 2 × 3</button>
+        <button type="button" class="pill" data-size="2" aria-pressed="false">4 spaces · 2 × 2</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Movement costs</legend>
+      <div class="choices" id="movement-options">
+        <button type="button" class="pill" data-mode="ap" aria-pressed="true">2 action points</button>
+        <button type="button" class="pill" data-mode="turn" aria-pressed="false">Move ends turn</button>
+        <button type="button" class="pill" data-mode="free" aria-pressed="false">One free move</button>
+      </div>
+    </fieldset>
+  </section>
+
+  <section class="panel">
+    <div class="hud">
+      <div class="stat">Hero HP: <strong id="hero-hp">24/24</strong></div>
+      <div class="stat">Turn: <strong id="turn">1</strong></div>
+      <div class="stat">Actions left: <strong id="ap">2 AP</strong></div>
+      <div class="stat">Opponents: <strong id="foes-left">2</strong></div>
+    </div>
+    <div class="fieldheads"><span>ALLIES</span><span>ENEMIES</span></div>
+    <div class="ranks" id="ranks"></div>
+    <div class="board" id="board" aria-label="Two-lane battlefield. Select an ally square to move or a highlighted enemy to attack."></div>
+    <p class="hint" style="margin-top:12px">Blue outlines are one-step movement options. Gold outlines mark enemies your selected attack can reach. Only the hero is controllable in this prototype; unoccupied spaces are reserved for future allies.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Choose your attack</h2>
+    <div class="actions" id="actions">
+      <button type="button" class="action" data-attack="slash" aria-pressed="true"><b>⚔ Slash</b><span>Front rank → front enemy, same lane · 6 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="spear" aria-pressed="false"><b>🔱 Spear</b><span>Mid/front → enemy front/mid, same lane · 5 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="bow" aria-pressed="false"><b>🏹 Bow</b><span>Rear/mid → any enemy · 4 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="burst" aria-pressed="false"><b>✨ Elemental Burst</b><span>Any rank → target + adjacent tile, same lane · 5 dmg · 2 AP</span></button>
+    </div>
+    <div class="bottom">
+      <button type="button" class="mainbtn" id="end-turn">End turn</button>
+      <button type="button" class="mainbtn secondary" id="restart">Restart encounter</button>
+      <div role="status" aria-live="polite" class="status" id="status">Move toward an enemy or choose an attack.</div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Combat log</h2>
+    <ol class="log" id="log" aria-live="polite"></ol>
+  </section>
+  <p class="disclaimer">Design prototype only. Enemy behavior, damage numbers and the three movement modes are placeholders for testing positioning—not the final SuperSede rules. No Supabase connection, rewards, or XP changes.</p>
+</main>
+<script>
+(function () {
+  'use strict';
+  const attacks = {
+    slash: {cost:1, damage:6},
+    spear: {cost:1, damage:5},
+    bow: {cost:1, damage:4},
+    burst: {cost:2, damage:5}
+  };
+  const state = {depth:3, mode:'ap', attack:'slash', hero:{lane:1,rank:1,hp:24},
+    enemies:[], ap:2, freeMoveUsed:false, turn:1, over:false, messages:[]};
+  const $ = id => document.getElementById(id);
+
+  function reset() {
+    state.hero = {lane:1,rank:Math.max(0,state.depth-2),hp:24};
+    state.enemies = [{id:'E1',lane:1,rank:0,hp:13},
+      {id:'E2',lane:0,rank:Math.min(1,state.depth-1),hp:11}];
+    state.ap=state.mode==='ap'?2:1;
+    state.freeMoveUsed=false;state.turn=1;state.over=false;state.messages=[];
+    tell('A tactical encounter begins. Two enemies approach.');
+    render();
+  }
+  function tell(message) {
+    state.messages.unshift(message);
+    state.messages=state.messages.slice(0,15);
+    $('status').textContent=message;
+  }
+  function playerCanAct(cost) { return !state.over && state.ap>=cost; }
+  function canMove(lane,rank) {
+    return !state.over && state.ap>0 &&
+      Math.abs(lane-state.hero.lane)+Math.abs(rank-state.hero.rank)===1;
+  }
+  function canAttack(enemy) {
+    const h=state.hero,front=state.depth-1;
+    if(state.attack==='slash') return h.rank===front && enemy.rank===0 && enemy.lane===h.lane;
+    if(state.attack==='spear') return h.rank>=Math.max(0,front-1) && enemy.rank<=1 && enemy.lane===h.lane;
+    if(state.attack==='bow') return h.rank<front;
+    return true;
+  }
+  function attackCost() { return state.mode==='ap'?attacks[state.attack].cost:1; }
+  function onCell(side,lane,rank) {
+    if(state.over) return;
+    if(side==='hero') {
+      if(!canMove(lane,rank)) { tell('Move one square horizontally or vertically into an empty ally space.');return; }
+      if(state.mode==='free' && state.freeMoveUsed) { tell('You already used your free reposition this turn.');return; }
+      state.hero.lane=lane;state.hero.rank=rank;
+      if(state.mode==='ap') state.ap--;
+      if(state.mode==='turn') state.ap=0;
+      if(state.mode==='free') state.freeMoveUsed=true;
+      tell('You reposition to '+(lane===0?'upper':'lower')+' lane, '+rankName('hero',rank)+'.');
+      if(state.ap===0) enemyPhase();else render();
+      return;
+    }
+    const enemy=state.enemies.find(e=>e.lane===lane&&e.rank===rank&&e.hp>0);
+    if(!enemy) { tell('No enemy occupies this square.');return; }
+    if(!canAttack(enemy)) { tell('Out of range. Try a different attack or reposition.');return; }
+    const cost=attackCost();
+    if(!playerCanAct(cost)) { tell('Not enough action points. End your turn to recover.');return; }
+    let targets=[enemy];
+    if(state.attack==='burst') targets=state.enemies.filter(e=>e.hp>0&&e.lane===lane&&Math.abs(e.rank-rank)<=1);
+    for(const target of targets) target.hp=Math.max(0,target.hp-attacks[state.attack].damage);
+    state.enemies=state.enemies.filter(e=>e.hp>0);
+    state.ap-=cost;
+    tell(state.attack.toUpperCase()+' hits '+targets.map(t=>t.id).join(', ')+' for '+attacks[state.attack].damage+' damage each.');
+    if(state.enemies.length===0){state.over=true;tell('Victory! Reset to test another approach.');render();return;}
+    if(state.ap===0)enemyPhase();else render();
+  }
+  function enemyPhase() {
+    if(state.over)return;
+    let messages=[];
+    for(const enemy of state.enemies) {
+      if(enemy.rank>0){enemy.rank--;messages.push(enemy.id+' advances toward the front.');continue;}
+      if(enemy.lane!==state.hero.lane) {enemy.lane=state.hero.lane;messages.push(enemy.id+' switches lanes.');continue;}
+      state.hero.hp=Math.max(0,state.hero.hp-3);
+      messages.push(enemy.id+' strikes for 3 damage.');
+      if(state.hero.hp===0)break;
+    }
+    if(state.hero.hp===0){state.over=true;tell('Defeat. '+messages.join(' ')+' Restart to try another tactic.');render();return;}
+    state.turn++;state.ap=state.mode==='ap'?2:1;state.freeMoveUsed=false;
+    tell('Enemy phase: '+messages.join(' '));render();
+  }
+  function rankName(side,rank) {
+    if(side==='hero')return rank===state.depth-1?'front':rank===0?'rear':'middle';
+    return rank===0?'front':rank===state.depth-1?'rear':'middle';
+  }
+  function render() {
+    const board=$('board');board.replaceChildren();
+    board.style.setProperty('--cols',String(state.depth*2));
+    const labels=[];
+    for(let i=0;i<state.depth;i++)labels.push(rankName('hero',i));
+    for(let i=0;i<state.depth;i++)labels.push(rankName('enemy',i));
+    $('ranks').style.setProperty('--cols',String(state.depth*2));
+    $('ranks').replaceChildren();
+    for(const label of labels){const span=document.createElement('span');span.textContent=label;$('ranks').append(span);}
+    for(let lane=0;lane<2;lane++){
+      for(const side of ['hero','enemy']){
+        for(let rank=0;rank<state.depth;rank++){
+          const cell=document.createElement('button');cell.type='button';
+          const hero=side==='hero' && state.hero.lane===lane&&state.hero.rank===rank;
+          const enemy=side==='enemy' ? state.enemies.find(e=>e.lane===lane&&e.rank===rank&&e.hp>0):null;
+          const reachable=side==='hero'&&!hero&&canMove(lane,rank)&&!(state.mode==='free'&&state.freeMoveUsed);
+          const targetable=Boolean(enemy&&canAttack(enemy)&&playerCanAct(attackCost()));
+          cell.className='cell '+side+(hero?' hero':'')+(hero||enemy?' unit':'')+
+            (reachable?' reachable':'')+(targetable?' targetable':'')+
+            (side==='enemy'&&rank===0?' front-border':'');
+          cell.disabled=state.over;
+          cell.setAttribute('aria-label',(side==='hero'?'Ally':'Enemy')+' '+(lane===0?'upper':'lower')+
+            ' lane, '+rankName(side,rank)+(hero?' hero':enemy?' '+enemy.id+' '+enemy.hp+' HP':' empty')+
+            (reachable?' move here':targetable?' valid attack target':''));
+          const glyph=document.createElement('span');
+          glyph.textContent=hero?'🧍':enemy?'👹':'·';
+          cell.append(glyph);
+          const small=document.createElement('small');
+          small.textContent=hero?'YOU':enemy?enemy.id:rankName(side,rank);
+          cell.append(small);
+          if(enemy){const hp=document.createElement('span');hp.className='hp';hp.textContent=enemy.hp+' HP';cell.append(hp);}
+          cell.addEventListener('click',()=>onCell(side,lane,rank));
+          board.append(cell);
+        }
+      }
+    }
+    $('hero-hp').textContent=state.hero.hp+'/24';
+    $('turn').textContent=String(state.turn);
+    $('ap').textContent=state.ap+(state.mode==='ap'?' AP':' action')+(state.mode==='free'&&!state.freeMoveUsed?' + free move':'');
+    $('foes-left').textContent=String(state.enemies.length);
+    $('end-turn').disabled=state.over;
+    for(const button of document.querySelectorAll('[data-attack]'))button.setAttribute('aria-pressed',String(button.dataset.attack===state.attack));
+    for(const button of document.querySelectorAll('[data-mode]'))button.setAttribute('aria-pressed',String(button.dataset.mode===state.mode));
+    for(const button of document.querySelectorAll('[data-size]'))button.setAttribute('aria-pressed',String(Number(button.dataset.size)===state.depth));
+    $('log').replaceChildren();
+    for(const msg of state.messages){const li=document.createElement('li');li.textContent=msg;$('log').append(li);}
+  }
+  document.querySelectorAll('[data-attack]').forEach(button=>button.addEventListener('click',()=>{state.attack=button.dataset.attack;tell('Selected '+state.attack+'. Gold tiles show valid targets.');render();}));
+  document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{state.mode=button.dataset.mode;reset();}));
+  document.querySelectorAll('[data-size]').forEach(button=>button.addEventListener('click',()=>{state.depth=Number(button.dataset.size);reset();}));
+  $('end-turn').addEventListener('click',enemyPhase);
+  $('restart').addEventListener('click',reset);
+  reset();
+}());
+</script>
+</body>
+</html>
