@@ -2,6 +2,7 @@
 // Each is an independent, 2-AP active, not an automatic elemental-class skill.
 import { getTacticalAffectedSquares } from './tacticalGrid.js'
 import { getFusionSignature } from './classElementFusion.js'
+import { getElementalTriadAction } from './elementalTriad.js'
 
 export const SIGNATURE_AP_COST=2
 export const SIGNATURE_MP_COST=8
@@ -9,6 +10,8 @@ export const SIGNATURE_COOLDOWN=3
 const ENEMY_RANGE={from:[0,1,2],to:[0,1,2],cols:'any'}
 
 export function getFusionSignatureAction(fusion) {
+  const triad=getElementalTriadAction(fusion)
+  if(triad)return triad
   const name=getFusionSignature(fusion)
   if(!name)return null
   const level=Math.max(5,Math.min(10,Math.floor(Number(fusion.level)||5)))
@@ -46,7 +49,7 @@ export function planFusionSignature(action,units,targetId,hero={col:1,rank:0}) {
   const squares=getTacticalAffectedSquares(action.attack,target)
   const inside=unit=>squares.some(pos=>pos.col===unit.col&&pos.rank===unit.rank)
   const targets=units.filter(unit=>unit.hp>0&&inside(unit))
-  if(action.kind==='phantom')return {
+  if(action.kind==='phantom'||action.kind==='triad')return {
     valid:true,squares,targets,
     hits:targets.map(u=>({targetId:u.id,damage:action.damage})),
   }
