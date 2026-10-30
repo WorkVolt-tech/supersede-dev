@@ -24,6 +24,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
+import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
   makeGroupField, advanceGroupFields, planGroupMultiHits,
   groupKeystoneHitDamages, previewGroupAttack } from '../../game/tacticalGroups'
@@ -94,6 +95,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
+  const consumeItem=useInventoryStore(s=>s.consumeItem)
   const equipped=inventory.filter(i=>i.equipped_slot)
   const legendary=new Set(equipped.map(i=>i.item_key))
   const effective=getEffectiveStats(player,equipped)
@@ -813,6 +815,20 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     }
   }
 
+  async function useBattlePotion(item) {
+    if(busyRef.current||result||apRef.current<1)return
+    const restored=Math.min(Math.max(0,maxHp-hpRef.current),Math.max(0,Number(item.hp_restore)||0))
+    if(restored<=0){note('No healing needed.');return}
+    busyRef.current=true;setBusy(true)
+    try {
+      const used=await consumeItem(item.id)
+      if(!used.ok){note(used.reason||'Could not use item.');return}
+      updateHp(hpRef.current+restored)
+      apRef.current-=1;setAp(apRef.current)
+      note('Used '+item.name+' · +'+restored+' HP (1 AP).')
+    } finally {busyRef.current=false;setBusy(false)}
+  }
+
   const target=nextAliveTarget(foes,focus)
   const chosen=target?.id||null
   const activeSkills=ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)||[]
@@ -830,7 +846,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const throwUnavailable=attack.thrown&&throwTurns>0
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
-    <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/2 AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
+    <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
     <Battlefield foes={foes} hero={hero} focused={chosen} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       signatureFx={signatureFx}
@@ -917,6 +933,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
           Basic Strike is still available.
         </p>}
       </div>
+      <BattleConsumables items={inventory} hp={hp} maxHp={maxHp} disabled={!canPlay||ap<1} onUse={useBattlePotion}/>
       <div className="combat-actions">
         <button type="button" className="combat-action-btn"
           disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
