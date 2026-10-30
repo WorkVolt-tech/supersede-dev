@@ -23,7 +23,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import CombatActionPoints from './CombatActionPoints'
+import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
   makeGroupField, advanceGroupFields, planGroupMultiHits,
   groupKeystoneHitDamages, previewGroupAttack } from '../../game/tacticalGroups'
@@ -123,8 +123,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
   const heroRef=useRef(hero)
-  const [ap,setAp]=useState(2)
-  const apRef=useRef(2)
+  const maxAp=maxCombatAp(player.level)
+  const [ap,setAp]=useState(maxAp)
+  const apRef=useRef(maxAp)
   const roundStartedRef=useRef(false)
   const roundRef=useRef(1)
   const [round,setRound]=useState(1)
@@ -699,7 +700,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
     roundStartedRef.current=false
     roundRef.current+=1;setRound(roundRef.current)
-    apRef.current=2;setAp(2)
+    apRef.current=maxAp;setAp(maxAp)
   }
   function isFreeClass(id){
     return ['stance_solar','stance_lunar','shift_beast','shift_coil','shift_storm'].includes(id)||
@@ -850,7 +851,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
       </span>
     </div>
-    <CombatActionPoints ap={ap} round={round}/>
+    <CombatActionPoints ap={ap} max={maxAp} round={round}/>
     {activeFusion&&!result&&<div className="combat-fusion-status">
       <span>✦ {activeFusion.kind==='triad'
         ?activeFusion.element+' Elemental Triad'
