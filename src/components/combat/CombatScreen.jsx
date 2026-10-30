@@ -20,6 +20,8 @@ import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStat
 import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
+import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
+import { advanceKeystoneCooldowns, applyKeystoneStatuses, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
@@ -70,6 +72,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [result, setResult] = useState(null)
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
+  const [keystoneCooldowns, setKeystoneCooldowns] = useState({})
   // Chapter 1 guardians have staged introductions; don't allow a move to
   // interrupt the entrance before the first combat turn begins.
   const entranceDuration = CH1_BOSS_ENTRANCE_MS[enemyData.name] ?? 0
@@ -184,7 +187,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       onEnemyHealSelf: (h) => { healAmt += h },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const aiMove = resolveEnemyTurn(combatEnemyRef.current, ctx)
+    const stunned = consumeEnemyStun(statusEffectsRef.current)
+    if (stunned) messages.push(stunned)
+    const aiMove = stunned ? null : resolveEnemyTurn(combatEnemyRef.current, ctx)
+    if (!stunned && (statusEffectsRef.current.cfx_longDecayStacks || 0) > 0) {
+      aiDmg = Math.max(0, aiDmg - 3 * statusEffectsRef.current.cfx_longDecayStacks)
+    }
     // AI keeps full ownership of move selection and damage. The move key
     // only tells the Chapter 1 portrait which attack to animate.
     if (CH1_BOSS_ENTRANCE_MS[enemyData.name] > 0) {
@@ -210,6 +218,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (hitResult?.messages?.length) messages.push(...hitResult.messages)
 
     if (legendary.has('legendary_miner')) { finalDmg = Math.max(0,finalDmg-3); messages.push('Deepstone Heart absorbs 3 damage.') }
+    const keystoneDefense = resolveKeystoneDefense(statusEffectsRef.current, finalDmg)
+    finalDmg = keystoneDefense.damage
+    messages.push(...keystoneDefense.messages)
+    if (keystoneDefense.reflected > 0) {
+      foeHp = Math.max(0, foeHp - keystoneDefense.reflected)
+      messages.push(`${keystoneDefense.reflected} keystone damage reflected.`)
+    }
     let nextHp = Math.max(0, playerHp - finalDmg)
     setCurrentHp(nextHp)
 
@@ -231,6 +246,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
     if (turnEnd?.damageToEnemy > 0) foeHp = Math.max(0, foeHp - turnEnd.damageToEnemy)
     if (turnEnd?.healToPlayer > 0 && nextHp > 0) nextHp = Math.min(maxPlayerHp, nextHp + turnEnd.healToPlayer)
+    const keystoneTick = resolveKeystoneRegen(statusEffectsRef.current, foeHp, nextHp, maxPlayerHp)
+    foeHp = keystoneTick.enemyHp
+    nextHp = keystoneTick.playerHp
+    keystoneTick.messages.forEach(pushLog)
 
     setEnemyHp(foeHp)
     setCurrentHp(nextHp)
@@ -238,7 +257,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { playerHp: nextHp, foeHp }
   }
 
-  function playerAttack(foeHp) {
+  function playerAttack(foeHp, playerHp) {
     const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
@@ -247,6 +266,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (legendary.has('legendary_forger') && wasCrit) dmg += 12
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
+    const keystoneHit = resolveKeystoneStrike(statusEffectsRef.current, dmg)
+    dmg = keystoneHit.damage
+    playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
+    if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     const newEnemyHp = Math.max(0, foeHp - dmg)
     setEnemyHp(newEnemyHp)
     if (dmg > 0) showJudgeHit()
@@ -254,7 +277,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
     const verb = ranged ? 'You shoot' : 'You strike'
-    const msgs = [`${verb} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || [])]
+    const msgs = [`${verb} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || []), ...keystoneHit.messages]
     if (legendary.has('legendary_forger') && wasCrit) msgs.push('✦ Masterwork Edge adds 12 critical damage.')
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) msgs.push('✦ Predator Instinct: opening shot +15.')
     if (legendary.has('legendary_resonance_weaver')) msgs.push('✦ Harmonic Pulse: +4 resonance damage.')
@@ -273,9 +296,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       const killResult = ClsCombat.onKill(combatPlayer, statusEffectsRef.current, enemyData)
       if (killResult?.messages?.length) killResult.messages.forEach(pushLog)
       if (killResult?.dbUpdates) Object.assign(dbUpdatesRef.current, killResult.dbUpdates)
-      return newEnemyHp
+      return { foeHp: newEnemyHp, playerHp }
     }
-    return newEnemyHp
+    return { foeHp: newEnemyHp, playerHp }
   }
 
   function playerSkill(skillId, foeHp, playerHp) {
