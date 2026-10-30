@@ -73,12 +73,14 @@ export function resolveKeystoneDefense(status, incoming) {
   return { damage, reflected, messages }
 }
 
-export function resolveKeystoneStrike(status, damage) {
+export function resolveKeystoneStrike(status, damage, criticalApplied = false) {
   let dealt = damage
   const messages = []
   if (status.cfx_forgeAtk) dealt = Math.round(dealt * 1.3)
   if (status.cfx_guaranteedCrit) {
-    dealt = Math.round(dealt * 1.5)
+    // CombatScreen has already applied the critical multiplier when it
+    // marks the attack guaranteed. The default supports direct callers.
+    if (!criticalApplied) dealt = Math.round(dealt * 1.5)
     delete status.cfx_guaranteedCrit
     messages.push('✦ Elemental critical strike!')
   }
