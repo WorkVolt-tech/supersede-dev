@@ -75,16 +75,21 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       Object.assign(updates, r.updates)
     }
 
-    if (choice.allianceTag || choice.allianceTagRepeatable) {
+    if (choice.allianceTag || choice.allianceTagRepeatable ||
+        (chapterPrefix === 'ch2' && resolvedId === 'sweep_arrival')) {
       const log = [...(player.alliance_log || [])]
       // Some choices grant both a once-only story flag and repeatable
-      // cooperation credit. Keep both; repeatable credits are intentionally
-      // allowed to appear more than once in the player's record.
+      // cooperation credit. Preserve both and do not suppress repeats.
       if (choice.allianceTag && !log.includes(choice.allianceTag)) {
         log.push(choice.allianceTag)
       }
       if (choice.allianceTagRepeatable) {
         log.push(choice.allianceTagRepeatable)
+      }
+      // In the original Chapter 2 engine, the Sweep sets this marker at
+      // encounter entry, even if the player later loses or leaves.
+      if (chapterPrefix === 'ch2' && resolvedId === 'sweep_arrival' && !log.includes('sweep_fired')) {
+        log.push('sweep_fired')
       }
       updates.alliance_log = log
     }
