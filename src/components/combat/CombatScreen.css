@@ -117,3 +117,6 @@
 .combat-group-unit:disabled { opacity:.4; cursor:default; }
 .combat-group-enemies .combat-group-unit:focus-visible { outline:2px solid #f2c777; outline-offset:2px; }
 @media (max-width:380px) { .combat-group-enemies { grid-template-columns:1fr; } }
+
+/* Persistent elemental zones occupy battlefield cells, even between turns. */
+.combat-grid-cell.foe.hazard { background:#452116; box-shadow:inset 0 0 0 1px #eb783b; }

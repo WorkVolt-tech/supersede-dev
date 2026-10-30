@@ -103,3 +103,5 @@ Five explicitly counted, non-boss story encounters now route to the isolated `Gr
 **Limitations:** Some exotic legacy skill and enemy status mechanics still require per-target handling; all abilities are not yet fully multi-target. Group mode remains opt-in for explicitly counted fights and does not override bosses or unspecified encounters. Full mobile/desktop Vite build and real-browser playtests are still needed.
 
 **Elemental per-enemy damage:** Poison's Long Decay and Fire's Ember stacks now tick on each affected foe, independently, at the same 3 damage per poison stack and 4 damage per ember stack used by the original combat engine. Area attacks that spread stacks only affect occupied squares they actually hit.
+
+**Lingering area fields:** Fire's Inferno Zone in group combat now ignites its affected 3×3 grid squares for three round-end ticks. It damages all living foes occupying those squares, allows enemies to avoid damage by moving out, and does not double-apply the legacy single-target Inferno tick. Field positions, rather than the currently selected target, determine damage.

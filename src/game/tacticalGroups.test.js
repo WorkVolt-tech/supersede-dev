@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createTacticalGroup,applyGroupAttack,nextAliveTarget } from './tacticalGroups.js'
+import { createTacticalGroup,applyGroupAttack,nextAliveTarget,
+  makeGroupField,advanceGroupFields } from './tacticalGroups.js'
 import { TACTICAL_ATTACKS } from './tacticalGrid.js'
 
 test('real groups split previous total HP and have distinct squares',()=>{
@@ -50,4 +51,32 @@ test('initiative movement changes which attacks can reach the enemy',()=>{
   assert.equal(applyGroupAttack(foes,TACTICAL_ATTACKS.slash,hero,front.id,5).valid,true)
   assert.equal(applyGroupAttack(moved,TACTICAL_ATTACKS.slash,hero,front.id,5).valid,false)
   assert.deepEqual(applyGroupAttack(moved,TACTICAL_ATTACKS.slash,hero,front.id,5).units,moved)
+})
+
+test('Inferno Zone damages occupied squares over three rounds, not a selected enemy',()=>{
+  const foes=createTacticalGroup({groupSize:4,hp:80,atk:4})
+  const center=foes[0]
+  const field=makeGroupField('inferno',{
+    shape:'cross',from:[0,1,2],to:[0,1,2],cols:'any'},center,3,4)
+  assert.equal(field.squares.length,4) // edge-centred cross
+  const turn1=advanceGroupFields(foes,[field])
+  assert.deepEqual(turn1.units.map(foe=>foe.hp),[16,16,16,16])
+  assert.equal(turn1.fields[0].turns,2)
+  // One enemy escapes the zone before the next tick.
+  const moved=turn1.units.map(foe=>foe.id===foes[3].id
+    ?{...foe,col:2,rank:2}:foe)
+  const turn2=advanceGroupFields(moved,turn1.fields)
+  assert.deepEqual(turn2.units.map(foe=>foe.hp),[12,12,12,16])
+  const turn3=advanceGroupFields(turn2.units,turn2.fields)
+  assert.equal(turn3.fields.length,0)
+  assert.deepEqual(turn3.units.map(foe=>foe.hp),[8,8,8,16])
+  assert.equal(advanceGroupFields(turn3.units,turn3.fields).events.length,0)
+})
+test('field effects skip dead enemies and cannot trigger repeat kills',()=>{
+  const units=[{id:'a',name:'A',col:1,rank:0,hp:3,maxHp:3}]
+  const field=makeGroupField('inferno',{shape:'single'},units[0],2,10)
+  const first=advanceGroupFields(units,[field])
+  assert.equal(first.events[0].defeated,true)
+  const second=advanceGroupFields(first.units,first.fields)
+  assert.equal(second.events.length,0)
 })

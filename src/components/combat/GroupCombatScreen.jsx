@@ -16,7 +16,8 @@ import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSk
 import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { createTacticalGroup, applyGroupAttack, nextAliveTarget } from '../../game/tacticalGroups'
+import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
+  makeGroupField, advanceGroupFields } from '../../game/tacticalGroups'
 import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from '../../game/tacticalFoeStatus'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
@@ -42,7 +43,7 @@ const GROUP_AREAS = {
 }
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, pattern, canMove, onMove, onFocus }) {
+function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus }) {
   const target=nextAliveTarget(foes,focused)
   const area=target&&pattern&&isTacticalTargetValid(pattern,hero,target)
     ?getTacticalAffectedSquares(pattern,target):[]
@@ -54,10 +55,12 @@ function Battlefield({ foes, hero, focused, pattern, canMove, onMove, onFocus })
       const step=side==='hero'&&!mine&&canMove&&
         Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
+      const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
+        p=>p.rank===rank&&p.col===col))
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
           foe||mine?'occupied':'',foe?.id===focused?'targetable':'',
-          splash?'splash':'',step?'movable':''].join(' ')}
+          splash?'splash':'',hazard?'hazard':'',step?'movable':''].join(' ')}
         disabled={side==='enemy'?!foe:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
         aria-label={foe?foe.name+' '+foe.hp+' HP':mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
@@ -126,6 +129,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const completionTimerRef=useRef(null)
   const enemyStatesRef=useRef(Object.fromEntries(foesRef.current.map(u=>[u.id,initEnemyState(u)])))
   const foeStatusesRef=useRef({})
+  const fieldsRef=useRef([])
   const enemyDamageBudgetRef=useRef(enemyActionBudget(enemyData.atk,enemyData.groupSize))
   const enemyCopiesRef=useRef(Object.fromEntries(foesRef.current.map(u=>[u.id,{...u,name:u.name.replace(/ \d+$/,'')}])))
 
@@ -287,6 +291,19 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     })
     if(!effect||mpRef.current<effect.mpCost)return false
     updateMp(mpRef.current-effect.mpCost)
+    if(id==='fire_ultimate_inferno_zone' && target &&
+        effect.setStatus?.infernoTurns>0) {
+      // Inferno occupies a fixed pattern of squares. A target can escape
+      // the fire by moving, and other enemies entering the area are hit.
+      const zone=makeGroupField('inferno',groupSpellPattern(id),target,
+        effect.setStatus.infernoTurns,effect.setStatus.infernoDmg||40)
+      fieldsRef.current=[...fieldsRef.current.filter(f=>f.kind!=='inferno'),zone]
+      // Do not also damage a separately selected enemy through the legacy
+      // single-target regen hook, which would double-count the zone.
+      statusRef.current.infernoTurns=0
+      statusRef.current.infernoDmg=0
+      note('Inferno Zone ignites '+zone.squares.length+' battlefield squares.')
+    }
     const damage=scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target){
       const area=groupSpellPattern(id)
@@ -403,6 +420,13 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     const perFoe=advanceFoeStatuses(units,foeStatusesRef.current,combatPlayer)
     foeStatusesRef.current=perFoe.statuses
     units=perFoe.units
+    const fieldTicks=advanceGroupFields(units,fieldsRef.current)
+    fieldsRef.current=fieldTicks.fields
+    units=fieldTicks.units
+    for(const event of fieldTicks.events) {
+      note(event.name+' takes '+event.damage+' '+event.kind+' field damage.')
+      if(event.defeated)onFoeDefeated(units.find(u=>u.id===event.id))
+    }
     for(const event of perFoe.events){
       note(event.name+' takes '+event.damage+' damage from ongoing effects.')
       if(event.defeated)onFoeDefeated(units.find(u=>u.id===event.id))
@@ -548,7 +572,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/2 AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
     <Battlefield foes={foes} hero={hero} focused={chosen} pattern={attack}
-      canMove={canPlay&&ap>=1}
+      fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       onFocus={id=>setFocus(id)}
       onMove={point=>takeTurn('move',null,point)} />
     <div className="combat-group-enemies" aria-live="polite">

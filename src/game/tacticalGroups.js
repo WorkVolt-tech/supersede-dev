@@ -1,6 +1,6 @@
 // Independently positioned enemies for explicitly configured 2–9 unit story
 // encounters. Group rewards remain on the parent encounter, never on units.
-import { isTacticalTargetValid, tacticalHitTargets } from './tacticalGrid.js'
+import { isTacticalTargetValid, tacticalHitTargets, getTacticalAffectedSquares } from './tacticalGrid.js'
 
 export const GROUP_POSITIONS = [
   {col:1,rank:0},{col:0,rank:0},{col:2,rank:0},
@@ -38,4 +38,35 @@ export function applyGroupAttack(units, attack, origin, targetId, damage) {
 }
 export function nextAliveTarget(units,preferredId) {
   return units.find(u=>u.id===preferredId&&u.hp>0)||units.find(u=>u.hp>0)||null
+}
+
+/** A lingering area covers fixed enemy grid cells, not an enemy ID. */
+export function makeGroupField(kind, attack, target, turns, damage) {
+  return {
+    kind,
+    squares:getTacticalAffectedSquares(attack,target),
+    turns:Math.max(0,Math.floor(Number(turns)||0)),
+    damage:Math.max(0,Math.round(Number(damage)||0)),
+  }
+}
+
+/** Resolve each field once per round, honoring movement and remaining HP. */
+export function advanceGroupFields(units,fields=[]) {
+  let next=units
+  const remaining=[],events=[]
+  for(const field of fields) {
+    if(field.turns<=0)continue
+    const occupied=new Set(field.squares.map(square=>square.col+':'+square.rank))
+    if(field.damage>0) {
+      next=next.map(unit=>{
+        if(unit.hp<=0||!occupied.has(unit.col+':'+unit.rank))return unit
+        const hp=Math.max(0,unit.hp-field.damage)
+        events.push({id:unit.id,name:unit.name,kind:field.kind,
+          damage:Math.min(unit.hp,field.damage),hp,defeated:hp===0})
+        return {...unit,hp}
+      })
+    }
+    if(field.turns>1)remaining.push({...field,turns:field.turns-1})
+  }
+  return {units:next,fields:remaining,events}
 }
