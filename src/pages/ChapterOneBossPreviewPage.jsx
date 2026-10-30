@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import ChapterOneBossPortrait from '../components/combat/ChapterOneBossPortrait'
+import ChapterOneBossPortrait, { CH1_BOSS_ENTRANCE_MS } from '../components/combat/ChapterOneBossPortrait'
 import WatcherPortrait from '../components/combat/WatcherPortrait'
 
 const BOSSES=[
@@ -14,6 +14,14 @@ export default function ChapterOneBossPreviewPage({onReturn}){
  const [attacking,setAttacking]=useState(false)
  const [hit,setHit]=useState(false)
  const [defeated,setDefeated]=useState(false)
+ const [entranceReady,setEntranceReady]=useState(false)
+ useEffect(()=>{
+  const duration=CH1_BOSS_ENTRANCE_MS[boss]??0
+  setEntranceReady(duration===0)
+  if(duration===0)return
+  const timer=setTimeout(()=>setEntranceReady(true),duration)
+  return()=>clearTimeout(timer)
+ },[boss,replay])
  const timers=useRef([])
  const clearTimers=()=>{timers.current.forEach(clearTimeout);timers.current=[]}
  useEffect(()=>()=>{timers.current.forEach(clearTimeout)},[])
@@ -22,11 +30,12 @@ export default function ChapterOneBossPreviewPage({onReturn}){
   setAttacking(false)
   setHit(false)
   setDefeated(false)
+  setEntranceReady(false)
   setBoss(nextBoss)
   setReplay(n=>n+1)
  }
  function trigger(setter,duration){
-  if(defeated)return
+  if(defeated||!entranceReady)return
   clearTimers()
   setAttacking(false);setHit(false)
   timers.current.push(setTimeout(()=>{
@@ -47,11 +56,12 @@ export default function ChapterOneBossPreviewPage({onReturn}){
     <ChapterOneBossPortrait name={boss} attacking={attacking} hit={hit} defeated={defeated}/>}
   </div>
   <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
-   <button className="reading-action" disabled={defeated} onClick={()=>trigger(setAttacking,720)}>Play attack</button>
-   {!isWatcher&&<button className="reading-action" disabled={defeated} onClick={()=>trigger(setHit,440)}>Preview hit</button>}
-   <button className="reading-action" disabled={defeated} onClick={()=>{clearTimers();setAttacking(false);setHit(false);setDefeated(true)}}>Preview defeat</button>
+   <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setAttacking,720)}>Play attack</button>
+   {!isWatcher&&<button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setHit,440)}>Preview hit</button>}
+   <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>{clearTimers();setAttacking(false);setHit(false);setDefeated(true)}}>Preview defeat</button>
    <button className="reading-action" onClick={()=>reset()}>Replay entrance / reset</button>
   </div>
+  <p className="story-text" aria-live="polite">{!entranceReady?'Entrance playing…':defeated?'Defeat sequence triggered. Replay entrance to reset.':'Ready for attack, hit and defeat previews.'}</p>
   <p className="story-text">{isWatcher?'On defeat, the Watcher’s eyes burst outward and disperse.':boss==='Sentinel of the First Eye'?'The Sentinel crashes down and unleashes an eye roar.':boss==='The Surveyor'?'The Surveyor assembles through mechanical rotation.':'The Unseen emerges from spectral wind.'}</p>
   <button className="reading-action" onClick={onReturn}>← Return to menu</button>
  </div>
