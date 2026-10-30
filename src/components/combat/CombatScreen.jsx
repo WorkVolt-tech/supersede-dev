@@ -283,6 +283,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   // movement and stunned turns. Moving must never suppress bleed, poison,
   // class regeneration or keystone duration ticks.
   function finishEnemyAction(nextHp, foeHp) {
+    statusEffectsRef.current._enemyMaxHp = enemyData.hp
     const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
     if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
     if (turnEnd?.damageToEnemy > 0) foeHp = Math.max(0, foeHp - turnEnd.damageToEnemy)

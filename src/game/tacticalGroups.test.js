@@ -41,3 +41,13 @@ test('invalid group sizes fail closed',()=>{
   assert.throws(()=>createTacticalGroup({groupSize:10,hp:20}),RangeError)
   assert.throws(()=>createTacticalGroup({groupSize:1,hp:20}),RangeError)
 })
+
+test('initiative movement changes which attacks can reach the enemy',()=>{
+  const foes=createTacticalGroup({groupSize:2,hp:20,atk:4})
+  const front=foes[0]
+  const moved=foes.map(foe=>foe.id===front.id?{...foe,rank:2}:foe)
+  const hero={col:1,rank:0}
+  assert.equal(applyGroupAttack(foes,TACTICAL_ATTACKS.slash,hero,front.id,5).valid,true)
+  assert.equal(applyGroupAttack(moved,TACTICAL_ATTACKS.slash,hero,front.id,5).valid,false)
+  assert.deepEqual(applyGroupAttack(moved,TACTICAL_ATTACKS.slash,hero,front.id,5).units,moved)
+})

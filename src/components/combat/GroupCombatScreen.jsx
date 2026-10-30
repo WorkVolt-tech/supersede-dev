@@ -397,6 +397,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
 
   function roundEnd() {
     let units=foesRef.current
+    statusRef.current._enemyMaxHp=nextAliveTarget(units,focus)?.maxHp||100
     const tick=ClsCombat.onTurnEnd(combatPlayer,statusRef.current)
     tick?.messages?.forEach(note)
     const perFoe=advanceFoeStatuses(units,foeStatusesRef.current,combatPlayer)
@@ -493,14 +494,26 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         if(alive<=0){await finish('lose');return}
         if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
       }
-      if(kind==='attack')strike(target.id)
+      // Fast enemies can reposition or be defeated before the player acts.
+      // Revalidate against the CURRENT formation so the player never burns
+      // AP hitting a stale square or applying debuffs to an absent enemy.
+      const liveTarget=target&&foesRef.current.find(
+        foe=>foe.id===target.id&&foe.hp>0)
+      if(['attack','skill','elemental'].includes(kind) &&
+        (!liveTarget || (kind==='attack'
+          ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)
+          : !canUseTacticalSkill(id,heroRef.current,liveTarget)))){
+        note('Your target moved or fell before your action. Select a new target; no AP spent.')
+        return
+      }
+      if(kind==='attack')strike(liveTarget.id)
       else if(kind==='move'){
         heroRef.current=position;setHero(position)
         note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
       }
-      else if(kind==='skill')resolveSkill(id,target)
-      else if(kind==='elemental')resolveElement(id,target)
-      else if(kind==='keystone')resolveKeystone(id,target)
+      else if(kind==='skill')resolveSkill(id,liveTarget||target)
+      else if(kind==='elemental')resolveElement(id,liveTarget||target)
+      else if(kind==='keystone')resolveKeystone(id,liveTarget||target)
       else if(kind==='defend'){
         defendingRef.current=true
         applyStonebornDefend(combatPlayer,statusRef.current)
