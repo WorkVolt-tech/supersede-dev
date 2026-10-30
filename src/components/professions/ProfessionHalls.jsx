@@ -14,6 +14,8 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [orders,setOrders]=useState([])
  const [recipe,setRecipe]=useState(null)
  const [advanced,setAdvanced]=useState([])
+ const [expeditions,setExpeditions]=useState([])
+ const [expeditionRuns,setExpeditionRuns]=useState([])
  const [advancedRuns,setAdvancedRuns]=useState([])
  const [professionLevel,setProfessionLevel]=useState(1)
  const [lastWork,setLastWork]=useState(null)
@@ -100,6 +102,27 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   }
   setShopBusy(false)
  }
+ useEffect(()=>{let live=true;Promise.all([
+  supabase.from('profession_expeditions').select('*').eq('profession_key',selected).order('required_level'),
+  supabase.from('profession_expedition_runs').select('expedition_key,last_success_at').eq('player_id',player.id)
+ ]).then(([a,b])=>{if(live){setExpeditions(a.data||[]);setExpeditionRuns(b.data||[])}});return()=>{live=false}},[selected,player.id])
+ async function expedition(key,action) {
+  if(shopBusy)return
+  setShopBusy(true)
+  const {data,error}=await supabase.rpc('attempt_profession_expedition',{target_player:player.id,expedition_id:key,chosen_action:action})
+  setShopMessage(error?.message||(data?.success?'Expedition complete: '+data.item+' · +'+data.xp+' XP':data?.message||'Expedition failed'))
+  if(!error&&data?.success){
+   const [runs,progress,user]=await Promise.all([
+    supabase.from('profession_expedition_runs').select('expedition_key,last_success_at').eq('player_id',player.id),
+    supabase.from('profession_progress').select('level').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),
+    supabase.auth.getUser()
+   ])
+   setExpeditionRuns(runs.data||[]);setProfessionLevel(progress.data?.level||1)
+   await loadInventory(player.id)
+   if(user.data?.user)await loadPlayer(user.data.user.id)
+  }
+  setShopBusy(false)
+ }
  const hall=PROFESSION_HALLS[selected]
  const cycle=hallRotation(selected)
  const hasAccess=player.chapters_unlocked?.includes(3)&&active===selected&&unlocked.includes(selected)
@@ -144,6 +167,22 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
      <p>+{r.xp_reward} XP · {r.cooldown_minutes} min cooldown</p>
      {cooling&&<p>Available {new Date(new Date(last).getTime()+r.cooldown_minutes*60000).toLocaleString()}</p>}
      <button className="reading-action" disabled={shopBusy||!hasAccess||professionLevel<r.required_level||owned<r.input_qty||cooling} onClick={()=>workAdvanced(r.recipe_key)}>{professionLevel<r.required_level?'🔒 Level '+r.required_level:'Craft'}</button>
+    </div>
+   })}
+  </div>
+  <h4>Rare-resource expeditions</h4>
+  <p>Explore profession-specific danger zones at levels 30, 50, and 75. Successful expeditions award rare materials and XP; the Level 50 resource is required for Master crafting.</p>
+  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:10}}>
+   {expeditions.map(e=>{
+    const last=expeditionRuns.find(r=>r.expedition_key===e.expedition_key)?.last_success_at
+    const cooling=last&&Date.now()<new Date(last).getTime()+e.cooldown_hours*3600000
+    const canGo=hasAccess&&professionLevel>=e.required_level&&!cooling&&!shopBusy
+    return <div key={e.expedition_key} style={{border:'1px solid #a99270555',borderRadius:6,padding:12}}>
+     <strong>{e.title}</strong><p>{e.description}</p>
+     <p>Level {e.required_level} · +{e.xp_reward} XP · {e.cooldown_hours}h cooldown</p>
+     {cooling&&<p>Next expedition: {new Date(new Date(last).getTime()+e.cooldown_hours*3600000).toLocaleString()}</p>}
+     <button className="reading-action" disabled={!canGo} onClick={()=>expedition(e.expedition_key,'careful')}>{professionLevel<e.required_level?'🔒 Level '+e.required_level:'Use the careful approach'}</button>
+     <button className="reading-action" disabled={!canGo} onClick={()=>expedition(e.expedition_key,'reckless')}>Take the risky shortcut</button>
     </div>
    })}
   </div>
