@@ -109,8 +109,10 @@ export function resolveKeystoneRegen(status, foeHp, hp, maxHp) {
   const messages = []
   const ember = status.cfx_emberStacks || 0
   const decay = status.cfx_longDecayStacks || 0
-  if (ember || decay) {
-    const tick = ember * 4 + decay * 3
+  const inferno = (status.infernoTurns || 0) > 0 ? (status.infernoDmg || 40) : 0
+  if (status.infernoTurns > 0) status.infernoTurns -= 1
+  if (ember || decay || inferno) {
+    const tick = ember * 4 + decay * 3 + inferno
     enemyHp = Math.max(0, enemyHp - tick)
     messages.push(`Elemental damage over time: ${tick}.`)
   }
