@@ -601,11 +601,13 @@ export function onActiveSkill(skillId, player, statusEffects, enemy) {
     return { messages, consumed: false }  // free action — no turn consumed
   }
 
-  // All other actives are once-per-combat
-  if (statusEffects.cls_used[skillId]) {
+  // Chimera form shifts follow their own short form cooldown and are not
+  // one-time skills. Other actives remain once-per-combat.
+  const chimeraShift = ['shift_beast','shift_coil','shift_storm'].includes(skillId)
+  if (statusEffects.cls_used[skillId] && !chimeraShift) {
     return { messages: ['Class skill already used this combat.'], consumed: false }
   }
-  statusEffects.cls_used[skillId] = true
+  if (!chimeraShift) statusEffects.cls_used[skillId] = true
 
   // ── Arbiter actives ──────────────────────────────────────────────────
   if (skillId === 'sentence_mark') {

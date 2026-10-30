@@ -10,7 +10,7 @@
 - The nine spaces per side are **positions**, not nine mandatory party members. Some may be empty. Companions, multi-tile bosses, traps, summoned creatures and terrain will come later.
 - Attacks should have two independently defined rules: **where the attacker can stand** and **which opposing spaces they can target**. An effect then determines **which additional spaces are hit**.
 - Every player class and enemy archetype needs a **viable turn** when frontline targets are absent. A weak System Pulse, legal from all nine squares against any enemy square, is the current fallback. It does not earn weapon mastery.
-- Live React encounters now use **2 player AP per round**: move one square for 1 AP, a standard weapon attack for 1 AP, a wide-area weapon attack for 2 AP, or a class/elemental/keystone ability for 2 AP. Each enemy acts once per round, before the player if its SPD is higher, otherwise after. The Battle Lab still offers comparisons.
+- Live React encounters now use **2 player AP per round**: move one square for 1 AP, a standard weapon attack for 1 AP, a wide-area weapon attack for 2 AP, or a regular class/elemental/keystone ability for 2 AP. Existing free-action exceptions remain free: Eclipse Walker stances, Chimera shifts (subject to form cooldown), Error's Buffer store action, and applicable utility keystones. Each enemy acts once per round, before the player if its SPD is higher, otherwise after. The Battle Lab still offers comparisons.
 
 ## 2. Weapon attacks, class abilities, elemental skills
 

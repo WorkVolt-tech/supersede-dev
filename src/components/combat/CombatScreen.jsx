@@ -518,6 +518,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return enemyTurn(playerHp,foeHp,defendAction)
   }
 
+  function isFreeClassAction(skillId) {
+    return ['stance_solar','stance_lunar','shift_beast','shift_coil','shift_storm'].includes(skillId) ||
+      (skillId==='buffer' && !statusEffectsRef.current.cls_bufferStored)
+  }
+
   async function takeTurn(action, skillId, moveTo=null) {
     if (busy || result || !entranceReady) return
     const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
@@ -526,13 +531,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
       moveTo.rank<0||moveTo.rank>2 ||
       Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
-    const freeStance=action==='skill' &&
-      (skillId==='stance_solar'||skillId==='stance_lunar')
+    const freeClassAction=action==='skill' && isFreeClassAction(skillId)
     // Keystone utilities that explicitly specify consumesTurn=false in
     // elementalKeystones; leave them available even after spending 1 AP.
     const freeKeystone=action==='keystone' &&
       ['lightning_util_ks','arcane_util_ks','shadow_util_ks','wind_util_ks'].includes(skillId)
-    const cost=freeStance||freeKeystone?0:
+    const cost=freeClassAction||freeKeystone?0:
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:action==='move'?1:2
     if (cost > actionPointsRef.current) return
@@ -559,7 +563,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         return
       }
     }
-    if (action === 'skill' && (skillId==='stance_solar'||skillId==='stance_lunar')) {
+    if (action === 'skill' && freeClassAction) {
+      // Stances, Chimera shifts and the first Buffer action do not use AP,
+      // trigger the enemy phase or advance cooldown clocks.
       playerSkill(skillId,enemyHp,currentHp)
       setBusy(false)
       return
@@ -724,7 +730,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             onClick={() => takeTurn('end')}>End turn</button>
           {activeSkills.map(skill => (
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
-              (actionPoints<2 && !['stance_solar','stance_lunar'].includes(skill.id)) ||
+              (actionPoints<2 && !isFreeClassAction(skill.id)) ||
               skill.available===false ||
               !canUseTacticalSkill(skill.id,heroPosition,enemyPosition)} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
