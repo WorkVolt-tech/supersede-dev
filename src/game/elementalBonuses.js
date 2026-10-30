@@ -25,13 +25,13 @@
 // module exposes their raw summed values too (via rawBonus) so a later pass
 // can build on them without re-aggregating.
 //
-// "Attuned" doubling: a node's effect doubles when the player is attuned to
-// that element (player.element === el or player.attuned_element === el). The
-// tree descriptions say "Attuned: +X". We apply the 2x to element-specific
-// keys only (damage/resist/reflect), matching the node text.
+// Only the selected element's nodes affect combat. Attunement doubles
+// element-specific damage/resist/reflect values; other learned trees are
+// preserved in storage but inactive. No cross-element bonus stacking.
 // ─────────────────────────────────────────────────────────────────────
 
 import { ELEMENT_TREES } from './elementsTree.js'
+import { getActiveElement } from './activeElement.js'
 
 // Build a fast lookup: node id -> { el, stat, val } for every node in every
 // tree. Done once at module load.
@@ -48,10 +48,10 @@ const NODE_INDEX = (() => {
   return idx
 })()
 
-// Which element is the player attuned to (doubles element-specific nodes)?
-// Falls back through a couple of likely field names; null if none.
+// Combat only uses the element explicitly selected from a cleared zone.
+// Players retain learned nodes in other trees, but those remain dormant.
 function attunedElement(player) {
-  return player?.attuned_element || player?.element || null
+  return getActiveElement(player)
 }
 
 // Element-specific keys that should double when attuned to that element.
@@ -70,7 +70,7 @@ export function getElementalBonuses(player) {
 
   for (const id of unlocked) {
     const node = NODE_INDEX[id]
-    if (!node) continue
+    if (!node || node.el !== attuned) continue
     let val = node.val
     // Element-specific keys double when attuned to that element.
     const suffix = node.stat.replace(node.el + '_', '')
