@@ -34,7 +34,7 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
   const currentNode = NODES[currentNodeId] || null
 
   const goTo = useCallback(async (nextId, choice = {}) => {
-    if (!NODES[nextId]) return
+    if (!NODES[nextId]) return { ok:false, error:`Story destination not found: ${nextId}` }
 
     let resolvedId = nextId
     let hops = 0
@@ -50,7 +50,7 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         choice.allianceTag, choice.allianceTagRepeatable,
       ])
     }
-    if (!NODES[resolvedId]) return
+    if (!NODES[resolvedId]) return { ok:false, error:`Story route not found: ${resolvedId}` }
 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
@@ -137,14 +137,15 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         if (rewardTag) updates.alliance_log = [...new Set([...(updates.alliance_log || player.alliance_log || []), rewardTag])]
       } catch (error) {
         console.error('Could not grant story rewards:', error)
-        return
+        return { ok:false, error:`Could not save story reward: ${error?.message || 'unknown error'}` }
       }
     }
     // A failed database write must not advance the visible story while
     // current_node still points to the previous page on the server.
     const saved = await updatePlayer(updates)
-    if (!saved) return
+    if (!saved) return { ok:false, error:usePlayerStore.getState().error || 'Could not save story progress.' }
     setCurrentNodeId(resolvedId)
+    return {ok:true}
   }, [NODES, chapterPrefix, chapterNumber, currentNodeId, player, updatePlayer, loadInventory])
 
   return { currentNodeId, currentNode, goTo }
