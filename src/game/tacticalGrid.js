@@ -31,8 +31,8 @@ export const TACTICAL_ATTACKS = {
   masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
   masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
   masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2,masteryLevel:80 },
-  pulse:       { label:'Last Resort',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:1, fallback:true,
-    description:'Emergency basic attack, not a learned skill. Weak but can reach any enemy row.' },
+  pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, fallback:true,
+    description:'Basic emergency action (not a skill). Reaches any enemy row; once per round.' },
 };
 
 export const TACTICAL_WEAPONS = {
