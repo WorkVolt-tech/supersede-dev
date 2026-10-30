@@ -31,6 +31,7 @@ export default function ChapterOneBossPreviewPage({onReturn}){
  const [replay,setReplay]=useState(0)
  const [attacking,setAttacking]=useState(false)
  const [moveKey,setMoveKey]=useState('first_gaze')
+ const [phase,setPhase]=useState(1)
  const [hit,setHit]=useState(false)
  const [defeated,setDefeated]=useState(false)
  const [entranceReady,setEntranceReady]=useState(false)
@@ -53,6 +54,7 @@ export default function ChapterOneBossPreviewPage({onReturn}){
   setEntranceReady(false)
   setBoss(nextBoss)
   setMoveKey(MOVE_PREVIEWS[nextBoss]?.[0].key ?? null)
+  setPhase(1)
   setReplay(n=>n+1)
  }
  function trigger(setter,duration){
@@ -73,6 +75,10 @@ export default function ChapterOneBossPreviewPage({onReturn}){
    {BOSSES.map(name=><option key={name} value={name}>{name}</option>)}
   </select>
   {!isWatcher&&<>
+   <p className="story-text">Boss phase</p>
+   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+    {[1,2,3].map(n=><button key={n} type="button" className="reading-action" aria-pressed={phase===n} disabled={!entranceReady||attacking||hit||defeated} onClick={()=>setPhase(n)}>Phase {n}</button>)}
+   </div>
    <label htmlFor="ch1-boss-move">Select a signature move</label>
    <select id="ch1-boss-move" value={moveKey ?? ''} disabled={!entranceReady||attacking||hit||defeated}
     onChange={e=>setMoveKey(e.target.value)}
@@ -82,7 +88,7 @@ export default function ChapterOneBossPreviewPage({onReturn}){
   </>}
   <div key={boss+'-'+replay} style={{minHeight:280,display:'grid',placeItems:'center'}}>
    {isWatcher?<WatcherPortrait attacking={attacking} hit={hit} defeated={defeated}/>:
-    <ChapterOneBossPortrait name={boss} attacking={attacking} hit={hit} defeated={defeated} moveKey={moveKey}/>}
+    <ChapterOneBossPortrait name={boss} attacking={attacking} hit={hit} defeated={defeated} moveKey={moveKey} phase={phase}/>}
   </div>
   <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
    <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setAttacking,720)}>{isWatcher?'Play attack':'Play selected move'}</button>
