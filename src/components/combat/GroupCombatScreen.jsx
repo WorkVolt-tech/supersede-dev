@@ -12,14 +12,15 @@ import { grantLoot } from '../../game/loot'
 import { persistCombatResult } from '../../game/combatPersistence'
 import { equipmentSubtype } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
-import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
+import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
   makeGroupField, advanceGroupFields, planGroupMultiHits,
   groupKeystoneHitDamages, previewGroupAttack } from '../../game/tacticalGroups'
-import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from '../../game/tacticalFoeStatus'
+import { withFoeStatus, advanceFoeStatuses, enemyActionBudget,
+  spreadTacticalFoeEffects } from '../../game/tacticalFoeStatus'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
@@ -28,20 +29,8 @@ import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend,
   stonebornArmorPierce } from '../../game/keystoneCombat'
 import './CombatScreen.css'
 
-// The legacy elemental formulas supply single-target damage. For group fights
-// a few clearly area-named attacks splash neighboring occupied grid cells;
-// the other 20+ elemental and class effects keep their original single target
-// or self behavior. We do not alter their damage/MP/cooldown definitions.
-const GROUP_AREAS = {
-  fire_mastery_cinderstorm:'cross', fire_ultimate_inferno_zone:'cross',
-  lightning_ultimate_thunderstorm:'cross', lightning_mastery_tempest:'cross',
-  earth_ultimate_earthquake:'cross', earth_mastery_tectonic:'cross',
-  water_ultimate_tsunami:'row', water_mastery_maelstrom:'cross',
-  wind_mastery_cyclone:'row', poison_mastery_pandemic:'cross',
-  poison_skill_blight_nova:'cross', shadow_skill_umbral_burst:'cross',
-  plant_mastery_bloom:'cross', metal_mastery_annihilate:'column',
-  arcane_mastery_resonance:'cross',
-}
+// Existing skill damage/status rules are reused. Spatial footprints now
+// evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
 function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus }) {
@@ -103,6 +92,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
   const [selectedAttack,setSelectedAttack]=useState(null)
+  const [previewSkill,setPreviewSkill]=useState(null)
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
   const heroRef=useRef(hero)
@@ -150,15 +140,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     kill?.messages?.forEach(note)
     if(kill?.dbUpdates)Object.assign(dbUpdatesRef.current,kill.dbUpdates)
   }
-  function propagateAreaStatus(changes,hitUnits,targetId){
-    if(!changes)return
-    for(const unit of hitUnits){
-      if(unit.id===targetId)continue
-      const status=foeStatusesRef.current[unit.id]||{}
-      for(const key of ['enemyStunTurns','cfx_longDecayStacks','cfx_emberStacks'])
-        if(changes[key]>0)status[key]=Math.max(status[key]||0,changes[key])
-      foeStatusesRef.current[unit.id]=status
-    }
+  function spreadAreaEffects(before,affected,targetId){
+    spreadTacticalFoeEffects(before,foeStatusesRef.current[targetId]||{},
+      affected,targetId,foeStatusesRef.current)
   }
 
   useEffect(()=>{
@@ -272,22 +256,32 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   }
 
   function groupSpellPattern(id) {
-    const rule=getTacticalSkillRule(id)
-    return rule?.target==='enemy'?{...rule,shape:GROUP_AREAS[id]||'single'}:null
+    const rule=getProgressedTacticalSkillRule(id,getSkillLevel(player,id))
+    return rule?.target==='enemy'?rule:null
   }
   function resolveSkill(id,target) {
+    const pattern=groupSpellPattern(id)
+    const footprint=target&&pattern
+      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,target.id):null
+    const before={...(foeStatusesRef.current[target?.id]||{})}
     const response=forFoe(target?.id,()=>ClsCombat.onActiveSkill(
       id,combatPlayer,statusRef.current,target))
     response?.messages?.forEach(note)
     if(response?.dbUpdates)Object.assign(dbUpdatesRef.current,response.dbUpdates)
+    if(response?.consumed!==false&&footprint?.valid)
+      spreadAreaEffects(before,footprint.targets,target.id)
     const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target)applyDamage(foesRef.current,
-      groupSpellPattern(id)||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
+      pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
     const heal=scaleSkillAmount(response?.selfHeal,getSkillLevel(player,id))
     if(heal)updateHp(hpRef.current+heal)
     return response?.consumed!==false
   }
   function resolveElement(id,target) {
+    const pattern=groupSpellPattern(id)
+    const footprint=target&&pattern
+      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,target.id):null
+    const before={...(foeStatusesRef.current[target?.id]||{})}
     const effect=forFoe(target?.id,()=>{
       const result=resolveElementalAttack(id,combatPlayer,statusRef.current,{
         atk:calcATK(player,equipped),def:calcDEF(player,equipped),
@@ -297,6 +291,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       return result
     })
     if(!effect||mpRef.current<effect.mpCost)return false
+    if(footprint?.valid)spreadAreaEffects(before,footprint.targets,target.id)
     updateMp(mpRef.current-effect.mpCost)
     if(id==='fire_ultimate_inferno_zone' && target &&
         effect.setStatus?.infernoTurns>0) {
@@ -313,10 +308,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     }
     const damage=scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target){
-      const area=groupSpellPattern(id)
-      const fraction=area?.shape!=='single'?0.7:1
-      const affected=applyDamage(foesRef.current,area,target.id,Math.max(1,Math.round(damage*fraction)))
-      if(area?.shape!=='single')propagateAreaStatus(effect.setStatus,affected.targets,target.id)
+      const fraction=pattern?.shape!=='single'?0.7:1
+      const affected=applyDamage(foesRef.current,pattern,target.id,Math.max(1,Math.round(damage*fraction)))
       note(effect.label+': '+affected.targets.length+' target(s) hit.')
     }
     const heal=scaleSkillAmount(effect.healPlayer,getSkillLevel(player,id))
@@ -511,9 +504,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         Math.abs(position.rank-heroRef.current.rank)!==1))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
-      !canUseTacticalSkill(id,heroRef.current,target)))return
+      !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))))return
     if(kind==='elemental'&&(!canUseElementalAttack(combatPlayer,id)||
-      !canUseTacticalSkill(id,heroRef.current,target)||
+      !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))||
       (elemCooldowns[id]||0)>0||mpRef.current<getAttackMpCost(combatPlayer,id,statusRef.current)))return
     if(kind==='keystone'&&!getUnlockedKeystones(combatPlayer,keyCooldowns)
       .some(k=>k.id===id&&k.available))return
@@ -550,10 +543,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(['attack','skill','elemental'].includes(kind) &&
         (!liveTarget || (kind==='attack'
           ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)
-          : !canUseTacticalSkill(id,heroRef.current,liveTarget)))){
+          : !canUseTacticalSkill(id,heroRef.current,liveTarget,getSkillLevel(player,id))))){
         note('Your target moved or fell before your action. Select a new target; no AP spent.')
         return
       }
+      if(['attack','skill','elemental'].includes(kind))setPreviewSkill(null)
       if(kind==='attack')strike(liveTarget.id)
       else if(kind==='move'){
         heroRef.current=position;setHero(position)
@@ -590,13 +584,15 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const activeSkills=ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)||[]
   const elemental=getEquippedElementalAttack(combatPlayer)
   const keystones=getUnlockedKeystones(combatPlayer,keyCooldowns)
-  const preview=previewGroupAttack(foes,attack,hero,chosen)
-  const attackLegal=preview.valid
+  const displayPattern=previewSkill?groupSpellPattern(previewSkill.id):attack
+  const displayName=previewSkill?.label||attack.label
+  const preview=previewGroupAttack(foes,displayPattern,hero,chosen)
+  const attackLegal=previewGroupAttack(foes,attack,hero,chosen).valid
   const canPlay=!busy&&!result
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/2 AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} pattern={attack}
+    <Battlefield foes={foes} hero={hero} focused={chosen} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       onFocus={id=>setFocus(id)}
       onMove={point=>takeTurn('move',null,point)} />
@@ -620,9 +616,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     </div>
     {target&&attackLegal&&!result&&
       <p className="combat-attack-preview" role="status">
-        {attack.label} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} hit · {attack.shape} pattern · {attack.ap} AP
+        {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} hit · {displayPattern.shape} pattern
       </p>}
-    {target&&!attackLegal&&!result&&
+    {previewSkill&&!displayPattern&&!result&&
+      <p className="combat-attack-preview" role="status">{displayName} · self/support, no enemy squares targeted.</p>}
+    {target&&!attackLegal&&!previewSkill&&!result&&
       <p className="combat-range-warning" role="status">
         {attack.label} cannot reach {target.name} from here. Move, choose a different attack, or select another enemy.
       </p>}
@@ -631,7 +629,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {weaponKit.map(item=><button key={item.id} type="button"
           className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
           disabled={!canPlay} aria-pressed={item.id===attack.id}
-          onClick={()=>setSelectedAttack(item.id)}>
+          onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null)}}>
           {item.label}<span className="combat-action-sub">{item.reach} · {item.shape} · {item.ap} AP</span>
         </button>)}
       </div>
@@ -646,18 +644,27 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {activeSkills.map(skill=><button key={skill.id} type="button" className="combat-action-btn"
           disabled={!canPlay||skill.available===false||
             (!isFreeClass(skill.id)&&ap<2)||
-            !canUseTacticalSkill(skill.id,hero,target)}
+            !canUseTacticalSkill(skill.id,hero,target,getSkillLevel(player,skill.id))}
           onClick={()=>takeTurn('skill',skill.id)}>
           {skill.label} · Lv {getSkillLevel(player,skill.id)}
-          <span className="combat-action-sub">{getTacticalSkillRule(skill.id)?.label||'Class skill'}</span>
+          <span className="combat-action-sub">{groupSpellPattern(skill.id)?.shape||'Self / support'} · 2 AP</span>
+        </button>)}
+        {activeSkills.map(skill=><button key={skill.id+'-preview'} type="button"
+          className="combat-action-btn combat-preview-btn" disabled={!canPlay}
+          onClick={()=>setPreviewSkill({id:skill.id,label:skill.label})}>
+          Preview {skill.label} · Lv {getSkillLevel(player,skill.id)}
         </button>)}
         {elemental&&<button type="button" className="combat-action-btn"
-          disabled={!canPlay||ap<2||!canUseTacticalSkill(elemental.id,hero,target)||
+          disabled={!canPlay||ap<2||!canUseTacticalSkill(elemental.id,hero,target,getSkillLevel(player,elemental.id))||
             (elemCooldowns[elemental.id]||0)>0||
             mp<getAttackMpCost(combatPlayer,elemental.id,statusRef.current)}
           onClick={()=>takeTurn('elemental',elemental.id)}>
           {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
-          <span className="combat-action-sub">{getTacticalSkillRule(elemental.id)?.label} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
+          <span className="combat-action-sub">{groupSpellPattern(elemental.id)?.shape||'Self / support'} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
+        </button>}
+        {elemental&&<button type="button" className="combat-action-btn combat-preview-btn"
+          disabled={!canPlay} onClick={()=>setPreviewSkill({id:elemental.id,label:elemental.label})}>
+          Preview {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
         </button>}
         {keystones.map(k=><button key={k.id} type="button" className="combat-action-btn"
           disabled={!canPlay||!k.available||(!isFreeKey(k.id)&&ap<2)}

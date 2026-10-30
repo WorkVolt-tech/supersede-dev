@@ -11,7 +11,8 @@ const player = {
   id:'test-only-player',name:'Tactical Tester',level:1,hp:160,max_hp:160,
   atk:12,def:8,guard:3,speed:12,insight:1,luck:0,agility:1,
   power:0,control:0,active_class:null,active_element:null,
-  weapon_mastery:{sword:0},skill_levels:{},elemental_unlocked:[],
+  weapon_mastery:{sword:new URLSearchParams(location.search).get('scenario')==='mastery'?500000:0},
+  skill_levels:{},elemental_unlocked:[],
   chapters_unlocked:[1],xp:0,skill_points:0,
 }
 const metrics={saves:0}

@@ -130,6 +130,22 @@ async function inspect(page,name,mobile){
     (mobile?', touch movement':'')+'\n')
 }
 
+async function verifyMastery(page) {
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=mastery',
+    {waitUntil:'networkidle'})
+  await page.locator('.combat-group-unit').first().waitFor()
+  await page.locator('.combat-tactical-weapons').getByRole('button',
+    {name:/Sword Slash/}).click()
+  check((await page.locator('.combat-attack-preview').textContent()).includes('diamond2'),
+    'mastery: Sword Slash did not evolve')
+  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===6,
+    'mastery: front-rank diamond2 should cover 6 board squares')
+  await page.locator('.combat-tactical-weapons').getByRole('button',
+    {name:/System Pulse/}).click()
+  check((await page.locator('.combat-attack-preview').textContent()).includes('single'),
+    'mastery: System Pulse fallback must remain single-target')
+  console.log('PASS mastery: expanded slash and unchanged pulse')
+}
 async function verifyVictory(page) {
   const errors=[]
   page.on('pageerror',error=>errors.push(error.message))
@@ -166,6 +182,7 @@ try{
   browser=await chromium.launch({headless:true})
   const desktop=await browser.newPage({viewport:{width:1280,height:900}})
   await inspect(desktop,'desktop',false)
+  await verifyMastery(desktop)
   await verifyVictory(desktop)
   await desktop.close()
   const mobile=await browser.newPage({viewport:{width:390,height:844},

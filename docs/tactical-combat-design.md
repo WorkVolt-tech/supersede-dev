@@ -107,3 +107,21 @@ Five explicitly counted, non-boss story encounters now route to the isolated `Gr
 **Lingering area fields:** Fire's Inferno Zone in group combat now ignites its affected 3×3 grid squares for three round-end ticks. It damages all living foes occupying those squares, allows enemies to avoid damage by moving out, and does not double-apply the legacy single-target Inferno tick. Field positions, rather than the currently selected target, determine damage.
 
 **Multi-hit keystones:** In group encounters, attuned Chain Lightning sends four diminishing arcs to living foes, while Cyclone distributes its original damage among four positional strikes. Both begin at the chosen enemy, prefer the nearest not-yet-hit foe, can bounce back when everyone has been hit, and stop when all enemies are defeated. Damage totals use the existing keystone formulas (no extra combined hit), with existing one-time encounter rewards and per-unit kill hooks.
+
+## Evolving battlefield footprints (existing skills and mastery)
+
+All existing class and elemental skills retain their original unlock, damage,
+status, MP and cooldown formulas. The 1–10 skill upgrade system now affects
+the 3×3 battlefield. Enemy-targeted skill levels 4, 7, and 10 increase area:
+a single-target skill gradually reaches a row, then a cross, then diamond-2;
+existing large spells grow their signature shapes without replacing them.
+Self/support abilities do not suddenly damage enemies. Every status is spread
+to additional affected living foes only if the original skill actually applied
+that debuff to its selected target.
+
+Weapon mastery independently evolves the base weapon's attacks at mastery
+levels 20, 40 and 80 (short-range techniques gain area first; ranged
+techniques evolve later). The System Pulse fallback never evolves or awards
+mastery XP. Battlefield attack and skill previews use the same evolved
+footprints as hit resolution; class and elemental skills have a separate
+preview button so the existing cast action stays single-click.
