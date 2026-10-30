@@ -123,23 +123,36 @@
 <script>
 (function () {
   'use strict';
+  // Each faction has 3 columns × 3 ranks. Rank 0 always faces the enemy:
+  // enemy rank 0 is rendered at the BOTTOM of the upper grid;
+  // hero rank 0 is rendered at the TOP of the lower grid.
+  const COLUMNS = ['left', 'center', 'right'];
+  const RANKS = ['front', 'middle', 'rear'];
   const attacks = {
     slash: {cost:1, damage:6},
     spear: {cost:1, damage:5},
     bow: {cost:1, damage:4},
     burst: {cost:2, damage:5}
   };
-  const state = {depth:3, mode:'ap', attack:'slash', hero:{lane:1,rank:1,hp:24},
-    enemies:[], ap:2, freeMoveUsed:false, turn:1, over:false, messages:[]};
+  const state = {
+    mode:'ap', attack:'slash', hero:{col:1,rank:0,hp:24},
+    enemies:[], ap:2, freeMoveUsed:false, turn:1, over:false, messages:[]
+  };
   const $ = id => document.getElementById(id);
 
   function reset() {
-    state.hero = {lane:1,rank:Math.max(0,state.depth-2),hp:24};
-    state.enemies = [{id:'E1',lane:1,rank:0,hp:13},
-      {id:'E2',lane:0,rank:Math.min(1,state.depth-1),hp:11}];
+    state.hero={col:1,rank:0,hp:24};
+    state.enemies=[
+      {id:'E1',col:1,rank:0,hp:13},
+      {id:'E2',col:0,rank:1,hp:11},
+      {id:'E3',col:2,rank:2,hp:9}
+    ];
     state.ap=state.mode==='ap'?2:1;
-    state.freeMoveUsed=false;state.turn=1;state.over=false;state.messages=[];
-    tell('A tactical encounter begins. Two enemies approach.');
+    state.freeMoveUsed=false;
+    state.turn=1;
+    state.over=false;
+    state.messages=[];
+    tell('A tactical encounter begins. Enemies occupy the upper nine squares.');
     render();
   }
   function tell(message) {
@@ -148,113 +161,167 @@
     $('status').textContent=message;
   }
   function playerCanAct(cost) { return !state.over && state.ap>=cost; }
-  function canMove(lane,rank) {
+  function canMove(col,rank) {
     return !state.over && state.ap>0 &&
-      Math.abs(lane-state.hero.lane)+Math.abs(rank-state.hero.rank)===1;
+      !(state.mode==='free' && state.freeMoveUsed) &&
+      Math.abs(col-state.hero.col)+Math.abs(rank-state.hero.rank)===1;
   }
   function canAttack(enemy) {
-    const h=state.hero,front=state.depth-1;
-    if(state.attack==='slash') return h.rank===front && enemy.rank===0 && enemy.lane===h.lane;
-    if(state.attack==='spear') return h.rank>=Math.max(0,front-1) && enemy.rank<=1 && enemy.lane===h.lane;
-    if(state.attack==='bow') return h.rank<front;
+    const hero=state.hero;
+    if (state.attack==='slash') return hero.rank===0 && enemy.rank===0 && enemy.col===hero.col;
+    if (state.attack==='spear') return hero.rank<=1 && enemy.rank<=1 && enemy.col===hero.col;
+    if (state.attack==='bow') return hero.rank>=1;
     return true;
   }
   function attackCost() { return state.mode==='ap'?attacks[state.attack].cost:1; }
-  function onCell(side,lane,rank) {
-    if(state.over) return;
+
+  function onCell(side,col,rank) {
+    if(state.over)return;
     if(side==='hero') {
-      if(!canMove(lane,rank)) { tell('Move one square horizontally or vertically into an empty ally space.');return; }
-      if(state.mode==='free' && state.freeMoveUsed) { tell('You already used your free reposition this turn.');return; }
-      state.hero.lane=lane;state.hero.rank=rank;
+      if(!canMove(col,rank)) {
+        tell('Reposition one empty square left, right, forward, or backward.');
+        return;
+      }
+      state.hero.col=col; state.hero.rank=rank;
       if(state.mode==='ap') state.ap--;
       if(state.mode==='turn') state.ap=0;
       if(state.mode==='free') state.freeMoveUsed=true;
-      tell('You reposition to '+(lane===0?'upper':'lower')+' lane, '+rankName('hero',rank)+'.');
-      if(state.ap===0) enemyPhase();else render();
+      tell('You move to '+COLUMNS[col]+' column, '+RANKS[rank]+' rank.');
+      if(state.ap===0) enemyPhase(); else render();
       return;
     }
-    const enemy=state.enemies.find(e=>e.lane===lane&&e.rank===rank&&e.hp>0);
-    if(!enemy) { tell('No enemy occupies this square.');return; }
-    if(!canAttack(enemy)) { tell('Out of range. Try a different attack or reposition.');return; }
+    const enemy=state.enemies.find(e=>e.col===col && e.rank===rank && e.hp>0);
+    if(!enemy){tell('That enemy square is empty.');return;}
+    if(!canAttack(enemy)){tell('Target is out of range for '+state.attack+'. Reposition or choose another attack.');return;}
     const cost=attackCost();
-    if(!playerCanAct(cost)) { tell('Not enough action points. End your turn to recover.');return; }
+    if(!playerCanAct(cost)){tell('Not enough actions. End your turn to recover.');return;}
     let targets=[enemy];
-    if(state.attack==='burst') targets=state.enemies.filter(e=>e.hp>0&&e.lane===lane&&Math.abs(e.rank-rank)<=1);
+    if(state.attack==='burst') {
+      targets=state.enemies.filter(e=>e.hp>0 &&
+        Math.abs(e.col-col)+Math.abs(e.rank-rank)<=1);
+    }
     for(const target of targets) target.hp=Math.max(0,target.hp-attacks[state.attack].damage);
     state.enemies=state.enemies.filter(e=>e.hp>0);
     state.ap-=cost;
-    tell(state.attack.toUpperCase()+' hits '+targets.map(t=>t.id).join(', ')+' for '+attacks[state.attack].damage+' damage each.');
-    if(state.enemies.length===0){state.over=true;tell('Victory! Reset to test another approach.');render();return;}
-    if(state.ap===0)enemyPhase();else render();
+    tell(state.attack.toUpperCase()+' hits '+targets.map(t=>t.id).join(', ')+
+      ' for '+attacks[state.attack].damage+' damage each.');
+    if(state.enemies.length===0){
+      state.over=true;
+      tell('Victory! Restart to test another tactic.');
+      render();return;
+    }
+    if(state.ap===0) enemyPhase(); else render();
+  }
+
+  function isEnemySquareOccupied(col,rank,except) {
+    return state.enemies.some(e=>e!==except && e.col===col && e.rank===rank && e.hp>0);
   }
   function enemyPhase() {
     if(state.over)return;
-    let messages=[];
-    for(const enemy of state.enemies) {
-      if(enemy.rank>0){enemy.rank--;messages.push(enemy.id+' advances toward the front.');continue;}
-      if(enemy.lane!==state.hero.lane) {enemy.lane=state.hero.lane;messages.push(enemy.id+' switches lanes.');continue;}
+    const messages=[];
+    for(const enemy of state.enemies){
+      // Enemy units advance toward the two facing front rows, without
+      // overlapping their own allies. Movement remains a simple placeholder.
+      if(enemy.rank>0) {
+        if(!isEnemySquareOccupied(enemy.col,enemy.rank-1,enemy)) {
+          enemy.rank--;
+          messages.push(enemy.id+' advances to '+RANKS[enemy.rank]+'.');
+        } else messages.push(enemy.id+' is blocked by an ally.');
+        continue;
+      }
+      if(enemy.col!==state.hero.col) {
+        const nextCol=enemy.col+Math.sign(state.hero.col-enemy.col);
+        if(!isEnemySquareOccupied(nextCol,0,enemy)) {
+          enemy.col=nextCol;
+          messages.push(enemy.id+' shifts to '+COLUMNS[enemy.col]+' column.');
+        } else messages.push(enemy.id+' holds its position.');
+        continue;
+      }
       state.hero.hp=Math.max(0,state.hero.hp-3);
       messages.push(enemy.id+' strikes for 3 damage.');
       if(state.hero.hp===0)break;
     }
-    if(state.hero.hp===0){state.over=true;tell('Defeat. '+messages.join(' ')+' Restart to try another tactic.');render();return;}
-    state.turn++;state.ap=state.mode==='ap'?2:1;state.freeMoveUsed=false;
-    tell('Enemy phase: '+messages.join(' '));render();
+    if(state.hero.hp===0){
+      state.over=true;
+      tell('Defeat. '+messages.join(' ')+' Restart to try again.');
+      render();return;
+    }
+    state.turn++;
+    state.ap=state.mode==='ap'?2:1;
+    state.freeMoveUsed=false;
+    tell('Enemy phase: '+messages.join(' '));
+    render();
   }
-  function rankName(side,rank) {
-    if(side==='hero')return rank===state.depth-1?'front':rank===0?'rear':'middle';
-    return rank===0?'front':rank===state.depth-1?'rear':'middle';
-  }
-  function render() {
-    const board=$('board');board.replaceChildren();
-    board.style.setProperty('--cols',String(state.depth*2));
-    const labels=[];
-    for(let i=0;i<state.depth;i++)labels.push(rankName('hero',i));
-    for(let i=0;i<state.depth;i++)labels.push(rankName('enemy',i));
-    $('ranks').style.setProperty('--cols',String(state.depth*2));
-    $('ranks').replaceChildren();
-    for(const label of labels){const span=document.createElement('span');span.textContent=label;$('ranks').append(span);}
-    for(let lane=0;lane<2;lane++){
-      for(const side of ['hero','enemy']){
-        for(let rank=0;rank<state.depth;rank++){
-          const cell=document.createElement('button');cell.type='button';
-          const hero=side==='hero' && state.hero.lane===lane&&state.hero.rank===rank;
-          const enemy=side==='enemy' ? state.enemies.find(e=>e.lane===lane&&e.rank===rank&&e.hp>0):null;
-          const reachable=side==='hero'&&!hero&&canMove(lane,rank)&&!(state.mode==='free'&&state.freeMoveUsed);
-          const targetable=Boolean(enemy&&canAttack(enemy)&&playerCanAct(attackCost()));
-          cell.className='cell '+side+(hero?' hero':'')+(hero||enemy?' unit':'')+
-            (reachable?' reachable':'')+(targetable?' targetable':'')+
-            (side==='enemy'&&rank===0?' front-border':'');
-          cell.disabled=state.over;
-          cell.setAttribute('aria-label',(side==='hero'?'Ally':'Enemy')+' '+(lane===0?'upper':'lower')+
-            ' lane, '+rankName(side,rank)+(hero?' hero':enemy?' '+enemy.id+' '+enemy.hp+' HP':' empty')+
-            (reachable?' move here':targetable?' valid attack target':''));
-          const glyph=document.createElement('span');
-          glyph.textContent=hero?'🧍':enemy?'👹':'·';
-          cell.append(glyph);
-          const small=document.createElement('small');
-          small.textContent=hero?'YOU':enemy?enemy.id:rankName(side,rank);
-          cell.append(small);
-          if(enemy){const hp=document.createElement('span');hp.className='hp';hp.textContent=enemy.hp+' HP';cell.append(hp);}
-          cell.addEventListener('click',()=>onCell(side,lane,rank));
-          board.append(cell);
+
+  function renderSide(side) {
+    const board=$(side==='enemy'?'enemy-board':'ally-board');
+    board.replaceChildren();
+    // Top-to-bottom: enemy rear/middle/front, hero front/middle/rear.
+    const rows=side==='enemy'?[2,1,0]:[0,1,2];
+    for(const rank of rows){
+      for(let col=0;col<3;col++){
+        const cell=document.createElement('button');
+        cell.type='button';
+        const hero=side==='hero' && state.hero.col===col && state.hero.rank===rank;
+        const enemy=side==='enemy' ? state.enemies.find(e=>e.col===col&&e.rank===rank&&e.hp>0):null;
+        const reachable=side==='hero' && !hero && canMove(col,rank);
+        const targetable=Boolean(enemy && canAttack(enemy) && playerCanAct(attackCost()));
+        cell.className='cell '+side+(hero?' hero':'')+
+          (hero||enemy?' unit':'')+(reachable?' reachable':'')+
+          (targetable?' targetable':'')+
+          (side==='enemy'&&rank===0?' front-border':'')+
+          (side==='hero'&&rank===0?' ally-front':'');
+        cell.disabled=state.over;
+        cell.setAttribute('aria-label',(side==='hero'?'Ally':'Enemy')+' '+COLUMNS[col]+
+          ' column, '+RANKS[rank]+' rank'+
+          (hero?' hero':enemy?' '+enemy.id+' '+enemy.hp+' HP':' empty')+
+          (reachable?' move here':targetable?' valid attack target':''));
+        const glyph=document.createElement('span');
+        glyph.textContent=hero?'🧍':enemy?'👹':'·';
+        cell.append(glyph);
+        const small=document.createElement('small');
+        small.textContent=hero?'YOU':enemy?enemy.id:RANKS[rank];
+        cell.append(small);
+        if(enemy) {
+          const hp=document.createElement('span');
+          hp.className='hp';
+          hp.textContent=enemy.hp+' HP';
+          cell.append(hp);
         }
+        cell.addEventListener('click',()=>onCell(side,col,rank));
+        board.append(cell);
       }
     }
+  }
+  function render() {
+    renderSide('enemy');
+    renderSide('hero');
     $('hero-hp').textContent=state.hero.hp+'/24';
     $('turn').textContent=String(state.turn);
-    $('ap').textContent=state.ap+(state.mode==='ap'?' AP':' action')+(state.mode==='free'&&!state.freeMoveUsed?' + free move':'');
+    $('ap').textContent=state.ap+(state.mode==='ap'?' AP':' action')+
+      (state.mode==='free'&&!state.freeMoveUsed?' + free move':'');
     $('foes-left').textContent=String(state.enemies.length);
     $('end-turn').disabled=state.over;
-    for(const button of document.querySelectorAll('[data-attack]'))button.setAttribute('aria-pressed',String(button.dataset.attack===state.attack));
-    for(const button of document.querySelectorAll('[data-mode]'))button.setAttribute('aria-pressed',String(button.dataset.mode===state.mode));
-    for(const button of document.querySelectorAll('[data-size]'))button.setAttribute('aria-pressed',String(Number(button.dataset.size)===state.depth));
+    for(const button of document.querySelectorAll('[data-attack]'))
+      button.setAttribute('aria-pressed',String(button.dataset.attack===state.attack));
+    for(const button of document.querySelectorAll('[data-mode]'))
+      button.setAttribute('aria-pressed',String(button.dataset.mode===state.mode));
     $('log').replaceChildren();
-    for(const msg of state.messages){const li=document.createElement('li');li.textContent=msg;$('log').append(li);}
+    for(const msg of state.messages){
+      const li=document.createElement('li');
+      li.textContent=msg;
+      $('log').append(li);
+    }
   }
-  document.querySelectorAll('[data-attack]').forEach(button=>button.addEventListener('click',()=>{state.attack=button.dataset.attack;tell('Selected '+state.attack+'. Gold tiles show valid targets.');render();}));
-  document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{state.mode=button.dataset.mode;reset();}));
-  document.querySelectorAll('[data-size]').forEach(button=>button.addEventListener('click',()=>{state.depth=Number(button.dataset.size);reset();}));
+  document.querySelectorAll('[data-attack]').forEach(button=>button.addEventListener('click',()=>{
+    state.attack=button.dataset.attack;
+    tell('Selected '+state.attack+'. Gold outlines mark valid targets.');
+    render();
+  }));
+  document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
+    state.mode=button.dataset.mode;
+    reset();
+  }));
   $('end-turn').addEventListener('click',enemyPhase);
   $('restart').addEventListener('click',reset);
   reset();
