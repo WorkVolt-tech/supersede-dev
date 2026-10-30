@@ -16,6 +16,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [advanced,setAdvanced]=useState([])
  const [expeditions,setExpeditions]=useState([])
  const [dungeonSessions,setDungeonSessions]=useState([])
+ const [guardianBattle,setGuardianBattle]=useState(null)
  const [expeditionRuns,setExpeditionRuns]=useState([])
  const [advancedRuns,setAdvancedRuns]=useState([])
  const [professionLevel,setProfessionLevel]=useState(1)
@@ -133,6 +134,27 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   if(!error){const a=await supabase.from('profession_dungeon_sessions').select('expedition_key,stage').eq('player_id',player.id);if(!a.error)setDungeonSessions(a.data||[])}
   setShopBusy(false)
  }
+ async function guardianAction(key,action){
+  if(shopBusy)return
+  setShopBusy(true)
+  const {data,error}=await supabase.rpc('fight_profession_guardian',{target_player:player.id,expedition_id:key,battle_action:action})
+  setShopMessage(error?.message||(data?.status==='won'?'Guardian defeated! Received '+data.item+' and '+data.xp+' profession XP':data?.status==='lost'?'Guardian defeated you. You can try again.':'Guardian: '+(data?.damage||0)+' damage dealt; '+(data?.counter_damage||0)+' received.'))
+  if(!error){
+   setGuardianBattle(data?.status==='fighting'?{...data,key}:null)
+   if(data?.status==='won'){
+    const [runs,progress,user,sessions]=await Promise.all([
+     supabase.from('profession_expedition_runs').select('expedition_key,last_success_at').eq('player_id',player.id),
+     supabase.from('profession_progress').select('level').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),
+     supabase.auth.getUser(),
+     supabase.from('profession_dungeon_sessions').select('expedition_key,stage').eq('player_id',player.id)
+    ])
+    setExpeditionRuns(runs.data||[]);setDungeonSessions(sessions.data||[]);setProfessionLevel(progress.data?.level||1)
+    await loadInventory(player.id)
+    if(user.data?.user)await loadPlayer(user.data.user.id)
+   }
+  }
+  setShopBusy(false)
+ }
  const hall=PROFESSION_HALLS[selected]
  const cycle=hallRotation(selected)
  const hasAccess=player.chapters_unlocked?.includes(3)&&active===selected&&unlocked.includes(selected)
@@ -194,7 +216,15 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
      {(()=>{
        const stage=dungeonSessions.find(x=>x.expedition_key===e.expedition_key)?.stage||0
        const labels=['Enter dungeon','Search for resource node','Stabilize environmental hazard']
-       return stage<3?<button className="reading-action" disabled={!canGo} onClick={()=>progressDungeon(e.expedition_key,['enter','gather','secure'][stage])}>{labels[stage]}</button>:<p>⚔ Guardian discovered. Combat completion and rewards are locked pending server-verified battle integration.</p>
+       return stage<3?<button className="reading-action" disabled={!canGo} onClick={()=>progressDungeon(e.expedition_key,['enter','gather','secure'][stage])}>{labels[stage]}</button>:<div>
+        <p>⚔ Guardian encountered · server-controlled turn combat</p>
+        {guardianBattle?.key===e.expedition_key?<div>
+         <p>Guardian HP: {guardianBattle.guardian_hp}/{guardianBattle.guardian_max} · Your trial HP: {guardianBattle.hero_hp}/{guardianBattle.hero_max}</p>
+         <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'attack')}>Strike guardian</button>
+         <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'guard')}>Guard</button>
+         <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'retreat')}>Retreat</button>
+        </div>:<button className="reading-action" disabled={!canGo} onClick={()=>guardianAction(e.expedition_key,'start')}>Enter guardian battle</button>}
+       </div>
      })()}
     </div>
    })}
