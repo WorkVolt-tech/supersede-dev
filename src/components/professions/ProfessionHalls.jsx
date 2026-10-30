@@ -15,6 +15,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [recipe,setRecipe]=useState(null)
  const [advanced,setAdvanced]=useState([])
  const [expeditions,setExpeditions]=useState([])
+ const [dungeonSessions,setDungeonSessions]=useState([])
  const [expeditionRuns,setExpeditionRuns]=useState([])
  const [advancedRuns,setAdvancedRuns]=useState([])
  const [professionLevel,setProfessionLevel]=useState(1)
@@ -104,8 +105,9 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  }
  useEffect(()=>{let live=true;Promise.all([
   supabase.from('profession_expeditions').select('*').eq('profession_key',selected).order('required_level'),
-  supabase.from('profession_expedition_runs').select('expedition_key,last_success_at').eq('player_id',player.id)
- ]).then(([a,b])=>{if(live){setExpeditions(a.data||[]);setExpeditionRuns(b.data||[])}});return()=>{live=false}},[selected,player.id])
+  supabase.from('profession_expedition_runs').select('expedition_key,last_success_at').eq('player_id',player.id),
+  supabase.from('profession_dungeon_sessions').select('expedition_key,stage').eq('player_id',player.id)
+  ]).then(([a,b,c])=>{if(live){setExpeditions(a.data||[]);setExpeditionRuns(b.data||[]);setDungeonSessions(c.data||[])}});return()=>{live=false}},[selected,player.id])
  async function expedition(key,action) {
   if(shopBusy)return
   setShopBusy(true)
@@ -121,6 +123,14 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
    await loadInventory(player.id)
    if(user.data?.user)await loadPlayer(user.data.user.id)
   }
+  setShopBusy(false)
+ }
+ async function progressDungeon(expeditionKey,action){
+  if(shopBusy)return
+  setShopBusy(true)
+  const {data,error}=await supabase.rpc('progress_profession_dungeon',{target_player:player.id,expedition_id:expeditionKey,action_key:action})
+  setShopMessage(error?.message||data?.message||'Expedition updated')
+  if(!error){const a=await supabase.from('profession_dungeon_sessions').select('expedition_key,stage').eq('player_id',player.id);if(!a.error)setDungeonSessions(a.data||[])}
   setShopBusy(false)
  }
  const hall=PROFESSION_HALLS[selected]
@@ -181,8 +191,11 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
      <strong>{e.title}</strong><p>{e.description}</p>
      <p>Level {e.required_level} · +{e.xp_reward} XP · {e.cooldown_hours}h cooldown</p>
      {cooling&&<p>Next expedition: {new Date(new Date(last).getTime()+e.cooldown_hours*3600000).toLocaleString()}</p>}
-     <button className="reading-action" disabled={!canGo} onClick={()=>expedition(e.expedition_key,'careful')}>{professionLevel<e.required_level?'🔒 Level '+e.required_level:'Use the careful approach'}</button>
-     <button className="reading-action" disabled={!canGo} onClick={()=>expedition(e.expedition_key,'reckless')}>Take the risky shortcut</button>
+     {(()=>{
+       const stage=dungeonSessions.find(x=>x.expedition_key===e.expedition_key)?.stage||0
+       const labels=['Enter dungeon','Search for resource node','Stabilize environmental hazard']
+       return stage<3?<button className="reading-action" disabled={!canGo} onClick={()=>progressDungeon(e.expedition_key,['enter','gather','secure'][stage])}>{labels[stage]}</button>:<p>⚔ Guardian discovered. Combat completion and rewards are locked pending server-verified battle integration.</p>
+     })()}
     </div>
    })}
   </div>
