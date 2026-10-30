@@ -29,6 +29,7 @@
 // ─────────────────────────────────────────────────────────────────────
 
 import { ELEMENT_TREES } from './elementsTree.js'
+import { getActiveElement } from './activeElement.js'
 
 // Build keystone metadata once: id -> { el, label, cooldown }.
 const KEYSTONE_META = (() => {
@@ -48,7 +49,7 @@ const ELEMENT_COLORS = {
 }
 
 function isAttuned(player, el) {
-  return (player?.attuned_element || player?.element) === el
+  return getActiveElement(player) === el
 }
 
 // Which keystones has the player unlocked (bought in the tree)? Returns the
@@ -58,7 +59,7 @@ export function getUnlockedKeystones(player, ksCooldowns = {}) {
   const out = []
   for (const id of unlocked) {
     const meta = KEYSTONE_META[id]
-    if (!meta) continue   // not a keystone (passive node) — skip
+    if (!meta || !isAttuned(player, meta.el)) continue // Only active-tree keystones are usable
     const cd = ksCooldowns[id] || 0
     out.push({
       id,
@@ -79,7 +80,10 @@ export function getUnlockedKeystones(player, ksCooldowns = {}) {
 export function applyKeystone(id, player, statusEffects, ctx = {}) {
   const meta = KEYSTONE_META[id]
   if (!meta) return { messages: ['Unknown keystone.'], cooldown: 0, consumesTurn: false }
-  const att = isAttuned(player, meta.el)
+  if (!isAttuned(player, meta.el) || !(player?.elemental_unlocked || []).includes(id)) {
+    return { messages: ['This keystone requires its element to be active and its node learned.'], cooldown: 0, consumesTurn: false }
+  }
+  const att = true
   const atk = ctx.playerATK || (player?.atk || 10)
   const r = { messages: [], enemyDamage: 0, healPlayer: 0, cooldown: 3, setStatus: {}, consumesTurn: true }
 
