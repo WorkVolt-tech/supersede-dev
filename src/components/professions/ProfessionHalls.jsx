@@ -17,6 +17,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [expeditions,setExpeditions]=useState([])
  const [dungeonSessions,setDungeonSessions]=useState([])
  const [guardianBattle,setGuardianBattle]=useState(null)
+ useEffect(()=>{setGuardianBattle(null)},[selected])
  const [expeditionRuns,setExpeditionRuns]=useState([])
  const [advancedRuns,setAdvancedRuns]=useState([])
  const [professionLevel,setProfessionLevel]=useState(1)
@@ -75,8 +76,13 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   const {data,error}=await supabase.rpc('perform_profession_work',{target_player:player.id,job_key:selected})
   setShopMessage(error?.message||(data?'Produced '+data.qty+' × '+data.item+' · +'+data.xp+' profession XP':'Unable to produce'))
   if(!error){
-   const [result,user]=await Promise.all([supabase.from('profession_workshop_runs').select('last_run_at').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),supabase.auth.getUser()])
+   const [result,progress,user]=await Promise.all([
+    supabase.from('profession_workshop_runs').select('last_run_at').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),
+    supabase.from('profession_progress').select('level').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),
+    supabase.auth.getUser()
+   ])
    setLastWork(result.data?.last_run_at||null)
+   if(!progress.error)setProfessionLevel(progress.data?.level||1)
    await loadInventory(player.id)
    if(user.data?.user)await loadPlayer(user.data.user.id)
   }
