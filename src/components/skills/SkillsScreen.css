@@ -11,6 +11,9 @@
 .skills-tabs button.active { background:#a98b56; border-color:#e4bd77; color:#160f0b; font-weight:bold; }
 .skills-section-label { margin-top:9px; }
 .skills-tabs.elemental,.skills-tabs.class-tabs { padding-top:7px; }
+.skills-resonance-status { margin:8px 0 4px; padding:10px 12px; border-left:3px solid #c9a66c; background:#241d15; color:#d2c3ac; font-size:11px; line-height:1.7; }
+.skills-resonance-status strong,.skills-resonance-active { color:#f0cc83; }
+.skills-tree-heading .skills-primary { margin-top:12px; }
 .skills-tabs.class-tabs button { font-size:10px; padding:7px 10px; }
 .skills-locked-class { color:#a99270; font:12px 'JetBrains Mono',monospace; margin:8px 0 16px; }
 .skills-workspace { display:grid; grid-template-columns:minmax(0,1fr) minmax(230px,310px); gap:16px; margin-top:16px; min-height:600px; }
