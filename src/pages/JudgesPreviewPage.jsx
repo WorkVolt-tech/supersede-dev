@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import TwinJudgesPortrait from '../components/combat/TwinJudgesPortrait'
 
 const FORMS=[
@@ -15,6 +15,13 @@ export default function JudgesPreviewPage({onReturn}){
  const [phase,setPhase]=useState(1)
  const [attacking,setAttacking]=useState(false)
  const [replay,setReplay]=useState(0)
+ const attackRestartTimer=useRef(null)
+ useEffect(()=>()=>clearTimeout(attackRestartTimer.current),[])
+ function playAttack(){
+  clearTimeout(attackRestartTimer.current)
+  setAttacking(false)
+  attackRestartTimer.current=setTimeout(()=>setAttacking(true),40)
+ }
  useEffect(()=>{setAttacking(false)},[form,replay])
  useEffect(()=>{
   if(!attacking)return
@@ -34,7 +41,7 @@ export default function JudgesPreviewPage({onReturn}){
   </div>
   <TwinJudgesPortrait key={form+'-'+replay} moral={selected.moral} elements={selected.elements} hpPercent={phase===1?1:phase===2?.5:.2} attacking={attacking}/>
   <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-   <button className="reading-action" onClick={()=>setAttacking(false)||setTimeout(()=>setAttacking(true),0)}>Play attack</button>
+   <button className="reading-action" onClick={playAttack}>Play attack</button>
    <button className="reading-action" onClick={()=>setReplay(n=>n+1)}>Replay entrance / transformation</button>
   </div>
   <p className="story-text">Animations are visual previews only. No rewards, health, XP or combat state are changed.</p>
