@@ -54,6 +54,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
   const equipped = items.filter(i => i.equipped_slot)
+  const legendary = new Set(equipped.map(i => i.item_key))
+  const legendaryTurnRef = useRef(0)
   const effective = getEffectiveStats(player,equipped)
   const combatPlayer = getCombatPlayer(player,equipped)
 
@@ -138,6 +140,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     if (hitResult?.messages?.length) messages.push(...hitResult.messages)
 
+    if (legendary.has('legendary_miner')) { finalDmg = Math.max(0,finalDmg-3); messages.push('Deepstone Heart absorbs 3 damage.') }
     let nextHp = Math.max(0, playerHp - finalDmg)
     setCurrentHp(nextHp)
 
@@ -171,7 +174,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
     const wasCrit = atkResult?.wasCrit || Math.random() < critChance
-    const dmg = Math.max(0, Math.round(base * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
+    let dmg = Math.max(0, Math.round(base * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
+    if (legendary.has('legendary_forger') && wasCrit) dmg += 12
+    if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
+    if (legendary.has('legendary_resonance_weaver')) dmg += 4
     const newEnemyHp = Math.max(0, foeHp - dmg)
     setEnemyHp(newEnemyHp)
 
@@ -179,6 +185,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
     const verb = ranged ? 'You shoot' : 'You strike'
     const msgs = [`${verb} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || [])]
+    if (legendary.has('legendary_forger') && wasCrit) msgs.push('✦ Masterwork Edge adds 12 critical damage.')
+    if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) msgs.push('✦ Predator Instinct: opening shot +15.')
+    if (legendary.has('legendary_resonance_weaver')) msgs.push('✦ Harmonic Pulse: +4 resonance damage.')
     if (atkResult?.dbUpdates) Object.assign(dbUpdatesRef.current, atkResult.dbUpdates)
 
     const postResult = ClsCombat.onPlayerAttackPost(combatPlayer, statusEffectsRef.current, enemyData, dmg, wasCrit)
@@ -224,6 +233,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     let playerHp = currentHp
     let foeHp = enemyHp
+    legendaryTurnRef.current += 1
+    if (legendary.has('legendary_engineer') && legendaryTurnRef.current % 3 === 0) {playerHp = Math.min(maxPlayerHp,playerHp+5);setCurrentHp(playerHp);pushLog('✦ Mechanist Matrix repairs 5 HP.')}
+    if (legendary.has('legendary_pathfinder') && legendaryTurnRef.current === 1) pushLog('✦ Worldsight Compass reveals your opponent’s rhythm.')
     const playerSpeed = calcSPD(player,equipped) + (statusEffectsRef.current.playerSPDBonus || 0)
     const enemySpeed = enemyData.speed ?? enemyData.spd ?? enemyData.agility ?? 5
     const enemyFirst = enemySpeed > playerSpeed
