@@ -21,6 +21,7 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
       <div className="story-encounter">
       {node.text && <p className="story-text">{node.text}</p>}
       <CombatScreen
+        key={node.id}
         enemyData={node.enemy}
         isBoss={node.type === 'boss' || Boolean(node.bossKey)}
         judgeCtx={node.type === 'boss' ? judgeCtx : undefined}
