@@ -11,7 +11,26 @@ export const CH1_BOSS_ENTRANCE_MS={
  'The Unseen':3400,
  'The Watcher':0
 }
-export default function ChapterOneBossPortrait({name,attacking=false,hit=false,defeated=false}){
+
+// The AI's move keys only select visual choreography; they do not affect damage.
+const MOVE_VISUALS={
+ sentinel:{
+  first_gaze:'eye',indexing_beam:'eye',pale_column:'roar',full_sight:'eye',
+  record_sealed:'strike',watcher_inheritance:'roar',indexed_wound:'strike',
+  final_closure:'roar',observation_complete:'roar'
+ },
+ surveyor:{
+  measuring_strike:'drone',begin_assessment:'scan',assessment_tick:'scan',
+  pinpoint_assessment:'burst',lens_burst:'burst',data_strike:'drone',
+  full_assessment:'scan',slow_calculation:'scan',lens_shatter:'burst',final_verdict:'burst'
+ },
+ unseen:{
+  shimmer_strike:'rush',disperse:'disperse',half_presence:'form',
+  distributed_strike:'rush',consolidate_and_strike:'form',
+  terror_of_formlessness:'disperse',becoming_visible:'form',final_dispersal:'disperse'
+ }
+}
+export default function ChapterOneBossPortrait({name,attacking=false,hit=false,defeated=false,moveKey=null}){
  const [failed,setFailed]=useState(false)
  const [entering,setEntering]=useState(true)
  useEffect(()=>{
@@ -20,8 +39,9 @@ export default function ChapterOneBossPortrait({name,attacking=false,hit=false,d
   return()=>clearTimeout(timer)
  },[name])
  const boss=BOSSES[name]
+ const moveVisual=MOVE_VISUALS[boss?.id]?.[moveKey] || {sentinel:'strike',surveyor:'drone',unseen:'rush'}[boss?.id]
  if(!boss||failed)return <span className="combat-icon">{boss?.id==='surveyor'?'🔭':boss?.id==='unseen'?'👻':'👁️'}</span>
- return <div className={`ch1-boss ch1-${boss.id} ${entering?'ch1-entering':''} ${attacking?'ch1-attacking':''} ${hit?'ch1-hit':''} ${defeated?'ch1-defeated':''}`} role="img" aria-label={boss.label}>
+ return <div className={`ch1-boss ch1-${boss.id} ${entering?'ch1-entering':''} ${attacking?'ch1-attacking ch1-attack-'+moveVisual:''} ${hit?'ch1-hit':''} ${defeated?'ch1-defeated':''}`} role="img" aria-label={boss.label}>
   <div className="ch1-aura" aria-hidden="true"/>
   <img className="ch1-boss-body" src={boss.image} alt="" draggable="false" onError={()=>setFailed(true)}/>
   <img className="ch1-boss-energy" src={boss.image} alt="" draggable="false" aria-hidden="true"/>
