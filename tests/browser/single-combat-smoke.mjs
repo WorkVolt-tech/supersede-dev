@@ -23,6 +23,35 @@ async function ready(){
   }
   throw Error('Vite server timed out')
 }
+async function runSignatureScenario(scenario,view) {
+  const label={
+    'signature-fire':'Phantom Inferno',
+    'signature-earth':"Titan's Fortress",
+    'signature-lightning':'Thunderous Fury',
+  }[scenario]
+  const errors=[]
+  view.on('pageerror',error=>errors.push(error.message))
+  await view.goto(host+'/tests/browser/single-combat.html?scenario='+scenario,
+    {waitUntil:'networkidle'})
+  const signature=view.locator('.combat-signature-action')
+  await signature.waitFor()
+  check(await signature.isDisabled(),scenario+': signature active before fusion')
+  await view.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+  check(await signature.isEnabled(),scenario+': signature not enabled')
+  await view.getByRole('button',{name:'Preview ✦ '+label}).click()
+  check(await view.locator('.signature-preview-guard').count()===4,
+    scenario+': expected four preview tiles')
+  await signature.click()
+  await view.waitForFunction(label=>document.querySelector('.combat-log')
+    ?.textContent.includes(label)&&
+    document.querySelector('.combat-signature-burst')?.textContent.includes(label),
+    label,{timeout:12000})
+  check(await view.locator('.combat-signature-burst').count()===1,
+    scenario+': signature visual missing')
+  check(errors.length===0,scenario+': browser errors '+errors.join(' | '))
+  await view.screenshot({path:'test-artifacts/single-'+scenario+'.png',fullPage:true})
+  console.log('PASS 1v1 '+scenario+': signature effect, preview and animation')
+}
 async function runScenario(scenario,view){
   const errors=[]
   view.on('pageerror',e=>errors.push(e.message))
@@ -93,6 +122,9 @@ try{
   await runScenario('regular',page)
   await runScenario('boss',page)
   await runScenario('unfused',page)
+  await runSignatureScenario('signature-fire',page)
+  await runSignatureScenario('signature-earth',page)
+  await runSignatureScenario('signature-lightning',page)
   await page.close()
   console.log('PASS: single/boss fusion browser smoke')
 }catch(error){
