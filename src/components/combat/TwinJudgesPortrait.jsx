@@ -12,49 +12,50 @@ export function judgesVisualForm(moral=0,elements=1){
  if(moral>=40)return 'E_mercy_absorbs'
  return 'F_dual_powered'
 }
-const labels={A_mercy:'Mercy Alone',B_wrath:'Wrath Alone',C_dual:'Dual Conflict',D_wrath_absorbs:'Wrath Absorbs Mercy',E_mercy_absorbs:'Mercy Absorbs Wrath',F_dual_powered:'Synchronized Judges',G_verdict:'Verdict — Collapsed Form'}
+const labels={A_mercy:'Mercy Alone',B_wrath:'Wrath Alone',C_dual:'Equilibrium',D_wrath_absorbs:'Ruin',E_mercy_absorbs:'Absolution',F_dual_powered:'Dominion',G_verdict:'Verdict'}
 function Judge({which,attacking,dominant=false}){
  const [failed,setFailed]=useState(false)
+ const fallback=which==='absolution'?'mercy':which==='ruin'?'wrath':which==='verdict'?'mercy':null
+ const image='/'+which+'.webp'
  return <div className={`judge-figure judge-${which} ${dominant?'judge-dominant':''} ${attacking?'judge-striking':''}`}>
-  {failed?<span className="judge-fallback">{which==='mercy'?'⚖️':'🗡️'}</span>:<>
-   <img className="judge-body" src={`/${which}.webp`} alt="" draggable="false" onError={()=>setFailed(true)}/>
-   <img className="judge-sword" src={`/${which}.webp`} alt="" draggable="false"/>
-   <img className="judge-scales" src={`/${which}.webp`} alt="" draggable="false"/>
+  {failed?<span className="judge-fallback">{which==='mercy'||which==='absolution'?'⚖️':'🗡️'}</span>:<>
+   <img className="judge-body" src={image} alt="" draggable="false" onError={e=>{if(fallback&&!e.currentTarget.dataset.fallback){e.currentTarget.dataset.fallback='1';e.currentTarget.src='/'+fallback+'.webp'}else setFailed(true)}}/>
+   <img className="judge-sword" src={image} alt="" draggable="false" onError={e=>{e.currentTarget.style.display='none'}}/>
+   <img className="judge-scales" src={image} alt="" draggable="false" onError={e=>{e.currentTarget.style.display='none'}}/>
    <span className="judge-glow"/>
   </>}
  </div>
 }
-function Absolution({attacking}){
- const [transformed,setTransformed]=useState(false)
- const [missing,setMissing]=useState(false)
+const transformationAssets={
+ D_wrath_absorbs:{video:'/wrath_absorbs_mercy.webp',alternative:'/wrath_to_ruin.webp',result:'ruin'},
+ E_mercy_absorbs:{video:'/mercy_to_absolution.webp',result:'absolution'},
+ G_verdict:{video:'/mercy_wrath_fuse_verdict.webp',result:'verdict'}
+}
+function TransformJudge({form,attacking}){
+ const config=transformationAssets[form]
+ const [finished,setFinished]=useState(false)
+ const [triedAlternative,setTriedAlternative]=useState(false)
  useEffect(()=>{
-  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setTransformed(true);return}
-  const timer=setTimeout(()=>setTransformed(true),3200)
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setFinished(true);return}
+  const timer=setTimeout(()=>setFinished(true),form==='G_verdict'?3400:3800)
   return()=>clearTimeout(timer)
- },[])
- return <div className={`absolution-form ${attacking?'absolution-attacking':''}`}>
-  {!transformed&&!missing&&<img className="absolution-transition" src="/mercy_to_absolution.webp" alt="" onError={()=>{setMissing(true);setTransformed(true)}} draggable="false"/>}
-  {(transformed||missing)&&<div className="judge-figure judge-mercy judge-dominant">
-   <img className="judge-body" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
-   <img className="judge-sword" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
-   <img className="judge-scales" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
-   <span className="judge-glow"/>
-  </div>}
+ },[form])
+ return <div className={`judge-transformation judge-transform-${form} ${attacking?'judge-transform-attacking':''}`}>
+  {!finished&&<img className="judge-transition-animation" src={triedAlternative?config.alternative:config.video} alt="" draggable="false" onError={()=>{if(config.alternative&&!triedAlternative)setTriedAlternative(true);else setFinished(true)}}/>}
+  {finished&&<Judge which={config.result} attacking={attacking} dominant/>}
  </div>
 }
 export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1}){
  const form=judgesVisualForm(moral,elements)
- const mercyLead=['A_mercy','E_mercy_absorbs'].includes(form)
- const wrathLead=['B_wrath','D_wrath_absorbs'].includes(form)
- const fused=form==='G_verdict'
- const showMercy=!wrathLead
- const showWrath=!mercyLead
  const phase=hpPercent<.33?3:hpPercent<.66?2:1
+ const transformation=Boolean(transformationAssets[form])
  return <div className={`twin-judges twin-${form} twin-phase-${phase} ${attacking?'twin-attacking':''}`} role="img" aria-label={`Twin Judges: ${labels[form]}, phase ${phase}`}>
   <div className="twin-judges-stage">
-   {form==='E_mercy_absorbs'?<Absolution attacking={attacking}/>:showMercy&&<Judge which="mercy" attacking={attacking} dominant={mercyLead||fused}/>}
-   {showWrath&&<Judge which="wrath" attacking={attacking} dominant={wrathLead||fused}/>}
-   {fused&&<span className="twin-verdict-core" aria-hidden="true"/>}
+   {transformation?<TransformJudge key={form} form={form} attacking={attacking}/>:
+    form==='A_mercy'?<Judge which="mercy" attacking={attacking} dominant/>:
+    form==='B_wrath'?<Judge which="wrath" attacking={attacking} dominant/>:
+    form==='F_dual_powered'?<><Judge which="absolution" attacking={attacking}/><Judge which="ruin" attacking={attacking}/></>:
+    <><Judge which="mercy" attacking={attacking}/><Judge which="wrath" attacking={attacking}/></>}
    <span className="twin-energy" aria-hidden="true"/>
   </div>
   <span className="twin-form-label">{labels[form]} · Phase {phase}</span>
