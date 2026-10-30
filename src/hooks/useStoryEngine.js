@@ -11,13 +11,21 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const loadInventory = useInventoryStore(s => s.loadInventory)
 
-  const startId = player?.current_node?.startsWith(chapterPrefix + '_')
-    ? player.current_node.replace(chapterPrefix + '_', '')
-    : initialNodeId
+  // Only one current_node is stored for the active chapter. When revisiting
+  // an earlier completed chapter, show its ending rather than silently
+  // restarting it (and potentially re-claiming story rewards).
+  const chapterNumber = { ch1: 1, ch2: 2, ch3: 3 }[chapterPrefix]
+  const completedEndId = { ch1: 'chapter_end', ch2: 'chapter_end_ch2', ch3: 'chapter_end_ch3' }[chapterPrefix]
+  const completed = (player?.chapters_completed || []).includes(chapterNumber) ||
+    (chapterNumber && chapterNumber < 3 && (player?.chapters_unlocked || []).includes(chapterNumber + 1))
+  const savedNode = player?.current_node?.startsWith(chapterPrefix + '_')
+    ? player.current_node.slice(chapterPrefix.length + 1)
+    : null
+  const startId = savedNode && NODES[savedNode]
+    ? savedNode
+    : completed && NODES[completedEndId] ? completedEndId : initialNodeId
 
-  const [currentNodeId, setCurrentNodeId] = useState(
-    NODES[startId] ? startId : initialNodeId
-  )
+  const [currentNodeId, setCurrentNodeId] = useState(startId)
 
   const currentNode = NODES[currentNodeId] || null
 
@@ -35,9 +43,8 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
 
-    if (NODES[resolvedId]?.type === 'end' && Array.isArray(player.chapters_completed)) {
-      const chapterNumber = chapterPrefix === 'ch1' ? 1 : chapterPrefix === 'ch2' ? 2 : chapterPrefix === 'ch3' ? 3 : null
-      if (chapterNumber) updates.chapters_completed = [...new Set([...player.chapters_completed, chapterNumber])]
+    if (NODES[resolvedId]?.type === 'end' && chapterNumber) {
+      updates.chapters_completed = [...new Set([...(player.chapters_completed || []), chapterNumber])]
     }
 
     if (cur?.xp) Object.assign(updates, grantXp(player, cur.xp))
@@ -89,9 +96,12 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         return
       }
     }
-    await updatePlayer(updates)
+    // A failed database write must not advance the visible story while
+    // current_node still points to the previous page on the server.
+    const saved = await updatePlayer(updates)
+    if (!saved) return
     setCurrentNodeId(resolvedId)
-  }, [NODES, chapterPrefix, currentNodeId, player, updatePlayer, loadInventory])
+  }, [NODES, chapterPrefix, chapterNumber, currentNodeId, player, updatePlayer, loadInventory])
 
   return { currentNodeId, currentNode, goTo }
 }
