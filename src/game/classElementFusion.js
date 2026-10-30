@@ -3,9 +3,18 @@
 import { CLASSES } from './classes.js'
 import { ELEMENT_TREES, isElementUnlocked } from './elementsTree.js'
 import { getActiveElement } from './activeElement.js'
-import { countLearnedElementNodes } from './elementalAttacks.js'
+import { countLearnedElementNodes, ELEMENTAL_ATTACKS, ELEMENTAL_ATTACK_THRESHOLDS } from './elementalAttacks.js'
 
 export const FUSION_UNLOCK_COST = 2
+// A character chooses exactly one fusion, ever: one class + one element OR
+// one active-element triad on the classless elemental-user path.
+export const MAX_CHARACTER_FUSIONS = 1
+export function committedFusionKey(player) {
+  return (player?.fusion_unlocked||[]).find(key=>typeof key==='string')||null
+}
+export function elementalTriadKey(element) {
+  return ELEMENTAL_ATTACKS[element] ? 'triad:'+element : null
+}
 export const FUSION_MP_COST = 3
 export const FUSION_MIN_LEVEL = 25
 export const FUSION_MIN_CLASS_NODES = 2
@@ -29,29 +38,60 @@ export function getFusionEligibility(player,elementKey) {
     node=>typeof node==='string'&&node.startsWith(cls+':')).length
   const elementNodes=pair&&isElementUnlocked(elementKey,player)
     ?countLearnedElementNodes(player,elementKey):0
-  const unlocked=Boolean(pair&&(player?.fusion_unlocked||[]).includes(pair))
+  const committed=committedFusionKey(player)
+  const unlocked=Boolean(pair&&committed===pair)
   const ready=Boolean(pair&&Number(player?.level||0)>=FUSION_MIN_LEVEL&&
     nodes>=FUSION_MIN_CLASS_NODES&&
     elementNodes>=FUSION_MIN_ELEMENT_NODES)
-  return {pair,unlocked,ready,level:player?.level||0,
+  return {pair,unlocked,ready,committed,lockedByOther:Boolean(committed&&committed!==pair),
+    level:player?.level||0,
     classNodes:nodes,elementNodes,
-    canUnlock:ready&&!unlocked&&(player?.skill_points||0)>=FUSION_UNLOCK_COST}
+    canUnlock:ready&&!committed&&(player?.skill_points||0)>=FUSION_UNLOCK_COST}
 }
 export function unlockFusionPair(player,elementKey) {
   const eligibility=getFusionEligibility(player,elementKey)
   if(!eligibility.canUnlock)return null
   return {
-    fusion_unlocked:[...new Set([...(player.fusion_unlocked||[]),eligibility.pair])],
+    fusion_unlocked:[eligibility.pair],
+    skill_points:(player.skill_points||0)-FUSION_UNLOCK_COST,
+  }
+}
+export function getElementalTriadEligibility(player,element) {
+  const pair=elementalTriadKey(element)
+  const committed=committedFusionKey(player)
+  const count=pair&&isElementUnlocked(element,player)
+    ?countLearnedElementNodes(player,element):0
+  const attacks=ELEMENTAL_ATTACKS[element]||[]
+  const ready=Boolean(pair&&!player?.active_class&&
+    (Number(player?.level)||0)>=FUSION_MIN_LEVEL&&
+    count>=ELEMENTAL_ATTACK_THRESHOLDS[2]&&attacks.length===3)
+  const unlocked=Boolean(pair&&committed===pair)
+  return {pair,committed,ready,unlocked,elementNodes:count,attacks,
+    lockedByOther:Boolean(committed&&committed!==pair),
+    canUnlock:ready&&!committed&&(player?.skill_points||0)>=FUSION_UNLOCK_COST}
+}
+export function unlockElementalTriad(player,element) {
+  const eligibility=getElementalTriadEligibility(player,element)
+  if(!eligibility.canUnlock)return null
+  return {
+    fusion_unlocked:[eligibility.pair],
     skill_points:(player.skill_points||0)-FUSION_UNLOCK_COST,
   }
 }
 export function getActiveFusion(player) {
   const element=getActiveElement(player)
   if(!element)return null
+  if(!player?.active_class) {
+    const triad=getElementalTriadEligibility(player,element)
+    if(!triad.unlocked||!triad.ready)return null
+    const xp=Math.max(0,Math.floor(Number(player.fusion_mastery?.[triad.pair])||0))
+    return {key:triad.pair,classKey:null,kind:'triad',element,
+      level:fusionMasteryLevel(xp),xp}
+  }
   const eligibility=getFusionEligibility(player,element)
   if(!eligibility.unlocked||!eligibility.ready)return null
   const xp=Math.max(0,Math.floor(Number(player.fusion_mastery?.[eligibility.pair])||0))
-  return {key:eligibility.pair,classKey:player.active_class,element,
+  return {key:eligibility.pair,classKey:player.active_class,kind:'class-element',element,
     level:fusionMasteryLevel(xp),xp}
 }
 export function awardFusionPractice(mastery,pair,successfulUses=1) {
@@ -75,7 +115,7 @@ export function getFusionSignature(fusion) {
 // This additive rider never bypasses AP, target legality or existing skill
 // cooldowns. Every element contributes its own identifiable minor effect.
 export function getFusionRider(fusion) {
-  if(!fusion)return null
+  if(!fusion||fusion.kind==='triad')return null
   const tier=Math.max(1,Math.min(10,fusion.level))
   const signature=getFusionSignature(fusion)
   const rider={element:fusion.element,label:signature||'Fusion Infusion',
