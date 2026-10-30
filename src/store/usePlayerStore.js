@@ -26,16 +26,29 @@ export const usePlayerStore = create((set, get) => ({
 
   async updatePlayer(updates) {
     const current = get().player
-    if (!current) return
-    const { error } = await supabase
-      .from('players')
-      .update(updates)
-      .eq('id', current.id)
-    if (error) {
-      set({ error: error.message })
-      return
+    if (!current) return false
+    try {
+      const { data, error } = await supabase
+        .from('players')
+        .update(updates)
+        .eq('id', current.id)
+        .select('id')
+        .single()
+      if (error || !data) {
+        set({ error: error?.message || 'Character progress could not be saved.' })
+        return false
+      }
+      // Merge against the newest in-memory player. Another feature may have
+      // saved an unrelated field while this request was in flight.
+      const latest = get().player
+      if (latest?.id === current.id) {
+        set({ player: { ...latest, ...updates }, error: null })
+      }
+      return true
+    } catch (error) {
+      set({ error: error?.message || 'Character progress could not be saved.' })
+      return false
     }
-    set({ player: { ...current, ...updates } })
   },
 
   // Drives have a one-time completion reward. Confirm the database actually
