@@ -130,6 +130,62 @@ async function inspect(page,name,mobile){
     (mobile?', touch movement':'')+'\n')
 }
 
+async function verifySignatures(page) {
+  for(const [element,label,kind] of [
+    ['fire','Phantom Inferno','phantom'],
+    ['earth',"Titan's Fortress",'titan'],
+    ['lightning','Thunderous Fury','thunder'],
+  ]) {
+    const errors=[]
+    page.on('pageerror',e=>errors.push(e.message))
+    await page.goto(host+'/tests/browser/group-combat.html?scenario=signature-'+element,
+      {waitUntil:'networkidle'})
+    const signature=page.locator('.combat-signature-action')
+    await signature.waitFor()
+    check(await signature.isDisabled(),element+': locked before fusion enabled')
+    await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+    check(await signature.isEnabled(),element+': enabled fusion still locked')
+    await page.getByRole('button',{name:'Preview ✦ '+label}).click()
+    if(element==='earth') {
+      check(await page.locator('.combat-grid-board').last()
+        .locator('.signature-preview-guard').count()===4,
+        'earth: missing protected ally cross preview')
+    }else {
+      check(await page.locator('.combat-grid-board').first()
+        .locator('button.splash').count()===4,
+        element+': incorrect enemy-area preview')
+    }
+    check((await page.locator('.combat-attack-preview').first().textContent())
+      .includes(label),element+': signature preview label missing')
+    await signature.click()
+    await page.waitForFunction(label=>document.querySelector('.combat-log')
+      ?.textContent.includes(label)&&
+      document.querySelector('.combat-signature-burst')?.textContent.includes(label),
+      label,{timeout:10000})
+    check(await page.locator('.combat-signature-burst.signature-'+kind).count()===1,
+      element+': no unique signature animation')
+    check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
+      element+': signature saved player before victory')
+    await page.waitForFunction(()=>
+      document.querySelector('.combat-turn-banner')?.textContent.includes('2/2 AP'),
+      null,{timeout:10000})
+    check((await signature.textContent()).includes('Cooldown: 3 rounds'),
+      element+': signature should start with 3-round cooldown')
+    check(await signature.isDisabled(),element+': signature ignored cooldown')
+    if(element==='fire'){
+      check(await page.locator('.combat-grid-board').first()
+        .locator('.hazard').count()===4,
+        'fire: persistent burning field missing')
+    }
+    if(element==='lightning'){
+      check((await page.locator('.combat-log').textContent()).includes('3 enemies'),
+        'lightning: three-target chain missing')
+    }
+    check(errors.length===0,element+': browser exceptions '+errors.join(' | '))
+    await page.screenshot({path:'test-artifacts/signature-'+element+'.png',fullPage:true})
+    console.log('PASS signature '+element+': '+label+' targeting, effects and cooldown')
+  }
+}
 async function verifyFusionVictory(page) {
   const errors=[]
   page.on('pageerror',error=>errors.push(error.message))
@@ -239,6 +295,7 @@ try{
   await inspect(desktop,'desktop',false)
   await verifyMastery(desktop)
   await verifyFusion(desktop)
+  await verifySignatures(desktop)
   await verifyFusionVictory(desktop)
   await verifyVictory(desktop)
   await desktop.close()
