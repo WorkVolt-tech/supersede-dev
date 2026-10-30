@@ -279,7 +279,26 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     await saveCombatOutcome()
   }
 
-  function enemyTurn(playerHp, foeHp, isDefending = false, damageLimit = Infinity) {
+  // Exactly one round of ongoing status/regen per enemy action, including
+  // movement and stunned turns. Moving must never suppress bleed, poison,
+  // class regeneration or keystone duration ticks.
+  function finishEnemyAction(nextHp, foeHp) {
+    const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
+    if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
+    if (turnEnd?.damageToEnemy > 0) foeHp = Math.max(0, foeHp - turnEnd.damageToEnemy)
+    if (turnEnd?.healToPlayer > 0 && nextHp > 0) nextHp = Math.min(maxPlayerHp, nextHp + turnEnd.healToPlayer)
+    const keystoneTick = resolveKeystoneRegen(statusEffectsRef.current, foeHp, nextHp, maxPlayerHp)
+    foeHp = keystoneTick.enemyHp
+    nextHp = keystoneTick.playerHp
+    keystoneTick.messages.forEach(pushLog)
+
+    setEnemyHp(foeHp)
+    setCurrentHp(nextHp)
+    setDefending(false)
+    return { playerHp: nextHp, foeHp }
+  }
+
+  function enemyTurn(playerHp, foeHp, isDefending = false, damageLimit = Infinity, forcedPulse = false) {
     const messages = []
     let aiDmg = 0
     let healAmt = 0
@@ -295,7 +314,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     const stunned = consumeEnemyStun(statusEffectsRef.current)
     if (stunned) messages.push(stunned)
-    const aiMove = stunned ? null : resolveEnemyTurn(combatEnemyRef.current, ctx)
+    // The emergency pulse must not secretly trigger an enemy AI special
+    // attack, including its stun/bleed/status side effects.
+    const aiMove = stunned || forcedPulse ? null : resolveEnemyTurn(combatEnemyRef.current, ctx)
+    if (!stunned && forcedPulse) aiDmg = 2
     if (!stunned && (statusEffectsRef.current.cfx_longDecayStacks || 0) > 0) {
       aiDmg = Math.max(0, aiDmg - 3 * statusEffectsRef.current.cfx_longDecayStacks)
     }
@@ -356,21 +378,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     messages.forEach(pushLog)
 
-    // Real return shape is {messages, damageToEnemy, healToPlayer} — DoT and
-    // regen status effects tick here, not via a dbUpdates field.
-    const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
-    if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
-    if (turnEnd?.damageToEnemy > 0) foeHp = Math.max(0, foeHp - turnEnd.damageToEnemy)
-    if (turnEnd?.healToPlayer > 0 && nextHp > 0) nextHp = Math.min(maxPlayerHp, nextHp + turnEnd.healToPlayer)
-    const keystoneTick = resolveKeystoneRegen(statusEffectsRef.current, foeHp, nextHp, maxPlayerHp)
-    foeHp = keystoneTick.enemyHp
-    nextHp = keystoneTick.playerHp
-    keystoneTick.messages.forEach(pushLog)
-
-    setEnemyHp(foeHp)
-    setCurrentHp(nextHp)
-    setDefending(false)
-    return { playerHp: nextHp, foeHp }
+    return finishEnemyAction(nextHp, foeHp)
   }
 
   function playerAttack(foeHp, playerHp, attack) {
@@ -495,13 +503,17 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
     const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt)
     if (next.move) {
-      setEnemyPosition(next.move)
-      pushLog(`${enemyData.name} repositions to column ${next.move.col+1}, rank ${next.move.rank+1}.`)
-      return {playerHp,foeHp}
+      const stunned = consumeEnemyStun(statusEffectsRef.current)
+      if (stunned) pushLog(stunned)
+      else {
+        setEnemyPosition(next.move)
+        pushLog(`${enemyData.name} repositions to column ${next.move.col+1}, rank ${next.move.rank+1}.`)
+      }
+      return finishEnemyAction(playerHp,foeHp)
     }
     if (next.attack?.fallback) {
       pushLog(`${enemyData.name} cannot reach you and uses an emergency ranged pulse.`)
-      return enemyTurn(playerHp,foeHp,defendAction,2)
+      return enemyTurn(playerHp,foeHp,defendAction,2,true)
     }
     return enemyTurn(playerHp,foeHp,defendAction)
   }

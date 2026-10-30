@@ -78,7 +78,7 @@ Further balancing is still needed for offhand attacks, PvP, defeat credits, and 
 
 - Enemy archetypes get a weapon/attack profile and preferred attack origins, valid enemy targets and the same AoE geometry as players.
 - Enemy AI first looks for a legal preferred weapon attack. If none is available, it moves to a legal nearby space that improves its options. If blocked, it can use a low-damage fallback.
-- Enemy movement cannot overlap occupied allied enemy squares.
+- Enemy movement cannot overlap occupied allied enemy squares. Movement and stunned turns still tick existing damage-over-time, regeneration and keystone effects once; an emergency pulse cannot trigger a stronger named AI attack/status behind the scenes.
 - The Battle Lab currently includes **sword, spear and staff** opponents to demonstrate different patterns.
 - SPD-based action sequencing, crowd-control effects, weapon switching costs and elite boss size are future integration tasks; the lab's enemy turn is intentionally simplified.
 
