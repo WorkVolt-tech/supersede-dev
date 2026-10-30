@@ -10,10 +10,9 @@ export default function CombatActionPoints({ap,max=5,round=1}) {
     data-round={round}>
     <div className="combat-ap-label"><strong>Action Points · Round {round}</strong>
       <span>{current}/{max} AP</span></div>
-    <div className="combat-ap-segments" role="progressbar" aria-label="Action Points"
+    <div className="combat-ap-track" role="progressbar" aria-label="Action Points"
       aria-valuemin={0} aria-valuemax={max} aria-valuenow={current}>
-      {Array.from({length:max},(_,i)=><span key={i}
-        className={'combat-ap-segment'+(i<current?' filled':'')}/>)}
+      <div className="combat-ap-fill" style={{width:`${max>0?current/max*100:0}%`}} />
     </div>
   </div>
 }
