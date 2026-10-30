@@ -43,6 +43,7 @@ import {
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
+import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
@@ -123,6 +124,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
+  const consumeItem = useInventoryStore(s => s.consumeItem)
   const equipped = items.filter(i => i.equipped_slot)
   const legendary = new Set(equipped.map(i => i.item_key))
   const legendaryTurnRef = useRef(0)
@@ -849,6 +851,21 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setBusy(false)
   }
 
+  async function useBattlePotion(item) {
+    if (busy || result || !entranceReady || actionPointsRef.current<1) return
+    const restored=Math.min(Math.max(0,maxPlayerHp-currentHp),Math.max(0,Number(item.hp_restore)||0))
+    if(restored<=0){pushLog('No healing needed.');return}
+    setBusy(true)
+    try {
+      const used=await consumeItem(item.id)
+      if(!used.ok){pushLog(used.reason||'Could not use item.');return}
+      setCurrentHp(hp=>Math.min(maxPlayerHp,hp+restored))
+      actionPointsRef.current-=1
+      setActionPoints(actionPointsRef.current)
+      pushLog('Used '+item.name+' · +'+restored+' HP (1 AP).')
+    } finally {setBusy(false)}
+  }
+
   const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
   const keystones = getUnlockedKeystones(combatPlayer, keystoneCooldowns)
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
@@ -953,6 +970,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             Basic Strike is still available.
           </p>}
         </div>
+        <BattleConsumables items={items} hp={currentHp} maxHp={maxPlayerHp} disabled={busy||!entranceReady||!!result||actionPoints<1} onUse={useBattlePotion}/>
         <div className="combat-actions">
           <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
           <button type="button" className="combat-action-btn" disabled={busy || !entranceReady}
