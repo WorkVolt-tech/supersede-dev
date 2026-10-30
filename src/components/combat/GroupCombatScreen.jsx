@@ -847,7 +847,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
           ✦ {signature.label} · {signature.ap} AP · {signature.mp} MP
           <span className="combat-action-sub">
             {signatureCooldown>0?'Cooldown: '+signatureCooldown+' rounds':
-              fusionEnabled?'Signature '+signature.attack.shape:'Enable Fusion first'}
+              fusionEnabled?'Signature '+signature.attack.shape:'Fusion inactive'}
           </span>
         </button>}
         {signature&&<button type="button" className="combat-action-btn combat-preview-btn"
