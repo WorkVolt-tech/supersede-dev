@@ -76,3 +76,18 @@ test('real Arbiter Sentence Mark targets one foe without marking others',()=>{
   assert.equal(perFoe['rat-1'],undefined)
   assert.equal(shared.cls_markTurns,0)
 })
+
+test('poison and ember stacks damage only their own foe each round',()=>{
+  const units=[
+    {id:'a',name:'A',hp:30,maxHp:30},
+    {id:'b',name:'B',hp:30,maxHp:30},
+    {id:'c',name:'C',hp:30,maxHp:30},
+  ]
+  const statuses={a:{cfx_longDecayStacks:2},b:{cfx_emberStacks:3},c:{}}
+  const first=advanceFoeStatuses(units,statuses)
+  assert.deepEqual(first.units.map(x=>x.hp),[24,18,30])
+  assert.equal(first.statuses.a.cfx_longDecayStacks,2)
+  assert.equal(first.statuses.b.cfx_emberStacks,3)
+  const second=advanceFoeStatuses(first.units,first.statuses)
+  assert.deepEqual(second.units.map(x=>x.hp),[18,6,30])
+})

@@ -147,7 +147,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     for(const unit of hitUnits){
       if(unit.id===targetId)continue
       const status=foeStatusesRef.current[unit.id]||{}
-      for(const key of ['enemyStunTurns','cfx_longDecayStacks'])
+      for(const key of ['enemyStunTurns','cfx_longDecayStacks','cfx_emberStacks'])
         if(changes[key]>0)status[key]=Math.max(status[key]||0,changes[key])
       foeStatusesRef.current[unit.id]=status
     }
@@ -561,6 +561,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_drownTurns>0?' 💧':''}
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.enemyStunTurns>0?' ⚡':''}
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_markTurns>0?' 🎯':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cfx_longDecayStacks>0?' ☠️':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cfx_emberStacks>0?' 🔥':''}
       </button>)}
     </div>
     <div className="combat-tactical-status">

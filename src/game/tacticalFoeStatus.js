@@ -5,7 +5,8 @@ export const FOE_STATUS_KEYS=[
   'cls_bleedingTurns','cls_bleedingDmg','cls_bleedingStacks',
   'cls_rotTurns','cls_rotDmg','cls_rotApplied',
   'cls_executionMarkTurns','cls_drownTurns','cls_drownStacks',
-  'cls_drownedActive','enemyStunTurns','enemyATKMult','cfx_longDecayStacks',
+  'cls_drownedActive','enemyStunTurns','enemyATKMult',
+  'cfx_longDecayStacks','cfx_emberStacks',
 ]
 export function withFoeStatus(shared,perFoe,id,callback) {
   if(!id)return callback()
@@ -36,6 +37,11 @@ export function advanceFoeStatuses(units,perFoe,player={}) {
     if(unit.hp<=0)return unit
     const s=nextStatuses[unit.id]||{}
     let damage=0
+    // These elemental stacks persist until their existing combat-specific
+    // cleanse mechanics remove them, matching the single-target engine.
+    // They MUST tick on their owner rather than a globally selected foe.
+    if(s.cfx_longDecayStacks>0)damage+=s.cfx_longDecayStacks*3
+    if(s.cfx_emberStacks>0)damage+=s.cfx_emberStacks*4
     if(s.cls_bleedingTurns>0){
       damage+=Math.max(0,s.cls_bleedingDmg||0)
       s.cls_bleedingTurns--
