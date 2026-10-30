@@ -65,7 +65,15 @@ async function inspect(page,name,mobile){
     name+': target selection not reflected')
   check((await page.locator('.combat-turn-banner').textContent()).includes('2/2 AP'),
     name+': target selection spent AP')
+  // Sword Slash hits the same column only. Selecting a foe in another
+  // column should show honest feedback and disable the attack.
+  check(await page.locator('.combat-range-warning').count()===1,
+    name+': out-of-range target did not show a warning')
+  check(await page.getByRole('button',{name:/Use Sword Slash/}).isDisabled(),
+    name+': out-of-range slash remained enabled')
   await units.first().click()
+  check(await page.locator('.combat-range-warning').count()===0,
+    name+': target range warning did not clear
 
   // Sweeping Arc has row AoE and costs both AP. All three front-row rats
   // must take damage from the actual live weapon handler.

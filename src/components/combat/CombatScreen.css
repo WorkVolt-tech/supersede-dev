@@ -120,3 +120,16 @@
 
 /* Persistent elemental zones occupy battlefield cells, even between turns. */
 .combat-grid-cell.foe.hazard { background:#452116; box-shadow:inset 0 0 0 1px #eb783b; }
+
+/* The selected foe and legal targets are different states. Selecting an
+   out-of-range enemy never implies the attack can hit that square. */
+.combat-grid-cell.foe.selected-foe { outline:2px solid #dfb260; outline-offset:-2px; }
+.combat-grid-cell.foe.attackable:not(.selected-foe) { border-color:#d8ad73; cursor:pointer; }
+.combat-grid-cell.foe.selected-foe:not(.attackable) { outline-color:#b66b62; }
+.combat-range-warning { margin:0; padding:7px 9px; border:1px solid #ab7359;
+  border-radius:4px; font-size:11px; line-height:1.4; color:#e6bda0; }
+.reading-page .combat-range-warning { color:#814333; background:#ead8c2; }
+.group-combat .combat-group-unit { min-height:44px; }
+@media (max-width:480px) {
+  .group-combat .combat-grid-cell { min-height:48px; }
+}

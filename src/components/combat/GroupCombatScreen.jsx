@@ -55,16 +55,20 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
       const mine=side==='hero'&&hero.rank===rank&&hero.col===col
       const step=side==='hero'&&!mine&&canMove&&
         Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
+      const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
+      const selected=Boolean(foe&&foe.id===focused)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
-          foe||mine?'occupied':'',foe?.id===focused?'targetable':'',
+          foe||mine?'occupied':'',selected?'selected-foe':'',
+          inRange?'attackable':'',
           splash?'splash':'',hazard?'hazard':'',step?'movable':''].join(' ')}
         disabled={side==='enemy'?!foe:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
-        aria-label={foe?foe.name+' '+foe.hp+' HP':mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
+        aria-label={foe?foe.name+' '+foe.hp+' HP · '+
+          (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
         onClick={()=>side==='enemy'?onFocus(foe.id):onMove({col,rank})}>
         <span>{foe?foe.icon:mine?'🧑':'·'}</span>
         <small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':mine?'YOU':['FRONT','MID','REAR'][rank]}</small>
@@ -613,6 +617,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <span>Weapon: {weaponType} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}</span>
       <strong>{ap} AP</strong>
     </div>
+    {target&&!attackLegal&&!result&&
+      <p className="combat-range-warning" role="status">
+        {attack.label} cannot reach {target.name} from here. Move, choose a different attack, or select another enemy.
+      </p>}
     {!result&&<>
       <div className="combat-tactical-weapons">
         {weaponKit.map(item=><button key={item.id} type="button"
