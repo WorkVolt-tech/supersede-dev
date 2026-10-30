@@ -47,6 +47,24 @@ async function runClasslessTriadScenario(view) {
   console.log('PASS 1v1 classless elemental triad: 3 abilities, MP cost, preview')
   await view.screenshot({path:'test-artifacts/single-triad-fire.png',fullPage:true})
 }
+async function runTriadSpecialty(view,element,technique) {
+  const errors=[]
+  view.on('pageerror',e=>errors.push(e.message))
+  await view.goto(host+'/tests/browser/single-combat.html?scenario=triad-'+element,
+    {waitUntil:'networkidle'})
+  const toggle=view.getByRole('button',{name:'Enable Fusion',exact:true})
+  await toggle.click()
+  const action=view.locator('.combat-signature-action')
+  check((await action.textContent()).includes(technique),
+    element+': signature name mismatch')
+  await action.click()
+  await view.waitForFunction(technique=>document.querySelector('.combat-log')
+    ?.textContent.includes(technique),technique,{timeout:12000})
+  check(await view.locator('.combat-signature-burst.triad-'+element).count()===1,
+    element+': custom triad visual missing')
+  check(errors.length===0,element+': exceptions '+errors.join(' | '))
+  console.log('PASS 1v1 triad specialty '+element+' · '+technique)
+}
 async function runSignatureScenario(scenario,view) {
   const label={
     'signature-fire':'Phantom Inferno',
@@ -150,6 +168,9 @@ try{
   await runSignatureScenario('signature-earth',page)
   await runSignatureScenario('signature-lightning',page)
   await runClasslessTriadScenario(page)
+  await runTriadSpecialty(page,'water','Abyssal Torrent')
+  await runTriadSpecialty(page,'earth','Tectonic Ward')
+  await runTriadSpecialty(page,'lightning','Storm Circuit')
   await page.close()
   console.log('PASS: single/boss fusion browser smoke')
 }catch(error){

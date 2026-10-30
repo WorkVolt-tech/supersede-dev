@@ -11,9 +11,11 @@ const params=new URLSearchParams(location.search)
 const boss=params.get('scenario')==='boss'
 const signatureElement={'signature-fire':'fire','signature-earth':'earth',
   'signature-lightning':'lightning'}[params.get('scenario')]
-const triadScenario=params.get('scenario')==='triad-fire'
+const triadElement=params.get('scenario')?.startsWith('triad-')
+  ?params.get('scenario').slice(6):null
+const triadScenario=Boolean(triadElement&&ELEMENT_TREES[triadElement])
 const fused=params.get('scenario')!=='unfused'
-const fusionElement=signatureElement||'fire'
+const fusionElement=signatureElement||triadElement||'fire'
 const fusionClass=signatureElement==='earth'?'bastion':
   signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player={
@@ -23,12 +25,12 @@ const player={
   defeated_bosses:['zone_boss_'+fusionElement],
   class_nodes_unlocked:triadScenario?[]:
     [fusionClass+':'+fusionClass+'_t1a',fusionClass+':'+fusionClass+'_t1c'],
-  elemental_unlocked:triadScenario?ELEMENT_TREES.fire.nodes.slice(1).map(n=>n.id):
+  elemental_unlocked:triadScenario?ELEMENT_TREES[fusionElement].nodes.slice(1).map(n=>n.id):
     [1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n)
       .concat([fusionElement+'_aggr_ks']),
-  fusion_unlocked:triadScenario?['triad:fire']:
+  fusion_unlocked:triadScenario?['triad:'+fusionElement]:
     fused?[fusionClass+':'+fusionElement]:[],
-  fusion_mastery:triadScenario?{'triad:fire':0}:
+  fusion_mastery:triadScenario?{['triad:'+fusionElement]:0}:
     {[fusionClass+':'+fusionElement]:45},
   weapon_mastery:{sword:0},skill_levels:{},battle_skills:[],
   chapters_unlocked:[1],xp:0,skill_points:1,
@@ -51,7 +53,8 @@ useInventoryStore.setState({
     equipped_slot:'mainhand',atk_bonus:0,sockets_total:0,socketed_runes:[]}],
 })
 const encounter={name:boss?'Training Guardian':'Training Rival',
-  hp:signatureElement?180:48,atk:3,def:0,speed:3,weapon_type:'sword',xp:0,loot:[],icon:'👹'}
+  hp:signatureElement||triadScenario?180:48,atk:3,def:0,
+  speed:3,weapon_type:'sword',xp:0,loot:[],icon:'👹'}
 createRoot(document.getElementById('root')).render(
   <CombatScreen enemyData={encounter} isBoss={boss}
     onWin={()=>document.body.dataset.outcome='win'}

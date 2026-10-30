@@ -12,10 +12,12 @@ const scenario=new URLSearchParams(location.search).get('scenario')
 const signatureElement={
   'signature-fire':'fire','signature-earth':'earth','signature-lightning':'lightning'
 }[scenario]
-const triadScenario=scenario==='triad-fire'||scenario==='triad-victory'
+const triadElement=scenario==='triad-victory'?'fire':
+  scenario?.startsWith('triad-')?scenario.slice(6):null
+const triadScenario=Boolean(triadElement&&ELEMENT_TREES[triadElement])
 const fusionScenario=scenario==='fusion'||scenario==='fusion-victory'||
   Boolean(signatureElement)||triadScenario
-const fusionElement=signatureElement||'fire'
+const fusionElement=signatureElement||triadElement||'fire'
 const fusionClass=signatureElement==='earth'?'bastion':
   signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player = {
@@ -25,15 +27,15 @@ const player = {
   element:fusionScenario?fusionElement:'none',active_element:null,
   weapon_mastery:{sword:new URLSearchParams(location.search).get('scenario')==='mastery'?500000:0},
   skill_levels:{},elemental_unlocked:triadScenario
-    ?ELEMENT_TREES.fire.nodes.slice(1).map(n=>n.id)
+    ?ELEMENT_TREES[fusionElement].nodes.slice(1).map(n=>n.id)
     :fusionScenario?[1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n)
       .concat([fusionElement+'_aggr_ks']):[],
   defeated_bosses:fusionScenario?['zone_boss_'+fusionElement]:[],
   class_nodes_unlocked:triadScenario?[]:fusionScenario?[fusionClass+':'+fusionClass+'_t1a',
     fusionClass+':'+fusionClass+'_t1c']:[],
-  fusion_unlocked:triadScenario?['triad:fire']:
+  fusion_unlocked:triadScenario?['triad:'+fusionElement]:
     fusionScenario?[fusionClass+':'+fusionElement]:[],
-  fusion_mastery:triadScenario?{'triad:fire':0}:
+  fusion_mastery:triadScenario?{['triad:'+fusionElement]:0}:
     fusionScenario?{[fusionClass+':'+fusionElement]:45}:{},
   chapters_unlocked:[1],xp:0,skill_points:0,
 }
@@ -65,7 +67,8 @@ const victoryScenario=scenario==='victory'||scenario==='fusion-victory'||
 const enemyData={
   name:'Training Rats x3',groupSize:3,groupUnitName:'Training Rat',
   groupIcon:'🐀',groupWeapon:'dagger',icon:'🐀🐀🐀',
-  hp:victoryScenario?9:triadScenario?480:120,atk:6,speed:3,def:0,xp:0,loot:[],
+  hp:victoryScenario?9:triadScenario?480:120,atk:6,speed:3,
+  def:triadElement==='metal'?20:0,xp:0,loot:[],
 }
 createRoot(document.getElementById('root')).render(
   <GroupCombatScreen

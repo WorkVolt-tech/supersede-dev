@@ -225,6 +225,33 @@ async function verifyClasslessTriad(page) {
   console.log('PASS triad: classless path fuses 3 learned elemental attacks in one cast')
   await page.screenshot({path:'test-artifacts/triad-fire.png',fullPage:true})
 }
+async function verifyTriadSpecialties(page) {
+  const techniques={
+    water:'Abyssal Torrent',lightning:'Storm Circuit',
+    arcane:'Resonance Collapse',shadow:'Umbral Trinity',
+    earth:'Tectonic Ward',wind:'Cyclone Weave',plant:'Verdant Rebirth',
+    metal:'Iron Cataclysm',poison:'Plague Bloom',
+  }
+  for(const [element,technique] of Object.entries(techniques)){
+    const errors=[]
+    page.on('pageerror',error=>errors.push(error.message))
+    await page.goto(host+'/tests/browser/group-combat.html?scenario=triad-'+element,
+      {waitUntil:'networkidle'})
+    await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+    const action=page.locator('.combat-signature-action')
+    check((await action.textContent()).includes(technique),
+      element+': signature technique is absent from button')
+    await action.click()
+    await page.waitForFunction(technique=>document.querySelector('.combat-log')
+      ?.textContent.includes(technique),technique,{timeout:13000})
+    check(await page.locator('.combat-signature-burst.signature-triad.triad-'+
+      element).count()===1,element+': unique effect accent missing')
+    check(await page.locator('.combat-turn-banner').count()===1,
+      element+': battle frame did not render after triad')
+    check(errors.length===0,element+': runtime errors '+errors.join(' | '))
+    console.log('PASS triad specialty: '+element+' · '+technique)
+  }
+}
 async function verifyTriadVictory(page) {
   await page.goto(host+'/tests/browser/group-combat.html?scenario=triad-victory',
     {waitUntil:'networkidle'})
@@ -352,6 +379,7 @@ try{
   await verifyFusion(desktop)
   await verifySignatures(desktop)
   await verifyClasslessTriad(desktop)
+  await verifyTriadSpecialties(desktop)
   await verifyTriadVictory(desktop)
   await verifyFusionVictory(desktop)
   await verifyVictory(desktop)
