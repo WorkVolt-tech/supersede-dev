@@ -616,7 +616,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     </div>
     {target&&attackLegal&&!result&&
       <p className="combat-attack-preview" role="status">
-        {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} hit · {displayPattern.shape} pattern
+        {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} {previewSkill?'affected':'hit'} · {displayPattern.shape} pattern
       </p>}
     {previewSkill&&!displayPattern&&!result&&
       <p className="combat-attack-preview" role="status">{displayName} · self/support, no enemy squares targeted.</p>}

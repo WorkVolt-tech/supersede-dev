@@ -9,6 +9,7 @@ import { CLASSES, isClassNodeAvailable, isClassNodeUnlocked, unlockClassNode } f
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skillsRegistry'
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
+import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
 import './SkillsScreen.css'
 
 const BRANCHES = ['offense', 'defense', 'flow', 'arcane', 'decay']
@@ -210,8 +211,20 @@ export default function SkillsScreen({ onReturn }) {
         {upgradeableSkills.map(skill => {
           const level = getSkillLevel(player, skill.id)
           const cost = skillUpgradeCost(level)
+          const shape = getProgressedTacticalSkillRule(skill.id, level)
+          const nextLevel = [4,7,10].find(milestone => milestone > level)
+          const nextShape = nextLevel && getProgressedTacticalSkillRule(skill.id, nextLevel)
           return <div key={skill.id} className="skills-slot">
-            <span>{skill.label} · Lv {level}/{MAX_SKILL_LEVEL}</span>
+            <div className="skills-upgrade-label">
+              <span>{skill.label} · Lv {level}/{MAX_SKILL_LEVEL}</span>
+              {shape?.target==='enemy'&&<small>
+                Target area: {shape.shape}
+                {nextShape?.shape!==shape.shape
+                  ? ' · Lv '+nextLevel+': '+nextShape.shape
+                  : ''}
+              </small>}
+              {shape?.target==='self'&&<small>Support skill · no enemy area</small>}
+            </div>
             <button type="button" disabled={saving || level >= MAX_SKILL_LEVEL || points < cost}
               onClick={() => upgradeLearnedSkill(skill.id)}>
               {level >= MAX_SKILL_LEVEL ? 'MAX' : 'Upgrade · ' + cost + ' SP'}

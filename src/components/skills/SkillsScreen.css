@@ -52,3 +52,9 @@
 .skills-slot:disabled { opacity:.4; cursor:not-allowed; }
 .skills-message { border-left:3px solid #c9a66c; padding-left:10px; }
 @media(max-width:800px) { .skills-workspace { grid-template-columns:1fr; } .skills-map-scroll { max-height:520px; } .skills-detail { order:-1; } }
+
+/* Show the next tactical milestone beside the existing skill upgrade cost. */
+.skills-upgrade-label { display:flex; flex-direction:column; gap:4px; flex:1; min-width:0; }
+.skills-slot .skills-upgrade-label span { white-space:normal; overflow-wrap:anywhere; }
+.skills-upgrade-label small { font-size:10px; line-height:1.3; color:#b5a786; }
+.skills-slot button { flex-shrink:0; }
