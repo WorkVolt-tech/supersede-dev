@@ -5,6 +5,7 @@ import { useInventoryStore } from './store/useInventoryStore'
 import AuthPage from './components/auth/AuthPage'
 import SetupPage from './components/auth/SetupPage'
 import StartMenu from './components/menu/StartMenu'
+import TestsPreviewsPage from './components/menu/TestsPreviewsPage'
 import ChapterPage from './pages/ChapterPage'
 import Ch2ChapterPage from './pages/Ch2ChapterPage'
 import Ch3ChapterPage from './pages/Ch3ChapterPage'
@@ -159,20 +160,8 @@ export default function App() {
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
-  if (view === 'tests-previews') return <BookShell
-    eyebrow="Archive · Testing room" title="Tests & Previews"
-    subtitle="Experiment with sample items, formations and animations without changing story progress."
-    left={<>
-      <h2>Testing room</h2>
-      <p className="story-text">Select a test or preview. These activities are separate from your adventure.</p>
-      {TEST_PREVIEW_ENTRIES.map(entry=><button key={entry.view}
-        className="reading-chapter" title={entry.sub} onClick={()=>navigate(entry.view)}>
-        {entry.label}<small>{entry.sub}</small>
-      </button>)}
-      <button className="reading-action" onClick={()=>setView('menu')}>← Return to Archive</button>
-    </>}
-    right={<PlayerRecord player={player} onNavigate={navigate} />}
-  />
+  if (view === 'tests-previews') return <TestsPreviewsPage
+    player={player} onPick={navigate} onReturn={()=>setView('menu')} />
   if (view === 'resonance-weaver-adventure') return <BookShell eyebrow="Profession · Resonance Weaver" title="The Shattered Harmony" subtitle="Restore an unstable resonance." left={<ResonanceWeaverAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'engineer-adventure') return <BookShell eyebrow="Profession · Engineer" title="Rise of the Machines" subtitle="Build, repair, and face your creation." left={<EngineerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'pathfinder-adventure') return <BookShell eyebrow="Profession · Pathfinder" title="The Forgotten World" subtitle="Discover what the System left behind." left={<PathfinderAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
