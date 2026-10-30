@@ -132,3 +132,10 @@ test('Fault Line pierces enemy DEF with Earth offensive tier unlocked', () => {
   assert.equal(stonebornArmorPierce({...earth,elemental_unlocked:[]},status,100),0)
   assert.equal(stonebornArmorPierce(earth,{cfx_stonebornStacks:0},100),0)
 })
+
+test('elemental dodge ward matches the original 50% chance', () => {
+  const dodged = resolveKeystoneDefense({cfx_dodgeBuffTurns:2}, 20, () => 0.49)
+  assert.equal(dodged.damage, 0)
+  const hit = resolveKeystoneDefense({cfx_dodgeBuffTurns:2}, 20, () => 0.50)
+  assert.equal(hit.damage, 20)
+})
