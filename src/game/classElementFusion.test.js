@@ -4,7 +4,8 @@ import {ELEMENT_TREES} from './elementsTree.js'
 import {CLASSES} from './classes.js'
 import {getFusionEligibility,unlockFusionPair,getActiveFusion,
   fusionMasteryLevel,awardFusionPractice,getFusionRider,getFusionSignature,
-  selectFusionChainTargets,FUSION_MP_COST} from './classElementFusion.js'
+  selectFusionChainTargets,FUSION_MP_COST,
+  committedFusionKey,getElementalTriadEligibility,unlockElementalTriad} from './classElementFusion.js'
 
 function player(cls='ghostblade',element='fire') {
   return {level:25,skill_points:6,active_class:cls,element,
@@ -93,4 +94,30 @@ test('buying fusion does not rewrite a class tree or elemental tree',()=>{
   assert.ok(!('elemental_unlocked' in unlock))
   assert.ok(!('weapon_mastery' in unlock))
   assert.ok(!('skill_levels' in unlock))
+})
+
+test('one permanent slot blocks all second class-element purchases',()=>{
+  const first=player('ghostblade','fire')
+  const chosen=unlockFusionPair(first,'fire')
+  const withFusion={...first,...chosen}
+  assert.equal(committedFusionKey(withFusion),'ghostblade:fire')
+  assert.equal(unlockFusionPair(withFusion,'fire'),null)
+  const second={...withFusion,element:'water',
+    defeated_bosses:[ELEMENT_TREES.water.bossKey],
+    elemental_unlocked:ELEMENT_TREES.water.nodes.slice(1,7).map(n=>n.id)}
+  assert.equal(getFusionEligibility(second,'water').lockedByOther,true)
+  assert.equal(unlockFusionPair(second,'water'),null)
+  assert.equal(getActiveFusion(second),null)
+  const third={...withFusion,active_class:'bastion',
+    class_nodes_unlocked:['bastion:bastion_t1a','bastion:bastion_t1c']}
+  assert.equal(unlockFusionPair(third,'fire'),null)
+  assert.deepEqual(chosen.fusion_unlocked,['ghostblade:fire'])
+})
+test('triad and class-element fusion cannot consume the same slot',()=>{
+  const p=player('ghostblade','fire')
+  const chosen=unlockFusionPair(p,'fire')
+  const classless={...p,...chosen,active_class:null,
+    elemental_unlocked:ELEMENT_TREES.fire.nodes.slice(1).map(n=>n.id)}
+  assert.equal(getElementalTriadEligibility(classless,'fire').lockedByOther,true)
+  assert.equal(unlockElementalTriad(classless,'fire'),null)
 })

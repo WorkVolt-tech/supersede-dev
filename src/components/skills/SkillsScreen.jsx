@@ -10,7 +10,8 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
-import { getFusionEligibility, unlockFusionPair, fusionMasteryLevel,
+import { getFusionEligibility, unlockFusionPair, getElementalTriadEligibility,
+  unlockElementalTriad, committedFusionKey, fusionMasteryLevel,
   getFusionSignature, FUSION_UNLOCK_COST,
   FUSION_MIN_LEVEL, FUSION_MIN_CLASS_NODES, FUSION_MIN_ELEMENT_NODES } from '../../game/classElementFusion'
 import './SkillsScreen.css'
@@ -57,6 +58,7 @@ export default function SkillsScreen({ onReturn }) {
   const [selected, setSelected] = useState(null)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [confirmFusion, setConfirmFusion] = useState(null)
 
   const isElement = tab.startsWith('element:')
   const isClass = tab.startsWith('class:')
@@ -127,11 +129,30 @@ export default function SkillsScreen({ onReturn }) {
     await save(updates, element.label+' is now your active combat element.')
   }
 
-  async function unlockFusion(element) {
+  async function unlockFusion(element,kind='class-element') {
     if(saving)return
-    const updates=unlockFusionPair(player,element)
-    if(!updates) {setMessage('Fusion requirements are not met yet.');return}
-    await save(updates,'Class–element fusion unlocked for '+player.active_class+' + '+element+'.')
+    const eligibility=kind==='triad'
+      ?getElementalTriadEligibility(player,element)
+      :getFusionEligibility(player,element)
+    if(!eligibility.canUnlock){
+      setMessage(eligibility.lockedByOther
+        ?'Your only fusion slot is already permanently committed.'
+        :'Fusion requirements are not met yet.')
+      return
+    }
+    if(confirmFusion!==eligibility.pair) {
+      setConfirmFusion(eligibility.pair)
+      setMessage('Permanent choice: confirm to lock '+eligibility.pair+
+        ' as this character’s ONLY fusion.')
+      return
+    }
+    const updates=kind==='triad'
+      ?unlockElementalTriad(player,element)
+      :unlockFusionPair(player,element)
+    setConfirmFusion(null)
+    if(!updates)return
+    await save(updates,(kind==='triad'?'Elemental Triad':'Class–element')+
+      ' fusion permanently unlocked: '+eligibility.pair+'.')
   }
 
   async function equipAttack(key) {
@@ -166,7 +187,9 @@ export default function SkillsScreen({ onReturn }) {
   }
   const status = selectedNode && (unlocked.includes(selectedNode.id) ? 'Learned' : available(selectedNode) ? 'Available' : 'Locked')
   const selectedColor = isElement ? element.color : isClass ? cls.color : COLORS[tab]
-  function choose(next) { setTab(next); setSelected(null); setMessage('') }
+  function choose(next) {
+    setTab(next); setSelected(null); setMessage(''); setConfirmFusion(null)
+  }
 
   return <main className="skills-screen">
     <header className="skills-header">
@@ -209,6 +232,7 @@ export default function SkillsScreen({ onReturn }) {
               return <div className="skills-fusion-unlock">
                 <h3>✦ Class–element fusion</h3>
                 <p>{player.active_class} + {elementKey} · {fusion.unlocked?'Unlocked':
+                  fusion.lockedByOther?'Fusion slot already taken':
                   fusion.ready?'Ready to unlock':'Not yet eligible'}</p>
                 <p>Requires character Lv {FUSION_MIN_LEVEL}, {FUSION_MIN_CLASS_NODES}
                   {' '}learned class nodes and {FUSION_MIN_ELEMENT_NODES} elemental nodes.
@@ -217,17 +241,45 @@ export default function SkillsScreen({ onReturn }) {
                 {fusion.unlocked
                   ?<div>
                     <p>Fusion Mastery Lv {fusionLevel}/10 · {fusionXp} XP.
-                      This pairing keeps its own progress when you change elements.</p>
+                      Your single permanent fusion keeps its progress if you change
+                      active elements. Other pairings cannot be unlocked.</p>
                     {signature&&<p>✦ Signature: <strong>{signature}</strong>
                       {' · '}{fusionLevel>=5?'Available in combat':'Unlocks at Fusion Lv 5'}.
                       {' '}Attack pattern expands at Fusion Lv 8 and Lv 10.</p>}
                     {!signature&&<p>This pairing has an elemental infusion, with
                       independent fusion mastery. No signature active is defined yet.</p>}
                   </div>
-                  :<button type="button" disabled={saving||!fusion.canUnlock}
-                    onClick={()=>unlockFusion(elementKey)}>
-                    Unlock this fusion · {FUSION_UNLOCK_COST} SP
-                  </button>}
+                  :fusion.lockedByOther
+                    ?<p>Already committed to {fusion.committed}. One fusion per character.</p>
+                    :<button type="button" disabled={saving||!fusion.canUnlock}
+                      onClick={()=>unlockFusion(elementKey)}>
+                      {confirmFusion===fusion.pair?'Confirm PERMANENT fusion':
+                        'Choose this fusion'} · {FUSION_UNLOCK_COST} SP
+                    </button>}
+              </div>
+            })()}
+            {!player.active_class&&(()=>{
+              const triad=getElementalTriadEligibility(player,elementKey)
+              const fusionXp=Math.max(0,player.fusion_mastery?.[triad.pair]||0)
+              return <div className="skills-fusion-unlock">
+                <h3>✦ Elemental Triad Fusion</h3>
+                <p>Classless elemental path: combine all three unlocked {elementKey}
+                  {' '}attacks into one independent technique.
+                  Requires level {FUSION_MIN_LEVEL} and 19 learned elemental nodes.
+                  Cost: {FUSION_UNLOCK_COST} skill points.</p>
+                {triad.unlocked
+                  ?<p>Committed fusion: {triad.pair} · Fusion Mastery
+                    {' '}Lv {fusionMasteryLevel(fusionXp)}/10 · {fusionXp} XP.
+                    Three elemental attacks fuse during combat, while their
+                    original individual skills remain available.</p>
+                  :triad.lockedByOther
+                    ?<p>Only fusion slot already committed to {triad.committed}.
+                      You cannot purchase another fusion.</p>
+                    :<button type="button" disabled={saving||!triad.canUnlock}
+                      onClick={()=>unlockFusion(elementKey,'triad')}>
+                      {confirmFusion===triad.pair?'Confirm PERMANENT Elemental Triad':
+                        'Choose Elemental Triad'} · {FUSION_UNLOCK_COST} SP
+                    </button>}
               </div>
             })()}
           </div>}
