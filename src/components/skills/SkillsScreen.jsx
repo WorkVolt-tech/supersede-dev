@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { SKILL_NODES } from '../../game/skillTreeNodes'
 import { ELEMENT_TREES, isElementUnlocked } from '../../game/elementsTree'
+import { getActiveElement, activeElementChange } from '../../game/activeElement'
 import { CLASSES, isClassNodeAvailable, isClassNodeUnlocked, unlockClassNode } from '../../game/classes'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skillsRegistry'
 import './SkillsScreen.css'
@@ -63,6 +64,7 @@ export default function SkillsScreen({ onReturn }) {
   const selectedNode = nodes.find(n => n.id===selected) || null
   const points = player.skill_points || 0
   const shards = player.resonance_shards || 0
+  const activeElement = getActiveElement(player)
   const slots = player.battle_skills || []
 
   function prerequisitesMet(node) {
@@ -107,6 +109,16 @@ export default function SkillsScreen({ onReturn }) {
       await save(updates, node.label+' unlocked.')
     }
   }
+  async function activateSelectedElement() {
+    if (!isElement || saving) return
+    const updates = activeElementChange(player, elementKey)
+    if (!updates) {
+      setMessage(activeElement === elementKey ? 'This element is already active.' : 'Defeat this zone guardian before activating its element.')
+      return
+    }
+    await save(updates, element.label+' is now your active combat element.')
+  }
+
   async function toggleSlot(key) {
     if (saving) return
     const next = slots.includes(key) ? slots.filter(s => s!==key) : [...slots,key]
@@ -128,9 +140,10 @@ export default function SkillsScreen({ onReturn }) {
     <nav className="skills-tabs" aria-label="Skill tree branches">
       {BRANCHES.map(b => <button key={b} className={tab===b?'active':''} onClick={() => choose(b)}>{b}</button>)}
     </nav>
-    <div className="skills-section-label">Elemental paths · unlocked by defeating their zone bosses</div>
+    <div className="skills-section-label">Elemental paths · learn multiple trees, activate one for combat</div>
+    <p className="skills-resonance-status">Active combat element: <strong>{activeElement ? ELEMENT_TREES[activeElement]?.sigil+' '+ELEMENT_TREES[activeElement]?.label : 'None selected'}</strong>. Only nodes from your active element contribute combat bonuses. Learned nodes in other trees stay saved.</p>
     <nav className="skills-tabs elemental" aria-label="Elemental paths">
-      {Object.values(ELEMENT_TREES).map(el => <button key={el.key} className={tab==='element:'+el.key?'active':''} onClick={() => choose('element:'+el.key)}>{el.sigil} {el.label}{!isElementUnlocked(el.key,player)?' 🔒':''}</button>)}
+      {Object.values(ELEMENT_TREES).map(el => <button key={el.key} className={tab==='element:'+el.key?'active':''} onClick={() => choose('element:'+el.key)}>{el.sigil} {el.label}{activeElement===el.key?' ★ ACTIVE':''}{!isElementUnlocked(el.key,player)?' 🔒':''}</button>)}
     </nav>
     <div className="skills-section-label">Class paths · chosen through the Judges' story</div>
     {player.active_class
@@ -143,6 +156,7 @@ export default function SkillsScreen({ onReturn }) {
         <div className="skills-tree-heading">
           <h2 style={{color:selectedColor}}>{isElement ? element.sigil+' '+element.label : isClass ? cls.name : tab+' path'}</h2>
           <p>{isElement && !isElementUnlocked(elementKey,player) ? 'Defeat the zone boss to unlock this element.' : isClass && player.active_class!==classKey ? 'Class path preview. Your class is chosen through the story.' : 'Select a node to inspect its requirements and unlock it.'}</p>
+          {isElement && isElementUnlocked(elementKey,player) && (activeElement === elementKey ? <p className="skills-resonance-active">★ This element is active in combat</p> : <button type="button" className="skills-primary" disabled={saving} onClick={activateSelectedElement}>Activate {element.label} for combat</button>)}
         </div>
         <TreeMap nodes={nodes} unlocked={unlocked} available={available} selected={selected} onSelect={setSelected} color={selectedColor} />
       </div>
