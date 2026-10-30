@@ -49,6 +49,8 @@ jobs:
         run: npm run build
       - name: Validate browser-test script syntax
         run: node --check tests/browser/group-combat-smoke.mjs
+      - name: Validate Archive browser-test script syntax
+        run: node --check tests/browser/archive-ui-smoke.mjs
       - name: Install isolated Chromium smoke-test tools
         run: |
           npm install --no-save --package-lock=false playwright@1.56.1
@@ -57,6 +59,8 @@ jobs:
         run: node tests/browser/group-combat-smoke.mjs
       - name: Test real 1v1 and boss fusion combat in Chromium
         run: node tests/browser/single-combat-smoke.mjs
+      - name: Test Archive menu and Skills stats in desktop/mobile Chromium
+        run: node tests/browser/archive-ui-smoke.mjs
       - name: Upload battlefield screenshots
         if: always()
         uses: actions/upload-artifact@v4
