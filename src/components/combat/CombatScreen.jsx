@@ -35,11 +35,14 @@ import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRege
   initialSingleFusionGuard } from '../../game/singleFusionCombat'
 import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
-  tacticalWeaponType, getTacticalAttacks, isTacticalTargetValid,
+  tacticalWeaponType, getPlayerTacticalAttacks,
+  startImprovisedThrowRecovery, improvisedThrowTurnsRemaining,
+  tacticalAttackDescription, getTacticalAttacks, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
+import CombatActionPoints from './CombatActionPoints'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
@@ -156,7 +159,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [busy, setBusy] = useState(false)
   const weaponItem = equipped.find(item => item.equipped_slot === 'mainhand')
   const weaponType = tacticalWeaponType(weaponItem ? equipmentSubtype(weaponItem) : null)
-  const weaponAttacks = getTacticalAttacks(weaponType, [], (player.weapon_mastery || {})[weaponType] || 0)
+  const weaponAttacks = getPlayerTacticalAttacks(Boolean(weaponItem),weaponType,
+    (player.weapon_mastery || {})[weaponType] || 0)
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
@@ -165,6 +169,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [actionPoints, setActionPoints] = useState(2)
   const actionPointsRef = useRef(2)
   const roundStartedRef = useRef(false)
+  const roundRef=useRef(1)
+  const [round,setRound]=useState(1)
+  const throwReadyRef=useRef(0)
+  const [throwReady,setThrowReady]=useState(0)
   const masteryHitsRef = useRef(0)
   const [keystoneCooldowns, setKeystoneCooldowns] = useState({})
   const [elementalCooldowns, setElementalCooldowns] = useState({})
@@ -544,6 +552,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     let newEnemyHp = Math.max(0, foeHp - dmg)
+    if(attack.thrown&&dmg>0){
+      const ready=startImprovisedThrowRecovery(roundRef.current,enemyPosition.rank)
+      throwReadyRef.current=ready;setThrowReady(ready)
+      setSelectedAttackId(null)
+      pushLog('Your thrown object will be recovered '+(enemyPosition.rank===1
+        ?'next round.':'in two rounds.'))
+    }
     ;({foeHp:newEnemyHp,playerHp}=infuseSingleHit(newEnemyHp,playerHp,dmg))
     setEnemyHp(newEnemyHp)
     setCurrentHp(playerHp)
@@ -672,7 +687,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (busy || result || !entranceReady) return
     const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
     if (action==='attack' && (!attack ||
-      !isTacticalTargetValid(attack,heroPosition,enemyPosition))) return
+      !isTacticalTargetValid(attack,heroPosition,enemyPosition) ||
+      (attack.thrown&&improvisedThrowTurnsRemaining(
+        throwReadyRef.current,roundRef.current)>0))) return
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
       moveTo.rank<0||moveTo.rank>2 ||
       Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
@@ -810,6 +827,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         !(action==='elemental' && skillId==='metal_ultimate_iron_domain'))
       statusEffectsRef.current.cfx_ironDomainTurns--
     roundStartedRef.current=false
+    roundRef.current+=1;setRound(roundRef.current)
     actionPointsRef.current=2
     setActionPoints(2)
     if (playerHp<=0) await endCombat('lose',playerHp)
@@ -820,6 +838,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
   const keystones = getUnlockedKeystones(combatPlayer, keystoneCooldowns)
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
+  const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
+  const throwUnavailable=selectedAttack.thrown&&throwTurns>0
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -854,13 +874,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
       {!result && <>
         <div className="combat-tactical-status">
-          <strong>{actionPoints}/2 AP</strong>
-          <span>{weaponType.toUpperCase()} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
+          <span>{weaponItem?weaponType.toUpperCase():'NO WEAPON EQUIPPED · BASIC COMBAT'}
+            {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
             {' · '}{(player.weapon_mastery||{})[weaponType]||0} XP
             {nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)!==null &&
               ' / '+nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)}
           </span>
         </div>
+        <CombatActionPoints ap={actionPoints} />
         {activeFusion && <div className="combat-fusion-status">
           <span>✦ {activeFusion.kind==='triad'
               ?activeFusion.element+' Elemental Triad'
@@ -891,7 +912,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             squares:getTacticalAffectedSquares(signature.attack,
               signature.target==='self'?heroPosition:enemyPosition)
           }:null}
-          canAttack={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
+          canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
           onAttack={()=>takeTurn('attack',selectedAttack.id)} />
@@ -899,11 +920,23 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
             className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
             aria-pressed={selectedAttack.id===attack.id}
-            disabled={busy || !entranceReady || actionPoints<attack.ap}
+            disabled={busy || !entranceReady || actionPoints<attack.ap||
+              (attack.thrown&&throwTurns>0)}
             onClick={()=>setSelectedAttackId(attack.id)}>
             {attack.label}{attack.fallback?' · Emergency':''}
-            <span className="combat-action-sub">{attack.reach} · {attack.shape} · {attack.ap} AP</span>
+            <span className="combat-action-sub">
+              {attack.ap} AP · {tacticalAttackDescription(attack)}
+              {attack.thrown&&throwTurns>0?' · Recovering ('+throwTurns+' rounds)':''}
+            </span>
           </button>)}
+        </div>
+        <div className="combat-attack-details" role="status">
+          <strong>{selectedAttack.label} · {selectedAttack.ap} AP</strong>
+          <p>{tacticalAttackDescription(selectedAttack)}</p>
+          {throwTurns>0&&!weaponItem&&<p className="combat-recovery-status">
+            Thrown object recovery: {throwTurns} round{throwTurns===1?'':'s'} remaining.
+            Basic Strike is still available.
+          </p>}
         </div>
         <div className="combat-actions">
           <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
