@@ -195,6 +195,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (!stunned && (statusEffectsRef.current.cfx_longDecayStacks || 0) > 0) {
       aiDmg = Math.max(0, aiDmg - 3 * statusEffectsRef.current.cfx_longDecayStacks)
     }
+    if (!stunned && statusEffectsRef.current.cfx_tornadoTurns > 0) {
+      aiDmg = Math.round(aiDmg * 0.7)
+      statusEffectsRef.current.cfx_tornadoTurns -= 1
+      messages.push('Tornado Field weakens the enemy attack.')
+    }
     // AI keeps full ownership of move selection and damage. The move key
     // only tells the Chapter 1 portrait which attack to animate.
     if (CH1_BOSS_ENTRANCE_MS[enemyData.name] > 0) {
@@ -268,6 +273,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (legendary.has('legendary_forger') && wasCrit) dmg += 12
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
+    if (statusEffectsRef.current.cfx_ironDomainTurns > 0) dmg *= 2
     const keystoneHit = resolveKeystoneStrike(statusEffectsRef.current, dmg, wasCrit)
     dmg = keystoneHit.damage
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
@@ -427,6 +433,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setDefending(false)
     setKeystoneCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'keystone' ? skillId : null))
     setElementalCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'elemental' ? skillId : null))
+    if (statusEffectsRef.current.cfx_ironDomainTurns > 0 &&
+        !(action === 'elemental' && skillId === 'metal_ultimate_iron_domain')) {
+      statusEffectsRef.current.cfx_ironDomainTurns -= 1
+    }
     if (playerHp <= 0) await endCombat('lose', playerHp)
     else if (foeHp <= 0) await endCombat('win', playerHp)
     setBusy(false)
