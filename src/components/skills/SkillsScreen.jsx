@@ -4,7 +4,7 @@ import { usePlayerStore } from '../../store/usePlayerStore'
 import { SKILL_NODES } from '../../game/skillTreeNodes'
 import { ELEMENT_TREES, isElementUnlocked } from '../../game/elementsTree'
 import { getActiveElement, activeElementChange } from '../../game/activeElement'
-import { getElementalAttackProgress, equipElementalAttack, isElementalAttack } from '../../game/elementalAttacks'
+import { getElementalAttackProgress, equipElementalAttack, isElementalAttack, countLearnedElementNodes } from '../../game/elementalAttacks'
 import { CLASSES, isClassNodeAvailable, isClassNodeUnlocked, unlockClassNode } from '../../game/classes'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skillsRegistry'
 import './SkillsScreen.css'
@@ -168,7 +168,7 @@ export default function SkillsScreen({ onReturn }) {
           <p>{isElement && !isElementUnlocked(elementKey,player) ? 'Defeat the zone boss to unlock this element.' : isClass && player.active_class!==classKey ? 'Class path preview. Your class is chosen through the story.' : 'Select a node to inspect its requirements and unlock it.'}</p>
           {isElement && isElementUnlocked(elementKey,player) && (activeElement === elementKey ? <p className="skills-resonance-active">★ This element is active in combat</p> : <button type="button" className="skills-primary" disabled={saving} onClick={activateSelectedElement}>Activate {element.label} for combat</button>)}
           {isElement && isElementUnlocked(elementKey,player) && <div className="skills-elemental-attacks">
-            <h3>Elemental attacks · {unlocked.length}/19 nodes</h3>
+            <h3>Elemental attacks · {countLearnedElementNodes(player, elementKey)}/19 nodes</h3>
             {elementalAttacks.map(skill => <div key={skill.id} className="skills-elemental-attack">
               <span><strong>{skill.label}</strong> · {skill.requiredNodes} nodes {skill.unlocked ? '✓' : '🔒'}</span>
               {skill.unlocked && <button type="button" disabled={saving || skill.equipped} onClick={() => equipAttack(skill.id)}>{skill.equipped ? 'Equipped' : 'Equip'}</button>}
