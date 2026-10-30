@@ -18,9 +18,12 @@ import { resolveElementalTriad, triadArmorPierce } from '../../game/elementalTri
 import { getActiveFusion, getFusionRider, getFusionEligibility, awardFusionPractice,
   selectFusionChainTargets, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
-import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
+import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
+  improvisedThrowTurnsRemaining, tacticalAttackDescription,
+  getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
+import CombatActionPoints from './CombatActionPoints'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
   makeGroupField, advanceGroupFields, planGroupMultiHits,
   groupKeystoneHitDamages, previewGroupAttack } from '../../game/tacticalGroups'
@@ -100,7 +103,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const mpRegen=getCombatMpRegen(combatPlayer)
   const weapon=equipped.find(i=>i.equipped_slot==='mainhand')
   const weaponType=tacticalWeaponType(weapon?equipmentSubtype(weapon):null)
-  const weaponKit=getTacticalAttacks(weaponType,[],(player.weapon_mastery||{})[weaponType]||0)
+  const weaponKit=getPlayerTacticalAttacks(Boolean(weapon),weaponType,
+    (player.weapon_mastery||{})[weaponType]||0)
   const activeFusion=getActiveFusion(player)
   const fusionEligibility=getFusionEligibility(player,getActiveElement(player))
   const signature=getFusionSignatureAction(activeFusion)
@@ -122,6 +126,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const [ap,setAp]=useState(2)
   const apRef=useRef(2)
   const roundStartedRef=useRef(false)
+  const roundRef=useRef(1)
+  const [round,setRound]=useState(1)
+  const throwReadyRef=useRef(0)
+  const [throwReady,setThrowReady]=useState(0)
   const defendingRef=useRef(false)
   const legendaryTurnRef=useRef(0)
   const busyRef=useRef(false)
@@ -416,6 +424,13 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
     const affected=applyDamage(units,attack,id,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,id)
+    if(attack.thrown&&affected.targets.length){
+      const ready=startImprovisedThrowRecovery(roundRef.current,target.rank)
+      throwReadyRef.current=ready;setThrowReady(ready)
+      setSelectedAttack(null)
+      note('Your thrown object will be recovered '+(target.rank===1
+        ?'next round.':'in two rounds.'))
+    }
     if(keystone.heal)updateHp(hpRef.current+keystone.heal)
     note(attack.label+': '+affected.targets.length+' target(s), '+damage+' damage'+(crit?' · Critical!':'')+'.')
     mod?.messages?.forEach(note);keystone.messages?.forEach(note)
@@ -683,6 +698,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     defendingRef.current=false
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
     roundStartedRef.current=false
+    roundRef.current+=1;setRound(roundRef.current)
     apRef.current=2;setAp(2)
   }
   function isFreeClass(id){
@@ -697,7 +713,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(busyRef.current||pendingRef.current)return
     const target=nextAliveTarget(foesRef.current,kind==='attack'?id:focus)
     const selected=kind==='attack'?attack:null
-    if(kind==='attack'&&(!target||!isTacticalTargetValid(selected,heroRef.current,target)))return
+    if(kind==='attack'&&(!target||!isTacticalTargetValid(selected,heroRef.current,target)||
+      (selected?.thrown&&improvisedThrowTurnsRemaining(
+        throwReadyRef.current,roundRef.current)>0)))return
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
@@ -746,7 +764,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if((['attack','skill','elemental'].includes(kind) ||
            (kind==='signature'&&signature?.target==='enemy')) &&
         (!liveTarget || (kind==='attack'
-          ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)
+          ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)||
+            (attack.thrown&&improvisedThrowTurnsRemaining(
+              throwReadyRef.current,roundRef.current)>0)
           : kind==='signature'
           ? !planFusionSignature(signature,foesRef.current,liveTarget.id,heroRef.current).valid
           : !canUseTacticalSkill(id,heroRef.current,liveTarget,getSkillLevel(player,id))))){
@@ -799,6 +819,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const preview=previewGroupAttack(foes,displayPattern,hero,chosen)
   const attackLegal=previewGroupAttack(foes,attack,hero,chosen).valid
   const canPlay=!busy&&!result
+  const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
+  const throwUnavailable=attack.thrown&&throwTurns>0
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/2 AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
@@ -824,9 +846,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       </button>)}
     </div>
     <div className="combat-tactical-status">
-      <span>Weapon: {weaponType} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}</span>
-      <strong>{ap} AP</strong>
+      <span>{weapon?'Weapon: '+weaponType:'No weapon equipped · Basic combat'}
+        {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
+      </span>
     </div>
+    <CombatActionPoints ap={ap}/>
     {activeFusion&&!result&&<div className="combat-fusion-status">
       <span>✦ {activeFusion.kind==='triad'
         ?activeFusion.element+' Elemental Triad'
@@ -869,14 +893,26 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <div className="combat-tactical-weapons">
         {weaponKit.map(item=><button key={item.id} type="button"
           className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
-          disabled={!canPlay} aria-pressed={item.id===attack.id}
+          disabled={!canPlay||(item.thrown&&throwTurns>0)}
+          aria-pressed={item.id===attack.id}
           onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)}}>
-          {item.label}<span className="combat-action-sub">{item.reach} · {item.shape} · {item.ap} AP</span>
+          {item.label}
+          <span className="combat-action-sub">{item.ap} AP · {tacticalAttackDescription(item)}
+            {item.thrown&&throwTurns>0?' · Recovering ('+throwTurns+' rounds)':''}
+          </span>
         </button>)}
+      </div>
+      <div className="combat-attack-details" role="status">
+        <strong>{attack.label} · {attack.ap} AP</strong>
+        <p>{tacticalAttackDescription(attack)}</p>
+        {throwTurns>0&&!weapon&&<p className="combat-recovery-status">
+          Thrown object recovery: {throwTurns} round{throwTurns===1?'':'s'} remaining.
+          Basic Strike is still available.
+        </p>}
       </div>
       <div className="combat-actions">
         <button type="button" className="combat-action-btn"
-          disabled={!canPlay||!attackLegal||ap<attack.ap}
+          disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap}
           onClick={()=>takeTurn('attack',chosen)}>Use {attack.label} · {attack.ap} AP</button>
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
           onClick={()=>takeTurn('defend')}>Defend · 2 AP</button>
