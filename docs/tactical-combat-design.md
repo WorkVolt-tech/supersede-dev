@@ -199,3 +199,31 @@ All 1v1, boss and 3×3 encounters use the same signature definitions:
   survivors. In solo fights, those arcs converge on the one enemy.
 Animated signature flashes show affected battlefield squares and a small
 signature banner. All visuals have reduced-motion support.
+
+## One lifetime fusion choice per character (class + element OR elemental triad)
+
+A player may commit to exactly **one** fusion for the character. The
+`fusion_unlocked` array now contains either one `class:element` pairing
+or one `triad:element` key, never both. Changing the active element
+does not transfer the chosen fusion to the new element. A confirmation
+step in Skills warns the choice is permanent. On SupaSede the constraint
+`players_max_one_fusion` enforces maximum array length 1; trigger
+`prevent_fusion_reassignment` blocks changing or clearing a character's
+first saved choice. Existing class definitions and unlocked class/element
+nodes remain unmodified.
+
+The classless elemental-user path (no `active_class`) may instead learn
+**Elemental Triad Fusion** once the player reaches Lv 25, defeats the
+chosen elemental guardian, learns all 19 nodes in that tree, and spends
+2 skill points. It permanently commits the one fusion slot to that element.
+The three existing attacks for that **one active element** (the 7-, 13-,
+and 19-node attack tiers) combine into a single cast using their existing
+attack damage, effects and skill levels at 65% each. The original three
+attacks remain learned and separately usable as before. It costs 2 AP,
+20 MP and has a four-round cooldown. One fusion XP is awarded per cast,
+up to the existing per-fight cap, after victory. It starts as a 3×3
+cross, grows to diamond2 at Fusion Lv 5 and all enemy cells at Lv 8.
+When a component creates a persistent status or hazard, the triad applies
+it only once rather than triggering a second independent attack/cooldown.
+The triad runs in both group and solo/boss combat, and its active element
+still obeys the one-element-at-a-time rule.

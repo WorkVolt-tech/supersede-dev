@@ -43,7 +43,8 @@ jobs:
             src/game/tacticalSkills.test.js \
             src/game/classElementFusion.test.js \
             src/game/singleFusionCombat.test.js \
-            src/game/signatureFusion.test.js
+            src/game/signatureFusion.test.js \
+            src/game/elementalTriad.test.js
       - name: Build React application
         run: npm run build
       - name: Validate browser-test script syntax
