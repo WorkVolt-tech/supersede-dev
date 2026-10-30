@@ -11,6 +11,7 @@ import Ch3ChapterPage from './pages/Ch3ChapterPage'
 import InventoryDemoPage from './pages/InventoryDemoPage'
 import CombatDemoPage from './pages/CombatDemoPage'
 import JudgesPreviewPage from './pages/JudgesPreviewPage'
+import ChapterOneBossPreviewPage from './pages/ChapterOneBossPreviewPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
 import BookShell from './components/book/BookShell'
@@ -120,6 +121,7 @@ export default function App() {
     'inventory-demo': <InventoryDemoPage />,
     'combat-demo': <CombatDemoPage />,
     'judges-preview': <JudgesPreviewPage onReturn={() => setView('menu')} />,
+    'ch1-boss-preview': <ChapterOneBossPreviewPage onReturn={() => setView('menu')} />,
     drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} />,
     drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} />,
   }
