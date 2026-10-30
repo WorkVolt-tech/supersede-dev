@@ -7,6 +7,7 @@ import SetupPage from './components/auth/SetupPage'
 import StartMenu from './components/menu/StartMenu'
 import ChapterPage from './pages/ChapterPage'
 import Ch2ChapterPage from './pages/Ch2ChapterPage'
+import Ch3ChapterPage from './pages/Ch3ChapterPage'
 import InventoryDemoPage from './pages/InventoryDemoPage'
 import CombatDemoPage from './pages/CombatDemoPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
@@ -112,6 +113,7 @@ export default function App() {
   const screens = {
     ch1: <ChapterPage />,
     ch2: <Ch2ChapterPage />,
+    ch3: <Ch3ChapterPage />,
     farming: <FarmingAreas onReturn={() => setView('menu')} />,
     inventory: <InventoryScreen />,
     'inventory-demo': <InventoryDemoPage />,
@@ -124,7 +126,6 @@ export default function App() {
     trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
     lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
     badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
-    ch3: ['Chapter 3 · Signal Hunters', 'Chapter 3 has been unlocked, but its original story engine has not yet been migrated to React. Its cipher puzzle will appear at the appropriate story moment when the chapter is restored.'],
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
@@ -170,15 +171,15 @@ export default function App() {
     right={<PlayerRecord player={player} onNavigate={navigate} />}
   />
 
-  const isChapter = view === 'ch1' || view === 'ch2'
+  const isChapter = view === 'ch1' || view === 'ch2' || view === 'ch3'
   if (isChapter) {
     return <BookShell
-      eyebrow={`The story · ${view === 'ch1' ? 'Chapter I' : 'Chapter II'}`}
-      title={view === 'ch1' ? 'Awakening' : 'Broken Alliances'}
+      eyebrow={`The story · ${view === 'ch1' ? 'Chapter I' : view === 'ch2' ? 'Chapter II' : 'Chapter III'}`}
+      title={view === 'ch1' ? 'Awakening' : view === 'ch2' ? 'Broken Alliances' : 'Signal Hunters'}
       subtitle="Read, choose, and shape the world. Your journey is being recorded."
       left={screens[view]}
       right={<PlayerRecord player={player} onNavigate={navigate} />}
-      footer={`${view === 'ch1' ? 'I' : 'II'} · SuperSede · Living Archive`} />
+      footer={`${view === 'ch1' ? 'I' : view === 'ch2' ? 'II' : 'III'} · SuperSede · Living Archive`} />
   }
 
   return (
