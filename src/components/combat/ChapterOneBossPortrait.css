@@ -1,0 +1,41 @@
+.ch1-boss{position:relative;width:min(100%,260px);aspect-ratio:1;margin:auto;isolation:isolate;overflow:visible}
+.ch1-boss-body,.ch1-boss-energy{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.ch1-boss-body{z-index:2}
+.ch1-boss-energy{z-index:3;opacity:.3;mix-blend-mode:screen;filter:brightness(1.7) saturate(1.6);animation:ch1-energy 2.6s ease-in-out infinite}
+.ch1-aura{position:absolute;inset:10%;z-index:0;border-radius:50%;background:radial-gradient(ellipse,#08e4f850,transparent 72%);filter:blur(12px);animation:ch1-energy 2.8s infinite}
+.ch1-boss-burst{position:absolute;inset:12%;border:3px solid #60eaff;box-shadow:0 0 22px #1acbff;opacity:0;border-radius:50%;z-index:4;pointer-events:none}
+.ch1-sentinel .ch1-boss-body{animation:ch1-sentinel-drop 2.4s cubic-bezier(.2,.75,.3,1) both,ch1-heavy-idle 4s 2.4s ease-in-out infinite}
+.ch1-sentinel .ch1-boss-energy{clip-path:ellipse(15% 12% at 55% 24%);animation:ch1-eye-roar 2.4s ease-out both,ch1-energy 3.1s 2.4s infinite}
+.ch1-sentinel .ch1-boss-burst{animation:ch1-impact 2.4s ease-out both}
+.ch1-surveyor .ch1-boss-body{animation:ch1-assemble 3.1s cubic-bezier(.18,.75,.25,1) both,ch1-hover 4s 3.1s ease-in-out infinite}
+.ch1-surveyor .ch1-boss-energy{clip-path:polygon(3% 10%,98% 8%,100% 53%,0 55%);animation:ch1-scan 3.1s ease-out both,ch1-energy 2.1s 3.1s infinite}
+.ch1-unseen .ch1-boss-body{animation:ch1-ghost-form 3.4s ease-out both,ch1-ghost-idle 5s 3.4s ease-in-out infinite}
+.ch1-unseen .ch1-boss-energy{opacity:.45;filter:blur(4px) brightness(1.4);animation:ch1-mist 3.4s ease-out both,ch1-energy 3s 3.4s infinite}
+.ch1-attacking.ch1-sentinel .ch1-boss-body{animation:ch1-heavy-attack .7s ease-in-out both}
+.ch1-attacking.ch1-surveyor .ch1-boss-body{animation:ch1-machine-attack .7s ease-in-out both}
+.ch1-attacking.ch1-unseen .ch1-boss-body{animation:ch1-ghost-attack .7s ease-in-out both}
+.ch1-attacking .ch1-boss-burst{animation:ch1-attack-ring .7s ease-out both}
+.ch1-hit .ch1-boss-body{animation:ch1-recoil .4s ease-out both!important}
+.ch1-hit .ch1-boss-burst{animation:ch1-hit-flare .4s ease-out both}
+.ch1-defeated .ch1-boss-body{animation:ch1-vanish 1.3s ease-in forwards!important}
+.ch1-defeated .ch1-boss-energy,.ch1-defeated .ch1-aura{animation:ch1-energy-out 1.3s ease-in forwards!important}
+@keyframes ch1-energy{0%,100%{opacity:.16}50%{opacity:.6}}
+@keyframes ch1-heavy-idle{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.007)}}
+@keyframes ch1-hover{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}
+@keyframes ch1-ghost-idle{0%,100%{transform:translateY(0) scale(1);opacity:1}50%{transform:translateY(-9px) scale(1.025);opacity:.78}}
+@keyframes ch1-sentinel-drop{0%{transform:translateY(-160%) scale(.86);opacity:0}45%{transform:translateY(-160%) scale(.86);opacity:1}62%{transform:translateY(12px) scale(1.08,.88)}74%{transform:translateY(-9px) scale(.99,1.04)}100%{transform:translateY(0) scale(1)}}
+@keyframes ch1-eye-roar{0%,62%{opacity:0;transform:scale(.7)}76%{opacity:1;transform:scale(1.7)}100%{opacity:.35;transform:scale(1)}}
+@keyframes ch1-impact{0%,59%{opacity:0;transform:scale(.3)}65%{opacity:1;transform:scale(1.1)}85%,100%{opacity:0;transform:scale(1.6)}}
+@keyframes ch1-assemble{0%{opacity:0;transform:scale(.25) rotate(-80deg);filter:blur(10px)}35%{opacity:.6;transform:scale(.62) rotate(40deg);filter:blur(5px)}75%{opacity:1;transform:scale(1.07) rotate(-4deg);filter:blur(0)}100%{transform:scale(1) rotate(0);filter:blur(0)}}
+@keyframes ch1-scan{0%{opacity:0;transform:scaleX(.2)}65%{opacity:.9;transform:scaleX(1.25)}100%{opacity:.3;transform:scaleX(1)}}
+@keyframes ch1-ghost-form{0%{opacity:0;transform:translate(-45px,80px) scale(.3) rotate(-25deg);filter:blur(22px)}42%{opacity:.3;transform:translate(15px,-12px) scale(.72) rotate(15deg);filter:blur(14px)}75%{opacity:.8;transform:translate(-5px,5px) scale(1.08);filter:blur(5px)}100%{opacity:1;transform:translate(0) scale(1);filter:blur(0)}}
+@keyframes ch1-mist{0%{opacity:0;transform:scale(1.6) rotate(-28deg)}55%{opacity:.8;transform:scale(1.2) rotate(20deg)}100%{opacity:.45;transform:scale(1)}}
+@keyframes ch1-heavy-attack{0%{transform:translateY(0)}30%{transform:translateY(-16px) rotate(-4deg)}70%{transform:translateY(12px) rotate(3deg) scale(1.08,.95)}100%{transform:translateY(0)}}
+@keyframes ch1-machine-attack{0%{transform:rotate(0) scale(1)}35%{transform:rotate(12deg) scale(1.08)}65%{transform:rotate(-8deg) scale(1.11)}100%{transform:rotate(0) scale(1)}}
+@keyframes ch1-ghost-attack{0%{transform:translateX(0);opacity:1}35%{transform:translateX(-18px) scale(1.15);opacity:.28;filter:blur(9px)}65%{transform:translateX(20px) scale(1.1);opacity:.9;filter:blur(1px)}100%{transform:translateX(0);opacity:1;filter:blur(0)}}
+@keyframes ch1-attack-ring{0%{transform:scale(.2);opacity:0}50%{opacity:1}100%{transform:scale(1.6);opacity:0}}
+@keyframes ch1-recoil{0%{transform:translateX(0);filter:brightness(1)}40%{transform:translateX(-7px);filter:brightness(2)}100%{transform:translateX(0);filter:brightness(1)}}
+@keyframes ch1-hit-flare{0%{opacity:0}50%{opacity:.9}100%{opacity:0}}
+@keyframes ch1-vanish{0%{opacity:1;transform:scale(1)}30%{opacity:.9;transform:translateY(-9px) scale(1.03)}100%{opacity:0;transform:translateY(27px) scale(.65);filter:blur(12px)}}
+@keyframes ch1-energy-out{0%{opacity:.7}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.ch1-boss,.ch1-boss *{animation:none!important}.ch1-defeated .ch1-boss-body{opacity:.2}}
