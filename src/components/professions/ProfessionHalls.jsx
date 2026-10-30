@@ -138,7 +138,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   if(shopBusy)return
   setShopBusy(true)
   const {data,error}=await supabase.rpc('fight_profession_guardian',{target_player:player.id,expedition_id:key,battle_action:action})
-  setShopMessage(error?.message||(data?.status==='won'?'Guardian defeated! Received '+data.item+' and '+data.xp+' profession XP':data?.status==='lost'?'Guardian defeated you. You can try again.':'Guardian: '+(data?.damage||0)+' damage dealt; '+(data?.counter_damage||0)+' received.'))
+  setShopMessage(error?.message||(data?.status==='won'?'Guardian defeated! Received '+data.item+' and '+data.xp+' profession XP':data?.status==='lost'?'Guardian defeated you. You can try again.':'Guardian: '+(data?.damage||0)+' damage dealt; '+(data?.counter_damage||0)+' received.'+(data?.ability?' '+data.ability:'')))
   if(!error){
    setGuardianBattle(data?.status==='fighting'?{...data,key}:null)
    if(data?.status==='won'){
@@ -203,7 +203,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
    })}
   </div>
   <h4>Rare-resource expeditions</h4>
-  <p>Explore profession-specific danger zones at levels 30, 50, and 75. Successful expeditions award rare materials and XP; the Level 50 resource is required for Master crafting.</p>
+  <p>Explore profession-specific danger zones at levels 30, 50, 75, and 100. Successful expeditions award rare materials and XP; the Level 50 resource is required for Master crafting.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:10}}>
    {expeditions.map(e=>{
     const last=expeditionRuns.find(r=>r.expedition_key===e.expedition_key)?.last_success_at
@@ -219,7 +219,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
        return stage<3?<button className="reading-action" disabled={!canGo} onClick={()=>progressDungeon(e.expedition_key,['enter','gather','secure'][stage])}>{labels[stage]}</button>:<div>
         <p>⚔ Guardian encountered · server-controlled turn combat</p>
         {guardianBattle?.key===e.expedition_key?<div>
-         <p>Guardian HP: {guardianBattle.guardian_hp}/{guardianBattle.guardian_max} · Your trial HP: {guardianBattle.hero_hp}/{guardianBattle.hero_max}</p>
+         <p>{e.required_level===100?'👑 Legendary Sovereign · ':''}Guardian HP: {guardianBattle.guardian_hp}/{guardianBattle.guardian_max} · Your trial HP: {guardianBattle.hero_hp}/{guardianBattle.hero_max}</p>
          <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'attack')}>Strike guardian</button>
          <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'guard')}>Guard</button>
          <button className="reading-action" disabled={shopBusy} onClick={()=>guardianAction(e.expedition_key,'retreat')}>Retreat</button>
