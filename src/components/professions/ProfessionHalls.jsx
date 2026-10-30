@@ -131,8 +131,8 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
    <button className="reading-action" disabled={shopBusy||!hasAccess||(lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000)} onClick={work}>{!hasAccess?'Activate this profession to work':'Produce items'}</button>
    {lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000&&<p>Next available: {new Date(new Date(lastWork).getTime()+recipe.cooldown_minutes*60000).toLocaleString()}</p>}
   </div>:<p>No workshop activity available.</p>}
-  <h4>Advanced profession recipes · Level {professionLevel}</h4>
-  <p>Unlock stronger creations at levels 5, 15, and 30. Each tier consumes earlier materials and has its own cooldown.</p>
+  <h4>Profession recipes · Level {professionLevel}/100</h4>
+  <p>Unlock stronger creations at levels 5, 15, 30, 50, 75, and 100. Master, Grandmaster, and Legendary creations consume materials from earlier tiers, with longer cooldowns.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:10}}>
    {advanced.map(r=>{
     const last=advancedRuns.find(x=>x.recipe_key===r.recipe_key)?.last_run_at
