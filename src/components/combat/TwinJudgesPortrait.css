@@ -111,3 +111,35 @@
 @keyframes judge-verdict-cut{0%{transform:rotate(-4deg)}45%{transform:rotate(-18deg) scale(1.04)}65%{transform:rotate(13deg)}100%{transform:rotate(0)}}
 @keyframes judge-verdict-balance{0%{transform:rotate(-2deg)}50%{transform:rotate(10deg)}100%{transform:rotate(0)}}
 @media(prefers-reduced-motion:reduce){.twin-judges .judge-sword,.twin-judges .judge-scales{animation:none!important}}
+
+/* Ghosting correction: do not draw opaque duplicates over the original
+   painting. The isolated blade and balance layers now contribute additive
+   light only during an attack, while the base silhouette remains intact. */
+.judge-sword,.judge-scales{
+ opacity:0;
+ mix-blend-mode:screen;
+ filter:brightness(1.8) saturate(1.5);
+ animation:none;
+}
+.twin-attacking .judge-sword{
+ opacity:.7;
+ animation:judge-weapon-light .7s ease-out both !important;
+}
+.twin-attacking .judge-scales{
+ opacity:.6;
+ animation:judge-balance-light .7s ease-out both !important;
+}
+@keyframes judge-weapon-light{
+ 0%{opacity:0;transform:rotate(-3deg) scale(1)}
+ 35%{opacity:.85;transform:rotate(-9deg) scale(1.025)}
+ 65%{opacity:.75;transform:rotate(7deg) scale(1.04)}
+ 100%{opacity:0;transform:rotate(0) scale(1)}
+}
+@keyframes judge-balance-light{
+ 0%{opacity:0;transform:rotate(0)}
+ 50%{opacity:.75;transform:rotate(6deg)}
+ 100%{opacity:0;transform:rotate(0)}
+}
+@media(prefers-reduced-motion:reduce){
+ .twin-judges .judge-sword,.twin-judges .judge-scales{opacity:0!important;animation:none!important}
+}
