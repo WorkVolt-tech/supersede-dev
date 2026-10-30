@@ -89,3 +89,16 @@ test('Inferno Zone deals three damage-over-time ticks then expires', () => {
   assert.equal(status.infernoTurns, 0)
   assert.equal(resolveKeystoneRegen(status, enemyHp, 90, 100).enemyHp, 80)
 })
+
+test('Aegis converts half of sustained damage to MP over two enemy actions', () => {
+  const status = { cfx_damageHalveTurns: 2, cfx_dmgToMpTurns: 2 }
+  const first = resolveKeystoneDefense(status, 40)
+  assert.equal(first.damage, 20)
+  assert.equal(first.mpGain, 10)
+  assert.equal(status.cfx_dmgToMpTurns, 1)
+  const second = resolveKeystoneDefense(status, 20)
+  assert.equal(second.damage, 10)
+  assert.equal(second.mpGain, 5)
+  assert.equal(status.cfx_dmgToMpTurns, 0)
+  assert.equal(resolveKeystoneDefense(status, 40).mpGain, 0)
+})
