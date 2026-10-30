@@ -16,6 +16,7 @@ const ENTRIES = [
   { view: 'inventory-demo', label: 'Inventory (sample items)', sub: 'Try drag-and-drop with fake gear' },
   { view: 'combat-demo', label: 'Combat Formation Test', sub: 'Optional rank-and-position training simulation; no story characters' },
   { view: 'judges-preview', label: 'Twin Judges Animation Preview', sub: 'View all seven forms and replay attacks and transformations without affecting progress' },
+  { view: 'ch1-boss-preview', label: 'Chapter 1 Boss Animation Preview', sub: 'Preview Sentinel, Surveyor, Unseen and Watcher entrances and attacks' },
 ]
 
 export default function StartMenu({ player, onPick, onSignOut, onReset }) {
