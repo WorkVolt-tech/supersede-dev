@@ -13,6 +13,13 @@
 .skills-tabs.elemental,.skills-tabs.class-tabs { padding-top:7px; }
 .skills-resonance-status { margin:8px 0 4px; padding:10px 12px; border-left:3px solid #c9a66c; background:#241d15; color:#d2c3ac; font-size:11px; line-height:1.7; }
 .skills-resonance-status strong,.skills-resonance-active { color:#f0cc83; }
+.skills-elemental-attacks { margin-top:14px; border-top:1px solid #5c4933; padding-top:10px; }
+.skills-elemental-attacks h3 { color:#eecb87; font-size:12px; margin:5px 0 12px; }
+.skills-elemental-attacks p { margin:7px 0; font-size:10px; color:#b5a17e; }
+.skills-elemental-attack { display:flex; justify-content:space-between; align-items:center; gap:10px; margin:8px 0; font-size:10px; }
+.skills-elemental-attack button { background:#312213; color:#f0d9ab; border:1px solid #a78b59; padding:6px 10px; cursor:pointer; }
+.skills-elemental-attack button:disabled { opacity:.5; cursor:default; }
+
 .skills-tree-heading .skills-primary { margin-top:12px; }
 .skills-tabs.class-tabs button { font-size:10px; padding:7px 10px; }
 .skills-locked-class { color:#a99270; font:12px 'JetBrains Mono',monospace; margin:8px 0 16px; }
