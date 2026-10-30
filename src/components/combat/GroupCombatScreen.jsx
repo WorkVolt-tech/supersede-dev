@@ -850,7 +850,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
       </span>
     </div>
-    <CombatActionPoints ap={ap}/>
+    <CombatActionPoints ap={ap} round={round}/>
     {activeFusion&&!result&&<div className="combat-fusion-status">
       <span>✦ {activeFusion.kind==='triad'
         ?activeFusion.element+' Elemental Triad'

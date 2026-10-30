@@ -886,7 +886,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               ' / '+nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)}
           </span>
         </div>
-        <CombatActionPoints ap={actionPoints} />
+        <CombatActionPoints ap={actionPoints} round={round} />
         {activeFusion && <div className="combat-fusion-status">
           <span>✦ {activeFusion.kind==='triad'
               ?activeFusion.element+' Elemental Triad'
