@@ -73,7 +73,7 @@ async function inspect(page,name,mobile){
     name+': out-of-range slash remained enabled')
   await units.first().click()
   check(await page.locator('.combat-range-warning').count()===0,
-    name+': target range warning did not clear
+    name+': target range warning did not clear')
 
   // Sweeping Arc has row AoE and costs both AP. All three front-row rats
   // must take damage from the actual live weapon handler.
