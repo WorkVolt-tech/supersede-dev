@@ -7,6 +7,7 @@ import { useInventoryStore } from '../store/useInventoryStore'
 import { getJudgesForm } from '../game/judgesClassRules'
 import { ZONE_ELEMENT_MAP } from '../data/ch2/config'
 import { resolveCh2HubInterrupt } from '../data/ch2/hubInterrupts'
+import { getChapterResonance } from '../data/ch2/elementalDifficulty'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -107,6 +108,16 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         }
         const log = (updates.alliance_log || player.alliance_log || []).filter(tag => !tag.startsWith('class_form_'))
         updates.alliance_log = [...new Set([...log, 'class_picker_unlocked', 'class_form_' + form])]
+      }
+      // First elemental guardian victory locks in Chapter 2 resonance.
+      // Save the marker in the same confirmed checkpoint as the boss win.
+      if (chapterPrefix === 'ch2' &&
+          cur.bossKey.startsWith('zone_boss_') &&
+          !getChapterResonance(player)) {
+        const element = cur.bossKey.slice('zone_boss_'.length)
+        if (Object.values(ZONE_ELEMENT_MAP).includes(element)) {
+          defeated.push('element_resonance_' + element)
+        }
       }
       updates.defeated_bosses = defeated
     }
