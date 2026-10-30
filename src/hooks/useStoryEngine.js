@@ -75,10 +75,15 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       updates.defeated_bosses = defeated
     }
 
-    if (cur?.rewards?.length) {
+    // Chapter 3 exploration caches are one-time finds. Other chapters retain
+    // their existing reward behavior while their own progression is audited.
+    const rewardTag = chapterPrefix === 'ch3' ? 'ch3_reward_' + currentNodeId : null
+    const alreadyClaimed = rewardTag && (player.alliance_log || []).includes(rewardTag)
+    if (cur?.rewards?.length && !alreadyClaimed) {
       try {
         await grantLoot(player.id, cur.rewards)
         await loadInventory(player.id)
+        if (rewardTag) updates.alliance_log = [...new Set([...(updates.alliance_log || player.alliance_log || []), rewardTag])]
       } catch (error) {
         console.error('Could not grant story rewards:', error)
         return
