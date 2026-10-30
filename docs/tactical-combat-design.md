@@ -125,3 +125,38 @@ techniques evolve later). The System Pulse fallback never evolves or awards
 mastery XP. Battlefield attack and skill previews use the same evolved
 footprints as hit resolution; class and elemental skills have a separate
 preview button so the existing cast action stays single-click.
+
+## Class–element fusion (optional extension)
+
+The 21 existing classes and 10 elemental trees are untouched: every class
+can unlock a separate fusion with each elemental path. An element is still
+unlocked after defeating its guardian, and only one active element contributes
+effects at a time. Players continue using all normal class abilities and the
+one equipped elemental attack independently, with no class skills moved
+into the element tree.
+
+To unlock one pairing the player needs character Lv 25, at least 2 learned
+nodes in the current class, at least 7 learned nodes in the chosen elemental
+tree, and 2 available skill points. The player purchases the specific pairing
+in the Skills screen. It remains unlocked if another element is activated.
+Stored in players.fusion_unlocked (text[]), separately from class_nodes_unlocked
+and elemental_unlocked. SupaSede migration add_class_element_fusion_progression.
+
+In 3×3 group encounters, a purchased active class–element pairing exposes
+an optional Enable Fusion switch; switching is free. Successful class-skill
+damage and nonfallback weapon hits receive a small elemental rider for 3 MP,
+with the original AP, skill cooldowns, unlocks, and damage hooks intact.
+Elemental skills and System Pulse never trigger fusion. Each element has
+its own rider: Fire (Ember), Water (healing), Lightning (chain hit), Arcane
+(extra magic damage), Shadow (next-hit evasion), Earth (ward), Wind (stun),
+Plant (regeneration), Metal (extra armor-piercing damage), and Poison (Decay).
+At fusion mastery Lv 5, Ghostblade/Fire, Bastion/Earth and Wrathborn/Lightning
+gain special enhancements named Phantom Inferno, Titan's Fortress, and
+Thunderous Fury respectively. Other combinations keep their regular rider;
+additional signature fusions can be designed without modifying class trees.
+
+Fusion practice is recorded only after victory, up to six successful fusion
+hits per encounter, in players.fusion_mastery (jsonb), with independent XP
+per "class:element" key. Changing elements preserves all pair XP and unlocks.
+Bosses and older 1v1 combat screens retain their established combat scripts
+until fusion is separately integrated and tested there.

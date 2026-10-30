@@ -130,6 +130,36 @@ async function inspect(page,name,mobile){
     (mobile?', touch movement':'')+'\n')
 }
 
+async function verifyFusion(page) {
+  const errors=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=fusion',
+    {waitUntil:'networkidle'})
+  await page.locator('.combat-group-unit').first().waitFor()
+  const fusion=page.locator('.combat-fusion-status')
+  await fusion.waitFor()
+  check((await fusion.textContent()).includes('ghostblade + fire'),
+    'fusion: unlocked class/element pair was not shown')
+  check((await fusion.textContent()).includes('Fusion Lv 6'),
+    'fusion: pair-specific mastery did not load')
+  await page.getByRole('button',{name:'Enable Fusion'}).click()
+  await page.locator('.combat-tactical-weapons')
+    .getByRole('button',{name:/Sweeping Arc/}).click()
+  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+  await page.waitForFunction(()=>[...document.querySelectorAll('.combat-group-unit')]
+    .filter(unit=>unit.textContent.includes('🔥')).length===3,
+    null,{timeout:10000})
+  check((await page.locator('.combat-log').textContent()).includes('Phantom Inferno'),
+    'fusion: signature rider was not applied')
+  const banner=await page.locator('.combat-turn-banner').textContent()
+  check(/\d+\/\d+ MP/.test(banner),
+    'fusion: no MP resource in real battle')
+  check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
+    'fusion: should not save during combat before victory')
+  check(errors.length===0,'fusion: browser exceptions '+errors.join(' | '))
+  await page.screenshot({path:'test-artifacts/desktop-fusion.png',fullPage:true})
+  console.log('PASS fusion: separate unlock, mastery, signature, multi-foe infusion')
+}
 async function verifyMastery(page) {
   await page.goto(host+'/tests/browser/group-combat.html?scenario=mastery',
     {waitUntil:'networkidle'})
@@ -183,6 +213,7 @@ try{
   const desktop=await browser.newPage({viewport:{width:1280,height:900}})
   await inspect(desktop,'desktop',false)
   await verifyMastery(desktop)
+  await verifyFusion(desktop)
   await verifyVictory(desktop)
   await desktop.close()
   const mobile=await browser.newPage({viewport:{width:390,height:844},

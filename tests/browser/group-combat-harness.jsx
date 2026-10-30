@@ -17,7 +17,7 @@ const player = {
   weapon_mastery:{sword:new URLSearchParams(location.search).get('scenario')==='mastery'?500000:0},
   skill_levels:{},elemental_unlocked:fusionScenario?
     ['fire_aggr_1','fire_aggr_2','fire_aggr_3','fire_aggr_4','fire_aggr_5','fire_aggr_ks']:[],
-  defeated_bosses:fusionScenario?['fire_boss_placeholder']:[],
+  defeated_bosses:fusionScenario?['zone_boss_fire']:[],
   class_nodes_unlocked:fusionScenario?['ghostblade:ghostblade_t1a','ghostblade:ghostblade_t1c']:[],
   fusion_unlocked:fusionScenario?['ghostblade:fire']:[],
   fusion_mastery:fusionScenario?{'ghostblade:fire':45}:{},
