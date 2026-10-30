@@ -20,6 +20,7 @@ import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStat
 import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
+import { persistCombatResult } from '../../game/combatPersistence'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
@@ -81,6 +82,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [enemyHp, setEnemyHp] = useState(enemyData.hp)
   const [defending, setDefending] = useState(false)
   const [result, setResult] = useState(null)
+  const [combatSaveError, setCombatSaveError] = useState('')
+  const [combatSaving, setCombatSaving] = useState(false)
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
   const [keystoneCooldowns, setKeystoneCooldowns] = useState({})
@@ -127,6 +130,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const combatEnemyRef = useRef({ ...enemyData })
   const dbUpdatesRef = useRef({})
   const completionTimerRef = useRef(null)
+  const combatOutcomeRef = useRef(null)
   const combatMountedRef = useRef(false)
   // Do not let a delayed save or an old completion timer navigate away
   // after this encounter has been replaced or the page has been closed.
@@ -147,42 +151,70 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function pushLog(line) { setLog(l => [line, ...l].slice(0, 30)) }
 
-  async function endCombat(outcome, hpAtEnd = currentHp) {
-    setResult(outcome)
-    const end = ClsCombat.onCombatEnd(combatPlayer, statusEffectsRef.current, outcome === 'win' ? 'victory' : 'defeat')
-    if (end?.dbUpdates) Object.assign(dbUpdatesRef.current, end.dbUpdates)
-    const finalUpdates = { ...dbUpdatesRef.current, hp: outcome === 'win' ? hpAtEnd : Math.max(1, hpAtEnd) }
-    if (outcome === 'win') {
-      const rewards = grantXp({ ...player, hp: finalUpdates.hp, ...finalUpdates }, enemyData.xp || 0)
-      Object.assign(finalUpdates, rewards)
-      pushLog(`Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`)
-    }
-    await updatePlayer(finalUpdates)
-    if (outcome === 'win' && enemyData.loot?.length) {
-      try {
+  async function saveCombatOutcome() {
+    const pending = combatOutcomeRef.current
+    if (!pending || pending.saving || pending.notified) return
+    setCombatSaving(true)
+    setCombatSaveError('')
+    const saved = await persistCombatResult(
+      pending,
+      updates => updatePlayer(updates),
+      async () => {
+        if (pending.outcome !== 'win' || !enemyData.loot?.length) return
         const drops = await grantLoot(player.id, enemyData.loot, effective.core.luck)
         await loadInventory(player.id)
-        if (drops.length) pushLog('Loot: '+drops.map(d => `${d.icon || '📦'} ${d.name} ×${d.qty}`).join(' · '))
-      } catch (error) {
-        pushLog('Loot could not be saved: '+error.message)
-      }
+        if (drops.length) {
+          pushLog('Loot: ' + drops.map(d => `${d.icon || '📦'} ${d.name} ×${d.qty}`).join(' · '))
+        }
+      },
+    )
+    if (!combatMountedRef.current) return
+    setCombatSaving(false)
+    if (!saved) {
+      setCombatSaveError(pending.error || 'Character progress could not be saved. Retry to continue.')
+      return
     }
-    // Let victory animations finish before leaving the arena. The Watcher's
-    // eight eye fragments stagger their dispersal for almost two seconds.
-    const victoryDelay = outcome === 'win'
+    if (pending.rewardError) pushLog('Loot could not be saved: ' + pending.rewardError)
+    if (pending.victoryText) pushLog(pending.victoryText)
+    pending.notified = true
+    // Keep the victory animation before routing, but never advance
+    // the story unless the player progression has actually been saved.
+    const victoryDelay = pending.outcome === 'win'
       ? enemyData.name === 'The Watcher' ? 2000
         : ['Sentinel of the First Eye', 'The Surveyor', 'The Unseen'].includes(enemyData.name) ? 1500
         : enemyData.name === 'The Twin Judges' ? 1200
         : 900
       : 900
-    if (!combatMountedRef.current) return
     clearTimeout(completionTimerRef.current)
     completionTimerRef.current = setTimeout(() => {
       if (!combatMountedRef.current) return
-      if (outcome === 'win') onWin?.()
-      else if (outcome === 'escape') onEscape?.()
+      if (pending.outcome === 'win') onWin?.()
+      else if (pending.outcome === 'escape') onEscape?.()
       else onLose?.()
     }, victoryDelay)
+  }
+
+  async function endCombat(outcome, hpAtEnd = currentHp) {
+    if (combatOutcomeRef.current) return
+    setResult(outcome)
+    const end = ClsCombat.onCombatEnd(combatPlayer, statusEffectsRef.current,
+      outcome === 'win' ? 'victory' : 'defeat')
+    if (end?.dbUpdates) Object.assign(dbUpdatesRef.current, end.dbUpdates)
+    const finalUpdates = {
+      ...dbUpdatesRef.current,
+      hp: outcome === 'win' ? hpAtEnd : Math.max(1, hpAtEnd),
+    }
+    let victoryText = ''
+    if (outcome === 'win') {
+      const rewards = grantXp({ ...player, hp: finalUpdates.hp, ...finalUpdates }, enemyData.xp || 0)
+      Object.assign(finalUpdates, rewards)
+      victoryText = `Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`
+    }
+    combatOutcomeRef.current = {
+      outcome, updates: finalUpdates, victoryText,
+      saving: false, committed: false, rewardsHandled: false, notified: false,
+    }
+    await saveCombatOutcome()
   }
 
   function enemyTurn(playerHp, foeHp, isDefending = false) {
@@ -534,6 +566,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       )}
 
       {result === 'win' && <p className="combat-result win">✦ Victory ✦</p>}
+      {result && combatSaving && <p className="combat-save-status" role="status">Saving combat progress…</p>}
+      {result && combatSaveError && (
+        <div className="combat-save-error" role="alert">
+          <p>{combatSaveError} Your combat outcome is retained here until the save succeeds.</p>
+          <button type="button" className="combat-action-btn" disabled={combatSaving}
+            onClick={saveCombatOutcome}>Retry saving progress</button>
+        </div>
+      )}
       {result === 'lose' && <p className="combat-result lose">✦ Defeated ✦</p>}
       {result === 'escape' && <p className="combat-result">✦ Escaped ✦</p>}
 
