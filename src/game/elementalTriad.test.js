@@ -5,7 +5,8 @@ import { ELEMENTAL_ATTACKS } from './elementalAttacks.js'
 import { getElementalTriadEligibility,unlockElementalTriad,getActiveFusion,
   unlockFusionPair,getFusionEligibility } from './classElementFusion.js'
 import { getElementalTriadAction,resolveElementalTriad,
-  TRIAD_MP_COST,TRIAD_COOLDOWN } from './elementalTriad.js'
+  TRIAD_MP_COST,TRIAD_COOLDOWN,TRIAD_AREA_CAPS,TRIAD_TECHNIQUES,
+  getTriadSpecial,triadArmorPierce } from './elementalTriad.js'
 function player(element='fire'){
   return {active_class:null,level:25,element,skill_points:5,
     defeated_bosses:[ELEMENT_TREES[element].bossKey],
@@ -65,4 +66,69 @@ test('three source skill levels modify their fused damage, not each other',()=>{
   assert.ok(ordinary.playerStatus.infernoTurns>0)
   assert.ok(ordinary.enemyStatus.cfx_emberStacks>0)
   assert.equal(resolveElementalTriad(p,{}),null)
+})
+
+test('area progression trades per-target damage for an increasingly wide hit zone',()=>{
+  const p=player('lightning'),unlock=unlockElementalTriad(p,'lightning')
+  const variants=[
+    {xp:0,level:1,shape:'cross'},
+    {xp:32,level:5,shape:'diamond2'},
+    {xp:77,level:8,shape:'all'},
+  ]
+  let lastTotal=0
+  for(const variant of variants){
+    const cast=resolveElementalTriad({...p,...unlock,
+      fusion_mastery:{'triad:lightning':variant.xp}}, {},
+      {atk:25,def:15,enemyDef:6,maxHp:160})
+    assert.equal(cast.attack.shape,variant.shape)
+    assert.ok(cast.damage<=Math.round(cast.peakDamage*TRIAD_AREA_CAPS[variant.shape]))
+    assert.ok(cast.damage<=cast.summedDamage)
+    assert.ok(cast.damage>=0)
+    assert.equal(cast.components.length,3)
+    assert.ok(cast.damage>0)
+    lastTotal=cast.damage
+  }
+  assert.ok(lastTotal>0)
+})
+test('all ten triads have unique named techniques and distinct secondary effects',()=>{
+  const expected={
+    fire:'burning-ground',water:'tidal-recovery',lightning:'chain',
+    arcane:'resonant-refund',shadow:'veil',earth:'stone-ward',
+    wind:'gale',plant:'growth',metal:'armor-break',poison:'decay-spread',
+  }
+  assert.equal(new Set(Object.values(TRIAD_TECHNIQUES)).size,10)
+  for(const element of Object.keys(ELEMENTAL_ATTACKS)){
+    const p=player(element),unlock=unlockElementalTriad(p,element)
+    const cast=resolveElementalTriad({...p,...unlock},{},
+      {atk:25,def:15,enemyDef:6,maxHp:160})
+    assert.equal(cast.special.kind,expected[element])
+    assert.equal(cast.technique,TRIAD_TECHNIQUES[element])
+    assert.equal(cast.mp,TRIAD_MP_COST)
+    assert.equal(cast.cooldown,TRIAD_COOLDOWN)
+    assert.ok(cast.special.detail)
+  }
+  assert.ok(getTriadSpecial('water',10,80).heal>getTriadSpecial('water',1,80).heal)
+  assert.ok(getTriadSpecial('lightning',10,80).chainCount>
+    getTriadSpecial('lightning',1,80).chainCount)
+  assert.equal(getTriadSpecial('arcane',4,80).mpRefund,3)
+  assert.equal(getTriadSpecial('shadow',4,80).dodge,true)
+  assert.ok(getTriadSpecial('earth',10,80).ward>getTriadSpecial('earth',1,80).ward)
+  assert.equal(getTriadSpecial('wind',5,80).galeTurns,4)
+  assert.ok(getTriadSpecial('plant',5,80).regenAmount>0)
+  assert.equal(getTriadSpecial('poison',5,80).extraDecay,1)
+  assert.equal(triadArmorPierce(getTriadSpecial('metal',5,80),20),6)
+  assert.equal(triadArmorPierce(getTriadSpecial('metal',5,80),100),12)
+  assert.equal(triadArmorPierce(getTriadSpecial('fire',5,80),100),0)
+})
+test('fused attack formulas do not modify individual elemental slots or learned nodes',()=>{
+  const p=player('plant'),unlock=unlockElementalTriad(p,'plant')
+  const treeBefore=[...p.elemental_unlocked],slotsBefore=[...p.battle_skills]
+  const original={...p,...unlock}
+  const first=resolveElementalTriad(original,{}, {atk:30,maxHp:130})
+  const second=resolveElementalTriad(original,{}, {atk:30,maxHp:130})
+  assert.deepEqual(first,second)
+  assert.deepEqual(p.elemental_unlocked,treeBefore)
+  assert.deepEqual(p.battle_skills,slotsBefore)
+  assert.ok(!('battle_skills' in unlock))
+  assert.ok(!('elemental_unlocked' in unlock))
 })
