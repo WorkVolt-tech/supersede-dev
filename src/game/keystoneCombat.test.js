@@ -62,6 +62,9 @@ test('guaranteed critical bonuses are consumed exactly once', () => {
   const status = { cfx_guaranteedCrit: true }
   assert.equal(resolveKeystoneStrike(status, 20).damage, 30)
   assert.equal(resolveKeystoneStrike(status, 20).damage, 20)
+  const alreadyCritical = { cfx_guaranteedCrit: true }
+  assert.equal(resolveKeystoneStrike(alreadyCritical, 30, true).damage, 30)
+  assert.equal(alreadyCritical.cfx_guaranteedCrit, undefined)
 })
 
 test('Bloodflower lifesteal is derived from the delivered strike', () => {
