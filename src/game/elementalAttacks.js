@@ -5,6 +5,7 @@ import { ELEMENT_TREES, isElementUnlocked } from './elementsTree.js'
 import { getActiveElement } from './activeElement.js'
 import { BATTLE_SKILLS_REGISTRY } from './skillsRegistry.js'
 import { damageMult } from './elementalBonuses.js'
+import { getElementalMpCost } from './combatMp.js'
 
 export const ELEMENTAL_ATTACKS = {
   fire: ['fire_skill_fire_blast','fire_ultimate_inferno_zone','fire_mastery_cinderstorm'],
@@ -58,6 +59,11 @@ export function equipElementalAttack(player, id) {
   // as the legacy engine does, rather than silently discarding the selection.
   const next = remaining.length >= 4 ? [id, ...remaining.slice(1, 4)] : [id, ...remaining]
   return { battle_skills: next }
+}
+
+export function getAttackMpCost(player, id, status = {}) {
+  const skill = ATTACK_INDEX[id]
+  return skill && canUseElementalAttack(player, id) ? getElementalMpCost(skill.tier, status) : Infinity
 }
 
 export function getEquippedElementalAttack(player) {
@@ -122,11 +128,13 @@ export function resolveElementalAttack(id, player, status, ctx = {}) {
   // Perfect Recall gives the next skill no cooldown, exactly once.
   const perfectRecall = Boolean(status.cfx_perfectRecall)
   if (perfectRecall) setStatus.cfx_perfectRecall = false
+  if (status.cfx_refundMpHalf) setStatus.cfx_refundMpHalf = false
+  const mpCost = getElementalMpCost(skill.tier, status)
   const cooldown = perfectRecall ? 0 : skill.tier === 0 ? 2 : 4
   return {
     id, label: skill.label, element: skill.element,
-    enemyDamage: damage, healPlayer: heal, setStatus, cooldown,
+    enemyDamage: damage, healPlayer: heal, setStatus, cooldown, mpCost,
     messages: [`${skill.label}: ${damage > 0 ? damage + ' damage' : 'effect activated'}${heal ? ', +' + heal + ' HP' : ''}.`,
-      ...(perfectRecall ? ['Perfect Recall: no cooldown.'] : [])],
+      ...(perfectRecall ? ['Perfect Recall: no MP cost or cooldown.'] : [])],
   }
 }
