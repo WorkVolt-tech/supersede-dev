@@ -35,13 +35,18 @@ function TransformJudge({form,attacking}){
  const config=transformationAssets[form]
  const [finished,setFinished]=useState(false)
  const [triedAlternative,setTriedAlternative]=useState(false)
+ const [loaded,setLoaded]=useState(false)
  useEffect(()=>{
-  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setFinished(true);return}
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)setFinished(true)
+ },[])
+ useEffect(()=>{
+  if(!loaded||finished)return
+  // Begin counting only when the animated WebP is ready for playback.
   const timer=setTimeout(()=>setFinished(true),form==='G_verdict'?3400:3800)
   return()=>clearTimeout(timer)
- },[form])
+ },[loaded,finished,form])
  return <div className={`judge-transformation judge-transform-${form} ${attacking?'judge-transform-attacking':''}`}>
-  {!finished&&<img className="judge-transition-animation" src={triedAlternative?config.alternative:config.video} alt="" draggable="false" onError={()=>{if(config.alternative&&!triedAlternative)setTriedAlternative(true);else setFinished(true)}}/>}
+  {!finished&&<img className="judge-transition-animation" src={triedAlternative?config.alternative:config.video} alt="" draggable="false" onLoad={()=>setLoaded(true)} onError={()=>{if(config.alternative&&!triedAlternative){setLoaded(false);setTriedAlternative(true)}else setFinished(true)}}/>}
   {finished&&<Judge which={config.result} attacking={attacking} dominant/>}
  </div>
 }
