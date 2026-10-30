@@ -149,3 +149,25 @@
  0%,100%{opacity:.2;transform:scale(1);filter:blur(3px)}
  45%{opacity:.9;transform:scale(1.4) rotate(12deg);filter:blur(12px)}
 }
+
+/* Guardian battle phases mirror enemyAI.js's live phase state. These
+   are artwork effects only, never gameplay changes. */
+.ch1-boss.ch1-phase-2 .ch1-aura{animation-duration:1.8s;filter:blur(10px) brightness(1.35)}
+.ch1-boss.ch1-phase-3 .ch1-aura{animation-duration:.9s;filter:blur(8px) brightness(1.9)}
+.ch1-boss.ch1-phase-2 .ch1-boss-energy{animation-duration:1.7s}
+.ch1-boss.ch1-phase-3 .ch1-boss-energy{animation-duration:.75s;filter:brightness(2.4) saturate(1.9)}
+.ch1-sentinel.ch1-phase-3 .ch1-aura{background:radial-gradient(ellipse,#ffa63e70,#08e4f840 55%,transparent 74%)}
+.ch1-surveyor.ch1-phase-3 .ch1-aura{background:radial-gradient(ellipse,#57eaff88,#296eff42 56%,transparent 75%)}
+.ch1-unseen.ch1-phase-3 .ch1-aura{background:radial-gradient(ellipse,#b2e8ff66,#1d6dff35 55%,transparent 74%)}
+.ch1-boss.ch1-phase-shift:not(.ch1-defeated) .ch1-aura{
+ animation:ch1-phase-pulse .85s ease-out both!important;
+}
+@keyframes ch1-phase-pulse{
+ 0%{opacity:.25;transform:scale(.7)}
+ 35%{opacity:1;transform:scale(1.15);filter:blur(5px) brightness(2.6)}
+ 70%{opacity:.85;transform:scale(1.45);filter:blur(13px) brightness(1.9)}
+ 100%{opacity:.45;transform:scale(1);filter:blur(12px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ch1-boss.ch1-phase-shift .ch1-aura{animation:none!important}
+}
