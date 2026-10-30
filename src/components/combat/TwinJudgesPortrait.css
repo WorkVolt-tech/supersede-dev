@@ -143,3 +143,16 @@
 @media(prefers-reduced-motion:reduce){
  .twin-judges .judge-sword,.twin-judges .judge-scales{opacity:0!important;animation:none!important}
 }
+
+/* Battle reactions operate on the silhouette as a whole; weapon highlights
+   remain separate and never produce opaque duplicate limbs. */
+.twin-hit .judge-figure{animation:judge-hit-recoil .42s ease-out both!important}
+.twin-hit .twin-energy{animation:judge-hit-flash .42s ease-out both!important}
+.twin-defeated .judge-figure{animation:judge-defeat 1.1s ease-in forwards!important}
+.twin-defeated .twin-energy{animation:judge-energy-fade 1.1s ease-in forwards!important}
+.twin-defeated .judge-transformation .judge-figure{animation:judge-defeat 1.1s ease-in forwards!important}
+@keyframes judge-hit-recoil{0%{transform:translateX(0) scale(1);filter:brightness(1)}18%{transform:translateX(-7px) scale(.98);filter:brightness(1.8)}40%{transform:translateX(5px);filter:brightness(1.4)}100%{transform:translateX(0) scale(1);filter:brightness(1)}}
+@keyframes judge-hit-flash{0%{opacity:.4}30%{opacity:1;filter:brightness(2)}100%{opacity:.4;filter:brightness(1)}}
+@keyframes judge-defeat{0%{opacity:1;transform:translateY(0) scale(1);filter:brightness(1)}35%{opacity:1;transform:translateY(-7px) scale(1.03);filter:brightness(1.65)}100%{opacity:.12;transform:translateY(30px) scale(.89);filter:brightness(.35)}}
+@keyframes judge-energy-fade{0%{opacity:1}100%{opacity:0}}
+@media(prefers-reduced-motion:reduce){.twin-hit .judge-figure,.twin-defeated .judge-figure,.twin-hit .twin-energy,.twin-defeated .twin-energy{animation:none!important}.twin-defeated .judge-figure{opacity:.2}}
