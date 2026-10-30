@@ -5,21 +5,13 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/verify-tactical-combat.yml'
-      - 'src/components/combat/**'
-      - 'src/components/story/StoryNode.jsx'
-      - 'src/data/ch1/nodes.js'
-      - 'src/game/tactical*.js'
-      - 'src/game/classCombat.js'
+      - 'src/**'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
     paths:
       - '.github/workflows/verify-tactical-combat.yml'
-      - 'src/components/combat/**'
-      - 'src/components/story/StoryNode.jsx'
-      - 'src/data/ch1/nodes.js'
-      - 'src/game/tactical*.js'
-      - 'src/game/classCombat.js'
+      - 'src/**'
       - 'package.json'
       - 'package-lock.json'
 

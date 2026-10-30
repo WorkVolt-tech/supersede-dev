@@ -123,7 +123,7 @@ export default function ProfessionScreen({player,onReturn,onHalls,onAdventure,on
           {new Date(current?.respec_available_at||0)>new Date() && <p>Reset available after {new Date(current.respec_available_at).toLocaleString()}.</p>}
         </section>}
       </>}
-    </>}
+    </>
     {message && <p role="status">{message}</p>}
     <button className="reading-action" onClick={onReturn}>← Return to chapters</button>
   </section>
