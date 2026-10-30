@@ -1,0 +1,51 @@
+name: Verify tactical combat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/verify-tactical-combat.yml'
+      - 'src/components/combat/**'
+      - 'src/components/story/StoryNode.jsx'
+      - 'src/data/ch1/nodes.js'
+      - 'src/game/tactical*.js'
+      - 'src/game/classCombat.js'
+      - 'package.json'
+      - 'package-lock.json'
+  pull_request:
+    paths:
+      - '.github/workflows/verify-tactical-combat.yml'
+      - 'src/components/combat/**'
+      - 'src/components/story/StoryNode.jsx'
+      - 'src/data/ch1/nodes.js'
+      - 'src/game/tactical*.js'
+      - 'src/game/classCombat.js'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: read
+
+jobs:
+  tactical-combat:
+    name: Tactical combat tests and Vite build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies from lockfile
+        run: npm ci
+      - name: Test tactical combat, progression, formations and status isolation
+        run: |
+          node --test \
+            src/game/tacticalGrid.test.js \
+            src/game/tacticalIntegration.test.js \
+            src/game/tacticalGroups.test.js \
+            src/game/tacticalFoeStatus.test.js \
+            src/game/tacticalSkills.test.js
+      - name: Build React application
+        run: npm run build
