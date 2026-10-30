@@ -12,6 +12,8 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [selected,setSelected]=useState('merchant')
  const [stock,setStock]=useState([])
  const [orders,setOrders]=useState([])
+ const [recipe,setRecipe]=useState(null)
+ const [lastWork,setLastWork]=useState(null)
  const inventory=useInventoryStore(x=>x.items)
  const [shopBusy,setShopBusy]=useState(false)
  const [shopMessage,setShopMessage]=useState('')
@@ -56,6 +58,23 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   }
   setShopBusy(false)
  }
+ useEffect(()=>{let live=true;Promise.all([
+  supabase.from('profession_workshop_recipes').select('*,output:items!profession_workshop_recipes_output_key_fkey(name),input:items!profession_workshop_recipes_input_key_fkey(name)').eq('profession_key',selected).maybeSingle(),
+  supabase.from('profession_workshop_runs').select('last_run_at').eq('player_id',player.id).eq('profession_key',selected).maybeSingle()
+ ]).then(([a,b])=>{if(live){setRecipe(a.data||null);setLastWork(b.data?.last_run_at||null)}});return()=>{live=false}},[selected,player.id])
+ async function work(){
+  if(shopBusy)return
+  setShopBusy(true)
+  const {data,error}=await supabase.rpc('perform_profession_work',{target_player:player.id,job_key:selected})
+  setShopMessage(error?.message||(data?'Produced '+data.qty+' × '+data.item+' · +'+data.xp+' profession XP':'Unable to produce'))
+  if(!error){
+   const [result,user]=await Promise.all([supabase.from('profession_workshop_runs').select('last_run_at').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),supabase.auth.getUser()])
+   setLastWork(result.data?.last_run_at||null)
+   await loadInventory(player.id)
+   if(user.data?.user)await loadPlayer(user.data.user.id)
+  }
+  setShopBusy(false)
+ }
  const hall=PROFESSION_HALLS[selected]
  const cycle=hallRotation(selected)
  const hasAccess=player.chapters_unlocked?.includes(3)&&active===selected&&unlocked.includes(selected)
@@ -80,6 +99,13 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
     <button className="reading-action" disabled={shopBusy||item.remaining<=0||player.gold<item.price} onClick={()=>buy(item.item_key)}>{item.remaining<=0?'Sold out':'Buy for '+item.price+' gold'}</button>
    </div>)}
   </div>}
+  <h4>Profession workshop · create your own items</h4>
+  {recipe?<div style={{border:'1px solid #a99270555',padding:14,borderRadius:6}}>
+   <p><strong>Produce {recipe.output_qty} × {recipe.output?.name||recipe.output_key}</strong></p>
+   <p>{recipe.input_qty>0?'Requires '+recipe.input_qty+' × '+(recipe.input?.name||recipe.input_key):'No materials required'} · +{recipe.xp_reward} profession XP · {recipe.cooldown_minutes} min cooldown</p>
+   <button className="reading-action" disabled={shopBusy||!hasAccess||(lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000)} onClick={work}>{!hasAccess?'Activate this profession to work':'Produce items'}</button>
+   {lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000&&<p>Next available: {new Date(new Date(lastWork).getTime()+recipe.cooldown_minutes*60000).toLocaleString()}</p>}
+  </div>:<p>No workshop activity available.</p>}
   <h4>NPC commissions · {cycle.hours}-hour orders</h4>
   <p>Deliver two matching items to fulfill each order once per rotation. You can obtain them from NPC stock or other gameplay activities.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
