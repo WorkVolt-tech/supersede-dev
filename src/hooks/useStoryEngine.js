@@ -6,6 +6,7 @@ import { grantLoot } from '../game/loot'
 import { useInventoryStore } from '../store/useInventoryStore'
 import { getJudgesForm } from '../game/judgesClassRules'
 import { ZONE_ELEMENT_MAP } from '../data/ch2/config'
+import { resolveCh2HubInterrupt } from '../data/ch2/hubInterrupts'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -38,6 +39,14 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     while (typeof NODES[resolvedId]?.route === 'function' && hops < 10) {
       resolvedId = NODES[resolvedId].route(player)
       hops++
+    }
+    // Resolve one-time Chapter 2 faction encounters when returning to the
+    // plaza. Include the choice's pending tags: an event's exit choice must
+    // count as complete before the next hub interruption is selected.
+    if (chapterPrefix === 'ch2') {
+      resolvedId = resolveCh2HubInterrupt(player, resolvedId, [
+        choice.allianceTag, choice.allianceTagRepeatable,
+      ])
     }
     if (!NODES[resolvedId]) return
 
