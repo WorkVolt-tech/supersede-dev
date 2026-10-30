@@ -78,3 +78,14 @@ test('World Tree regeneration is capped at max HP and lasts three enemy turns', 
   assert.equal(resolveKeystoneRegen(status, 100, 97, 100).playerHp, 100)
   assert.equal(status.cfx_worldTreeTurns, 2)
 })
+
+test('Inferno Zone deals three damage-over-time ticks then expires', () => {
+  const status = { infernoTurns: 3, infernoDmg: 40 }
+  let enemyHp = 200
+  for (let turn = 0; turn < 3; turn++) {
+    enemyHp = resolveKeystoneRegen(status, enemyHp, 90, 100).enemyHp
+  }
+  assert.equal(enemyHp, 80)
+  assert.equal(status.infernoTurns, 0)
+  assert.equal(resolveKeystoneRegen(status, enemyHp, 90, 100).enemyHp, 80)
+})
