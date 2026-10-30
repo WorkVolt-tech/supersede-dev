@@ -3,8 +3,16 @@ import { ZONE_ELEMENT_MAP } from './config'
 // The first Chapter 2 guardian defeated establishes permanent chapter resonance.
 // All elemental visits are stored as zone IDs; the same zone does not count twice.
 export function getChapterResonance(player) {
-  const flag = (player?.defeated_bosses || []).find(key => key.startsWith('element_resonance_'))
-  return flag ? flag.slice('element_resonance_'.length) : null
+  const defeated = player?.defeated_bosses || []
+  const flag = defeated.find(key => key.startsWith('element_resonance_'))
+  if (flag) return flag.slice('element_resonance_'.length)
+  // Legacy saves can predate the dedicated flag. Zone victories are appended
+  // in chronological order, so the first guardian still identifies resonance.
+  const firstGuardian = defeated.find(key =>
+    key.startsWith('zone_boss_') &&
+    Object.values(ZONE_ELEMENT_MAP).includes(key.slice('zone_boss_'.length)),
+  )
+  return firstGuardian ? firstGuardian.slice('zone_boss_'.length) : null
 }
 
 export function getZoneElement(nodeId) {
