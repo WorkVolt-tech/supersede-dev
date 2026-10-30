@@ -56,7 +56,7 @@ test('Sweep fires once after Cache when tension reaches 35', () => {
 test('Sera, Voss, and Rue react once to spare / execute records', () => {
   assert.equal(resolve(record(1, ['sera_met', 'spared_humanoid']), 'district_hub'), 'spare_reaction_sera')
   assert.equal(resolve(record(1, ['voss_met', 'executed_humanoid']), 'district_hub'), 'execute_reaction_voss')
-  assert.equal(resolve(record(2, ['rue_met', 'voss_met', 'executed_humanoid']), 'district_hub'), 'rue_action_reaction')
+  assert.equal(resolve(record(2, ['rue_met', 'voss_met', 'executed_humanoid', 'execute_reaction_seen']), 'district_hub'), 'rue_action_reaction')
 })
 
 test('Tam wounded and crossroads scenes follow the original zone windows', () => {
