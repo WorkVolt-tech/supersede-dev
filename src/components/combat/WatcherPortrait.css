@@ -50,3 +50,29 @@
 @keyframes watcher-death-mist{0%{opacity:.8}100%{opacity:0;transform:scale(1.5);filter:blur(18px)}}
 @keyframes watcher-death-eye{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.8)}}
 @media(prefers-reduced-motion:reduce){.watcher-defeated .watcher-body,.watcher-defeated .watcher-eye,.watcher-defeated .watcher-veil,.watcher-defeated .watcher-ray,.watcher-scatter-eye{animation:none!important}.watcher-defeated .watcher-body{opacity:.18}.watcher-scatter-eye{opacity:0}}
+
+/* Short non-staggering recoil when the Watcher takes damage.
+   Victory dispersal has priority and is never interrupted by a hit. */
+.watcher-hit:not(.watcher-defeated){animation:watcher-hit-recoil .43s ease-out both!important}
+.watcher-hit:not(.watcher-defeated) .watcher-eye{animation:watcher-hit-eye .43s ease-out both!important}
+.watcher-hit:not(.watcher-defeated) .watcher-body{animation:watcher-hit-shimmer .43s ease-out both}
+@keyframes watcher-hit-recoil{
+  0%{transform:translateX(0) scale(1)}
+  26%{transform:translateX(-9px) scale(.96)}
+  58%{transform:translateX(6px) scale(1.03)}
+  100%{transform:translateX(0) scale(1)}
+}
+@keyframes watcher-hit-eye{
+  0%,100%{opacity:.45;transform:translate(-50%,-50%) scale(1)}
+  36%{opacity:1;transform:translate(-50%,-50%) scale(1.85)}
+  62%{opacity:.15;transform:translate(-50%,-50%) scale(.75)}
+}
+@keyframes watcher-hit-shimmer{
+  0%,100%{filter:brightness(1)}
+  40%{filter:brightness(1.8) contrast(1.12)}
+}
+@media(prefers-reduced-motion:reduce){
+  .watcher-hit:not(.watcher-defeated),
+  .watcher-hit:not(.watcher-defeated) .watcher-eye,
+  .watcher-hit:not(.watcher-defeated) .watcher-body{animation:none!important}
+}
