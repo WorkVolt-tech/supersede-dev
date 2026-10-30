@@ -70,6 +70,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
   const [turnActor, setTurnActor] = useState(null)
+  const [judgeHit, setJudgeHit] = useState(false)
+  const judgeHitTimer = useRef(null)
+  useEffect(() => () => clearTimeout(judgeHitTimer.current), [])
+  function showJudgeHit() {
+    if (enemyData.name !== 'The Twin Judges') return
+    clearTimeout(judgeHitTimer.current)
+    setJudgeHit(false)
+    judgeHitTimer.current = setTimeout(() => setJudgeHit(true), 20)
+    setTimeout(() => setJudgeHit(false), 430)
+  }
 
   const statusEffectsRef = useRef({})
   const enemyStateRef = useRef(initEnemyState(enemyData))
@@ -183,6 +193,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
     const newEnemyHp = Math.max(0, foeHp - dmg)
     setEnemyHp(newEnemyHp)
+    if (dmg > 0) showJudgeHit()
 
     const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
@@ -221,6 +232,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setCurrentHp(playerHp)
     }
     setEnemyHp(foeHp)
+    if (typeof r?.enemyDamage === 'number' && r.enemyDamage > 0) showJudgeHit()
     return { foeHp, playerHp, consumed: r?.consumed !== false }
   }
 
@@ -285,7 +297,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       <div className="combat-turn-banner" aria-live="polite">{turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
       <div className="combat-panel">
         <div className="combat-side">
-          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} /> : /watcher/i.test(enemyData.name) ? <WatcherPortrait attacking={turnActor === 'enemy'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
+          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : /watcher/i.test(enemyData.name) ? <WatcherPortrait attacking={turnActor === 'enemy'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
           <span className="combat-name">{enemyData.name}</span>
           <HpBar hp={enemyHp} maxHp={enemyData.hp} />
           <span className="combat-hp-num">{enemyHp}/{enemyData.hp}</span>
