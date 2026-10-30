@@ -84,7 +84,7 @@ export function spreadTacticalFoeEffects(before,after,targets,primaryId,perFoe) 
   const changed=FOE_STATUS_KEYS.filter(key=>
     Object.prototype.hasOwnProperty.call(after||{},key)&&
     after[key]!==before?.[key]&&
-    (typeof after[key]!=='number'||after[key]>0))
+    (typeof after[key]==='number'?after[key]>0:after[key]===true))
   for(const unit of targets) {
     if(unit.id===primaryId||unit.hp<=0)continue
     const existing=perFoe[unit.id]||{}

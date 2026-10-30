@@ -150,4 +150,6 @@ test('new progressive footprints stay inside the 3×3 board',()=>{
   assert.equal(getTacticalAffectedSquares({shape:'wideColumn'},{col:0,rank:1}).length,6)
   assert.equal(getTacticalAffectedSquares({shape:'rowPlus'},{col:2,rank:0}).length,6)
   assert.equal(getTacticalAffectedSquares({shape:'all'},{col:2,rank:2}).length,9)
+  assert.equal(getTacticalAffectedSquares({shape:'crossPlus'},{col:1,rank:1}).length,7)
+  assert.equal(getTacticalAffectedSquares({shape:'crossPlus'},{col:1,rank:0}).length,6)
 })

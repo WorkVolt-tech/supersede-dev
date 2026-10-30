@@ -15,7 +15,7 @@ test('persisted weapon and skill mastery have separate progression', () => {
 
 test('level 100 sword gains specialized areas but fallback remains universal', () => {
   const options=getTacticalAttacks('sword',[],500000)
-  assert.ok(options.some(a=>a.id==='masterArc' && a.shape==='row'))
-  assert.ok(options.some(a=>a.id==='masterBurst' && a.shape==='cross'))
+  assert.ok(options.some(a=>a.id==='masterArc' && a.shape==='rowPlus'))
+  assert.ok(options.some(a=>a.id==='masterBurst' && a.shape==='all'))
   assert.ok(options.some(a=>a.id==='pulse' && a.fallback))
 })

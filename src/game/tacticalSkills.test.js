@@ -39,7 +39,7 @@ test('existing offensive skills expand footprints at levels 4, 7 and 10',()=>{
   const id='lightning_skill_lightning_strike'
   const levels=[1,3,4,6,7,9,10]
   assert.deepEqual(levels.map(level=>getProgressedTacticalSkillRule(id,level).shape),
-    ['single','single','row','row','cross','cross','diamond2'])
+    ['single','single','row','row','cross','cross','crossPlus'])
   assert.equal(getProgressedTacticalSkillRule('water_ultimate_tsunami',1).shape,'row')
   assert.equal(getProgressedTacticalSkillRule('water_ultimate_tsunami',7).shape,'rowPlus')
   assert.equal(getProgressedTacticalSkillRule('fire_ultimate_inferno_zone',7).shape,'all')

@@ -69,7 +69,7 @@ export function getProgressedTacticalSkillRule(skillId,level=1) {
   const original=SKILL_BASE_AREAS[skillId]||'single'
   let shape=original
   if(original==='single')
-    shape=lvl>=10?'diamond2':lvl>=7?'cross':lvl>=4?'row':'single'
+    shape=lvl>=10?'crossPlus':lvl>=7?'cross':lvl>=4?'row':'single'
   else if(original==='row')
     shape=lvl>=10?'all':lvl>=7?'rowPlus':lvl>=4?'fullRow':'row'
   else if(original==='column')

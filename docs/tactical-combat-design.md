@@ -113,7 +113,7 @@ Five explicitly counted, non-boss story encounters now route to the isolated `Gr
 All existing class and elemental skills retain their original unlock, damage,
 status, MP and cooldown formulas. The 1–10 skill upgrade system now affects
 the 3×3 battlefield. Enemy-targeted skill levels 4, 7, and 10 increase area:
-a single-target skill gradually reaches a row, then a cross, then diamond-2;
+a single-target skill gradually reaches a row, then a cross, then a seven-square cross-plus;
 existing large spells grow their signature shapes without replacing them.
 Self/support abilities do not suddenly damage enemies. Every status is spread
 to additional affected living foes only if the original skill actually applied

@@ -113,6 +113,10 @@ export function getTacticalAffectedSquares(attack, target) {
       a.shape==='row'?rank===target.rank&&Math.abs(col-target.col)<=1:
       a.shape==='column'?col===target.col:
       a.shape==='cross'?delta<=1:
+      // An evolved focused spell adds two diagonal flanks toward the
+      // opposing frontline; it does not wipe the entire 3×3 grid.
+      a.shape==='crossPlus'?delta<=1||
+        (Math.abs(col-target.col)===1&&rank===(target.rank===0?1:target.rank-1)):
       a.shape==='diamond2'?delta<=2:
       a.shape==='fullRow'?rank===target.rank:
       a.shape==='rowPlus'?Math.abs(rank-target.rank)<=1:
