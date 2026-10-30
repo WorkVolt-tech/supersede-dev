@@ -58,7 +58,7 @@ export function consumeEnemyStun(status) {
 import { aegisMpGain } from './combatMp.js'
 import { getActiveElement } from './activeElement.js'
 
-export function resolveKeystoneDefense(status, incoming) {
+export function resolveKeystoneDefense(status, incoming, random = Math.random) {
   const messages = []
   const before = Math.max(0, incoming)
   let damage = before
@@ -75,7 +75,7 @@ export function resolveKeystoneDefense(status, incoming) {
     if (status.cfx_stonebornStacks > 0) {
       damage = Math.round(damage * (1 - Math.min(0.60, status.cfx_stonebornStacks * 0.16)))
     }
-    if (status.cfx_dodgeBuffTurns > 0 && Math.random() < 0.25) {
+    if (status.cfx_dodgeBuffTurns > 0 && random() < 0.50) {
       damage = 0
       messages.push('You slip out of the attack with elemental speed.')
     }
