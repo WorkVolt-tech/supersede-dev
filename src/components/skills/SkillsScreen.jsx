@@ -7,6 +7,8 @@ import { getActiveElement, activeElementChange } from '../../game/activeElement'
 import { getElementalAttackProgress, equipElementalAttack, isElementalAttack, countLearnedElementNodes } from '../../game/elementalAttacks'
 import { CLASSES, isClassNodeAvailable, isClassNodeUnlocked, unlockClassNode } from '../../game/classes'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skillsRegistry'
+import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
+import { getActiveClassSkills } from '../../game/classCombat'
 import './SkillsScreen.css'
 
 const BRANCHES = ['offense', 'defense', 'flow', 'arcane', 'decay']
@@ -137,6 +139,20 @@ export default function SkillsScreen({ onReturn }) {
   }
   const allLearned = [...(player.skills_unlocked||[]), ...(player.elemental_unlocked||[])]
   const eligibleSkills = Object.entries(REGISTRY).filter(([key, skill]) => !isElementalAttack(key) && allLearned.includes(key) && skill.type!=='passive')
+  const classBattleSkills = getActiveClassSkills(player, {}) || []
+  // Upgrades are restricted to already learned skills, not arbitrary IDs.
+  const upgradeableSkills = [...new Map([
+    ...eligibleSkills.map(([id, skill]) => [id, { id, label: skill.label }]),
+    ...Object.values(ELEMENT_TREES).flatMap(el => getElementalAttackProgress(player, el.key)
+      .filter(skill => skill.unlocked).map(skill => [skill.id, { id: skill.id, label: skill.label }])),
+    ...classBattleSkills.map(skill => [skill.id, { id: skill.id, label: skill.label }]),
+  ]).values()]
+  async function upgradeLearnedSkill(id) {
+    if (saving || !upgradeableSkills.some(skill => skill.id === id)) return
+    const updates = getSkillUpgrade(player, id)
+    if (!updates) { setMessage('Maximum skill level reached or insufficient skill points.'); return }
+    await save(updates, 'Skill upgraded to level ' + updates.skill_levels[id] + '.')
+  }
   const status = selectedNode && (unlocked.includes(selectedNode.id) ? 'Learned' : available(selectedNode) ? 'Available' : 'Locked')
   const selectedColor = isElement ? element.color : isClass ? cls.color : COLORS[tab]
   function choose(next) { setTab(next); setSelected(null); setMessage('') }
@@ -189,6 +205,19 @@ export default function SkillsScreen({ onReturn }) {
           {selectedNode.requires?.length>0 && <p>Connected to: {selectedNode.requires.map(id => nodes.find(n=>n.id===id)?.label || id).join(', ')}</p>}
           {status==='Available' && <button className="skills-primary" disabled={saving || (!isClass && (isElement?shards:points)<cost(selectedNode))} onClick={unlock}>Unlock {selectedNode.label}</button>}
         </> : <p>Explore every node in the original progression system. Connected paths light up as you learn new skills.</p>}
+        <h3>Skill upgrades · separate from weapon mastery</h3>
+        <p>Spend skill points to strengthen learned abilities. Every skill begins at level 1, up to level {MAX_SKILL_LEVEL}.</p>
+        {upgradeableSkills.map(skill => {
+          const level = getSkillLevel(player, skill.id)
+          const cost = skillUpgradeCost(level)
+          return <div key={skill.id} className="skills-slot">
+            <span>{skill.label} · Lv {level}/{MAX_SKILL_LEVEL}</span>
+            <button type="button" disabled={saving || level >= MAX_SKILL_LEVEL || points < cost}
+              onClick={() => upgradeLearnedSkill(skill.id)}>
+              {level >= MAX_SKILL_LEVEL ? 'MAX' : 'Upgrade · ' + cost + ' SP'}
+            </button>
+          </div>
+        })}
         <h3>Battle loadout · {slots.length}/4</h3>
         <p>Choose up to four unlocked active combat skills.</p>
         {slots.map(key => <button key={key} className="skills-slot" disabled={saving} onClick={() => isElementalAttack(key) ? save({ battle_skills: slots.filter(s => s !== key) }, 'Elemental attack unequipped.') : toggleSlot(key)}>{REGISTRY[key]?.label || key} <span>Remove ×</span></button>)}

@@ -26,6 +26,7 @@ import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, res
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
+import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
@@ -361,9 +362,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const r = ClsCombat.onActiveSkill(skillId, combatPlayer, statusEffectsRef.current, enemyData)
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
-    if (typeof r?.enemyDamage === 'number' && r.enemyDamage > 0) foeHp = Math.max(0, foeHp - r.enemyDamage)
-    if (typeof r?.selfHeal === 'number' && r.selfHeal > 0) {
-      playerHp = Math.min(maxPlayerHp, playerHp + r.selfHeal)
+    const skillLevel = getSkillLevel(player, skillId)
+    const skillDamage = scaleSkillAmount(r?.enemyDamage, skillLevel)
+    const skillHeal = scaleSkillAmount(r?.selfHeal, skillLevel)
+    if (skillDamage > 0) foeHp = Math.max(0, foeHp - skillDamage)
+    if (skillHeal > 0) {
+      playerHp = Math.min(maxPlayerHp, playerHp + skillHeal)
       setCurrentHp(playerHp)
     }
     setEnemyHp(foeHp)
@@ -403,8 +407,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     changeCombatMp(mpRef.current - effect.mpCost)
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
-    foeHp = Math.max(0, foeHp - effect.enemyDamage)
-    playerHp = Math.min(maxPlayerHp, playerHp + effect.healPlayer)
+    const skillLevel = getSkillLevel(player, skillId)
+    foeHp = Math.max(0, foeHp - scaleSkillAmount(effect.enemyDamage, skillLevel))
+    playerHp = Math.min(maxPlayerHp, playerHp + scaleSkillAmount(effect.healPlayer, skillLevel))
     if (effect.enemyDamage > 0) showJudgeHit()
     setEnemyHp(foeHp)
     setCurrentHp(playerHp)
@@ -537,7 +542,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('defend')}>Defend</button>
           {activeSkills.map(skill => (
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('skill', skill.id)}>
-              {skill.label}
+              {skill.label} · Lv {getSkillLevel(player, skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
             </button>
           ))}
@@ -545,7 +550,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             disabled={busy || !entranceReady || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
               currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)}
             onClick={() => takeTurn('elemental', elementalAttack.id)}>
-            {elementalAttack.label}
+            {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
                 ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
