@@ -350,6 +350,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         continue
       }
       const pulse=Boolean(choice.attack?.fallback)
+      const hpBeforeAction=actor.hp
       const messages=[]
       let incoming=0,heal=0
       const foeData=enemyCopiesRef.current[actor.id]
@@ -386,7 +387,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       hit?.messages?.forEach(note);guard.messages?.forEach(note)
       messages.forEach(note)
       if(guard.mpGain)updateMp(mpRef.current+guard.mpGain)
-      if(actor.hp===0&&foe.hp>0)onFoeDefeated(actor)
+      if(actor.hp===0&&hpBeforeAction>0)onFoeDefeated(actor)
       await sleep(170)
     }
     updateFoes(next)
@@ -416,12 +417,18 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       statusRef.current.enemyStunTurns=0
     }
     const target=nextAliveTarget(units,focus)
-    if(tick?.damageToEnemy>0&&target)units=units.map(u=>
-      u.id===target.id?{...u,hp:Math.max(0,u.hp-tick.damageToEnemy)}:u)
+    if(tick?.damageToEnemy>0&&target){
+      units=units.map(u=>u.id===target.id
+        ?{...u,hp:Math.max(0,u.hp-tick.damageToEnemy)}:u)
+      if(units.find(u=>u.id===target.id).hp===0)onFoeDefeated(target)
+    }
     if(tick?.healToPlayer>0&&hpRef.current>0)updateHp(hpRef.current+tick.healToPlayer)
     const targetAfter=nextAliveTarget(units,focus)
     const regen=resolveKeystoneRegen(statusRef.current,targetAfter?.hp||0,hpRef.current,maxHp)
-    if(targetAfter)units=units.map(u=>u.id===targetAfter.id?{...u,hp:regen.enemyHp}:u)
+    if(targetAfter){
+      units=units.map(u=>u.id===targetAfter.id?{...u,hp:regen.enemyHp}:u)
+      if(regen.enemyHp===0&&targetAfter.hp>0)onFoeDefeated(targetAfter)
+    }
     updateFoes(units)
     updateHp(regen.playerHp)
     regen.messages?.forEach(note)
