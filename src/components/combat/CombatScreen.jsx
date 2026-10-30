@@ -24,7 +24,7 @@ import { persistCombatResult } from '../../game/combatPersistence'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
-import { advanceKeystoneCooldowns, applyKeystoneStatuses, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
+import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
@@ -311,7 +311,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   }
 
   function playerAttack(foeHp, playerHp) {
-    const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) + Math.floor(Math.random() * 4))
+    const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
+    const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) +
+      armorPierce + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
     const wasCrit = Boolean(statusEffectsRef.current.cfx_guaranteedCrit) || atkResult?.wasCrit || Math.random() < critChance
@@ -468,6 +470,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         playerHp = skillResult.playerHp
       } else {
         pushLog('You brace yourself.')
+        const stacks = applyStonebornDefend(combatPlayer, statusEffectsRef.current)
+        if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
       }
       await pause(650)
     }
