@@ -25,6 +25,18 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
   const [gameOver, setGameOver] = useState(null)
 
   const stateRef = useRef(null)
+  const touchControlsRef = useRef({left:false,right:false,shoot:false})
+  const completedRef = useRef(false)
+
+  function startTouchControl(control, event) {
+    event.preventDefault()
+    event.currentTarget.setPointerCapture?.(event.pointerId)
+    touchControlsRef.current[control] = true
+  }
+  function stopTouchControl(control, event) {
+    event.preventDefault()
+    touchControlsRef.current[control] = false
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -53,6 +65,7 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
     stateRef.current = { player, enemies, bullets }
 
     function onKeyDown(e) {
+      if (['ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault()
       if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true
       if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true
       if (e.key === ' ') keys.shoot = true
@@ -80,13 +93,13 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
       raf = requestAnimationFrame(loop)
 
       const moveSpd = 5
-      if (keys.left)  player.x -= moveSpd
-      if (keys.right) player.x += moveSpd
+      if (keys.left || touchControlsRef.current.left)  player.x -= moveSpd
+      if (keys.right || touchControlsRef.current.right) player.x += moveSpd
       const rx = canvas.width * 0.15, rw = canvas.width * 0.7
       player.x = Math.max(rx + player.w / 2, Math.min(rx + rw - player.w / 2, player.x))
 
       fireTimer--
-      if (keys.shoot && fireTimer <= 0) {
+      if ((keys.shoot || touchControlsRef.current.shoot) && fireTimer <= 0) {
         bullets.push({ x: player.x, y: player.y - player.h / 2, vy: -9 })
         fireTimer = 8
       }
@@ -125,6 +138,7 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
         } else if (e.y > player.y - 20 && Math.abs(e.x - player.x) < e.sz + player.w / 2) {
           player.hp = Math.max(0, player.hp - e.atk)
           e.dead = true
+          if (e.isBoss) { cancelled = true; setGameOver('lose') }
         }
       }
 
@@ -176,6 +190,7 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
 
     return () => {
       cancelled = true
+      touchControlsRef.current = {left:false,right:false,shoot:false}
       if (raf) cancelAnimationFrame(raf)
       window.removeEventListener('resize', resize)
       window.removeEventListener('keydown', onKeyDown)
@@ -184,7 +199,12 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  useEffect(() => { if (gameOver) onComplete?.(gameOver) }, [gameOver, onComplete])
+  useEffect(() => {
+    if (gameOver && !completedRef.current) {
+      completedRef.current = true
+      onComplete?.(gameOver)
+    }
+  }, [gameOver, onComplete])
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh', background: '#000' }}>
@@ -207,9 +227,38 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
         </div>
       )}
       {!gameOver && (
-        <p style={{ position: 'absolute', bottom: 8, left: 0, right: 0, textAlign: 'center', color: '#7a6435', fontFamily: 'monospace', fontSize: 10 }}>
-          ←/→ or A/D to steer · SPACE to fire · touch controls not ported yet
-        </p>
+        <>
+          <div style={{position:'absolute',bottom:32,left:12,display:'flex',gap:10,zIndex:5}}>
+            {[
+              {control:'left',label:'◀',name:'Steer left'},
+              {control:'right',label:'▶',name:'Steer right'},
+            ].map(button => (
+              <button key={button.control} type="button" aria-label={button.name}
+                onPointerDown={event=>startTouchControl(button.control,event)}
+                onPointerUp={event=>stopTouchControl(button.control,event)}
+                onPointerCancel={event=>stopTouchControl(button.control,event)}
+                onLostPointerCapture={event=>stopTouchControl(button.control,event)}
+                style={{width:56,height:56,borderRadius:12,touchAction:'none',userSelect:'none',
+                  border:'2px solid #c8b96e',background:'rgba(15,14,22,.83)',color:'#fff2c7',fontSize:24,fontWeight:700}}>
+                {button.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" aria-label="Fire weapon"
+            onPointerDown={event=>startTouchControl('shoot',event)}
+            onPointerUp={event=>stopTouchControl('shoot',event)}
+            onPointerCancel={event=>stopTouchControl('shoot',event)}
+            onLostPointerCapture={event=>stopTouchControl('shoot',event)}
+            style={{position:'absolute',right:12,bottom:32,zIndex:5,width:70,height:56,borderRadius:12,
+              touchAction:'none',userSelect:'none',border:'2px solid #e8b850',
+              background:'rgba(100,36,22,.88)',color:'#fff5dc',fontSize:14,fontWeight:700}}>
+            FIRE
+          </button>
+          <p style={{position:'absolute',bottom:5,left:0,right:0,textAlign:'center',pointerEvents:'none',
+            color:'#9e8e66',fontFamily:'monospace',fontSize:10}}>
+            ←/→ or A/D to steer · SPACE to fire · hold touch buttons on mobile
+          </p>
+        </>
       )}
     </div>
   )
