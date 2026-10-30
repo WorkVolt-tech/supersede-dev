@@ -26,6 +26,8 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [shopBusy,setShopBusy]=useState(false)
  const [shopMessage,setShopMessage]=useState('')
  const [shopLoading,setShopLoading]=useState(false)
+ const [clock,setClock]=useState(()=>Date.now())
+ useEffect(()=>{const interval=setInterval(()=>setClock(Date.now()),30000);return()=>clearInterval(interval)},[])
  const loadPlayer=usePlayerStore(x=>x.loadPlayer)
  const loadInventory=useInventoryStore(x=>x.loadInventory)
  useEffect(()=>{
@@ -189,15 +191,15 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   {recipe?<div style={{border:'1px solid #a99270555',padding:14,borderRadius:6}}>
    <p><strong>Produce {recipe.output_qty} × {recipe.output?.name||recipe.output_key}</strong></p>
    <p>{recipe.input_qty>0?'Requires '+recipe.input_qty+' × '+(recipe.input?.name||recipe.input_key):'No materials required'} · +{recipe.xp_reward} profession XP · {recipe.cooldown_minutes} min cooldown</p>
-   <button className="reading-action" disabled={shopBusy||!hasAccess||(lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000)} onClick={work}>{!hasAccess?'Activate this profession to work':'Produce items'}</button>
-   {lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000&&<p>Next available: {new Date(new Date(lastWork).getTime()+recipe.cooldown_minutes*60000).toLocaleString()}</p>}
+   <button className="reading-action" disabled={shopBusy||!hasAccess||(lastWork&&clock<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000)} onClick={work}>{!hasAccess?'Activate this profession to work':'Produce items'}</button>
+   {lastWork&&clock<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000&&<p>Next available: {new Date(new Date(lastWork).getTime()+recipe.cooldown_minutes*60000).toLocaleString()}</p>}
   </div>:<p>No workshop activity available.</p>}
   <h4>Profession recipes · Level {professionLevel}/100</h4>
   <p>Unlock stronger creations at levels 5, 15, 30, 50, 75, and 100. Master, Grandmaster, and Legendary creations consume materials from earlier tiers, with longer cooldowns.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:10}}>
    {advanced.map(r=>{
     const last=advancedRuns.find(x=>x.recipe_key===r.recipe_key)?.last_run_at
-    const cooling=last&&Date.now()<new Date(last).getTime()+r.cooldown_minutes*60000
+    const cooling=last&&clock<new Date(last).getTime()+r.cooldown_minutes*60000
     const owned=inventory.filter(x=>x.item_key===r.input_key&&!x.equipped_slot).reduce((n,x)=>n+x.quantity,0)
     return <div key={r.recipe_key} style={{border:'1px solid #a99270555',borderRadius:6,padding:12}}>
      <strong>{r.output?.name||r.output_key}</strong>
@@ -213,7 +215,7 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:10}}>
    {expeditions.map(e=>{
     const last=expeditionRuns.find(r=>r.expedition_key===e.expedition_key)?.last_success_at
-    const cooling=last&&Date.now()<new Date(last).getTime()+e.cooldown_hours*3600000
+    const cooling=last&&clock<new Date(last).getTime()+e.cooldown_hours*3600000
     const canGo=hasAccess&&professionLevel>=e.required_level&&!cooling&&!shopBusy
     return <div key={e.expedition_key} style={{border:'1px solid #a99270555',borderRadius:6,padding:12}}>
      <strong>{e.title}</strong><p>{e.description}</p>
