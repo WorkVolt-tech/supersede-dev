@@ -227,3 +227,29 @@ When a component creates a persistent status or hazard, the triad applies
 it only once rather than triggering a second independent attack/cooldown.
 The triad runs in both group and solo/boss combat, and its active element
 still obeys the one-element-at-a-time rule.
+
+## Triad balance pass and element-specific techniques
+
+Each classless elemental Triad still composes the same three unlocked
+7/13/19-node attacks, with a single cast, two AP, twenty MP and four
+round cooldown; no new fusion slots or permanent character fields.
+Triad source skills contribute 65% of their independently leveled damage,
+but total damage per affected enemy is capped relative to the single
+strongest component: 130% for cross, 120% for diamond2, and 110% for
+full 3×3. This makes wider area growth a tactical tradeoff, not a
+multiplicative damage exploit. The existing individual elemental spells
+retain their original formulas and loadouts.
+
+Triads also receive ten distinctive secondary techniques using
+separate combat effects that do not alter class or elemental trees:
+Fire: **Cinder Convergence**, persistent fire/Ember; Water:
+**Abyssal Torrent**, heal and stagger; Lightning: **Storm Circuit**,
+a secondary chain arc; Arcane: **Resonance Collapse**, small MP refund;
+Shadow: **Umbral Trinity**, next-hit evasion; Earth:
+**Tectonic Ward**, temporary barrier; Wind: **Cyclone Weave**,
+extended tornado protection; Plant: **Verdant Rebirth**, a two-turn
+regenerative effect; Metal: **Iron Cataclysm**, armor pierce capped
+per foe; Poison: **Plague Bloom**, an additional Decay stack.
+The combat effects work in 3×3 and single-target/boss screens.
+Per-element CSS animation accents and the Skills screen name/tooltip
+make the difference visible without modifying the original book art.

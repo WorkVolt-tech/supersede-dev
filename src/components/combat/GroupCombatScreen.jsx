@@ -71,7 +71,8 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
         onClick={()=>side==='enemy'?onFocus(foe.id):onMove({col,rank})}>
         <span>{foe?foe.icon:mine?'🧑':'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
-          className={'signature-grid-flash signature-'+signatureFx.kind}/>}
+          className={'signature-grid-flash signature-'+signatureFx.kind+
+            (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
         <small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':mine?'YOU':['FRONT','MID','REAR'][rank]}</small>
       </button>
     }))
@@ -382,7 +383,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     signatureCooldownRef.current=signature.cooldown+1
     setSignatureCooldown(signatureCooldownRef.current)
     setSignatureFx({id:++signatureFxId.current,kind:signature.kind,
-      side:signature.kind==='titan'?'hero':'enemy',squares:plan.squares})
+      side:signature.kind==='titan'?'hero':'enemy',
+      element:signature.kind==='triad'?signature.element:null,
+      squares:plan.squares})
     setSignaturePreview(false)
     return true
   }
@@ -843,7 +846,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <p className="combat-fusion-locked">✦ Class–element fusion is locked for this pairing.
         Develop both paths, then unlock it in Skills.</p>}
     {signatureFx&&<div key={signatureFx.id}
-      className={'combat-signature-burst signature-'+signatureFx.kind}
+      className={'combat-signature-burst signature-'+signatureFx.kind+
+        (signatureFx.element?' triad-'+signatureFx.element:'')}
       role="status">{signature?.label}</div>}
     {signaturePreview&&signaturePlan?.valid&&!result&&
       <p className="combat-attack-preview" role="status">

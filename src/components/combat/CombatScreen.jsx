@@ -86,7 +86,8 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
           (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
-          className={'signature-grid-flash signature-'+signatureFx.kind}/>}
+          className={'signature-grid-flash signature-'+signatureFx.kind+
+            (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
         <small>{occupied?(side==='enemy'?'FOE':'YOU'):names[rank]}</small>
       </button>
     }))
@@ -322,6 +323,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setSignatureCooldown(signatureCooldownRef.current)
     setSignatureFx({id:++signatureFxId.current,kind:signature.kind,
       side:signature.target==='self'?'hero':'enemy',
+      element:signature.kind==='triad'?signature.element:null,
       squares:getTacticalAffectedSquares(signature.attack,
         signature.target==='self'?heroPosition:enemyPosition)})
     setSignaturePreview(false)
@@ -877,7 +879,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           </button>
         </div>}
         {signatureFx&&<div key={signatureFx.id}
-          className={'combat-signature-burst signature-'+signatureFx.kind}
+          className={'combat-signature-burst signature-'+signatureFx.kind+
+        (signatureFx.element?' triad-'+signatureFx.element:'')}
           role="status">{signature?.label}</div>}
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp}

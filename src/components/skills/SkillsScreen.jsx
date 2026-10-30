@@ -10,6 +10,7 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
+import { getElementalTriadAction, getTriadSpecial } from '../../game/elementalTriad'
 import { getFusionEligibility, unlockFusionPair, getElementalTriadEligibility,
   unlockElementalTriad, committedFusionKey, fusionMasteryLevel,
   getFusionSignature, FUSION_UNLOCK_COST,
@@ -261,6 +262,10 @@ export default function SkillsScreen({ onReturn }) {
             {!player.active_class&&(()=>{
               const triad=getElementalTriadEligibility(player,elementKey)
               const fusionXp=Math.max(0,player.fusion_mastery?.[triad.pair]||0)
+              const mastery=fusionMasteryLevel(fusionXp)
+              const triadAction=getElementalTriadAction({
+                kind:'triad',key:triad.pair,element:elementKey,level:mastery})
+              const specialty=getTriadSpecial(elementKey,mastery,0)
               return <div className="skills-fusion-unlock">
                 <h3>✦ Elemental Triad Fusion</h3>
                 <p>Classless elemental path: combine all three unlocked {elementKey}
@@ -271,7 +276,11 @@ export default function SkillsScreen({ onReturn }) {
                   ?<p>Committed fusion: {triad.pair} · Fusion Mastery
                     {' '}Lv {fusionMasteryLevel(fusionXp)}/10 · {fusionXp} XP.
                     Three elemental attacks fuse during combat, while their
-                    original individual skills remain available.</p>
+                    original individual skills remain available.
+                    {' '}<strong>{triadAction.technique}</strong> · {specialty.detail}.
+                    {' '}Area: {triadAction.attack.shape} · {triadAction.mp} MP /
+                    {' '}{triadAction.ap} AP · {triadAction.cooldown}-round cooldown.
+                    Attack area expands at Fusion Mastery Lv 5 and 8.</p>
                   :triad.lockedByOther
                     ?<p>Only fusion slot already committed to {triad.committed}.
                       You cannot purchase another fusion.</p>

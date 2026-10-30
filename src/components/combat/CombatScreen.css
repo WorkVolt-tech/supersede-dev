@@ -206,3 +206,17 @@
 @media(prefers-reduced-motion:reduce){
   .combat-signature-burst,.signature-grid-flash {animation:none;opacity:1;}
 }
+
+/* Classless elemental triads have distinctive battle animations. */
+.signature-grid-flash.signature-triad,
+.combat-signature-burst.signature-triad { --signature-accent:#e4c979; }
+.signature-triad.triad-fire { --signature-accent:#fa8955; }
+.signature-triad.triad-water { --signature-accent:#6cc5fc; }
+.signature-triad.triad-lightning { --signature-accent:#b6a6ff; }
+.signature-triad.triad-arcane { --signature-accent:#ffe292; }
+.signature-triad.triad-shadow { --signature-accent:#c0a3e5; }
+.signature-triad.triad-earth { --signature-accent:#b2d2a4; }
+.signature-triad.triad-wind { --signature-accent:#90e3d2; }
+.signature-triad.triad-plant { --signature-accent:#90d86d; }
+.signature-triad.triad-metal { --signature-accent:#becad9; }
+.signature-triad.triad-poison { --signature-accent:#c8df63; }
