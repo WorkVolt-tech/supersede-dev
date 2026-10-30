@@ -8,19 +8,26 @@ import GroupCombatScreen from '../../src/components/combat/GroupCombatScreen'
 import '../../src/index.css'
 
 const scenario=new URLSearchParams(location.search).get('scenario')
-const fusionScenario=scenario==='fusion'||scenario==='fusion-victory'
+const signatureElement={
+  'signature-fire':'fire','signature-earth':'earth','signature-lightning':'lightning'
+}[scenario]
+const fusionScenario=scenario==='fusion'||scenario==='fusion-victory'||Boolean(signatureElement)
+const fusionElement=signatureElement||'fire'
+const fusionClass=signatureElement==='earth'?'bastion':
+  signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player = {
   id:'test-only-player',name:'Tactical Tester',level:fusionScenario?25:1,hp:160,max_hp:160,
   atk:12,def:8,guard:3,speed:12,insight:1,luck:0,agility:1,
-  power:0,control:0,active_class:fusionScenario?'ghostblade':null,
-  element:fusionScenario?'fire':'none',active_element:null,
+  power:0,control:0,active_class:fusionScenario?fusionClass:null,
+  element:fusionScenario?fusionElement:'none',active_element:null,
   weapon_mastery:{sword:new URLSearchParams(location.search).get('scenario')==='mastery'?500000:0},
   skill_levels:{},elemental_unlocked:fusionScenario?
-    ['fire_aggr_1','fire_aggr_2','fire_aggr_3','fire_aggr_4','fire_aggr_5','fire_aggr_ks']:[],
-  defeated_bosses:fusionScenario?['zone_boss_fire']:[],
-  class_nodes_unlocked:fusionScenario?['ghostblade:ghostblade_t1a','ghostblade:ghostblade_t1c']:[],
-  fusion_unlocked:fusionScenario?['ghostblade:fire']:[],
-  fusion_mastery:fusionScenario?{'ghostblade:fire':45}:{},
+    [1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n).concat([fusionElement+'_aggr_ks']):[],
+  defeated_bosses:fusionScenario?['zone_boss_'+fusionElement]:[],
+  class_nodes_unlocked:fusionScenario?[fusionClass+':'+fusionClass+'_t1a',
+    fusionClass+':'+fusionClass+'_t1c']:[],
+  fusion_unlocked:fusionScenario?[fusionClass+':'+fusionElement]:[],
+  fusion_mastery:fusionScenario?{[fusionClass+':'+fusionElement]:45}:{},
   chapters_unlocked:[1],xp:0,skill_points:0,
 }
 const metrics={saves:0}

@@ -285,6 +285,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     if(before>foeHp)showJudgeHit()
     setEnemyHp(foeHp);setCurrentHp(playerHp)
+    fusionPracticeRef.current=Math.min(FUSION_MAX_PRACTICE_PER_FIGHT,
+      fusionPracticeRef.current+1)
+    pushLog('Signature fusion practice +1 (on victory).')
     signatureCooldownRef.current=signature.cooldown+1
     setSignatureCooldown(signatureCooldownRef.current)
     setSignatureFx({id:++signatureFxId.current,kind:signature.kind,

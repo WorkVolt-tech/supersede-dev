@@ -8,17 +8,22 @@ import '../../src/index.css'
 
 const params=new URLSearchParams(location.search)
 const boss=params.get('scenario')==='boss'
+const signatureElement={'signature-fire':'fire','signature-earth':'earth',
+  'signature-lightning':'lightning'}[params.get('scenario')]
 const fused=params.get('scenario')!=='unfused'
+const fusionElement=signatureElement||'fire'
+const fusionClass=signatureElement==='earth'?'bastion':
+  signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player={
   id:'test-single-fusion',name:'Fusion Tester',level:25,
   hp:160,max_hp:160,atk:30,def:10,guard:3,speed:12,insight:1,luck:0,
-  agility:1,power:0,control:0,active_class:'ghostblade',element:'fire',
-  defeated_bosses:['zone_boss_fire'],
-  class_nodes_unlocked:['ghostblade:ghostblade_t1a','ghostblade:ghostblade_t1c'],
-  elemental_unlocked:['fire_aggr_1','fire_aggr_2','fire_aggr_3',
-    'fire_aggr_4','fire_aggr_5','fire_aggr_ks'],
-  fusion_unlocked:fused?['ghostblade:fire']:[],
-  fusion_mastery:{'ghostblade:fire':45},
+  agility:1,power:0,control:0,active_class:fusionClass,element:fusionElement,
+  defeated_bosses:['zone_boss_'+fusionElement],
+  class_nodes_unlocked:[fusionClass+':'+fusionClass+'_t1a',fusionClass+':'+fusionClass+'_t1c'],
+  elemental_unlocked:[1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n)
+    .concat([fusionElement+'_aggr_ks']),
+  fusion_unlocked:fused?[fusionClass+':'+fusionElement]:[],
+  fusion_mastery:{[fusionClass+':'+fusionElement]:45},
   weapon_mastery:{sword:0},skill_levels:{},battle_skills:[],
   chapters_unlocked:[1],xp:0,skill_points:1,
 }
@@ -40,7 +45,7 @@ useInventoryStore.setState({
     equipped_slot:'mainhand',atk_bonus:0,sockets_total:0,socketed_runes:[]}],
 })
 const encounter={name:boss?'Training Guardian':'Training Rival',
-  hp:48,atk:3,def:0,speed:3,weapon_type:'sword',xp:0,loot:[],icon:'👹'}
+  hp:signatureElement?180:48,atk:3,def:0,speed:3,weapon_type:'sword',xp:0,loot:[],icon:'👹'}
 createRoot(document.getElementById('root')).render(
   <CombatScreen enemyData={encounter} isBoss={boss}
     onWin={()=>document.body.dataset.outcome='win'}

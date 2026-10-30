@@ -321,6 +321,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       fortressCounterRef.current=signature.counter
       note("Titan's Fortress raises a "+signature.ward+'-point barrier with retaliation.')
     }
+    fusionPracticeRef.current=Math.min(FUSION_MAX_PRACTICE_PER_FIGHT,
+      fusionPracticeRef.current+1)
+    note('Signature fusion practice +1 (on victory).')
     signatureCooldownRef.current=signature.cooldown+1
     setSignatureCooldown(signatureCooldownRef.current)
     setSignatureFx({id:++signatureFxId.current,kind:signature.kind,
