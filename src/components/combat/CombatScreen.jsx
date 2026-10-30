@@ -315,9 +315,46 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { foeHp, playerHp, consumed: r?.consumed !== false }
   }
 
+  function castKeystone(skillId, foeHp, playerHp) {
+    const effect = applyKeystone(skillId, combatPlayer, statusEffectsRef.current, {
+      enemyHp: foeHp, maxEnemyHp: enemyData.hp,
+      currentHp: playerHp, maxPlayerHp,
+      playerATK: calcATK(player, equipped),
+      playerDEF: calcDEF(player, equipped),
+    })
+    effect.messages?.forEach(pushLog)
+    applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
+    foeHp = Math.max(0, foeHp - Math.max(0, effect.enemyDamage || 0))
+    playerHp = Math.min(maxPlayerHp, playerHp + Math.max(0, effect.healPlayer || 0))
+    if (effect.enemyDamage > 0) showJudgeHit()
+    setEnemyHp(foeHp)
+    setCurrentHp(playerHp)
+    if (effect.cooldown > 0) {
+      setKeystoneCooldowns(prev => ({ ...prev, [skillId]: effect.cooldown }))
+    }
+    return { foeHp, playerHp, consumed: effect.consumesTurn !== false }
+  }
+
   async function takeTurn(action, skillId) {
     if (busy || result || !entranceReady) return
+    // Revalidate even when triggered programmatically; the UI alone
+    // must not permit casting an unlearned or cooling-down keystone.
+    if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
+      .some(keystone => keystone.id === skillId && keystone.available)) return
     setBusy(true)
+    // Free keystones (Time Skip, Hurricane, etc.) may prepare another
+    // action without giving the enemy an extra attack or ticking cooldowns.
+    if (action === 'keystone') {
+      const preview = applyKeystone(skillId, combatPlayer, statusEffectsRef.current, {
+        currentHp, maxPlayerHp, enemyHp, maxEnemyHp: enemyData.hp,
+        playerATK: calcATK(player, equipped), playerDEF: calcDEF(player, equipped),
+      })
+      if (preview.consumesTurn === false) {
+        castKeystone(skillId, enemyHp, currentHp)
+        setBusy(false)
+        return
+      }
+    }
     // Stance switches are explicitly free actions in classCombat.
     // They should neither consume a round nor trigger enemy initiative.
     if (action === 'skill' && (skillId === 'stance_solar' || skillId === 'stance_lunar')) {
@@ -342,7 +379,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       if (side === 'enemy') {
         ;({ playerHp, foeHp } = enemyTurn(playerHp, foeHp, defendAction))
       } else if (action === 'attack') {
-        foeHp = playerAttack(foeHp)
+        ;({ foeHp, playerHp } = playerAttack(foeHp, playerHp))
+      } else if (action === 'keystone') {
+        ;({ foeHp, playerHp } = castKeystone(skillId, foeHp, playerHp))
       } else if (action === 'skill') {
         const skillResult = playerSkill(skillId, foeHp, playerHp)
         foeHp = skillResult.foeHp
@@ -361,12 +400,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     setTurnActor(null)
     setDefending(false)
+    setKeystoneCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'keystone' ? skillId : null))
     if (playerHp <= 0) await endCombat('lose', playerHp)
     else if (foeHp <= 0) await endCombat('win', playerHp)
     setBusy(false)
   }
 
   const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
+  const keystones = getUnlockedKeystones(combatPlayer, keystoneCooldowns)
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -402,6 +443,17 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
+            </button>
+          ))}
+          {keystones.map(keystone => (
+            <button key={keystone.id} type="button" className="combat-action-btn"
+              title={keystone.desc}
+              disabled={busy || !entranceReady || !keystone.available}
+              onClick={() => takeTurn('keystone', keystone.id)}>
+              {keystone.label}
+              <span className="combat-action-sub">
+                {keystone.available ? '✦ Elemental keystone' : `Cooldown: ${keystone.cooldown} rounds`}
+              </span>
             </button>
           ))}
           {onEscape && (
