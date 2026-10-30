@@ -174,6 +174,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const maxAp = maxCombatAp(player.level)
   const [actionPoints, setActionPoints] = useState(maxAp)
   const actionPointsRef = useRef(maxAp)
+  const [emergencyUsed,setEmergencyUsed]=useState(false)
+  const emergencyUsedRef=useRef(false)
   const roundStartedRef = useRef(false)
   const roundRef=useRef(1)
   const [round,setRound]=useState(1)
@@ -692,7 +694,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   async function takeTurn(action, skillId, moveTo=null) {
     if (busy || result || !entranceReady) return
     const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
-    if (action==='attack' && (!attack ||
+    if (action==='attack' && (attack?.fallback&&emergencyUsedRef.current || !attack ||
       !isTacticalTargetValid(attack,heroPosition,enemyPosition) ||
       (attack.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0))) return
@@ -799,6 +801,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
     }
     await pause(450)
+    if (action==='attack' && attack.fallback) {
+      emergencyUsedRef.current=true
+      setEmergencyUsed(true)
+    }
     const remaining=Math.max(0,actionPointsRef.current-cost)
     actionPointsRef.current=remaining
     setActionPoints(remaining)
@@ -832,6 +838,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (statusEffectsRef.current.cfx_ironDomainTurns>0 &&
         !(action==='elemental' && skillId==='metal_ultimate_iron_domain'))
       statusEffectsRef.current.cfx_ironDomainTurns--
+    emergencyUsedRef.current=false
+    setEmergencyUsed(false)
     roundStartedRef.current=false
     roundRef.current+=1;setRound(roundRef.current)
     actionPointsRef.current=maxAp
@@ -918,7 +926,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             squares:getTacticalAffectedSquares(signature.attack,
               signature.target==='self'?heroPosition:enemyPosition)
           }:null}
-          canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap}
+          canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
           onAttack={()=>takeTurn('attack',selectedAttack.id)} />
@@ -927,6 +935,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
             aria-pressed={selectedAttack.id===attack.id}
             disabled={busy || !entranceReady || actionPoints<attack.ap||
+              (attack.fallback&&emergencyUsed)||
               (attack.thrown&&throwTurns>0)}
             onClick={()=>setSelectedAttackId(attack.id)}>
             {attack.label}{attack.fallback?' · Emergency':''}
