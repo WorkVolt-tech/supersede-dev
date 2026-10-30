@@ -33,7 +33,7 @@ export const TACTICAL_WEAPONS = {
   bow:      { label:'Bow',           icon:'🏹', attacks:['bash','quickArrow','aimed','volley','pulse'] },
   crossbow: { label:'Crossbow',      icon:'🏹', attacks:['bash','quickArrow','aimed','pierce','pulse'] },
   pistol:   { label:'Pistol',        icon:'🔫', attacks:['bash','snapshot','scatter','pulse'] },
-  rifle:    { label:'Rifle',         icon:'🔫', attacks:['bash','aimed','pierce','pulse'] },
+  rifle:    { label:'Rifle',         icon:'🔫', attacks:['bash','quickArrow','aimed','pierce','pulse'] },
   shotgun:  { label:'Shotgun',       icon:'💥', attacks:['bash','scatter','shockwave','pulse'] },
   shield:   { label:'Shield',        icon:'🛡️', attacks:['bash','shieldToss','shockwave','pulse'] },
   tome:     { label:'Tome',          icon:'📖', attacks:['bash','bolt','wave','pulse'] },
