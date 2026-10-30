@@ -36,8 +36,9 @@ export default function ChapterOneBossPreviewPage({onReturn}){
  const [entranceReady,setEntranceReady]=useState(false)
  useEffect(()=>{
   const duration=CH1_BOSS_ENTRANCE_MS[boss]??0
-  setEntranceReady(duration===0)
-  if(duration===0)return
+  const reducedMotion=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  setEntranceReady(duration===0||reducedMotion)
+  if(duration===0||reducedMotion)return
   const timer=setTimeout(()=>setEntranceReady(true),duration)
   return()=>clearTimeout(timer)
  },[boss,replay])
