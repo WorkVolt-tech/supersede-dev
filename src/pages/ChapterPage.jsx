@@ -4,7 +4,7 @@ import StoryNode from '../components/story/StoryNode'
 import { NODES as CH1_NODES } from '../data/ch1/nodes'
 
 // Player + inventory are loaded once by App.jsx before any page renders.
-export default function ChapterPage() {
+export default function ChapterPage({ onOpenFarming }) {
   const player = usePlayerStore(s => s.player)
   const { currentNode, goTo } = useStoryEngine(CH1_NODES, 'ch1')
   if (!player) return <p className="story-text">No player loaded.</p>
@@ -27,11 +27,27 @@ export default function ChapterPage() {
           ? remaining.map(({ key, ...choice }) => choice)
           : [{ label: 'The barrier is down — gather at the plaza', sub: 'The Watcher awaits', next: 'plaza_allies' }],
       }
-    : currentNode
+    : currentNode?.id === 'farming_hub'
+      ? {
+          ...currentNode,
+          // Guardian defeats/escapes land here. The old renderer supplied
+          // navigation dynamically; without it React displays no choices.
+          choices: [{
+            label: 'Return to the district plaza',
+            sub: 'Choose a guardian route to try again',
+            next: currentNode.returnNode || 'district_hub',
+          }],
+        }
+      : currentNode
 
   return (
     <div className="chapter-page">
       <StoryNode node={displayNode} player={player} goTo={goTo} />
+      {currentNode?.id === 'farming_hub' && remaining.length < guardians.length && onOpenFarming && (
+        <button className="reading-action" onClick={onOpenFarming}>
+          Enter unlocked farming grounds ›
+        </button>
+      )}
     </div>
   )
 }
