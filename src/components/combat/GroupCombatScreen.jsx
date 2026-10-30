@@ -14,6 +14,7 @@ import { equipmentSubtype } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import { getActiveElement } from '../../game/activeElement'
 import { getFusionSignatureAction, planFusionSignature, canCastFusionSignature } from '../../game/signatureFusion'
+import { resolveElementalTriad } from '../../game/elementalTriad'
 import { getActiveFusion, getFusionRider, getFusionEligibility, awardFusionPractice,
   selectFusionChainTargets, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
@@ -289,9 +290,36 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   function castSignature(target) {
     const plan=planFusionSignature(signature,foesRef.current,target?.id,heroRef.current)
     if(!plan.valid)return false
+    const triad=signature.kind==='triad'?resolveElementalTriad(combatPlayer,
+      statusRef.current,{atk:calcATK(player,equipped),
+        def:calcDEF(player,equipped),enemyDef:target?.def||0,maxHp}):null
+    if(signature.kind==='triad'&&!triad)return false
     updateMp(mpRef.current-signature.mp)
     const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
-    if(signature.kind==='phantom'){
+    if(signature.kind==='triad'){
+      Object.assign(statusRef.current,triad.playerStatus)
+      for(const foe of plan.targets){
+        const hit=applyDamage(foesRef.current,single,foe.id,triad.damage)
+        if(!hit.valid)continue
+        const alive=foesRef.current.find(u=>u.id===foe.id&&u.hp>0)
+        if(!alive)continue
+        const effects=foeStatusesRef.current[foe.id]||{}
+        for(const [key,value] of Object.entries(triad.enemyStatus))
+          effects[key]=typeof value==='number'?Math.max(effects[key]||0,value):value
+        foeStatusesRef.current[foe.id]=effects
+      }
+      if(triad.playerStatus.infernoTurns>0){
+        const field=makeGroupField('triad-fire',signature.attack,target,
+          triad.playerStatus.infernoTurns,
+          Math.max(1,Math.round((triad.playerStatus.infernoDmg||40)*.65)))
+        fieldsRef.current=[...fieldsRef.current.filter(f=>f.kind!=='triad-fire'),field]
+        statusRef.current.infernoTurns=0
+        statusRef.current.infernoDmg=0
+      }
+      if(triad.heal)updateHp(hpRef.current+triad.heal)
+      note(signature.label+': '+triad.components.map(c=>c.label).join(' + ')+
+        ' fused into one attack across '+plan.targets.length+' enemies.')
+    }else if(signature.kind==='phantom'){
       for(const hit of plan.hits){
         applyDamage(foesRef.current,single,hit.targetId,hit.damage)
         const unit=foesRef.current.find(u=>u.id===hit.targetId&&u.hp>0)
@@ -770,8 +798,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <strong>{ap} AP</strong>
     </div>
     {activeFusion&&!result&&<div className="combat-fusion-status">
-      <span>✦ {activeFusion.classKey} + {activeFusion.element} · Fusion Lv {activeFusion.level}
-        {fusionEnabled?' · Infusion active':' · Infusion inactive'} · {FUSION_MP_COST} MP per hit
+      <span>✦ {activeFusion.kind==='triad'
+        ?activeFusion.element+' Elemental Triad'
+        :activeFusion.classKey+' + '+activeFusion.element}
+        {' · Fusion Lv '+activeFusion.level}
+        {activeFusion.kind==='triad'
+          ?' · 3 elemental skills · '+signature?.mp+' MP per combined cast'
+          :(fusionEnabled?' · Infusion active':' · Infusion inactive')+
+            ' · '+FUSION_MP_COST+' MP per infused hit'}
       </span>
       <button type="button" className="combat-action-btn" disabled={!canPlay}
         aria-pressed={fusionEnabled} onClick={()=>setFusionEnabled(value=>!value)}>

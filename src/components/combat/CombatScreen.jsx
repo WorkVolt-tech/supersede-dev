@@ -28,6 +28,7 @@ import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, 
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import { getFusionSignatureAction, canCastFusionSignature } from '../../game/signatureFusion'
+import { resolveElementalTriad } from '../../game/elementalTriad'
 import { getActiveFusion, getFusionSignature,
   awardFusionPractice, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRegen,
@@ -256,8 +257,19 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function castSignature(foeHp,playerHp) {
     if(!signature)return {foeHp,playerHp}
     const before=foeHp
+    const triad=signature.kind==='triad'?resolveElementalTriad(combatPlayer,
+      statusEffectsRef.current,{atk:calcATK(player,equipped),
+        def:calcDEF(player,equipped),enemyDef:enemyData.def||0,maxHp:maxPlayerHp}):null
+    if(signature.kind==='triad'&&!triad)return {foeHp,playerHp}
     changeCombatMp(mpRef.current-signature.mp)
-    if(signature.kind==='phantom'){
+    if(signature.kind==='triad'){
+      applyKeystoneStatuses(statusEffectsRef.current,{
+        ...triad.playerStatus,...triad.enemyStatus})
+      foeHp=Math.max(0,foeHp-triad.damage)
+      playerHp=Math.min(maxPlayerHp,playerHp+triad.heal)
+      pushLog(signature.label+': '+triad.components.map(x=>x.label).join(' + ')+
+        ' fused for '+triad.damage+' damage.')
+    }else if(signature.kind==='phantom'){
       foeHp=Math.max(0,foeHp-signature.damage)
       statusEffectsRef.current.cfx_emberStacks=Math.min(5,
         (statusEffectsRef.current.cfx_emberStacks||0)+1)
@@ -830,10 +842,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           </span>
         </div>
         {activeFusion && <div className="combat-fusion-status">
-          <span>✦ {activeFusion.classKey} + {activeFusion.element}
-            {' · '}Fusion Lv {activeFusion.level}
-            {getFusionSignature(activeFusion) && ' · '+getFusionSignature(activeFusion)}
-            {' · '}{FUSION_MP_COST} MP per infused hit
+          <span>✦ {activeFusion.kind==='triad'
+              ?activeFusion.element+' Elemental Triad'
+              :activeFusion.classKey+' + '+activeFusion.element}
+            {' · Fusion Lv '+activeFusion.level}
+            {activeFusion.kind==='triad'
+              ?' · 3 elemental skills · '+signature?.mp+' MP per combined cast'
+              :((getFusionSignature(activeFusion)||'')+
+                ' · '+FUSION_MP_COST+' MP per infused hit')}
           </span>
           <button type="button" className="combat-action-btn"
             disabled={busy || !entranceReady}
