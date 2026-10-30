@@ -142,3 +142,18 @@
   color:#d6d5a4; font-size:11px; line-height:1.4; text-align:center;
 }
 .reading-page .combat-attack-preview { color:#4b582d; background:#e1e4ca; }
+
+/* Independent class-element fusion toggle: never changes class/element menus. */
+.group-combat .combat-fusion-status {
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;padding:10px 12px;margin:8px 0;
+  border:1px solid #806740;background:#211d17;color:#e7d4ad;
+  font:11px/1.5 'JetBrains Mono',monospace;
+}
+.group-combat .combat-fusion-status .combat-action-btn {
+  width:auto;min-width:130px;flex-shrink:0;
+}
+.group-combat .combat-fusion-locked {
+  color:#b9a581;font:11px/1.5 'JetBrains Mono',monospace;
+  margin:8px 0;
+}

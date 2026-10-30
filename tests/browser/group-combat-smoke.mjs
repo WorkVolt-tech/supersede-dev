@@ -130,6 +130,31 @@ async function inspect(page,name,mobile){
     (mobile?', touch movement':'')+'\n')
 }
 
+async function verifyFusionVictory(page) {
+  const errors=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=fusion-victory',
+    {waitUntil:'networkidle'})
+  await page.locator('.combat-fusion-status').waitFor()
+  await page.getByRole('button',{name:'Enable Fusion'}).click()
+  await page.locator('.combat-tactical-weapons')
+    .getByRole('button',{name:/Sweeping Arc/}).click()
+  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+  await page.waitForFunction(()=>document.body.dataset.outcome==='win',
+    null,{timeout:15000})
+  const result=await page.evaluate(()=>{
+    const p=window.__tacticalTestMetrics
+    return {saves:p.saves,mastery:p.lastUpdates?.fusion_mastery,
+      weapon:p.lastUpdates?.weapon_mastery}
+  })
+  check(result.saves===1,'fusion victory: outcome saved more than once')
+  check(result.mastery?.['ghostblade:fire']===46,
+    'fusion victory: active pair practice XP was not saved')
+  check(result.weapon?.sword===1,
+    'fusion victory: original weapon mastery was lost')
+  check(errors.length===0,'fusion victory: browser exceptions '+errors.join(' | '))
+  console.log('PASS fusion victory: pair XP and weapon XP saved exactly once')
+}
 async function verifyFusion(page) {
   const errors=[]
   page.on('pageerror',error=>errors.push(error.message))
@@ -214,6 +239,7 @@ try{
   await inspect(desktop,'desktop',false)
   await verifyMastery(desktop)
   await verifyFusion(desktop)
+  await verifyFusionVictory(desktop)
   await verifyVictory(desktop)
   await desktop.close()
   const mobile=await browser.newPage({viewport:{width:390,height:844},

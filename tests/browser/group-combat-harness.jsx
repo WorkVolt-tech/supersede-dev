@@ -8,7 +8,7 @@ import GroupCombatScreen from '../../src/components/combat/GroupCombatScreen'
 import '../../src/index.css'
 
 const scenario=new URLSearchParams(location.search).get('scenario')
-const fusionScenario=scenario==='fusion'
+const fusionScenario=scenario==='fusion'||scenario==='fusion-victory'
 const player = {
   id:'test-only-player',name:'Tactical Tester',level:fusionScenario?25:1,hp:160,max_hp:160,
   atk:12,def:8,guard:3,speed:12,insight:1,luck:0,agility:1,
@@ -30,6 +30,7 @@ usePlayerStore.setState({
   // Save in the test-only in-memory store. The harness NEVER writes Supabase.
   updatePlayer:async updates=>{
     metrics.saves++
+    metrics.lastUpdates=updates
     usePlayerStore.setState(s=>({player:{...s.player,...updates}}))
     return true
   },
@@ -45,8 +46,7 @@ useInventoryStore.setState({
   }],
 })
 
-const victoryScenario=new URLSearchParams(window.location.search)
-  .get('scenario')==='victory'
+const victoryScenario=scenario==='victory'||scenario==='fusion-victory'
 const enemyData={
   name:'Training Rats x3',groupSize:3,groupUnitName:'Training Rat',
   groupIcon:'🐀',groupWeapon:'dagger',icon:'🐀🐀🐀',

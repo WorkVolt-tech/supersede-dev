@@ -82,3 +82,15 @@ test('lightning chooses distinct nearest surviving additional foes',()=>{
   assert.deepEqual(selectFusionChainTargets(units,'a',['b'],2).map(u=>u.id),['c'])
   assert.deepEqual(selectFusionChainTargets(units,'none',[],2),[])
 })
+
+test('buying fusion does not rewrite a class tree or elemental tree',()=>{
+  const p=player('bastion','earth')
+  const cls=[...p.class_nodes_unlocked],nodes=[...p.elemental_unlocked]
+  const unlock=unlockFusionPair(p,'earth')
+  assert.deepEqual(p.class_nodes_unlocked,cls)
+  assert.deepEqual(p.elemental_unlocked,nodes)
+  assert.ok(!('class_nodes_unlocked' in unlock))
+  assert.ok(!('elemental_unlocked' in unlock))
+  assert.ok(!('weapon_mastery' in unlock))
+  assert.ok(!('skill_levels' in unlock))
+})
