@@ -13,6 +13,7 @@ import { persistCombatResult } from '../../game/combatPersistence'
 import { equipmentSubtype } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import { getActiveElement } from '../../game/activeElement'
+import { getFusionSignatureAction, planFusionSignature, canCastFusionSignature } from '../../game/signatureFusion'
 import { getActiveFusion, getFusionRider, getFusionEligibility, awardFusionPractice,
   selectFusionChainTargets, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
@@ -92,12 +93,18 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const weaponKit=getTacticalAttacks(weaponType,[],(player.weapon_mastery||{})[weaponType]||0)
   const activeFusion=getActiveFusion(player)
   const fusionEligibility=getFusionEligibility(player,getActiveElement(player))
+  const signature=getFusionSignatureAction(activeFusion)
 
   const foesRef=useRef(createTacticalGroup(enemyData))
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
   const [selectedAttack,setSelectedAttack]=useState(null)
   const [fusionEnabled,setFusionEnabled]=useState(false)
+  const [signaturePreview,setSignaturePreview]=useState(false)
+  const [signatureCooldown,setSignatureCooldown]=useState(0)
+  const signatureCooldownRef=useRef(0)
+  const [signatureFx,setSignatureFx]=useState(null)
+  const signatureFxId=useRef(0)
   const [previewSkill,setPreviewSkill]=useState(null)
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
@@ -124,6 +131,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const masteryHitsRef=useRef(0)
   const fusionPracticeRef=useRef(0)
   const fusionWardRef=useRef(0)
+  const fortressCounterRef=useRef(0)
   const fusionDodgeRef=useRef(false)
   const fusionRegenRef=useRef({turns:0,amount:0})
   const statusRef=useRef({})
@@ -268,6 +276,49 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       fusionPracticeRef.current+1)
     note('✦ '+rider.label+' · '+activeFusion.element+' infusion (-'+FUSION_MP_COST+
       ' MP). Fusion practice +1 on victory.')
+  }
+
+  function castSignature(target) {
+    const plan=planFusionSignature(signature,foesRef.current,target?.id,heroRef.current)
+    if(!plan.valid)return false
+    updateMp(mpRef.current-signature.mp)
+    const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+    if(signature.kind==='phantom'){
+      for(const hit of plan.hits){
+        applyDamage(foesRef.current,single,hit.targetId,hit.damage)
+        const unit=foesRef.current.find(u=>u.id===hit.targetId&&u.hp>0)
+        if(unit){
+          const effects=foeStatusesRef.current[unit.id]||{}
+          effects.cfx_emberStacks=Math.min(5,(effects.cfx_emberStacks||0)+1)
+          foeStatusesRef.current[unit.id]=effects
+        }
+      }
+      const field=makeGroupField('phantom-fire',signature.attack,target,
+        signature.fieldTurns,signature.fieldDamage)
+      fieldsRef.current=[...fieldsRef.current.filter(f=>f.kind!=='phantom-fire'),field]
+      note('Phantom Inferno burns '+field.squares.length+' squares for '+
+        signature.fieldTurns+' rounds.')
+    }else if(signature.kind==='thunder'){
+      for(const hit of plan.hits)applyDamage(foesRef.current,single,hit.targetId,hit.damage)
+      for(const hit of plan.hits){
+        const unit=foesRef.current.find(u=>u.id===hit.targetId&&u.hp>0)
+        if(!unit)continue
+        const effects=foeStatusesRef.current[unit.id]||{}
+        effects.enemyStunTurns=Math.max(effects.enemyStunTurns||0,signature.stun)
+        foeStatusesRef.current[unit.id]=effects
+      }
+      note('Thunderous Fury chains to '+plan.hits.length+' enemies.')
+    }else if(signature.kind==='titan'){
+      fusionWardRef.current=Math.max(fusionWardRef.current,signature.ward)
+      fortressCounterRef.current=signature.counter
+      note("Titan's Fortress raises a "+signature.ward+'-point barrier with retaliation.')
+    }
+    signatureCooldownRef.current=signature.cooldown+1
+    setSignatureCooldown(signatureCooldownRef.current)
+    setSignatureFx({id:++signatureFxId.current,kind:signature.kind,
+      side:signature.kind==='titan'?'hero':'enemy',squares:plan.squares})
+    setSignaturePreview(false)
+    return true
   }
 
   function strike(id) {
@@ -477,6 +528,12 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         const absorbed=Math.min(damage,fusionWardRef.current)
         damage-=absorbed;fusionWardRef.current-=absorbed
         note('Earth Fusion absorbs '+absorbed+' damage.')
+         if(absorbed>0&&fortressCounterRef.current>0){
+           const counter=fortressCounterRef.current
+           actor.hp=Math.max(0,actor.hp-counter)
+           note("Titan's Fortress counters "+actor.name+' for '+counter+' damage.')
+         }
+         if(fusionWardRef.current<=0)fortressCounterRef.current=0
       }
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
@@ -547,6 +604,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     regen.messages?.forEach(note)
     setKeyCooldowns(prev=>advanceKeystoneCooldowns(prev,castKeyRef.current))
     setElemCooldowns(prev=>advanceKeystoneCooldowns(prev,castElementRef.current))
+    signatureCooldownRef.current=Math.max(0,signatureCooldownRef.current-1)
+    setSignatureCooldown(signatureCooldownRef.current)
     if(statusRef.current.cfx_tornadoTurns>0)statusRef.current.cfx_tornadoTurns--
     if(statusRef.current.cfx_ironDomainTurns>0 &&
         castElementRef.current!=='metal_ultimate_iron_domain')
@@ -579,6 +638,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(kind==='elemental'&&(!canUseElementalAttack(combatPlayer,id)||
       !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))||
       (elemCooldowns[id]||0)>0||mpRef.current<getAttackMpCost(combatPlayer,id,statusRef.current)))return
+    if(kind==='signature'&&!canCastFusionSignature(signature,{
+      enabled:fusionEnabled,ap:apRef.current,mp:mpRef.current,
+      cooldown:signatureCooldownRef.current,target
+    }))return
     if(kind==='keystone'&&!getUnlockedKeystones(combatPlayer,keyCooldowns)
       .some(k=>k.id===id&&k.available))return
     const free=(kind==='skill'&&isFreeClass(id))||(kind==='keystone'&&isFreeKey(id))
@@ -611,9 +674,12 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       // AP hitting a stale square or applying debuffs to an absent enemy.
       const liveTarget=target&&foesRef.current.find(
         foe=>foe.id===target.id&&foe.hp>0)
-      if(['attack','skill','elemental'].includes(kind) &&
+      if((['attack','skill','elemental'].includes(kind) ||
+           (kind==='signature'&&signature?.target==='enemy')) &&
         (!liveTarget || (kind==='attack'
           ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)
+          : kind==='signature'
+          ? !planFusionSignature(signature,foesRef.current,liveTarget.id,heroRef.current).valid
           : !canUseTacticalSkill(id,heroRef.current,liveTarget,getSkillLevel(player,id))))){
         note('Your target moved or fell before your action. Select a new target; no AP spent.')
         return
@@ -626,6 +692,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       }
       else if(kind==='skill')resolveSkill(id,liveTarget||target)
       else if(kind==='elemental')resolveElement(id,liveTarget||target)
+      else if(kind==='signature')castSignature(liveTarget||target)
       else if(kind==='keystone')resolveKeystone(id,liveTarget||target)
       else if(kind==='defend'){
         defendingRef.current=true
@@ -655,7 +722,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const activeSkills=ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)||[]
   const elemental=getEquippedElementalAttack(combatPlayer)
   const keystones=getUnlockedKeystones(combatPlayer,keyCooldowns)
-  const displayPattern=previewSkill?groupSpellPattern(previewSkill.id):attack
+  const displayPattern=signaturePreview
+    ?(signature?.target==='enemy'?signature.attack:null)
+    :previewSkill?groupSpellPattern(previewSkill.id):attack
+  const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
   const displayName=previewSkill?.label||attack.label
   const preview=previewGroupAttack(foes,displayPattern,hero,chosen)
   const attackLegal=previewGroupAttack(foes,attack,hero,chosen).valid
@@ -697,13 +767,22 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     {!activeFusion&&fusionEligibility.pair&&!result&&
       <p className="combat-fusion-locked">✦ Class–element fusion is locked for this pairing.
         Develop both paths, then unlock it in Skills.</p>}
-    {target&&attackLegal&&!result&&
+    {signatureFx&&<div key={signatureFx.id}
+      className={'combat-signature-burst signature-'+signatureFx.kind}
+      role="status">{signature?.label}</div>}
+    {signaturePreview&&signaturePlan?.valid&&!result&&
+      <p className="combat-attack-preview" role="status">
+        {signature.label} · {signature.target==='self'
+          ?signaturePlan.squares.length+' protected ally squares'
+          :signaturePlan.hits.length+' targets'} · {signature.attack.shape} pattern
+      </p>}
+    {target&&attackLegal&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">
         {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} {previewSkill?'affected':'hit'} · {displayPattern.shape} pattern
       </p>}
-    {previewSkill&&!displayPattern&&!result&&
+    {previewSkill&&!displayPattern&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">{displayName} · self/support, no enemy squares targeted.</p>}
-    {target&&!attackLegal&&!previewSkill&&!result&&
+    {target&&!attackLegal&&!previewSkill&&!signaturePreview&&!result&&
       <p className="combat-range-warning" role="status">
         {attack.label} cannot reach {target.name} from here. Move, choose a different attack, or select another enemy.
       </p>}
@@ -712,7 +791,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {weaponKit.map(item=><button key={item.id} type="button"
           className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
           disabled={!canPlay} aria-pressed={item.id===attack.id}
-          onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null)}}>
+          onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)}}>
           {item.label}<span className="combat-action-sub">{item.reach} · {item.shape} · {item.ap} AP</span>
         </button>)}
       </div>
@@ -748,6 +827,21 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {elemental&&<button type="button" className="combat-action-btn combat-preview-btn"
           disabled={!canPlay} onClick={()=>setPreviewSkill({id:elemental.id,label:elemental.label})}>
           Preview {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
+        </button>}
+        {signature&&<button type="button" className="combat-action-btn combat-signature-action"
+          disabled={!canPlay||!canCastFusionSignature(signature,{
+            enabled:fusionEnabled,ap,mp,cooldown:signatureCooldown,target
+          })}
+          onClick={()=>takeTurn('signature')}>
+          ✦ {signature.label} · {signature.ap} AP · {signature.mp} MP
+          <span className="combat-action-sub">
+            {signatureCooldown>0?'Cooldown: '+signatureCooldown+' rounds':
+              fusionEnabled?'Signature '+signature.attack.shape:'Enable Fusion first'}
+          </span>
+        </button>}
+        {signature&&<button type="button" className="combat-action-btn combat-preview-btn"
+          disabled={!canPlay} onClick={()=>{setSignaturePreview(true);setPreviewSkill(null)}}>
+          Preview ✦ {signature.label}
         </button>}
         {keystones.map(k=><button key={k.id} type="button" className="combat-action-btn"
           disabled={!canPlay||!k.available||(!isFreeKey(k.id)&&ap<2)}
