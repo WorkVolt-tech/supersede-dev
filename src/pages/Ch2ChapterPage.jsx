@@ -1,10 +1,11 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/usePlayerStore'
 import { useStoryEngine } from '../hooks/useStoryEngine'
 import StoryNode from '../components/story/StoryNode'
 import DistrictHubCh2 from '../components/hub/DistrictHubCh2'
 import { NODES as CH2_NODES } from '../data/ch2/nodes'
-import { ZONES } from '../data/ch2/config'
+import { ZONES, ZONE_ELEMENT_MAP, ELEMENT_NAMES } from '../data/ch2/config'
+import { getChapterResonance, getElementalDifficulty, getZoneElement, scaleCh2ZoneEnemy } from '../data/ch2/elementalDifficulty'
 import ClassChoice from '../components/story/ClassChoice'
 import { randomizeFarmingWaves } from '../data/ch2/zones/zone-farming'
 import { canChooseJudgesClass, getJudgesForm } from '../game/judgesClassRules'
@@ -54,6 +55,7 @@ The records fold away. Both Judges turn toward you. The reading is complete; the
 export default function Ch2ChapterPage() {
   const player = usePlayerStore(s => s.player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
+  const [pendingZone, setPendingZone] = useState(null)
 
   const { currentNodeId, currentNode, goTo } = useStoryEngine(CH2_NODES, 'ch2')
 
@@ -85,8 +87,56 @@ export default function Ch2ChapterPage() {
 
   if (!player) return <p className="story-text">No player loaded.</p>
 
+  // The original Chapter 2 asks before entering a zone that differs from
+  // the resonance established by the first elemental guardian victory.
+  // This does not navigate or modify the player's record until confirmed.
+  function goToWithDeviationWarning(nextId, choice = {}) {
+    const element = ZONE_ELEMENT_MAP[nextId]
+    const resonance = getChapterResonance(player)
+    if (element && resonance && element !== resonance) {
+      const attempted = [...new Set([...(player.ch2_elements_attempted || []), nextId])]
+      const multiplier = getElementalDifficulty({ ...player, ch2_elements_attempted: attempted })
+      setPendingZone({ nextId, choice, element, resonance, multiplier })
+      return
+    }
+    return goTo(nextId, choice)
+  }
+
+  const warningDialog = pendingZone && (
+    <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 900,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+      background: 'rgba(0,0,0,.85)' }}>
+      <div role="alertdialog" aria-modal="true" aria-labelledby="ch2-deviation-title"
+        aria-describedby="ch2-deviation-description"
+        style={{ maxWidth: 460, width: '100%', padding: 24, borderRadius: 8,
+          border: '1px solid #f4c45a70', background: '#12111a', color: '#e8e3d6' }}>
+        <h2 id="ch2-deviation-title" style={{ color: '#f4c45a' }}>Deviation detected</h2>
+        <p id="ch2-deviation-description" className="story-text">
+          Your chapter resonance is {ELEMENT_NAMES[pendingZone.resonance] || pendingZone.resonance}.
+          Entering {ELEMENT_NAMES[pendingZone.element] || pendingZone.element} will raise
+          enemy HP, ATK, DEF and speed to ×{pendingZone.multiplier} based on the distinct
+          elements you've attempted. XP rewards remain unchanged.
+        </p>
+        <p className="story-text">The Twin Judges will remember your choice. Continue?</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+          <button type="button" className="reading-action"
+            onClick={() => {
+              const next = pendingZone
+              setPendingZone(null)
+              void goTo(next.nextId, next.choice)
+            }}>Enter anyway</button>
+          <button type="button" className="reading-action"
+            onClick={() => setPendingZone(null)}>Turn back</button>
+        </div>
+      </div>
+    </div>
+  )
+
   if (currentNodeId === 'district_hub') {
-    return <DistrictHubCh2 player={player} goTo={goTo} text={currentNode?.text} />
+    return <>
+      <DistrictHubCh2 player={player} goTo={goToWithDeviationWarning} text={currentNode?.text} />
+      {warningDialog}
+    </>
   }
 
   // Legacy characters may already be at the Chapter 2 ending from before
@@ -103,15 +153,26 @@ export default function Ch2ChapterPage() {
     elementsAttempted: (player.ch2_elements_attempted || []).length || 1,
   }
 
-  const displayNode = currentNodeId === 'camp_reflection'
+  let displayNode = currentNodeId === 'camp_reflection'
     ? { ...currentNode, text: buildCampReflection(player) }
     : currentNodeId === 'judges_verdict'
       ? { ...currentNode, text: buildJudgesVerdict(player) }
       : currentNode
 
+  // Scale a new combat copy, never the shared canonical zone encounter.
+  // Farming grounds, faction fights and the Twin Judges are not zone fights.
+  if (displayNode?.enemy && getZoneElement(currentNodeId) &&
+      (displayNode.type === 'combat' || displayNode.type === 'boss')) {
+    displayNode = {
+      ...displayNode,
+      enemy: scaleCh2ZoneEnemy(displayNode.enemy, player, currentNodeId, displayNode.bossKey),
+    }
+  }
+
   return (
     <div className="chapter-page">
-      <StoryNode node={displayNode} player={player} goTo={goTo} judgeCtx={judgeCtx} />
+      <StoryNode node={displayNode} player={player} goTo={goToWithDeviationWarning} judgeCtx={judgeCtx} />
+      {warningDialog}
     </div>
   )
 }
