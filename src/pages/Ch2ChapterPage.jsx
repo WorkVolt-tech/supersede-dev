@@ -7,9 +7,48 @@ import { NODES as CH2_NODES } from '../data/ch2/nodes'
 import { ZONES } from '../data/ch2/config'
 import ClassChoice from '../components/story/ClassChoice'
 import { randomizeFarmingWaves } from '../data/ch2/zones/zone-farming'
-import { canChooseJudgesClass } from '../game/judgesClassRules'
+import { canChooseJudgesClass, getJudgesForm } from '../game/judgesClassRules'
 
 const ZONE_IDS = ZONES.map(z => z.id)
+
+// These two story nodes were dynamic in the original renderer. Their
+// readouts use the current saved record and do not affect Judges AI.
+function buildCampReflection(player) {
+  const moral = Number(player.moral_score) || 0
+  const zones = ZONES.filter(z => (player.ch2_elements_attempted || []).includes(z.id))
+  const guardians = (player.defeated_bosses || []).filter(id => id.startsWith('zone_boss_')).length
+  const decision = moral >= 40 ? 'Your record leans toward mercy.'
+    : moral <= -40 ? 'Your record leans toward wrath.'
+    : 'Your decisions resist a simple judgment.'
+  return `Night settles over the shopping district. In the quiet before the Judges, your interface opens your record.
+
+MORAL SCORE: ${moral}
+ELEMENTAL ZONES ENTERED: ${zones.length} / ${ZONES.length}
+ZONE GUARDIANS DEFEATED: ${guardians}
+
+${decision}
+
+Your record is already written. The Twin Judges will read it when you stand before them. The night passes.`
+}
+
+function buildJudgesVerdict(player) {
+  const moral = Number(player.moral_score) || 0
+  const zones = ZONES.filter(z => (player.ch2_elements_attempted || []).includes(z.id))
+  const guardians = (player.defeated_bosses || []).filter(id => id.startsWith('zone_boss_')).length
+  const form = getJudgesForm(player).replaceAll('_', ' ').toUpperCase()
+  const alliances = (player.alliance_log || []).filter(tag => !tag.startsWith('class_form_'))
+  return `Two enormous interfaces open between Judge Mercy and Judge Wrath. They read the record of your choices.
+
+MORAL SCORE: ${moral}
+ALLIANCE ENTRIES: ${alliances.length}
+ELEMENTAL ZONES ENTERED: ${zones.length} / ${ZONES.length}
+ZONE GUARDIANS DEFEATED: ${guardians}
+ELEMENTS VISITED: ${zones.length ? zones.map(z => z.element).join(', ') : 'None recorded'}
+
+ASSESSMENT FORM: ${form}
+
+The records fold away. Both Judges turn toward you. The reading is complete; the trial begins.`
+}
 
 // Player + inventory are loaded once by App.jsx before any page renders.
 export default function Ch2ChapterPage() {
@@ -42,7 +81,7 @@ export default function Ch2ChapterPage() {
   if (!player) return <p className="story-text">No player loaded.</p>
 
   if (currentNodeId === 'district_hub') {
-    return <DistrictHubCh2 player={player} goTo={goTo} />
+    return <DistrictHubCh2 player={player} goTo={goTo} text={currentNode?.text} />
   }
 
   // Legacy characters may already be at the Chapter 2 ending from before
@@ -59,9 +98,15 @@ export default function Ch2ChapterPage() {
     elementsAttempted: (player.ch2_elements_attempted || []).length || 1,
   }
 
+  const displayNode = currentNodeId === 'camp_reflection'
+    ? { ...currentNode, text: buildCampReflection(player) }
+    : currentNodeId === 'judges_verdict'
+      ? { ...currentNode, text: buildJudgesVerdict(player) }
+      : currentNode
+
   return (
     <div className="chapter-page">
-      <StoryNode node={currentNode} player={player} goTo={goTo} judgeCtx={judgeCtx} />
+      <StoryNode node={displayNode} player={player} goTo={goTo} judgeCtx={judgeCtx} />
     </div>
   )
 }
