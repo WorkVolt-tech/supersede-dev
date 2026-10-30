@@ -1,0 +1,39 @@
+.twin-judges{width:min(100%,310px);margin:0 auto;text-align:center;--judge-accent:#f1c65b}
+.twin-judges-stage{height:245px;display:flex;align-items:flex-end;justify-content:center;position:relative;isolation:isolate;overflow:hidden}
+.judge-figure{height:235px;width:48%;position:relative;flex-shrink:0;animation:judge-hover 3.7s ease-in-out infinite;filter:drop-shadow(0 0 7px #f3d27530)}
+.judge-wrath{animation-delay:-1.5s;filter:drop-shadow(0 0 8px #f3212e55)}
+.judge-body,.judge-sword,.judge-scales{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;pointer-events:none}
+.judge-sword{clip-path:polygon(0 100%,0 49%,40% 42%,48% 65%,22% 100%);animation:judge-blade 3.2s ease-in-out infinite;transform-origin:38% 45%}
+.judge-scales{clip-path:polygon(60% 27%,100% 25%,100% 68%,60% 70%);animation:judge-balance 3s ease-in-out infinite;transform-origin:77% 35%}
+.judge-wrath .judge-sword{animation-duration:2s}
+.judge-wrath .judge-scales{animation-duration:1.9s}
+.judge-glow{position:absolute;inset:15% 24% 45%;border-radius:50%;background:radial-gradient(ellipse,#e9d37566,transparent 70%);mix-blend-mode:screen;animation:judge-aura 2.7s ease-in-out infinite;pointer-events:none}
+.judge-wrath .judge-glow{background:radial-gradient(ellipse,#df101f70,transparent 70%)}
+.judge-fallback{font-size:64px}
+.twin-form-label{display:block;font-size:11px;color:#d1b971;letter-spacing:.04em;margin-top:4px}
+.twin-energy{position:absolute;inset:4% 0;z-index:-1;opacity:.35;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,#c09b4455,transparent 62%);animation:judge-aura 3s infinite}
+.twin-A_mercy .judge-figure,.twin-B_wrath .judge-figure{width:80%}
+.twin-D_wrath_absorbs .judge-wrath{filter:drop-shadow(0 0 17px #d6a13b8a)}
+.twin-E_mercy_absorbs .judge-mercy{filter:drop-shadow(0 0 17px #c526458a)}
+.twin-F_dual_powered .judge-figure{animation-duration:2s}
+.twin-F_dual_powered .twin-energy{background:radial-gradient(ellipse,#fff3ae88,#a3225c55,transparent 70%)}
+.twin-G_verdict .judge-figure{width:52%;transform-origin:center bottom;filter:drop-shadow(0 0 14px #e9a03588)}
+.twin-G_verdict .judge-mercy{margin-right:-16%}
+.twin-G_verdict .judge-wrath{margin-left:-16%;mix-blend-mode:screen;opacity:.83}
+.twin-verdict-core{position:absolute;z-index:3;top:29%;left:43%;width:14%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#fff,#fad65e 25%,#b71b32 55%,transparent 75%);animation:judge-aura 1.2s infinite}
+.twin-phase-2 .twin-energy{opacity:.7}.twin-phase-3 .twin-energy{opacity:1;animation-duration:1s}
+.twin-attacking .judge-mercy{animation:judge-mercy-strike .68s ease-in-out}
+.twin-attacking .judge-wrath{animation:judge-wrath-strike .68s ease-in-out}
+.twin-attacking .judge-sword{animation:judge-slash .68s ease-out}
+.twin-attacking .judge-scales{animation:judge-scale-attack .68s ease-in-out}
+.twin-attacking .twin-energy{animation:judge-burst .68s ease-out}
+@keyframes judge-hover{0%,100%{translate:0 1px}50%{translate:0 -6px}}
+@keyframes judge-blade{0%,100%{transform:rotate(-2deg)}50%{transform:rotate(3deg)}}
+@keyframes judge-balance{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(4deg)}}
+@keyframes judge-aura{0%,100%{opacity:.35;scale:.94}50%{opacity:1;scale:1.1}}
+@keyframes judge-mercy-strike{0%{translate:0 0}40%{translate:0 -11px;scale:1.07}70%{translate:0 2px}100%{translate:0 0}}
+@keyframes judge-wrath-strike{0%{translate:0 0}40%{translate:9px -4px;scale:1.1}70%{translate:-3px 0}100%{translate:0 0}}
+@keyframes judge-slash{0%{transform:rotate(-3deg)}40%{transform:rotate(-22deg)}65%{transform:rotate(18deg)}100%{transform:rotate(0)}}
+@keyframes judge-scale-attack{0%{transform:rotate(0)}55%{transform:rotate(17deg)}100%{transform:rotate(0)}}
+@keyframes judge-burst{0%{opacity:.3;scale:.7}50%{opacity:1;scale:1.25}100%{opacity:.3;scale:1}}
+@media(prefers-reduced-motion:reduce){.twin-judges,.twin-judges *{animation:none!important}}
