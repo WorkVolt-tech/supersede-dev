@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './TwinJudgesPortrait.css'
 
 // Matches the seven fixed scenarios from enemyAI.js; no combat mechanics altered.
@@ -24,6 +24,24 @@ function Judge({which,attacking,dominant=false}){
   </>}
  </div>
 }
+function Absolution({attacking}){
+ const [transformed,setTransformed]=useState(false)
+ const [missing,setMissing]=useState(false)
+ useEffect(()=>{
+  if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setTransformed(true);return}
+  const timer=setTimeout(()=>setTransformed(true),3200)
+  return()=>clearTimeout(timer)
+ },[])
+ return <div className={`absolution-form ${attacking?'absolution-attacking':''}`}>
+  {!transformed&&!missing&&<img className="absolution-transition" src="/mercy_to_absolution.webp" alt="" onError={()=>{setMissing(true);setTransformed(true)}} draggable="false"/>}
+  {(transformed||missing)&&<div className="judge-figure judge-mercy judge-dominant">
+   <img className="judge-body" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
+   <img className="judge-sword" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
+   <img className="judge-scales" src="/absolution.webp" alt="" draggable="false" onError={e=>{e.currentTarget.src='/mercy.webp'}}/>
+   <span className="judge-glow"/>
+  </div>}
+ </div>
+}
 export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1}){
  const form=judgesVisualForm(moral,elements)
  const mercyLead=['A_mercy','E_mercy_absorbs'].includes(form)
@@ -34,7 +52,7 @@ export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,h
  const phase=hpPercent<.33?3:hpPercent<.66?2:1
  return <div className={`twin-judges twin-${form} twin-phase-${phase} ${attacking?'twin-attacking':''}`} role="img" aria-label={`Twin Judges: ${labels[form]}, phase ${phase}`}>
   <div className="twin-judges-stage">
-   {showMercy&&<Judge which="mercy" attacking={attacking} dominant={mercyLead||fused}/>}
+   {form==='E_mercy_absorbs'?<Absolution attacking={attacking}/>:showMercy&&<Judge which="mercy" attacking={attacking} dominant={mercyLead||fused}/>}
    {showWrath&&<Judge which="wrath" attacking={attacking} dominant={wrathLead||fused}/>}
    {fused&&<span className="twin-verdict-core" aria-hidden="true"/>}
    <span className="twin-energy" aria-hidden="true"/>
