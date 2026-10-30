@@ -108,3 +108,12 @@
 .combat-tactical-weapons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
 .combat-tactical-weapons .combat-action-btn.selected { border-color:#dfb260; color:#f5dca1; }
 @media(max-width:480px) { .combat-grid-cell { min-height:43px; } .combat-grid-cell span { font-size:17px; } }
+
+/* Independent enemies inside the 3×3 formation. */
+.combat-group-enemies { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+.combat-group-unit { min-width:0; border:1px solid #604c3c; background:#191614; padding:8px 6px; border-radius:5px;
+  font-size:10px; color:#d8c6ae; text-align:left; cursor:pointer; }
+.combat-group-unit.current { border-color:#d6aa61; background:#30251b; }
+.combat-group-unit:disabled { opacity:.4; cursor:default; }
+.combat-group-enemies .combat-group-unit:focus-visible { outline:2px solid #f2c777; outline-offset:2px; }
+@media (max-width:380px) { .combat-group-enemies { grid-template-columns:1fr; } }

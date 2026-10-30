@@ -6,7 +6,7 @@ import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
 import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStats } from '../../game/playerStats'
-import { resistMult, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
+import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
 import { persistCombatResult } from '../../game/combatPersistence'
@@ -21,7 +21,8 @@ import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeyston
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend,
-  resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
+  resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen,
+  stonebornArmorPierce } from '../../game/keystoneCombat'
 import './CombatScreen.css'
 
 // The legacy elemental formulas supply single-target damage. For group fights
@@ -80,6 +81,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
   const equipped=inventory.filter(i=>i.equipped_slot)
+  const legendary=new Set(equipped.map(i=>i.item_key))
   const effective=getEffectiveStats(player,equipped)
   const combatPlayer=getCombatPlayer(player,equipped)
   const maxHp=calcMaxHp(player,equipped)
@@ -99,6 +101,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const [ap,setAp]=useState(2)
   const apRef=useRef(2)
   const roundStartedRef=useRef(false)
+  const defendingRef=useRef(false)
+  const legendaryTurnRef=useRef(0)
   const busyRef=useRef(false)
   const [busy,setBusy]=useState(false)
   const hpRef=useRef(player.hp??maxHp)
@@ -216,12 +220,19 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     const units=foesRef.current
     const target=units.find(u=>u.id===id)
     if(!target)return
-    const base=Math.max(1,calcATK(player,equipped)-(target.def||0)+Math.floor(Math.random()*4))
+    const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
+    const base=Math.max(1,calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
     const mod=ClsCombat.onPlayerAttack(combatPlayer,statusRef.current,target,base)
-    const crit=Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
-      critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
+    const crit=Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
+      Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
+        critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
     const mult=(mod?.dmgMult??1)*(crit?1.5+critDamageBonus(combatPlayer):1)
-    const keystone=resolveKeystoneStrike(statusRef.current,Math.max(1,Math.round(base*mult)),crit)
+    let priorDamage=Math.max(1,Math.round(base*mult))
+    if(legendary.has('legendary_forger')&&crit)priorDamage+=12
+    if(legendary.has('legendary_hunter')&&target.hp===target.maxHp)priorDamage+=15
+    if(legendary.has('legendary_resonance_weaver'))priorDamage+=4
+    if(statusRef.current.cfx_ironDomainTurns>0)priorDamage*=2
+    const keystone=resolveKeystoneStrike(statusRef.current,priorDamage,crit)
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
@@ -324,7 +335,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(!pulse)resolveEnemyTurn(foeData,{
         enemyState:state,enemyHp:actor.hp,maxEnemyHp:actor.maxHp,
         currentHp,maxPlayerHp:maxHp,
-        playerDEF:()=>calcDEF(player,equipped),defending:false,
+        playerDEF:()=>calcDEF(player,equipped),defending:defendingRef.current,
         statusEffects:statusRef.current,yara:null,messages,
         triggerAnimation:()=>{},
         onEnemyDmgPlayer:d=>{incoming+=d},
@@ -337,9 +348,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(damage>0&&Math.random()<Math.min(.25,Math.max(0,effective.core.agility)*.01)){
         damage=0;messages.push('You evade '+actor.name+'.')
       }
+      if(legendary.has('legendary_miner'))damage=Math.max(0,damage-3)
       const guard=resolveKeystoneDefense(statusRef.current,damage)
       damage=guard.damage
-      actor.hp=Math.max(0,actor.hp-(hit?.reflectAmount||0)-(guard.reflected||0))
+      actor.hp=Math.max(0,actor.hp-(hit?.reflectAmount||0)-(guard.reflected||0)-
+        Math.round(damage*reflectFraction(combatPlayer)))
       currentHp=Math.max(0,currentHp-damage)
       note(actor.name+(pulse?' fires an emergency pulse':' attacks')+' for '+damage+' damage.')
       hit?.messages?.forEach(note);guard.messages?.forEach(note)
@@ -369,6 +382,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     setKeyCooldowns(prev=>advanceKeystoneCooldowns(prev,castKeyRef.current))
     setElemCooldowns(prev=>advanceKeystoneCooldowns(prev,castElementRef.current))
     castKeyRef.current=null;castElementRef.current=null
+    defendingRef.current=false
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
     roundStartedRef.current=false
     apRef.current=2;setAp(2)
@@ -410,6 +424,13 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       }
       if(!roundStartedRef.current){
         roundStartedRef.current=true
+        legendaryTurnRef.current++
+        if(legendary.has('legendary_engineer')&&legendaryTurnRef.current%3===0){
+          updateHp(hpRef.current+5)
+          note('Mechanist Matrix repairs 5 HP.')
+        }
+        if(legendary.has('legendary_pathfinder')&&legendaryTurnRef.current===1)
+          note('Worldsight Compass reveals the formation.')
         const alive=await enemyPhase(true,heroRef.current)
         if(alive<=0){await finish('lose');return}
         if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
@@ -423,6 +444,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       else if(kind==='elemental')resolveElement(id,target)
       else if(kind==='keystone')resolveKeystone(id,target)
       else if(kind==='defend'){
+        defendingRef.current=true
         applyStonebornDefend(combatPlayer,statusRef.current)
         note('You prepare your guard.')
       }else if(kind==='end')note('You end the turn.')

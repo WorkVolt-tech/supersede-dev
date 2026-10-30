@@ -93,3 +93,9 @@ Further balancing is still needed for offhand attacks, PvP, defeat credits, and 
 7. Only then integrate the grid into `CombatScreen.jsx`, with a migration-safe fallback until battle mechanics are thoroughly tested on PC and mobile.
 
 **Remaining work:** Multi-enemy encounters, per-class positional metadata for every class/elemental skill, boss telegraphs, and complete mobile balancing. Keep existing boss scripts, loot and level-up rewards intact while integrating those features.
+
+## 7. First playable multi-enemy encounters (Chapter 1)
+
+Five explicitly counted, non-boss story encounters now route to the isolated `GroupCombatScreen.jsx`: two Glitch Rats, three Static Crawlers, two Fracture Wolves, and the two five-Crawler encounters. They are not one large HP bar: each enemy occupies its own grid square, has independent HP and can move or act in SPD order. The original combined HP is divided across the group; per-enemy ATK is reduced to keep total incoming damage near the previous encounter level. The existing total encounter XP and loot are awarded **once** on confirmed victory, using the same save-retry mechanism as the single-enemy screen. Weapon area patterns use `applyGroupAttack` to hit every occupied, affected square, never dead units. Mastery awards at most one action-use XP and six per encounter.
+
+Initial group limitations: group encounters retain existing class and elemental damage/status hooks, but complex legacy enemy-specific debuffs and damage-over-time effects currently share a status scratchpad, not a separate status tracker for each individual enemy. They therefore apply to the focused surviving target where applicable. Group mode is not activated for bosses or fights with unspecified group sizes. Additional per-unit status tracking, broader enemy AI tuning and full mobile/desktop build/playtests are pending.
