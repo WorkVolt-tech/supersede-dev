@@ -61,6 +61,8 @@ jobs:
         run: node tests/browser/single-combat-smoke.mjs
       - name: Test Archive menu and Skills stats in desktop/mobile Chromium
         run: node tests/browser/archive-ui-smoke.mjs
+      - name: Test unequipped starter moves and thrown-object recovery
+        run: node tests/browser/unarmed-combat-smoke.mjs
       - name: Upload battlefield screenshots
         if: always()
         uses: actions/upload-artifact@v4
