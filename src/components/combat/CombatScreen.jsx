@@ -25,7 +25,7 @@ import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
 import TwinJudgesPortrait from './TwinJudgesPortrait'
-import ChapterOneBossPortrait from './ChapterOneBossPortrait'
+import ChapterOneBossPortrait, { CH1_BOSS_ENTRANCE_MS } from './ChapterOneBossPortrait'
 
 function HpBar({ hp, maxHp }) {
   const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100))
@@ -70,6 +70,20 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [result, setResult] = useState(null)
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
+  // Chapter 1 guardians have staged introductions; don't allow a move to
+  // interrupt the entrance before the first combat turn begins.
+  const entranceDuration = CH1_BOSS_ENTRANCE_MS[enemyData.name] ?? 0
+  const [entranceReady, setEntranceReady] = useState(entranceDuration === 0)
+  useEffect(() => {
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    if (entranceDuration === 0 || reducedMotion) {
+      setEntranceReady(true)
+      return
+    }
+    setEntranceReady(false)
+    const timer = setTimeout(() => setEntranceReady(true), entranceDuration)
+    return () => clearTimeout(timer)
+  }, [enemyData.name, entranceDuration])
   const [turnActor, setTurnActor] = useState(null)
   const [judgeHit, setJudgeHit] = useState(false)
   const judgeHitTimer = useRef(null)
@@ -253,7 +267,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   }
 
   async function takeTurn(action, skillId) {
-    if (busy || result) return
+    if (busy || result || !entranceReady) return
     setBusy(true)
     // Stance switches are explicitly free actions in classCombat.
     // They should neither consume a round nor trigger enemy initiative.
@@ -310,7 +324,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   return (
     <div className="combat-screen">
       <div className="combat-encounter-title">{isBoss ? '☠ BOSS ENCOUNTER ☠' : '⚔ ENCOUNTER ⚔'}</div>
-      <div className="combat-turn-banner" aria-live="polite">{turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
+      <div className="combat-turn-banner" aria-live="polite">{!entranceReady ? `${enemyData.name} enters the arena…` : turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
       <div className="combat-panel">
         <div className="combat-side">
           {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : ['Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) ? <ChapterOneBossPortrait name={enemyData.name} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : enemyData.name === 'The Watcher' ? <WatcherPortrait attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
@@ -333,16 +347,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
       {!result && (
         <div className="combat-actions">
-          <button className="combat-action-btn" disabled={busy} onClick={() => takeTurn('attack')}>Attack</button>
-          <button className="combat-action-btn" disabled={busy} onClick={() => takeTurn('defend')}>Defend</button>
+          <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('attack')}>Attack</button>
+          <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('defend')}>Defend</button>
           {activeSkills.map(skill => (
-            <button key={skill.id} className="combat-action-btn" disabled={busy} onClick={() => takeTurn('skill', skill.id)}>
+            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
             </button>
           ))}
           {onEscape && (
-            <button className="combat-action-btn" disabled={busy} onClick={() => endCombat('escape')}>Flee</button>
+            <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => endCombat('escape')}>Flee</button>
           )}
         </div>
       )}
