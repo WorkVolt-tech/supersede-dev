@@ -181,9 +181,14 @@ export default function VehicleCanvas({ onComplete, destination = 2, saving = fa
         setHud({ hp: player.hp, maxHp: player.maxHp, kills, score, bossActive })
       }
 
-      if (player.hp <= 0 && !gameOver) { cancelled = true; setGameOver('lose') }
-      if (bossSpawned && bossDefeated && !bossActive && enemies.length === 0 && !gameOver) {
-        cancelled = true; setGameOver('win')
+      // Defeat always takes precedence if the final shot and fatal collision
+      // happen in the same animation frame. A loss must never unlock a chapter.
+      if (player.hp <= 0 && !gameOver) {
+        cancelled = true
+        setGameOver('lose')
+      } else if (!cancelled && bossSpawned && bossDefeated && !bossActive && enemies.length === 0 && !gameOver) {
+        cancelled = true
+        setGameOver('win')
       }
     }
     raf = requestAnimationFrame(loop)
