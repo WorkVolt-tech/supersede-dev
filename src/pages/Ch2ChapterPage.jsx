@@ -73,8 +73,13 @@ export default function Ch2ChapterPage() {
     if (!player || !ZONE_IDS.includes(currentNodeId)) return
     const already = player.ch2_elements_attempted || []
     if (already.includes(currentNodeId) || trackedRef.current.has(currentNodeId)) return
+    // This is only a recovery path for older saves whose current zone was
+    // stored before visits were recorded atomically by useStoryEngine.
     trackedRef.current.add(currentNodeId)
-    updatePlayer({ ch2_elements_attempted: [...already, currentNodeId] })
+    void updatePlayer({ ch2_elements_attempted: [...new Set([...already, currentNodeId])] })
+      .then(saved => {
+        if (!saved) trackedRef.current.delete(currentNodeId)
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentNodeId, player])
 
