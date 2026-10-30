@@ -27,6 +27,12 @@ import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import {
+  tacticalWeaponType, getTacticalAttacks, isTacticalTargetValid,
+  getTacticalAffectedSquares, chooseTacticalEnemyAction,
+  weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
+  nextWeaponMasteryThreshold,
+} from '../../game/tacticalGrid'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
@@ -43,6 +49,42 @@ function HpBar({ hp, maxHp }) {
 }
 
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+// 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
+// The enemy is rendered at the top, hero at the bottom; blank tiles are
+// tactical space, not extra combatants.
+function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAct, onMove, onAttack }) {
+  const affected = attack && isTacticalTargetValid(attack,hero,enemy)
+    ? getTacticalAffectedSquares(attack,enemy):[]
+  const labels=['Left','Centre','Right']
+  const names=['Front','Middle','Rear']
+  function cells(side) {
+    const rows=side==='enemy'?[2,1,0]:[0,1,2]
+    return rows.flatMap(rank=>[0,1,2].map(col=>{
+      const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
+      const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
+      const targetable=side==='enemy'&&occupied&&enemyHp>0&&canAct&&isTacticalTargetValid(attack,hero,enemy)
+      const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
+      return <button key={side+'-'+col+'-'+rank} type="button"
+        className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
+          targetable?'targetable':'',move&&canAct?'movable':'',splash?'splash':''].join(' ')}
+        disabled={!canAct||(side==='enemy'?!targetable:!move)}
+        onClick={()=>side==='enemy'?onAttack():onMove({col,rank})}
+        aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
+          (targetable?' — attack':move&&canAct?' — move':'')}>
+        <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
+        <small>{occupied?(side==='enemy'?'FOE':'YOU'):names[rank]}</small>
+      </button>
+    }))
+  }
+  return <div className="combat-grid-field" aria-label="Three by three tactical battlefield">
+    <div className="combat-grid-caption">ENEMY · FRONT ROW NEAREST CENTRE</div>
+    <div className="combat-grid-board">{cells('enemy')}</div>
+    <div className="combat-grid-divider">⚔</div>
+    <div className="combat-grid-board">{cells('hero')}</div>
+    <div className="combat-grid-caption">YOU · TAP AN ADJACENT CELL TO MOVE</div>
+  </div>
+}
 
 // Enemy AI provides a small, trusted emphasis vocabulary in its messages.
 // Render those tags as React elements rather than displaying raw HTML.
@@ -87,6 +129,18 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [combatSaving, setCombatSaving] = useState(false)
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
+  const weaponItem = equipped.find(item => item.equipped_slot === 'mainhand')
+  const weaponType = tacticalWeaponType(weaponItem ? equipmentSubtype(weaponItem) : null)
+  const weaponAttacks = getTacticalAttacks(weaponType)
+  const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
+  const [selectedAttackId, setSelectedAttackId] = useState(null)
+  const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
+  const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
+  const [enemyPosition, setEnemyPosition] = useState({col:1,rank:0})
+  const [actionPoints, setActionPoints] = useState(2)
+  const actionPointsRef = useRef(2)
+  const roundStartedRef = useRef(false)
+  const masteryHitsRef = useRef(0)
   const [keystoneCooldowns, setKeystoneCooldowns] = useState({})
   const [elementalCooldowns, setElementalCooldowns] = useState({})
   // Chapter 1 guardians have staged introductions; don't allow a move to
@@ -207,6 +261,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     let victoryText = ''
     if (outcome === 'win') {
+      // Count a maximum of six meaningful weapon actions per encounter.
+      // Emergency System Pulse and non-weapon abilities never earn mastery.
+      if (masteryHitsRef.current) {
+        finalUpdates.weapon_mastery = awardWeaponMastery(player.weapon_mastery || {},
+          weaponType, masteryHitsRef.current)
+      }
       const rewards = grantXp({ ...player, hp: finalUpdates.hp, ...finalUpdates }, enemyData.xp || 0)
       Object.assign(finalUpdates, rewards)
       victoryText = `Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`
@@ -218,7 +278,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     await saveCombatOutcome()
   }
 
-  function enemyTurn(playerHp, foeHp, isDefending = false) {
+  function enemyTurn(playerHp, foeHp, isDefending = false, damageLimit = Infinity) {
     const messages = []
     let aiDmg = 0
     let healAmt = 0
@@ -253,6 +313,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
     foeHp = Math.min(enemyData.hp, foeHp + healAmt)
 
+    aiDmg = Math.min(damageLimit, aiDmg)
     // Route the AI's intended damage through onPlayerHit so defensive class
     // skills (shields, counters, thorns) get a chance to react, same as
     // the vanilla engines did. Real return shape is {dmgMult, reflectAmount,
@@ -311,7 +372,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { playerHp: nextHp, foeHp }
   }
 
-  function playerAttack(foeHp, playerHp) {
+  function playerAttack(foeHp, playerHp, attack) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
@@ -325,6 +386,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (statusEffectsRef.current.cfx_ironDomainTurns > 0) dmg *= 2
     const keystoneHit = resolveKeystoneStrike(statusEffectsRef.current, dmg, wasCrit)
     dmg = keystoneHit.damage
+    // Existing ATK/DEF, criticals, status and gear effects remain the basis.
+    // Tactical weapon techniques provide small relative modifiers only.
+    dmg += attack.fallback ? 0 : Math.max(0, attack.damage - 4) +
+      weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     const newEnemyHp = Math.max(0, foeHp - dmg)
@@ -334,7 +399,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
     const verb = ranged ? 'You shoot' : 'You strike'
-    const msgs = [`${verb} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || []), ...keystoneHit.messages]
+    const msgs = [`${attack.label}: ${verb.toLowerCase()} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || []), ...keystoneHit.messages]
+    if (dmg > 0 && !attack.fallback && masteryHitsRef.current < 6) {
+      masteryHitsRef.current++
+      msgs.push(`${weaponType} mastery practice +1 (awarded on victory).`)
+    }
     if (legendary.has('legendary_forger') && wasCrit) msgs.push('✦ Masterwork Edge adds 12 critical damage.')
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) msgs.push('✦ Predator Instinct: opening shot +15.')
     if (legendary.has('legendary_resonance_weaver')) msgs.push('✦ Harmonic Pulse: +4 resonance damage.')
@@ -417,87 +486,147 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { foeHp, playerHp }
   }
 
-  async function takeTurn(action, skillId) {
+  // One enemy action per round, with two player AP. Faster enemies act
+  // before the first AP; slower enemies act after the last AP.
+  function positionedEnemyTurn(playerHp, foeHp, defendAction) {
+    if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
+    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroPosition)
+    if (next.move) {
+      setEnemyPosition(next.move)
+      pushLog(`${enemyData.name} repositions to column ${next.move.col+1}, rank ${next.move.rank+1}.`)
+      return {playerHp,foeHp}
+    }
+    if (next.attack?.fallback) {
+      pushLog(`${enemyData.name} cannot reach you and uses an emergency ranged pulse.`)
+      return enemyTurn(playerHp,foeHp,defendAction,2)
+    }
+    return enemyTurn(playerHp,foeHp,defendAction)
+  }
+
+  async function takeTurn(action, skillId, moveTo=null) {
     if (busy || result || !entranceReady) return
-    // Revalidate even when triggered programmatically; the UI alone
-    // must not permit casting an unlearned or cooling-down keystone.
+    const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
+    if (action==='attack' && (!attack ||
+      !isTacticalTargetValid(attack,heroPosition,enemyPosition))) return
+    if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
+      moveTo.rank<0||moveTo.rank>2 ||
+      Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
+    const cost=action==='attack'?attack.ap:action==='move'?1:2
+    if (cost > actionPointsRef.current) return
+    if (action === 'skill' && !ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
+      .some(skill=>skill.id===skillId && skill.available!==false)) return
     if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
       .some(keystone => keystone.id === skillId && keystone.available)) return
     if (action === 'elemental' && (!canUseElementalAttack(combatPlayer, skillId) ||
         (elementalCooldowns[skillId] || 0) > 0 ||
         mpRef.current < getAttackMpCost(combatPlayer, skillId, statusEffectsRef.current))) return
     setBusy(true)
-    // Free keystones (Time Skip, Hurricane, etc.) may prepare another
-    // action without giving the enemy an extra attack or ticking cooldowns.
+
+    // Preserve special free actions, including stance toggles and keystones.
     if (action === 'keystone') {
-      const preview = applyKeystone(skillId, combatPlayer, statusEffectsRef.current, {
-        currentHp, maxPlayerHp, enemyHp, maxEnemyHp: enemyData.hp,
-        playerATK: calcATK(player, equipped), playerDEF: calcDEF(player, equipped),
+      const preview=applyKeystone(skillId, combatPlayer, statusEffectsRef.current, {
+        currentHp,maxPlayerHp,enemyHp,maxEnemyHp:enemyData.hp,
+        playerATK:calcATK(player,equipped),playerDEF:calcDEF(player,equipped),
       })
       if (preview.consumesTurn === false) {
-        castKeystone(skillId, enemyHp, currentHp)
+        castKeystone(skillId,enemyHp,currentHp)
         setBusy(false)
         return
       }
     }
-    // Stance switches are explicitly free actions in classCombat.
-    // They should neither consume a round nor trigger enemy initiative.
-    if (action === 'skill' && (skillId === 'stance_solar' || skillId === 'stance_lunar')) {
-      playerSkill(skillId, enemyHp, currentHp)
+    if (action === 'skill' && (skillId==='stance_solar'||skillId==='stance_lunar')) {
+      playerSkill(skillId,enemyHp,currentHp)
       setBusy(false)
       return
     }
-    let playerHp = currentHp
-    let foeHp = enemyHp
-    legendaryTurnRef.current += 1
-    if (legendary.has('legendary_engineer') && legendaryTurnRef.current % 3 === 0) {playerHp = Math.min(maxPlayerHp,playerHp+5);setCurrentHp(playerHp);pushLog('✦ Mechanist Matrix repairs 5 HP.')}
-    if (legendary.has('legendary_pathfinder') && legendaryTurnRef.current === 1) pushLog('✦ Worldsight Compass reveals your opponent’s rhythm.')
-    const playerSpeed = calcSPD(player,equipped) + (statusEffectsRef.current.playerSPDBonus || 0)
-    const enemySpeed = enemyData.speed ?? enemyData.spd ?? enemyData.agility ?? 5
-    const enemyFirst = enemySpeed > playerSpeed
-    const defendAction = action === 'defend'
-    setDefending(defendAction)
-    pushLog(enemyFirst ? `${enemyData.name} takes the initiative.` : 'You take the initiative.')
 
-    const act = async (side) => {
-      setTurnActor(side)
-      if (side === 'enemy') {
-        ;({ playerHp, foeHp } = enemyTurn(playerHp, foeHp, defendAction))
-      } else if (action === 'attack') {
-        ;({ foeHp, playerHp } = playerAttack(foeHp, playerHp))
-      } else if (action === 'keystone') {
-        ;({ foeHp, playerHp } = castKeystone(skillId, foeHp, playerHp))
-      } else if (action === 'elemental') {
-        ;({ foeHp, playerHp } = castElementalAttack(skillId, foeHp, playerHp))
-      } else if (action === 'skill') {
-        const skillResult = playerSkill(skillId, foeHp, playerHp)
-        foeHp = skillResult.foeHp
-        playerHp = skillResult.playerHp
-      } else {
-        pushLog('You brace yourself.')
-        const stacks = applyStonebornDefend(combatPlayer, statusEffectsRef.current)
-        if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
+    let playerHp=currentHp
+    let foeHp=enemyHp
+    const enemySpeed=enemyData.speed??enemyData.spd??enemyData.agility??5
+    const playerSpeed=calcSPD(player,equipped)+(statusEffectsRef.current.playerSPDBonus||0)
+    const enemyFirst=enemySpeed>playerSpeed
+    const defendAction=action==='defend'
+    const firstAction=!roundStartedRef.current
+    if (firstAction) {
+      roundStartedRef.current=true
+      legendaryTurnRef.current++
+      if (legendary.has('legendary_engineer') && legendaryTurnRef.current%3===0) {
+        playerHp=Math.min(maxPlayerHp,playerHp+5)
+        setCurrentHp(playerHp)
+        pushLog('✦ Mechanist Matrix repairs 5 HP.')
       }
-      await pause(650)
+      if (legendary.has('legendary_pathfinder') && legendaryTurnRef.current===1)
+        pushLog('✦ Worldsight Compass reveals your opponent’s rhythm.')
+      pushLog(enemyFirst ? `${enemyData.name} takes the initiative.` : 'You take the initiative.')
+      if (enemyFirst) {
+        setTurnActor('enemy')
+        ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction))
+        await pause(650)
+        if (playerHp<=0 || foeHp<=0) {
+          setTurnActor(null)
+          await endCombat(playerHp<=0?'lose':'win',playerHp)
+          setBusy(false)
+          return
+        }
+      }
     }
 
-    // Each actor finishes before the next begins. A lethal blow ends the
-    // round immediately, so a defeated combatant cannot retaliate.
-    for (const side of (enemyFirst ? ['enemy', 'player'] : ['player', 'enemy'])) {
-      await act(side)
-      if (playerHp <= 0 || foeHp <= 0) break
+    setTurnActor('player')
+    setDefending(defendAction)
+    if (action==='move') {
+      setHeroPosition(moveTo)
+      pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
+    } else if (action==='attack') {
+      ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
+    } else if (action==='keystone') {
+      ;({foeHp,playerHp}=castKeystone(skillId,foeHp,playerHp))
+    } else if (action==='elemental') {
+      ;({foeHp,playerHp}=castElementalAttack(skillId,foeHp,playerHp))
+    } else if (action==='skill') {
+      const skillResult=playerSkill(skillId,foeHp,playerHp)
+      foeHp=skillResult.foeHp
+      playerHp=skillResult.playerHp
+    } else {
+      pushLog('You brace yourself.')
+      const stacks=applyStonebornDefend(combatPlayer,statusEffectsRef.current)
+      if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
+    }
+    await pause(450)
+    const remaining=Math.max(0,actionPointsRef.current-cost)
+    actionPointsRef.current=remaining
+    setActionPoints(remaining)
+    if (playerHp<=0 || foeHp<=0) {
+      setTurnActor(null)
+      await endCombat(playerHp<=0?'lose':'win',playerHp)
+      setBusy(false)
+      return
+    }
+    if (remaining>0) {
+      setTurnActor(null)
+      setDefending(false)
+      setBusy(false)
+      return
+    }
+
+    if (!enemyFirst) {
+      setTurnActor('enemy')
+      ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction))
+      await pause(650)
     }
     setTurnActor(null)
     setDefending(false)
-    setKeystoneCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'keystone' ? skillId : null))
-    setElementalCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'elemental' ? skillId : null))
-    if (playerHp > 0 && mpRef.current < maxCombatMp) changeCombatMp(recoverCombatMp(mpRef.current, mpRegen, maxCombatMp))
-    if (statusEffectsRef.current.cfx_ironDomainTurns > 0 &&
-        !(action === 'elemental' && skillId === 'metal_ultimate_iron_domain')) {
-      statusEffectsRef.current.cfx_ironDomainTurns -= 1
-    }
-    if (playerHp <= 0) await endCombat('lose', playerHp)
-    else if (foeHp <= 0) await endCombat('win', playerHp)
+    setKeystoneCooldowns(prev=>advanceKeystoneCooldowns(prev,action==='keystone'?skillId:null))
+    setElementalCooldowns(prev=>advanceKeystoneCooldowns(prev,action==='elemental'?skillId:null))
+    if (playerHp>0 && mpRef.current<maxCombatMp)
+      changeCombatMp(recoverCombatMp(mpRef.current,mpRegen,maxCombatMp))
+    if (statusEffectsRef.current.cfx_ironDomainTurns>0 &&
+        !(action==='elemental' && skillId==='metal_ultimate_iron_domain'))
+      statusEffectsRef.current.cfx_ironDomainTurns--
+    roundStartedRef.current=false
+    actionPointsRef.current=2
+    setActionPoints(2)
+    if (playerHp<=0) await endCombat('lose',playerHp)
+    else if (foeHp<=0) await endCombat('win',playerHp)
     setBusy(false)
   }
 
@@ -536,18 +665,40 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         </div>
       </div>
 
-      {!result && (
+      {!result && <>
+        <div className="combat-tactical-status">
+          <strong>{actionPoints}/2 AP</strong>
+          <span>{weaponType.toUpperCase()} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
+            {' · '}{(player.weapon_mastery||{})[weaponType]||0} XP
+            {nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)!==null &&
+              ' / '+nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)}
+          </span>
+        </div>
+        <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
+          enemyIcon={enemyData.icon} enemyHp={enemyHp} attack={selectedAttack}
+          canAct={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
+          onMove={position=>takeTurn('move',null,position)}
+          onAttack={()=>takeTurn('attack',selectedAttack.id)} />
+        <div className="combat-tactical-weapons">
+          {weaponAttacks.map(attack=><button key={attack.id} type="button"
+            className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
+            aria-pressed={selectedAttack.id===attack.id}
+            disabled={busy || !entranceReady || actionPoints<attack.ap}
+            onClick={()=>setSelectedAttackId(attack.id)}>
+            {attack.label}{attack.fallback?' · Emergency':''}
+            <span className="combat-action-sub">{attack.reach} · {attack.shape} · {attack.ap} AP</span>
+          </button>)}
+        </div>
         <div className="combat-actions">
-          <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('attack')}>Attack</button>
-          <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('defend')}>Defend</button>
+          <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
           {activeSkills.map(skill => (
-            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => takeTurn('skill', skill.id)}>
+            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2 || skill.available===false} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
             </button>
           ))}
           {elementalAttack && <button type="button" className="combat-action-btn"
-            disabled={busy || !entranceReady || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
+            disabled={busy || !entranceReady || actionPoints<2 || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
               currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)}
             onClick={() => takeTurn('elemental', elementalAttack.id)}>
             {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)}
@@ -560,7 +711,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {keystones.map(keystone => (
             <button key={keystone.id} type="button" className="combat-action-btn"
               title={keystone.desc}
-              disabled={busy || !entranceReady || !keystone.available}
+              disabled={busy || !entranceReady || !keystone.available || actionPoints<2}
               onClick={() => takeTurn('keystone', keystone.id)}>
               {keystone.label}
               <span className="combat-action-sub">
@@ -572,7 +723,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => endCombat('escape')}>Flee</button>
           )}
         </div>
-      )}
+      </>}
 
       {result === 'win' && <p className="combat-result win">✦ Victory ✦</p>}
       {result && combatSaving && <p className="combat-save-status" role="status">Saving combat progress…</p>}

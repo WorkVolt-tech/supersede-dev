@@ -86,3 +86,25 @@
 .combat-save-error p { font-size:11px; margin:0 0 10px; line-height:1.5; }
 .combat-save-error .combat-action-btn { width:auto; min-width:160px; }
 .reading-page .combat-save-error { background:#f1dac9; color:#6a2a1e; }
+
+/* Tactical field: enemy above, player below; compact enough for the book. */
+.combat-tactical-status { display:flex; justify-content:space-between; flex-wrap:wrap;
+  align-items:center; gap:6px; font-size:11px; color:#d1bc87; }
+.combat-grid-field { width:min(100%,380px); margin:0 auto; display:flex; flex-direction:column; gap:5px; }
+.combat-grid-caption { text-align:center; font-size:9px; letter-spacing:.08em; color:#9f8b70; }
+.combat-grid-board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:4px; }
+.combat-grid-divider { text-align:center; font-size:12px; color:#ab8064; }
+.combat-grid-cell { min-width:0; min-height:50px; padding:5px 2px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:2px; color:#b8a692;
+  border:1px solid #594839; border-radius:5px; background:#181614; }
+.combat-grid-cell span { font-size:20px; }
+.combat-grid-cell small { font-size:9px; color:#9f8b70; }
+.combat-grid-cell.ally.occupied { background:#23313b; border-color:#688a9d; }
+.combat-grid-cell.foe.occupied { background:#38231f; border-color:#a65e53; }
+.combat-grid-cell.splash { box-shadow:inset 0 0 0 1px #c76d47; }
+.combat-grid-cell.targetable { cursor:crosshair; outline:2px solid #dfb260; outline-offset:-2px; }
+.combat-grid-cell.movable { cursor:pointer; border-style:dashed; border-color:#88abbb; }
+.combat-grid-cell:disabled { cursor:default; opacity:.72; }
+.combat-tactical-weapons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+.combat-tactical-weapons .combat-action-btn.selected { border-color:#dfb260; color:#f5dca1; }
+@media(max-width:480px) { .combat-grid-cell { min-height:43px; } .combat-grid-cell span { font-size:17px; } }

@@ -5,7 +5,7 @@ import {
   TACTICAL_ATTACKS, TACTICAL_WEAPONS, tacticalWeaponType, getTacticalAttacks,
   isTacticalTargetValid, getTacticalAffectedSquares, tacticalHitTargets,
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
-  nextWeaponMasteryThreshold, hasFullTacticalCoverage,
+  nextWeaponMasteryThreshold, hasFullTacticalCoverage, chooseTacticalEnemyAction,
 } from './tacticalGrid.js'
 
 test('all existing weapon families cover short, middle and long targets', () => {
@@ -88,4 +88,15 @@ test('additional valid class abilities do not remove basic attacks or the fallba
   assert.ok(getTacticalAttacks('dagger',['wave']).some(a=>a.id==='pulse'))
   assert.ok(getTacticalAttacks('dagger',['wave']).some(a=>a.id==='wave'))
   assert.ok(getTacticalAttacks('dagger',['not_a_real_attack']).every(a=>TACTICAL_ATTACKS[a.id]))
+})
+
+test('enemy tactical AI uses legal attacks, moves when necessary and has a fallback', () => {
+  const front={col:1,rank:0}, back={col:1,rank:2}
+  assert.equal(chooseTacticalEnemyAction('sword', front,front).attack.id,'slash')
+  const move=chooseTacticalEnemyAction('bow',front,back)
+  assert.deepEqual(move.move,{col:1,rank:1})
+  assert.equal(chooseTacticalEnemyAction('sword',front,back).attack.id,'pulse')
+  const blocked=chooseTacticalEnemyAction('bow',front,back,
+    [{col:1,rank:1},{col:0,rank:0},{col:2,rank:0}])
+  assert.equal(blocked.attack.id,'pulse')
 })

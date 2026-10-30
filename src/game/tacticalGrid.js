@@ -108,6 +108,25 @@ export function nextWeaponMasteryThreshold(xp) {
   return MASTERY_XP_THRESHOLDS.find(value=>value>xp)??null;
 }
 
+// Enemy choices use the same legal targeting rules as player attacks.
+// Try a meaningful attack, otherwise move one adjacent square toward a legal
+// weapon shot. If no movement helps, use the weak universal fallback.
+export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[]) {
+  const kit=getTacticalAttacks(weaponType);
+  const attacks=kit.filter(a=>!a.fallback);
+  const valid=attacks.filter(a=>isTacticalTargetValid(a,from,target))
+    .sort((a,b)=>b.damage-a.damage);
+  if(valid.length)return {attack:valid[0]};
+  const next=[[0,-1],[-1,0],[1,0],[0,1]]
+    .map(([dc,dr])=>({col:from.col+dc,rank:from.rank+dr}))
+    .filter(p=>p.col>=0&&p.col<3&&p.rank>=0&&p.rank<3&&
+      !occupied.some(x=>x.col===p.col&&x.rank===p.rank))
+    .map(pos=>({pos,options:attacks.filter(a=>isTacticalTargetValid(a,pos,target))}))
+    .filter(candidate=>candidate.options.length)
+    .sort((a,b)=>b.options.length-a.options.length);
+  return next.length?{move:next[0].pos}:{attack:kit.find(a=>a.fallback)};
+}
+
 // All class kits inherit their equipped weapon's baseline reach plus an
 // always-available weak Pulse. A class is free to replace/add class skills,
 // but never loses the emergency target-anywhere fallback.
