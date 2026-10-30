@@ -37,3 +37,15 @@
 @keyframes judge-scale-attack{0%{transform:rotate(0)}55%{transform:rotate(17deg)}100%{transform:rotate(0)}}
 @keyframes judge-burst{0%{opacity:.3;scale:.7}50%{opacity:1;scale:1.25}100%{opacity:.3;scale:1}}
 @media(prefers-reduced-motion:reduce){.twin-judges,.twin-judges *{animation:none!important}}
+
+/* Absolution: the original Mercy and Wrath artworks merge into the supplied
+   transformed character. A true animated WebP plays once as an entrance. */
+.absolution-form{height:235px;width:80%;position:relative;display:flex;align-items:flex-end;justify-content:center}
+.absolution-transition{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;animation:absolution-arrive 3.2s ease-out both}
+.absolution-form .judge-figure{width:100%;height:100%}
+.absolution-form .judge-glow{background:radial-gradient(ellipse,#ffe4a888,#4a202633,transparent 74%)}
+.absolution-attacking .judge-figure{animation:judge-mercy-strike .68s ease-in-out}
+.absolution-attacking .judge-sword{animation:judge-slash .68s ease-out}
+.absolution-attacking .judge-scales{animation:judge-scale-attack .68s ease-in-out}
+@keyframes absolution-arrive{0%{filter:drop-shadow(0 0 3px #522b39aa)}50%{filter:drop-shadow(0 0 14px #e5c364cc)}100%{filter:drop-shadow(0 0 12px #d3b76588)}}
+@media(prefers-reduced-motion:reduce){.absolution-transition{animation:none}}
