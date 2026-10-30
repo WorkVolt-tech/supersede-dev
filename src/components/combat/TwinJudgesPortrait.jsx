@@ -31,11 +31,12 @@ const transformationAssets={
  E_mercy_absorbs:{video:'/mercy_to_absolution.webp',result:'absolution'},
  G_verdict:{video:'/mercy_wrath_fuse_verdict.webp',result:'verdict'}
 }
-function TransformJudge({form,attacking}){
+function TransformJudge({form,attacking,onReady}){
  const config=transformationAssets[form]
  const [finished,setFinished]=useState(false)
  const [triedAlternative,setTriedAlternative]=useState(false)
  const [loaded,setLoaded]=useState(false)
+ useEffect(()=>{if(finished)onReady?.()},[finished,onReady])
  useEffect(()=>{
   if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)setFinished(true)
  },[])
@@ -50,13 +51,14 @@ function TransformJudge({form,attacking}){
   {finished&&<Judge which={config.result} attacking={attacking} dominant/>}
  </div>
 }
-export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1}){
+export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1,onReady}){
  const form=judgesVisualForm(moral,elements)
+ useEffect(()=>{if(!transformationAssets[form])onReady?.()},[form,onReady])
  const phase=hpPercent<.33?3:hpPercent<.66?2:1
  const transformation=Boolean(transformationAssets[form])
  return <div className={`twin-judges twin-${form} twin-phase-${phase} ${attacking?'twin-attacking':''}`} role="img" aria-label={`Twin Judges: ${labels[form]}, phase ${phase}`}>
   <div className="twin-judges-stage">
-   {transformation?<TransformJudge key={form} form={form} attacking={attacking}/>:
+   {transformation?<TransformJudge key={form} form={form} attacking={attacking} onReady={onReady}/>:
     form==='A_mercy'?<Judge which="mercy" attacking={attacking} dominant/>:
     form==='B_wrath'?<Judge which="wrath" attacking={attacking} dominant/>:
     form==='F_dual_powered'?<><Judge which="absolution" attacking={attacking}/><Judge which="ruin" attacking={attacking}/></>:
