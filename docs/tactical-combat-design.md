@@ -63,8 +63,8 @@ Mastery belongs to the **weapon family**, not the weapon instance. A rare sword 
 | 4 | 28 | +0 |
 | 5 | 48 | +0 |
 | 10 | 93 | +0 |
-| 11 | 103 | +1 |
-| 100 | 4,356 | +9 |
+| 11 | 105 | +1 |
+| 100 | 4,323 | +9 |
 
 The leveling curve uses a growing threshold formula, and unlock thresholds (20/40/80) emphasize new techniques over raw damage.
 
