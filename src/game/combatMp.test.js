@@ -12,17 +12,18 @@ test('base combat MP is full at the start of each encounter', () => {
   assert.deepEqual(ELEMENTAL_MP_COSTS, [8, 14, 22])
 })
 
-test('only the active element contributes MP capacity and MP regeneration', () => {
+test('current utility branches do not invent MP bonuses from other stats', () => {
   const p = {
     defeated_bosses: ['zone_boss_fire', 'zone_boss_water'],
     elemental_unlocked: ['fire_util_4', 'water_util_4', 'fire_util_5', 'water_util_5'],
     element: 'fire',
   }
   assert.equal(getActiveElement(p), 'fire')
-  assert.ok(getMaxCombatMp(p) > 30)
-  assert.ok(getCombatMpRegen(p) > 3)
-  const switched = {...p, element:'water'}
-  assert.equal(getMaxCombatMp(switched), getMaxCombatMp(p))
+  // The current tree overrides utility nodes 4/5 with ATK/HP and cooldown
+  // upgrades; neither is an MP node. Future MP nodes still use the bonus API.
+  assert.equal(getMaxCombatMp(p), 30)
+  assert.equal(getCombatMpRegen(p), 3)
+  assert.equal(getMaxCombatMp({...p,element:'water'}),30)
 })
 
 test('MP spending and recovery respect zero and maximum', () => {
