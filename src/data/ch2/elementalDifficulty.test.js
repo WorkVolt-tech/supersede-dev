@@ -12,6 +12,8 @@ const enemy = { name: 'Elemental Entity', hp: 100, atk: 12, def: 8, spd: 10, xp:
 test('resonance is unset before first boss and reads first saved flag', () => {
   assert.equal(getChapterResonance(player()), null)
   assert.equal(getChapterResonance(player([], ['zone_boss_fire', 'element_resonance_fire'])), 'fire')
+  assert.equal(getChapterResonance(player([], ['zone_boss_water', 'zone_boss_fire'])), 'water')
+  assert.equal(getChapterResonance(player([], ['zone_boss_water', 'element_resonance_fire'])), 'fire')
 })
 
 test('only canonical zone roots and their descendants receive elemental scaling', () => {
