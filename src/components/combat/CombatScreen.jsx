@@ -21,6 +21,7 @@ import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '.
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
+import { getEquippedElementalAttack, canUseElementalAttack, resolveElementalAttack } from '../../game/elementalAttacks'
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
@@ -73,6 +74,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
   const [keystoneCooldowns, setKeystoneCooldowns] = useState({})
+  const [elementalCooldowns, setElementalCooldowns] = useState({})
   // Chapter 1 guardians have staged introductions; don't allow a move to
   // interrupt the entrance before the first combat turn begins.
   const entranceDuration = CH1_BOSS_ENTRANCE_MS[enemyData.name] ?? 0
@@ -338,12 +340,30 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { foeHp, playerHp, consumed: effect.consumesTurn !== false }
   }
 
+  function castElementalAttack(skillId, foeHp, playerHp) {
+    const effect = resolveElementalAttack(skillId, combatPlayer, statusEffectsRef.current, {
+      atk: calcATK(player, equipped), def: calcDEF(player, equipped),
+      enemyDef: enemyData.def || 0, currentHp: playerHp, maxHp: maxPlayerHp,
+    })
+    if (!effect) return { foeHp, playerHp }
+    effect.messages.forEach(pushLog)
+    applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
+    foeHp = Math.max(0, foeHp - effect.enemyDamage)
+    playerHp = Math.min(maxPlayerHp, playerHp + effect.healPlayer)
+    if (effect.enemyDamage > 0) showJudgeHit()
+    setEnemyHp(foeHp)
+    setCurrentHp(playerHp)
+    if (effect.cooldown > 0) setElementalCooldowns(prev => ({...prev, [skillId]: effect.cooldown}))
+    return { foeHp, playerHp }
+  }
+
   async function takeTurn(action, skillId) {
     if (busy || result || !entranceReady) return
     // Revalidate even when triggered programmatically; the UI alone
     // must not permit casting an unlearned or cooling-down keystone.
     if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
       .some(keystone => keystone.id === skillId && keystone.available)) return
+    if (action === 'elemental' && (!canUseElementalAttack(combatPlayer, skillId) || (elementalCooldowns[skillId] || 0) > 0)) return
     setBusy(true)
     // Free keystones (Time Skip, Hurricane, etc.) may prepare another
     // action without giving the enemy an extra attack or ticking cooldowns.
@@ -385,6 +405,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         ;({ foeHp, playerHp } = playerAttack(foeHp, playerHp))
       } else if (action === 'keystone') {
         ;({ foeHp, playerHp } = castKeystone(skillId, foeHp, playerHp))
+      } else if (action === 'elemental') {
+        ;({ foeHp, playerHp } = castElementalAttack(skillId, foeHp, playerHp))
       } else if (action === 'skill') {
         const skillResult = playerSkill(skillId, foeHp, playerHp)
         foeHp = skillResult.foeHp
@@ -404,6 +426,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setTurnActor(null)
     setDefending(false)
     setKeystoneCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'keystone' ? skillId : null))
+    setElementalCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'elemental' ? skillId : null))
     if (playerHp <= 0) await endCombat('lose', playerHp)
     else if (foeHp <= 0) await endCombat('win', playerHp)
     setBusy(false)
@@ -411,6 +434,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
   const keystones = getUnlockedKeystones(combatPlayer, keystoneCooldowns)
+  const elementalAttack = getEquippedElementalAttack(combatPlayer)
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -448,6 +472,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
             </button>
           ))}
+          {elementalAttack && <button type="button" className="combat-action-btn"
+            disabled={busy || !entranceReady || (elementalCooldowns[elementalAttack.id] || 0) > 0}
+            onClick={() => takeTurn('elemental', elementalAttack.id)}>
+            {elementalAttack.label}
+            <span className="combat-action-sub">
+              {(elementalCooldowns[elementalAttack.id] || 0) > 0
+                ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
+                : `${elementalAttack.element} elemental attack`}
+            </span>
+          </button>}
           {keystones.map(keystone => (
             <button key={keystone.id} type="button" className="combat-action-btn"
               title={keystone.desc}
