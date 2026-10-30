@@ -52,12 +52,12 @@ export default function ChapterOneBossPreviewPage({onReturn}){
    {BOSSES.map(name=><option key={name} value={name}>{name}</option>)}
   </select>
   <div key={boss+'-'+replay} style={{minHeight:280,display:'grid',placeItems:'center'}}>
-   {isWatcher?<WatcherPortrait attacking={attacking} defeated={defeated}/>:
+   {isWatcher?<WatcherPortrait attacking={attacking} hit={hit} defeated={defeated}/>:
     <ChapterOneBossPortrait name={boss} attacking={attacking} hit={hit} defeated={defeated}/>}
   </div>
   <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
    <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setAttacking,720)}>Play attack</button>
-   {!isWatcher&&<button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setHit,440)}>Preview hit</button>}
+   <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>trigger(setHit,440)}>Preview hit</button>
    <button className="reading-action" disabled={defeated||!entranceReady} onClick={()=>{clearTimers();setAttacking(false);setHit(false);setDefeated(true)}}>Preview defeat</button>
    <button className="reading-action" onClick={()=>reset()}>Replay entrance / reset</button>
   </div>
