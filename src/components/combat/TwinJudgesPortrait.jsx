@@ -51,12 +51,12 @@ function TransformJudge({form,attacking,onReady}){
   {finished&&<Judge which={config.result} attacking={attacking} dominant/>}
  </div>
 }
-export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1,onReady}){
+export default function TwinJudgesPortrait({moral=0,elements=1,attacking=false,hpPercent=1,onReady,hit=false,defeated=false}){
  const form=judgesVisualForm(moral,elements)
  useEffect(()=>{if(!transformationAssets[form])onReady?.()},[form,onReady])
  const phase=hpPercent<.33?3:hpPercent<.66?2:1
  const transformation=Boolean(transformationAssets[form])
- return <div className={`twin-judges twin-${form} twin-phase-${phase} ${attacking?'twin-attacking':''}`} role="img" aria-label={`Twin Judges: ${labels[form]}, phase ${phase}`}>
+ return <div className={`twin-judges twin-${form} twin-phase-${phase} ${attacking?'twin-attacking':''} ${hit?'twin-hit':''} ${defeated?'twin-defeated':''}`} role="img" aria-label={`Twin Judges: ${labels[form]}, phase ${phase}`}>
   <div className="twin-judges-stage">
    {transformation?<TransformJudge key={form} form={form} attacking={attacking} onReady={onReady}/>:
     form==='A_mercy'?<Judge which="mercy" attacking={attacking} dominant/>:
