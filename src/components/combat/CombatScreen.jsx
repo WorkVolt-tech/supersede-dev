@@ -79,7 +79,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     clearTimeout(judgeHitResetTimer.current)
   }, [])
   function showJudgeHit() {
-    if (!['The Twin Judges','Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) && !/watcher/i.test(enemyData.name)) return
+    if (!['The Twin Judges','Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) && enemyData.name !== 'The Watcher') return
     clearTimeout(judgeHitTimer.current)
     clearTimeout(judgeHitResetTimer.current)
     setJudgeHit(false)
@@ -125,7 +125,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // Let victory animations finish before leaving the arena. The Watcher's
     // eight eye fragments stagger their dispersal for almost two seconds.
     const victoryDelay = outcome === 'win'
-      ? /watcher/i.test(enemyData.name) ? 2000
+      ? enemyData.name === 'The Watcher' ? 2000
         : ['Sentinel of the First Eye', 'The Surveyor', 'The Unseen'].includes(enemyData.name) ? 1500
         : enemyData.name === 'The Twin Judges' ? 1200
         : 900
@@ -313,7 +313,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       <div className="combat-turn-banner" aria-live="polite">{turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
       <div className="combat-panel">
         <div className="combat-side">
-          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : ['Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) ? <ChapterOneBossPortrait name={enemyData.name} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : /watcher/i.test(enemyData.name) ? <WatcherPortrait attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
+          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : ['Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) ? <ChapterOneBossPortrait name={enemyData.name} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : enemyData.name === 'The Watcher' ? <WatcherPortrait attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
           <span className="combat-name">{enemyData.name}</span>
           <HpBar hp={enemyHp} maxHp={enemyData.hp} />
           <span className="combat-hp-num">{enemyHp}/{enemyData.hp}</span>
