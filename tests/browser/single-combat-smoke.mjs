@@ -23,6 +23,30 @@ async function ready(){
   }
   throw Error('Vite server timed out')
 }
+async function runClasslessTriadScenario(view) {
+  const errors=[]
+  view.on('pageerror',error=>errors.push(error.message))
+  await view.goto(host+'/tests/browser/single-combat.html?scenario=triad-fire',
+    {waitUntil:'networkidle'})
+  const banner=view.locator('.combat-fusion-status')
+  await banner.waitFor()
+  check((await banner.textContent()).includes('fire Elemental Triad'),
+    'single triad: classless fusion identity missing')
+  const signature=view.locator('.combat-signature-action')
+  check(await signature.isDisabled(),'single triad: signature unlocked before toggle')
+  await view.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+  await view.getByRole('button',{name:'Preview ✦ Fire Triad Resonance'}).click()
+  check(await view.locator('.signature-preview-guard').count()===4,
+    'single triad: preview must include four enemy squares')
+  await signature.click()
+  await view.waitForFunction(()=>document.querySelector('.combat-log')
+    ?.textContent.includes('fused for'),null,{timeout:15000})
+  check(await view.locator('.combat-signature-burst').count()===1,
+    'single triad: effect animation missing')
+  check(errors.length===0,'single triad: exceptions '+errors.join(' | '))
+  console.log('PASS 1v1 classless elemental triad: 3 abilities, MP cost, preview')
+  await view.screenshot({path:'test-artifacts/single-triad-fire.png',fullPage:true})
+}
 async function runSignatureScenario(scenario,view) {
   const label={
     'signature-fire':'Phantom Inferno',
@@ -125,6 +149,7 @@ try{
   await runSignatureScenario('signature-fire',page)
   await runSignatureScenario('signature-earth',page)
   await runSignatureScenario('signature-lightning',page)
+  await runClasslessTriadScenario(page)
   await page.close()
   console.log('PASS: single/boss fusion browser smoke')
 }catch(error){

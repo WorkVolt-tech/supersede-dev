@@ -186,6 +186,61 @@ async function verifySignatures(page) {
     console.log('PASS signature '+element+': '+label+' targeting, effects and cooldown')
   }
 }
+async function verifyClasslessTriad(page) {
+  const errors=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=triad-fire',
+    {waitUntil:'networkidle'})
+  const status=page.locator('.combat-fusion-status')
+  await status.waitFor()
+  check((await status.textContent()).includes('fire Elemental Triad'),
+    'triad: classless character did not receive fusion')
+  check(!(await status.textContent()).includes('null +'),
+    'triad: incorrect class identity')
+  const signature=page.locator('.combat-signature-action')
+  check(await signature.isDisabled(),'triad: signature enabled before fusion toggle')
+  await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+  check(await signature.isEnabled(),'triad: active signature was locked')
+  await page.getByRole('button',{name:'Preview ✦ Fire Triad Resonance'}).click()
+  check(await page.locator('.combat-grid-board').first()
+    .locator('button.splash').count()===4,
+    'triad: cross preview missing')
+  await signature.click()
+  await page.waitForFunction(()=>document.querySelector('.combat-log')
+    ?.textContent.includes('fused into one attack'),
+    null,{timeout:15000})
+  const log=await page.locator('.combat-log').textContent()
+  for(const label of ['Fire Blast','Cinderstorm'])
+    check(log.toLowerCase().includes(label.toLowerCase()),
+      'triad: missing source formula '+label)
+  check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
+    'triad: mastery saved before victory')
+  await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
+    ?.textContent.includes('2/2 AP'),null,{timeout:15000})
+  check((await signature.textContent()).includes('Cooldown: 4 rounds'),
+    'triad: 4-round cooldown not set')
+  check(await page.locator('.combat-grid-board').first()
+    .locator('.hazard').count()===4,'triad: lingering fire zone not created')
+  check(errors.length===0,'triad: browser exceptions '+errors.join(' | '))
+  console.log('PASS triad: classless path fuses 3 learned elemental attacks in one cast')
+  await page.screenshot({path:'test-artifacts/triad-fire.png',fullPage:true})
+}
+async function verifyTriadVictory(page) {
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=triad-victory',
+    {waitUntil:'networkidle'})
+  await page.locator('.combat-fusion-status').waitFor()
+  await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
+  await page.locator('.combat-signature-action').click()
+  await page.waitForFunction(()=>document.body.dataset.outcome==='win',
+    null,{timeout:15000})
+  const metrics=await page.evaluate(()=>window.__tacticalTestMetrics)
+  check(metrics.saves===1,'triad victory: result saved multiple times')
+  check(metrics.lastUpdates?.fusion_mastery?.['triad:fire']===1,
+    'triad victory: triad mastery was not awarded')
+  check(!metrics.lastUpdates?.active_class,
+    'triad victory: character unexpectedly gained a class')
+  console.log('PASS triad victory: exactly-once mastery save and no class assignment')
+}
 async function verifyFusionVictory(page) {
   const errors=[]
   page.on('pageerror',error=>errors.push(error.message))
@@ -296,6 +351,8 @@ try{
   await verifyMastery(desktop)
   await verifyFusion(desktop)
   await verifySignatures(desktop)
+  await verifyClasslessTriad(desktop)
+  await verifyTriadVictory(desktop)
   await verifyFusionVictory(desktop)
   await verifyVictory(desktop)
   await desktop.close()
