@@ -40,7 +40,8 @@ jobs:
             src/game/tacticalIntegration.test.js \
             src/game/tacticalGroups.test.js \
             src/game/tacticalFoeStatus.test.js \
-            src/game/tacticalSkills.test.js
+            src/game/tacticalSkills.test.js \
+            src/game/classElementFusion.test.js
       - name: Build React application
         run: npm run build
       - name: Validate browser-test script syntax

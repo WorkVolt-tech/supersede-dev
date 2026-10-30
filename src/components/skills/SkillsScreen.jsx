@@ -10,6 +10,8 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
+import { getFusionEligibility, unlockFusionPair, FUSION_UNLOCK_COST,
+  FUSION_MIN_LEVEL, FUSION_MIN_CLASS_NODES, FUSION_MIN_ELEMENT_NODES } from '../../game/classElementFusion'
 import './SkillsScreen.css'
 
 const BRANCHES = ['offense', 'defense', 'flow', 'arcane', 'decay']
@@ -124,6 +126,13 @@ export default function SkillsScreen({ onReturn }) {
     await save(updates, element.label+' is now your active combat element.')
   }
 
+  async function unlockFusion(element) {
+    if(saving)return
+    const updates=unlockFusionPair(player,element)
+    if(!updates) {setMessage('Fusion requirements are not met yet.');return}
+    await save(updates,'Class–element fusion unlocked for '+player.active_class+' + '+element+'.')
+  }
+
   async function equipAttack(key) {
     if (saving) return
     const updates = equipElementalAttack(player, key)
@@ -191,6 +200,24 @@ export default function SkillsScreen({ onReturn }) {
               {skill.unlocked && <button type="button" disabled={saving || skill.equipped} onClick={() => equipAttack(skill.id)}>{skill.equipped ? 'Equipped' : 'Equip'}</button>}
             </div>)}
             <p>Only one elemental attack can occupy the four combat slots. Other unlocked attacks remain learned.</p>
+            {player.active_class&&(()=>{
+              const fusion=getFusionEligibility(player,elementKey)
+              return <div className="skills-fusion-unlock">
+                <h3>✦ Class–element fusion</h3>
+                <p>{player.active_class} + {elementKey} · {fusion.unlocked?'Unlocked':
+                  fusion.ready?'Ready to unlock':'Not yet eligible'}</p>
+                <p>Requires character Lv {FUSION_MIN_LEVEL}, {FUSION_MIN_CLASS_NODES}
+                  {' '}learned class nodes and {FUSION_MIN_ELEMENT_NODES} elemental nodes.
+                  Unlock costs {FUSION_UNLOCK_COST} SP. Progress: Lv {fusion.level},
+                  {' '}{fusion.classNodes} class nodes, {fusion.elementNodes} element nodes.</p>
+                {fusion.unlocked
+                  ?<p>Fusion mastery is tracked separately for this pairing.</p>
+                  :<button type="button" disabled={saving||!fusion.canUnlock}
+                    onClick={()=>unlockFusion(elementKey)}>
+                    Unlock this fusion · {FUSION_UNLOCK_COST} SP
+                  </button>}
+              </div>
+            })()}
           </div>}
         </div>
         <TreeMap nodes={nodes} unlocked={unlocked} available={available} selected={selected} onSelect={setSelected} color={selectedColor} />

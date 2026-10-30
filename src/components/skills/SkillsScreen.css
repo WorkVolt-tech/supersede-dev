@@ -58,3 +58,8 @@
 .skills-slot .skills-upgrade-label span { white-space:normal; overflow-wrap:anywhere; }
 .skills-upgrade-label small { font-size:10px; line-height:1.3; color:#b5a786; }
 .skills-slot button { flex-shrink:0; }
+
+.skills-fusion-unlock { margin-top:14px; padding:12px; border:1px solid #725239; background:#21190f; }
+.skills-fusion-unlock h3 { margin:0 0 8px; border:0; padding:0; }
+.skills-fusion-unlock button { padding:9px 12px; border:1px solid #a78b59; background:#34271b; color:#f3dab0; cursor:pointer; }
+.skills-fusion-unlock button:disabled { opacity:.4; cursor:not-allowed; }

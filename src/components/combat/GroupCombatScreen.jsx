@@ -12,6 +12,9 @@ import { grantLoot } from '../../game/loot'
 import { persistCombatResult } from '../../game/combatPersistence'
 import { equipmentSubtype } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import { getActiveElement } from '../../game/activeElement'
+import { getActiveFusion, getFusionRider, getFusionEligibility, awardFusionPractice,
+  selectFusionChainTargets, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
@@ -87,11 +90,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const weapon=equipped.find(i=>i.equipped_slot==='mainhand')
   const weaponType=tacticalWeaponType(weapon?equipmentSubtype(weapon):null)
   const weaponKit=getTacticalAttacks(weaponType,[],(player.weapon_mastery||{})[weaponType]||0)
+  const activeFusion=getActiveFusion(player)
+  const fusionEligibility=getFusionEligibility(player,getActiveElement(player))
 
   const foesRef=useRef(createTacticalGroup(enemyData))
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
   const [selectedAttack,setSelectedAttack]=useState(null)
+  const [fusionEnabled,setFusionEnabled]=useState(false)
   const [previewSkill,setPreviewSkill]=useState(null)
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
@@ -116,6 +122,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const castKeyRef=useRef(null)
   const castElementRef=useRef(null)
   const masteryHitsRef=useRef(0)
+  const fusionPracticeRef=useRef(0)
+  const fusionWardRef=useRef(0)
+  const fusionDodgeRef=useRef(false)
+  const fusionRegenRef=useRef({turns:0,amount:0})
   const statusRef=useRef({})
   const dbUpdatesRef=useRef({})
   const pendingRef=useRef(null)
@@ -193,6 +203,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(outcome==='win'){
       if(masteryHitsRef.current)changes.weapon_mastery=awardWeaponMastery(
         player.weapon_mastery||{},weaponType,masteryHitsRef.current)
+      if(activeFusion&&fusionPracticeRef.current)changes.fusion_mastery=
+        awardFusionPractice(player.fusion_mastery||{},
+          activeFusion.key,fusionPracticeRef.current)
       Object.assign(changes,grantXp({...player,...changes},enemyData.xp||0))
       victoryText='Victory! +'+(enemyData.xp||0)+' XP · '+enemyData.groupSize+' enemies defeated.'
     }
@@ -214,6 +227,47 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       updateFoes(result.units)
     }
     return result
+  }
+
+  // Optional fusion applies only after a real class/weapon hit. All original
+  // class skills, elemental attacks and AP/cooldown rules remain untouched.
+  function infuseHit(affected,originId) {
+    if(!fusionEnabled||!activeFusion||!affected?.valid||
+       !affected.targets.length||mpRef.current<FUSION_MP_COST)return
+    const rider=getFusionRider(activeFusion)
+    if(!rider)return
+    updateMp(mpRef.current-FUSION_MP_COST)
+    const hitIds=affected.targets.map(unit=>unit.id)
+    const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+    for(const unit of affected.targets) {
+      const alive=foesRef.current.find(u=>u.id===unit.id&&u.hp>0)
+      if(!alive)continue
+      const status=foeStatusesRef.current[unit.id]||{}
+      if(rider.ember)status.cfx_emberStacks=
+        Math.min(5,(status.cfx_emberStacks||0)+rider.ember)
+      if(rider.decay)status.cfx_longDecayStacks=
+        Math.min(5,(status.cfx_longDecayStacks||0)+rider.decay)
+      if(rider.stun)status.enemyStunTurns=
+        Math.max(status.enemyStunTurns||0,rider.stun)
+      foeStatusesRef.current[unit.id]=status
+      if(rider.bonusDamage)applyDamage(foesRef.current,single,unit.id,
+        rider.bonusDamage)
+    }
+    if(rider.chainDamage) {
+      const chains=selectFusionChainTargets(foesRef.current,originId,
+        hitIds,rider.chainCount)
+      for(const next of chains)applyDamage(foesRef.current,single,
+        next.id,rider.chainDamage)
+    }
+    if(rider.heal)updateHp(hpRef.current+rider.heal)
+    if(rider.ward)fusionWardRef.current=Math.max(fusionWardRef.current,rider.ward)
+    if(rider.dodge)fusionDodgeRef.current=true
+    if(rider.regenTurns)fusionRegenRef.current={
+      turns:rider.regenTurns,amount:rider.regenAmount}
+    fusionPracticeRef.current=Math.min(FUSION_MAX_PRACTICE_PER_FIGHT,
+      fusionPracticeRef.current+1)
+    note('✦ '+rider.label+' · '+activeFusion.element+' infusion (-'+FUSION_MP_COST+
+      ' MP). Fusion practice +1 on victory.')
   }
 
   function strike(id) {
@@ -241,6 +295,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
     const affected=applyDamage(units,attack,id,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
+    if(!attack.fallback)infuseHit(affected,id)
     if(keystone.heal)updateHp(hpRef.current+keystone.heal)
     note(attack.label+': '+affected.targets.length+' target(s), '+damage+' damage'+(crit?' · Critical!':'')+'.')
     mod?.messages?.forEach(note);keystone.messages?.forEach(note)
@@ -271,8 +326,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(response?.consumed!==false&&footprint?.valid)
       spreadAreaEffects(before,footprint.targets,target.id)
     const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
-    if(damage>0&&target)applyDamage(foesRef.current,
-      pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
+    if(damage>0&&target){
+      const affected=applyDamage(foesRef.current,
+        pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
+      if(pattern)infuseHit(affected,target.id)
+    }
     const heal=scaleSkillAmount(response?.selfHeal,getSkillLevel(player,id))
     if(heal)updateHp(hpRef.current+heal)
     return response?.consumed!==false
@@ -412,6 +470,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(legendary.has('legendary_miner'))damage=Math.max(0,damage-3)
       const guard=resolveKeystoneDefense(statusRef.current,damage)
       damage=guard.damage
+      if(damage>0&&fusionDodgeRef.current){
+        damage=0;fusionDodgeRef.current=false
+        note('Shadow Fusion evades an incoming strike.')
+      }else if(damage>0&&fusionWardRef.current>0){
+        const absorbed=Math.min(damage,fusionWardRef.current)
+        damage-=absorbed;fusionWardRef.current-=absorbed
+        note('Earth Fusion absorbs '+absorbed+' damage.')
+      }
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
       actor.hp=Math.max(0,actor.hp-(hit?.reflectAmount||0)-(guard.reflected||0)-
@@ -473,6 +539,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     }
     updateFoes(units)
     updateHp(regen.playerHp)
+    if(fusionRegenRef.current.turns>0&&hpRef.current>0){
+      updateHp(hpRef.current+fusionRegenRef.current.amount)
+      fusionRegenRef.current.turns--
+      note('Plant Fusion restores '+fusionRegenRef.current.amount+' HP.')
+    }
     regen.messages?.forEach(note)
     setKeyCooldowns(prev=>advanceKeystoneCooldowns(prev,castKeyRef.current))
     setElemCooldowns(prev=>advanceKeystoneCooldowns(prev,castElementRef.current))
@@ -614,6 +685,18 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <span>Weapon: {weaponType} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}</span>
       <strong>{ap} AP</strong>
     </div>
+    {activeFusion&&!result&&<div className="combat-fusion-status">
+      <span>✦ {activeFusion.classKey} + {activeFusion.element} · Fusion Lv {activeFusion.level}
+        {fusionEnabled?' · Infusion active':' · Infusion inactive'} · {FUSION_MP_COST} MP per hit
+      </span>
+      <button type="button" className="combat-action-btn" disabled={!canPlay}
+        aria-pressed={fusionEnabled} onClick={()=>setFusionEnabled(value=>!value)}>
+        {fusionEnabled?'Disable Fusion':'Enable Fusion'}
+      </button>
+    </div>}
+    {!activeFusion&&fusionEligibility.pair&&!result&&
+      <p className="combat-fusion-locked">✦ Class–element fusion is locked for this pairing.
+        Develop both paths, then unlock it in Skills.</p>}
     {target&&attackLegal&&!result&&
       <p className="combat-attack-preview" role="status">
         {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} {previewSkill?'affected':'hit'} · {displayPattern.shape} pattern
