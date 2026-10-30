@@ -36,7 +36,7 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
 
     if (NODES[resolvedId]?.type === 'end' && Array.isArray(player.chapters_completed)) {
-      const chapterNumber = chapterPrefix === 'ch1' ? 1 : chapterPrefix === 'ch2' ? 2 : null
+      const chapterNumber = chapterPrefix === 'ch1' ? 1 : chapterPrefix === 'ch2' ? 2 : chapterPrefix === 'ch3' ? 3 : null
       if (chapterNumber) updates.chapters_completed = [...new Set([...player.chapters_completed, chapterNumber])]
     }
 
