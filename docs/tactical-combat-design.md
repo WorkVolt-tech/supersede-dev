@@ -160,3 +160,19 @@ hits per encounter, in players.fusion_mastery (jsonb), with independent XP
 per "class:element" key. Changing elements preserves all pair XP and unlocks.
 Bosses and older 1v1 combat screens retain their established combat scripts
 until fusion is separately integrated and tested there.
+
+## Fusion in classic single-enemy and boss combat
+
+The existing React `CombatScreen` now allows the same optional purchased
+class+active-element fusion toggle. Only successful non-emergency weapon hits
+and damaging, nonfree class skills can infuse. Base skills/keystones/elemental
+attacks and boss-specific AI retain their original hooks and AP timing.
+Fusion costs 3 MP per infused hit and levels per-pair, saved only on victory
+alongside independent weapon mastery using the existing save/retry pathway.
+The new `singleFusionCombat.js` adapter uses the original Ember/Decay and
+stun status fields so damage-over-time is still resolved by the mature
+single-enemy `resolveKeystoneRegen` tick. Shadow/Earth protect against a
+single incoming enemy attack, Plant restores HP after enemy actions, and
+Lightning's supplemental chain hits the solo foe instead of seeking a
+nonexistent second target. Synthetic desktop browser smoke covers ordinary
+encounters, boss pathway and locked-fusion control hiding without Supabase.

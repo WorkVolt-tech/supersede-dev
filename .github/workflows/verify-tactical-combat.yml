@@ -41,7 +41,8 @@ jobs:
             src/game/tacticalGroups.test.js \
             src/game/tacticalFoeStatus.test.js \
             src/game/tacticalSkills.test.js \
-            src/game/classElementFusion.test.js
+            src/game/classElementFusion.test.js \
+            src/game/singleFusionCombat.test.js
       - name: Build React application
         run: npm run build
       - name: Validate browser-test script syntax
@@ -52,6 +53,8 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Test live 3×3 group combat on desktop and mobile
         run: node tests/browser/group-combat-smoke.mjs
+      - name: Test real 1v1 and boss fusion combat in Chromium
+        run: node tests/browser/single-combat-smoke.mjs
       - name: Upload battlefield screenshots
         if: always()
         uses: actions/upload-artifact@v4

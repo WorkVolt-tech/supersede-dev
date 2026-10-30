@@ -27,7 +27,7 @@ import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
-import { getActiveFusion, getFusionRider, getFusionSignature,
+import { getActiveFusion, getFusionSignature,
   awardFusionPractice, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRegen,
   initialSingleFusionGuard } from '../../game/singleFusionCombat'
