@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   advanceKeystoneCooldowns, applyKeystoneStatuses, consumeEnemyStun,
-  resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen,
+  resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen, applyStonebornDefend, stonebornArmorPierce,
 } from './keystoneCombat.js'
 
 test('newly cast keystone retains full cooldown for its casting round', () => {
@@ -101,4 +101,34 @@ test('Aegis converts half of sustained damage to MP over two enemy actions', () 
   assert.equal(second.mpGain, 5)
   assert.equal(status.cfx_dmgToMpTurns, 0)
   assert.equal(resolveKeystoneDefense(status, 40).mpGain, 0)
+})
+
+test('Stoneborn builds on Defend only for the active Earth tree', () => {
+  const earth = { element: 'earth', defeated_bosses: ['zone_boss_earth'],
+    elemental_unlocked: ['earth_def_3'] }
+  const inactive = {...earth, element: 'fire'}
+  const status = {}
+  assert.equal(applyStonebornDefend(earth, status), 1)
+  assert.equal(applyStonebornDefend(earth, status), 2)
+  assert.equal(applyStonebornDefend(earth, status), 3)
+  assert.equal(applyStonebornDefend(earth, status), 3)
+  assert.equal(applyStonebornDefend(inactive, status), 0)
+  assert.equal(status.cfx_stonebornStacks, 3)
+})
+
+test('Stoneborn reduces damage 16 percent per active stack, capped at 60 percent', () => {
+  assert.equal(resolveKeystoneDefense({cfx_stonebornStacks:1},100).damage,84)
+  assert.equal(resolveKeystoneDefense({cfx_stonebornStacks:2},100).damage,68)
+  assert.equal(resolveKeystoneDefense({cfx_stonebornStacks:3},100).damage,52)
+  assert.equal(resolveKeystoneDefense({cfx_stonebornStacks:20},100).damage,40)
+})
+
+test('Fault Line pierces enemy DEF with Earth offensive tier unlocked', () => {
+  const earth = { element:'earth', defeated_bosses:['zone_boss_earth'],
+    elemental_unlocked:['earth_aggr_3'] }
+  const status = {cfx_stonebornStacks:3}
+  assert.equal(stonebornArmorPierce(earth,status,100),90)
+  assert.equal(stonebornArmorPierce({...earth,element:'water'},status,100),0)
+  assert.equal(stonebornArmorPierce({...earth,elemental_unlocked:[]},status,100),0)
+  assert.equal(stonebornArmorPierce(earth,{cfx_stonebornStacks:0},100),0)
 })
