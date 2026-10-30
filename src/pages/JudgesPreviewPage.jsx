@@ -14,10 +14,15 @@ export default function JudgesPreviewPage({onReturn}){
  const [form,setForm]=useState(0)
  const [phase,setPhase]=useState(1)
  const [attacking,setAttacking]=useState(false)
+ const [hit,setHit]=useState(false)
+ const [defeated,setDefeated]=useState(false)
+ const effectTimer=useRef(null)
+ useEffect(()=>()=>clearTimeout(effectTimer.current),[])
+ function playHit(){clearTimeout(effectTimer.current);setHit(false);effectTimer.current=setTimeout(()=>{setHit(true);effectTimer.current=setTimeout(()=>setHit(false),450)},30)}
  const [replay,setReplay]=useState(0)
  const [ready,setReady]=useState(true)
  const markReady=useCallback(()=>setReady(true),[])
- function restartPreview(){setReady(false);setAttacking(false);setReplay(n=>n+1)}
+ function restartPreview(){clearTimeout(effectTimer.current);setReady(false);setAttacking(false);setHit(false);setDefeated(false);setReplay(n=>n+1)}
  const attackRestartTimer=useRef(null)
  useEffect(()=>()=>clearTimeout(attackRestartTimer.current),[])
  function playAttack(){
@@ -43,9 +48,11 @@ export default function JudgesPreviewPage({onReturn}){
   <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
    {[1,2,3].map(n=><button key={n} className="reading-action" aria-pressed={phase===n} onClick={()=>setPhase(n)}>Phase {n}</button>)}
   </div>
-  <TwinJudgesPortrait key={form+'-'+replay} moral={selected.moral} elements={selected.elements} hpPercent={phase===1?1:phase===2?.5:.2} attacking={attacking} onReady={markReady}/>
+  <TwinJudgesPortrait key={form+'-'+replay} moral={selected.moral} elements={selected.elements} hpPercent={phase===1?1:phase===2?.5:.2} attacking={attacking} hit={hit} defeated={defeated} onReady={markReady}/>
   <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
    <button className="reading-action" disabled={!ready} onClick={playAttack}>{ready?'Play attack':'Transformation playing…'}</button>
+   <button className="reading-action" disabled={!ready||defeated} onClick={playHit}>Preview hit</button>
+   <button className="reading-action" disabled={!ready||defeated} onClick={()=>setDefeated(true)}>Preview defeat</button>
    <button className="reading-action" onClick={restartPreview}>Replay entrance / transformation</button>
   </div>
   <p className="story-text">Animations are visual previews only. No rewards, health, XP or combat state are changed.</p>
