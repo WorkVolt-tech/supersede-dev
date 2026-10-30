@@ -324,6 +324,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     })
     effect.messages?.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
+    // A Time Skip/Hurricane extra turn is already represented by not
+    // consuming this action; don't leave a permanent inactive status icon.
+    if (effect.consumesTurn === false) delete statusEffectsRef.current.cfx_extraTurn
     foeHp = Math.max(0, foeHp - Math.max(0, effect.enemyDamage || 0))
     playerHp = Math.min(maxPlayerHp, playerHp + Math.max(0, effect.healPlayer || 0))
     if (effect.enemyDamage > 0) showJudgeHit()
