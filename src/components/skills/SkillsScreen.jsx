@@ -219,7 +219,7 @@ export default function SkillsScreen({ onReturn }) {
               <span>{skill.label} · Lv {level}/{MAX_SKILL_LEVEL}</span>
               {shape?.target==='enemy'&&<small>
                 Target area: {shape.shape}
-                {nextShape?.shape!==shape.shape
+                {nextShape&&nextShape.shape!==shape.shape
                   ? ' · Lv '+nextLevel+': '+nextShape.shape
                   : ''}
               </small>}
