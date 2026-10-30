@@ -130,12 +130,43 @@ async function inspect(page,name,mobile){
     (mobile?', touch movement':'')+'\n')
 }
 
+async function verifyVictory(page) {
+  const errors=[]
+  page.on('pageerror',error=>errors.push(error.message))
+  await page.goto(host+'/tests/browser/group-combat.html?scenario=victory',
+    {waitUntil:'networkidle'})
+  await page.locator('.combat-group-unit').first().waitFor()
+  check(await page.locator('.combat-group-unit').count()===3,
+    'victory: expected three opponents')
+
+  await page.locator('.combat-tactical-weapons')
+    .getByRole('button',{name:/Sweeping Arc/}).click()
+  check((await page.locator('.combat-attack-preview').textContent())
+    .includes('3 enemies'),'victory: wrong area preview')
+  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+
+  // Actual combat completion includes the asynchronous save, followed by
+  // the story callback. No real Supabase writes occur in this fixture.
+  await page.waitForFunction(()=>document.body.dataset.outcome==='win',
+    null,{timeout:12000})
+  check(await page.locator('.combat-result.win').count()===1,
+    'victory: win banner missing')
+  check((await page.locator('.combat-turn-banner').textContent())
+    .includes('0/3 enemies remaining'),'victory: remaining enemy counter incorrect')
+  check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===1,
+    'victory: result should be saved exactly once')
+  check(errors.length===0,'victory: browser exceptions '+errors.join(' | '))
+  await page.screenshot({path:'test-artifacts/desktop-victory.png',fullPage:true})
+  console.log('PASS victory: 3 targets defeated, one save, story win callback')
+}
+
 try{
   await ready()
   await mkdir('test-artifacts',{recursive:true})
   browser=await chromium.launch({headless:true})
   const desktop=await browser.newPage({viewport:{width:1280,height:900}})
   await inspect(desktop,'desktop',false)
+  await verifyVictory(desktop)
   await desktop.close()
   const mobile=await browser.newPage({viewport:{width:390,height:844},
     deviceScaleFactor:1,isMobile:true,hasTouch:true})
