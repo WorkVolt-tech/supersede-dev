@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from './tacticalFoeStatus.js'
+import { withFoeStatus, advanceFoeStatuses, enemyActionBudget,spreadTacticalFoeEffects } from './tacticalFoeStatus.js'
 import { chooseTacticalEnemyAction } from './tacticalGrid.js'
 import * as ClassCombat from './classCombat.js'
 import { resolveKeystoneStrike } from './keystoneCombat.js'
@@ -110,4 +110,18 @@ test('real Cinder Step and Plague Fang apply stacks to the struck enemy only',()
   assert.equal(perFoe['foe-2'].cfx_longDecayStacks,1)
   assert.equal(global.cfx_emberStepTurns,0)
   assert.equal(global.cfx_plagueFangTurns,0)
+})
+
+test('area status spread preserves unrelated foe effects and skips corpses',()=>{
+  const per={a:{cls_markTurns:1},b:{cls_rotTurns:2},c:{}}
+  const before={cls_markTurns:1}
+  const after={cls_markTurns:3,enemyStunTurns:2}
+  const changed=spreadTacticalFoeEffects(before,after,
+    [{id:'a',hp:10},{id:'b',hp:8},{id:'c',hp:0}], 'a',per)
+  assert.deepEqual(changed.sort(),['cls_markTurns','enemyStunTurns'])
+  assert.equal(per.b.cls_markTurns,3)
+  assert.equal(per.b.enemyStunTurns,2)
+  assert.equal(per.b.cls_rotTurns,2)
+  assert.equal(per.c.enemyStunTurns,undefined)
+  assert.equal(per.a.cls_markTurns,1)
 })

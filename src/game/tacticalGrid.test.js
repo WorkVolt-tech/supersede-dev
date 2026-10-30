@@ -132,3 +132,22 @@ test('enemy cannot escape onto an occupied tile and can still attack if boxed in
   assert.equal(Boolean(act.move),false)
   assert.ok(act.attack)
 })
+
+test('weapon mastery expands existing attacks but never System Pulse',()=>{
+  const kit=getTacticalAttacks('sword',[],500000)
+  assert.equal(kit.find(a=>a.id==='slash').shape,'diamond2')
+  assert.equal(kit.find(a=>a.id==='sweep').shape,'rowPlus')
+  assert.equal(kit.find(a=>a.id==='pulse').shape,'single')
+  assert.equal(getTacticalAttacks('sword',[],0)[0].shape,'single')
+  assert.equal(getTacticalAttacks('bow',[],500000).find(a=>a.id==='aimed').shape,'row')
+  assert.equal(getTacticalAffectedSquares(kit[0],{col:1,rank:1}).length,9)
+  assert.equal(TACTICAL_ATTACKS.slash.shape,'single')
+})
+test('new progressive footprints stay inside the 3×3 board',()=>{
+  assert.equal(getTacticalAffectedSquares({shape:'fullRow'},{col:0,rank:1}).length,3)
+  assert.equal(getTacticalAffectedSquares({shape:'diamond2'},{col:1,rank:1}).length,9)
+  assert.equal(getTacticalAffectedSquares({shape:'diamond2'},{col:0,rank:0}).length,6)
+  assert.equal(getTacticalAffectedSquares({shape:'wideColumn'},{col:0,rank:1}).length,6)
+  assert.equal(getTacticalAffectedSquares({shape:'rowPlus'},{col:2,rank:0}).length,6)
+  assert.equal(getTacticalAffectedSquares({shape:'all'},{col:2,rank:2}).length,9)
+})

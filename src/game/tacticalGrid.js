@@ -65,6 +65,26 @@ export function tacticalWeaponType(type) {
   const key=String(type || '').toLowerCase().replace(/[\s-]/g,'_');
   return TACTICAL_WEAPONS[key] ? key : WEAPON_ALIASES[key] || 'unarmed';
 }
+/** Existing weapon techniques expand with mastery; System Pulse never does. */
+export function evolveTacticalWeaponAttack(attack,masteryLevel=1) {
+  if(attack.fallback)return {...attack}
+  const lvl=Math.max(1,Math.floor(Number(masteryLevel)||1))
+  let shape=attack.shape
+  if(shape==='single') {
+    if(attack.reach==='short')
+      shape=lvl>=80?'diamond2':lvl>=40?'cross':lvl>=20?'row':'single'
+    else if(attack.reach==='mid')
+      shape=lvl>=80?'cross':lvl>=40?'row':'single'
+    else if(attack.reach==='long')
+      shape=lvl>=80?'row':'single'
+  } else if(shape==='row')
+    shape=lvl>=80?'rowPlus':lvl>=40?'fullRow':lvl>=20?'fullRow':'row'
+  else if(shape==='column')
+    shape=lvl>=80?'all':lvl>=40?'wideColumn':'column'
+  else if(shape==='cross')
+    shape=lvl>=80?'all':lvl>=40?'diamond2':'cross'
+  return {...attack,shape}
+}
 export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const type=tacticalWeaponType(weaponType);
   const level=weaponMasteryLevel(masteryXp);
@@ -72,7 +92,7 @@ export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const ids=[...TACTICAL_WEAPONS[type].attacks, ...mastered,
     ...classAttackIds.filter(id=>Boolean(TACTICAL_ATTACKS[id]) &&
       (!TACTICAL_ATTACKS[id].masteryLevel || level>=TACTICAL_ATTACKS[id].masteryLevel))];
-  return [...new Set(ids)].map(id=>({id,...TACTICAL_ATTACKS[id]}));
+  return [...new Set(ids)].map(id=>({id,...evolveTacticalWeaponAttack(TACTICAL_ATTACKS[id],level)}));
 }
 
 // Movement and attack ranges are expressed relative to EACH side's frontline;
@@ -92,7 +112,12 @@ export function getTacticalAffectedSquares(attack, target) {
     const valid=a.shape==='single'?delta===0:
       a.shape==='row'?rank===target.rank&&Math.abs(col-target.col)<=1:
       a.shape==='column'?col===target.col:
-      a.shape==='cross'?delta<=1:false;
+      a.shape==='cross'?delta<=1:
+      a.shape==='diamond2'?delta<=2:
+      a.shape==='fullRow'?rank===target.rank:
+      a.shape==='rowPlus'?Math.abs(rank-target.rank)<=1:
+      a.shape==='wideColumn'?Math.abs(col-target.col)<=1:
+      a.shape==='all'?true:false;
     if(valid)cells.push({col,rank});
   }
   return cells;

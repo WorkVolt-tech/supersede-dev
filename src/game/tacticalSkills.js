@@ -42,8 +42,39 @@ export function getTacticalSkillRule(skillId) {
   return CLASS_SKILL_TARGETING[skillId] || ELEMENTAL_SKILL_TARGETING[skillId] || null
 }
 
-export function canUseTacticalSkill(skillId, from, enemyPosition) {
-  const rule=getTacticalSkillRule(skillId)
+export function canUseTacticalSkill(skillId, from, enemyPosition, level=1) {
+  const rule=getProgressedTacticalSkillRule(skillId,level)
   if(!rule || rule.target==='self')return true
   return isTacticalTargetValid(rule, from, enemyPosition)
+}
+
+/** Existing spells retain their signature area at level 1. */
+export const SKILL_BASE_AREAS=Object.freeze({
+  fire_mastery_cinderstorm:'cross',fire_ultimate_inferno_zone:'cross',
+  lightning_ultimate_thunderstorm:'cross',lightning_mastery_tempest:'cross',
+  earth_ultimate_earthquake:'cross',earth_mastery_tectonic:'cross',
+  water_ultimate_tsunami:'row',water_mastery_maelstrom:'cross',
+  wind_mastery_cyclone:'row',poison_mastery_pandemic:'cross',
+  poison_skill_blight_nova:'cross',shadow_skill_umbral_burst:'cross',
+  plant_mastery_bloom:'cross',metal_mastery_annihilate:'column',
+  arcane_mastery_resonance:'cross',
+})
+
+/** Saved skill levels 4, 7 and 10 expand an enemy-targeted footprint.
+ * Support/self skills remain self-targeted. No damage formulas change. */
+export function getProgressedTacticalSkillRule(skillId,level=1) {
+  const base=getTacticalSkillRule(skillId)
+  if(!base||base.target!=='enemy')return base
+  const lvl=Math.min(10,Math.max(1,Math.floor(Number(level)||1)))
+  const original=SKILL_BASE_AREAS[skillId]||'single'
+  let shape=original
+  if(original==='single')
+    shape=lvl>=10?'diamond2':lvl>=7?'cross':lvl>=4?'row':'single'
+  else if(original==='row')
+    shape=lvl>=10?'all':lvl>=7?'rowPlus':lvl>=4?'fullRow':'row'
+  else if(original==='column')
+    shape=lvl>=10?'all':lvl>=4?'wideColumn':'column'
+  else if(original==='cross')
+    shape=lvl>=7?'all':lvl>=4?'diamond2':'cross'
+  return {...base,shape}
 }

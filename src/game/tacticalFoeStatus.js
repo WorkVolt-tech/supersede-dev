@@ -77,3 +77,19 @@ export function enemyActionBudget(attack,groupSize) {
   return Math.max(3,Math.round(Math.max(1,Number(attack)||1)+
     Math.ceil(Math.max(2,Number(groupSize)||2)/2)))
 }
+
+/** Spread only statuses newly applied or changed by the legacy skill hook;
+ * never duplicate unrelated player buffs, and never touch dead targets. */
+export function spreadTacticalFoeEffects(before,after,targets,primaryId,perFoe) {
+  const changed=FOE_STATUS_KEYS.filter(key=>
+    Object.prototype.hasOwnProperty.call(after||{},key)&&
+    after[key]!==before?.[key]&&
+    (typeof after[key]!=='number'||after[key]>0))
+  for(const unit of targets) {
+    if(unit.id===primaryId||unit.hp<=0)continue
+    const existing=perFoe[unit.id]||{}
+    for(const key of changed)existing[key]=after[key]
+    perFoe[unit.id]=existing
+  }
+  return changed
+}
