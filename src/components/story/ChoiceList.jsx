@@ -3,10 +3,28 @@
 // Now also handles `requires` (Ch2's inventory-gated choices, e.g. "hand
 // over 2 medical packs") — greys out and explains what's missing, same
 // pattern as the insightRequired gating that was already here.
+import { useState } from 'react'
 import { useInventoryStore } from '../../store/useInventoryStore'
 
 export default function ChoiceList({ node, player, goTo }) {
   const items = useInventoryStore(s => s.items)
+  const [navigationError,setNavigationError]=useState('')
+  const [navigating,setNavigating]=useState(false)
+  async function choose(c) {
+    if(navigating)return
+    setNavigating(true)
+    setNavigationError('')
+    try {
+      const outcome=await goTo(c.next, {
+        outcome:c.outcome||null, bossMode:c.bossMode||null,
+        moral:c.moral||null, allianceTag:c.allianceTag||null,
+        allianceTagRepeatable:c.allianceTagRepeatable||null,
+      })
+      if(outcome?.ok===false)setNavigationError(outcome.error||'Could not continue the story.')
+    } catch(error) {
+      setNavigationError(error?.message||'Could not continue the story.')
+    } finally {setNavigating(false)}
+  }
   const insight = player?.insight || 0
 
   function itemCount(key) {
@@ -23,6 +41,7 @@ export default function ChoiceList({ node, player, goTo }) {
   return (
     <div className="choices">
       <p className="choices-label">What do you do?</p>
+      {navigationError && <p role="alert" className="story-error">Could not continue: {navigationError}</p>}
       {visible.map((c, i) => {
         const met = meetsRequires(c)
         if (c.requires && !met) {
@@ -41,13 +60,8 @@ export default function ChoiceList({ node, player, goTo }) {
           <button
             key={i}
             className={`choice ${c.variant || ''}`}
-            onClick={() => goTo(c.next, {
-              outcome: c.outcome || null,
-              bossMode: c.bossMode || null,
-              moral: c.moral || null,
-              allianceTag: c.allianceTag || null,
-              allianceTagRepeatable: c.allianceTagRepeatable || null,
-            })}
+            disabled={navigating}
+            onClick={() => choose(c)}
           >
             <span className="choice-arrow">→</span>
             <span className="choice-body">
