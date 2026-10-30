@@ -29,18 +29,21 @@
 .watcher-defeated .watcher-eye{animation:watcher-death-eye 0.36s ease-in forwards!important}
 .watcher-scatter-eye{
  position:absolute;z-index:6;left:var(--eye-x);top:var(--eye-y);
- width:11%;aspect-ratio:1;border-radius:50%;
- background:radial-gradient(circle at 35% 30%,#fff 0%,#d7fbff 16%,#46ddff 39%,#12435c 63%,transparent 75%);
- box-shadow:0 0 14px #5eeaffc9,0 0 24px #42b6fc7a;
+ width:var(--eye-pop-size);aspect-ratio:1;border-radius:50%;
+ background-image:url('/the_watcher.webp');
+ background-size:var(--eye-crop-size) var(--eye-crop-size);
+ background-position:var(--eye-x) var(--eye-y);
+ background-repeat:no-repeat;
+ box-shadow:0 0 12px #5eeaffc9,0 0 22px #42b6fc7a;
  transform:translate(-50%,-50%) scale(.3);
  opacity:0;pointer-events:none;
  animation:watcher-eye-pop 1.35s cubic-bezier(.18,.8,.25,1) var(--scatter-delay) both;
 }
-.watcher-scatter-core{width:15%;background:radial-gradient(circle at 35% 30%,#fff3c7,#ffd565 35%,#e67831 60%,transparent 76%);box-shadow:0 0 22px #ffc55cd9}
+.watcher-scatter-core{box-shadow:0 0 22px #ffc55cd9,0 0 10px #f9a42e}
 @keyframes watcher-eye-pop{
  0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0)}
  12%{opacity:1;transform:translate(-50%,-50%) scale(1.2) rotate(0)}
- 55%{opacity:1;transform:translate(calc(-50% + var(--scatter-x)*.65),calc(-50% + var(--scatter-y)*.65)) scale(.95) rotate(var(--scatter-turn))}
+ 55%{opacity:1;transform:translate(calc(-50% + var(--scatter-mid-x)),calc(-50% + var(--scatter-mid-y))) scale(.95) rotate(var(--scatter-turn))}
  100%{opacity:0;transform:translate(calc(-50% + var(--scatter-x)),calc(-50% + var(--scatter-y))) scale(.08) rotate(var(--scatter-turn))}
 }
 @keyframes watcher-death-body{0%{opacity:1;filter:brightness(1)}25%{opacity:1;filter:brightness(1.8)}100%{opacity:0;transform:scale(.75);filter:blur(15px)}}
