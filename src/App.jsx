@@ -113,7 +113,7 @@ export default function App() {
   if (!player) return <SetupPage session={session} onCreated={() => loadPlayer(session.user.id)} />
 
   const screens = {
-    ch1: <ChapterPage />,
+    ch1: <ChapterPage onOpenFarming={() => setView('farming')} />,
     ch2: <Ch2ChapterPage />,
     ch3: <Ch3ChapterPage />,
     farming: <FarmingAreas onReturn={() => setView('menu')} />,
