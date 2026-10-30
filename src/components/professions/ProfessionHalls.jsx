@@ -13,6 +13,9 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
  const [stock,setStock]=useState([])
  const [orders,setOrders]=useState([])
  const [recipe,setRecipe]=useState(null)
+ const [advanced,setAdvanced]=useState([])
+ const [advancedRuns,setAdvancedRuns]=useState([])
+ const [professionLevel,setProfessionLevel]=useState(1)
  const [lastWork,setLastWork]=useState(null)
  const inventory=useInventoryStore(x=>x.items)
  const [shopBusy,setShopBusy]=useState(false)
@@ -75,6 +78,28 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
   }
   setShopBusy(false)
  }
+ useEffect(()=>{let live=true;Promise.all([
+  supabase.from('profession_advanced_recipes').select('*,output:items!profession_advanced_recipes_output_key_fkey(name),input:items!profession_advanced_recipes_input_key_fkey(name)').eq('profession_key',selected).order('required_level'),
+  supabase.from('profession_advanced_runs').select('recipe_key,last_run_at').eq('player_id',player.id),
+  supabase.from('profession_progress').select('level').eq('player_id',player.id).eq('profession_key',selected).maybeSingle()
+ ]).then(([a,b,c])=>{if(!live)return;setAdvanced(a.data||[]);setAdvancedRuns(b.data||[]);setProfessionLevel(c.data?.level||1)});return()=>{live=false}},[selected,player.id])
+ async function workAdvanced(recipeKey){
+  if(shopBusy)return
+  setShopBusy(true)
+  const {data,error}=await supabase.rpc('perform_advanced_profession_work',{target_player:player.id,requested_recipe:recipeKey})
+  setShopMessage(error?.message||(data?'Produced '+data.qty+' × '+data.item+' · +'+data.xp+' profession XP':'Production failed'))
+  if(!error){
+   const [runs,progress,user]=await Promise.all([
+    supabase.from('profession_advanced_runs').select('recipe_key,last_run_at').eq('player_id',player.id),
+    supabase.from('profession_progress').select('level').eq('player_id',player.id).eq('profession_key',selected).maybeSingle(),
+    supabase.auth.getUser()
+   ])
+   setAdvancedRuns(runs.data||[]);setProfessionLevel(progress.data?.level||1)
+   await loadInventory(player.id)
+   if(user.data?.user)await loadPlayer(user.data.user.id)
+  }
+  setShopBusy(false)
+ }
  const hall=PROFESSION_HALLS[selected]
  const cycle=hallRotation(selected)
  const hasAccess=player.chapters_unlocked?.includes(3)&&active===selected&&unlocked.includes(selected)
@@ -106,6 +131,22 @@ export default function ProfessionHalls({player,onReturn,onNavigate}) {
    <button className="reading-action" disabled={shopBusy||!hasAccess||(lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000)} onClick={work}>{!hasAccess?'Activate this profession to work':'Produce items'}</button>
    {lastWork&&Date.now()<new Date(lastWork).getTime()+recipe.cooldown_minutes*60000&&<p>Next available: {new Date(new Date(lastWork).getTime()+recipe.cooldown_minutes*60000).toLocaleString()}</p>}
   </div>:<p>No workshop activity available.</p>}
+  <h4>Advanced profession recipes · Level {professionLevel}</h4>
+  <p>Unlock stronger creations at levels 5, 15, and 30. Each tier consumes earlier materials and has its own cooldown.</p>
+  <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(195px,1fr))',gap:10}}>
+   {advanced.map(r=>{
+    const last=advancedRuns.find(x=>x.recipe_key===r.recipe_key)?.last_run_at
+    const cooling=last&&Date.now()<new Date(last).getTime()+r.cooldown_minutes*60000
+    const owned=inventory.filter(x=>x.item_key===r.input_key&&!x.equipped_slot).reduce((n,x)=>n+x.quantity,0)
+    return <div key={r.recipe_key} style={{border:'1px solid #a99270555',borderRadius:6,padding:12}}>
+     <strong>{r.output?.name||r.output_key}</strong>
+     <p>Requires level {r.required_level} · {r.input_qty} × {r.input?.name||r.input_key} (owned {owned})</p>
+     <p>+{r.xp_reward} XP · {r.cooldown_minutes} min cooldown</p>
+     {cooling&&<p>Available {new Date(new Date(last).getTime()+r.cooldown_minutes*60000).toLocaleString()}</p>}
+     <button className="reading-action" disabled={shopBusy||!hasAccess||professionLevel<r.required_level||owned<r.input_qty||cooling} onClick={()=>workAdvanced(r.recipe_key)}>{professionLevel<r.required_level?'🔒 Level '+r.required_level:'Craft'}</button>
+    </div>
+   })}
+  </div>
   <h4>NPC commissions · {cycle.hours}-hour orders</h4>
   <p>Deliver two matching items to fulfill each order once per rotation. You can obtain them from NPC stock or other gameplay activities.</p>
   <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:10}}>
