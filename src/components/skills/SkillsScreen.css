@@ -63,3 +63,15 @@
 .skills-fusion-unlock h3 { margin:0 0 8px; border:0; padding:0; }
 .skills-fusion-unlock button { padding:9px 12px; border:1px solid #a78b59; background:#34271b; color:#f3dab0; cursor:pointer; }
 .skills-fusion-unlock button:disabled { opacity:.4; cursor:not-allowed; }
+
+/* PlayerRecord and Skills use the same effective/equipment-aware values. */
+.skills-character-stats { margin:18px 0 16px; }
+.skills-character-stats h2 { color:#f0d9ab; font:500 24px 'Cormorant Garamond',serif; margin:0 0 10px; }
+.skills-combat-metrics,.skills-attribute-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+.skills-attribute-stats { grid-template-columns:repeat(9,minmax(0,1fr)); margin-top:8px; }
+.skills-stat-tile { border:1px solid #665037; background:#211a14; min-width:0; padding:9px 6px; text-align:center; }
+.skills-stat-tile span { display:block; font:10px/1.35 'JetBrains Mono',monospace; color:#c9a66c; }
+.skills-stat-tile strong { display:block; margin-top:4px; color:#efd5a0; font:600 22px 'Cormorant Garamond',serif; }
+.skills-stat-tile small { display:block; margin-top:4px; font:9px/1.35 'JetBrains Mono',monospace; color:#b7a182; }
+@media(max-width:980px) { .skills-attribute-stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+@media(max-width:430px) { .skills-stat-tile { padding:8px 3px; } .skills-stat-tile span { font-size:9px; } }

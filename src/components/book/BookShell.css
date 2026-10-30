@@ -51,7 +51,7 @@
 .reading-moral-track span { position:absolute; width:10px; height:16px; top:-5px; transform:translateX(-50%); border:2px solid #f4ead7; background:#2b1d16; box-shadow:0 0 0 1px #2b1d16; }
 .reading-meter-endpoints { display:flex; justify-content:space-between; color:#876e52; font:9px 'JetBrains Mono',monospace; text-transform:uppercase; }
 .reading-minor-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:20px; }
-.reading-minor-stats div { border:1px solid var(--book-line); padding:8px 3px; font:9px 'JetBrains Mono',monospace; text-align:center; color:#6b533c; }
+.reading-minor-stats div { border:1px solid var(--book-line); padding:8px 3px; font:9px 'JetBrains Mono',monospace; text-align:center; color:#6b533c; min-width:0; }
 .reading-minor-stats b { display:block; font:600 18px 'Cormorant Garamond',serif; color:var(--book-ink); margin-top:3px; }
 .reading-stat-summary { color:#654a32; font:12px 'JetBrains Mono',monospace; line-height:1.5; }
 .reading-attribute-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; margin:12px 0; }

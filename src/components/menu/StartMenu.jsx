@@ -3,25 +3,14 @@ import BookShell from '../book/BookShell'
 import PlayerRecord from '../book/PlayerRecord'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from '../../game/progression'
 
-// Edit this list to add/remove/rename menu entries — one line each.
-const ENTRIES = [
-  { section: 'Story' },
+const CHAPTERS = [
   { view: 'ch1', label: 'Chapter 1', sub: 'Awakening' },
   { view: 'ch2', label: 'Chapter 2', sub: 'Broken Alliances — zones, alliances, Twin Judges' },
   { view: 'ch3', label: 'Chapter 3', sub: 'Signal Hunters — the System is listening' },
-  { section: 'Systems' },
-  { view: 'skills', label: 'Skills & Classes', sub: 'Skill trees, elemental paths, class progression and battle skills' },
-  { view: 'inventory', label: 'Inventory', sub: 'Your real items — drag to equip' },
-  { section: 'Demos' },
-  { view: 'inventory-demo', label: 'Inventory (sample items)', sub: 'Try drag-and-drop with fake gear' },
-  { view: 'combat-demo', label: 'Combat Formation Test', sub: 'Optional rank-and-position training simulation; no story characters' },
-  { view: 'judges-preview', label: 'Twin Judges Animation Preview', sub: 'View all seven forms and replay attacks and transformations without affecting progress' },
-  { view: 'ch1-boss-preview', label: 'Chapter 1 Boss Animation Preview', sub: 'Preview Sentinel, Surveyor, Unseen and Watcher entrances and attacks' },
 ]
 
 export default function StartMenu({ player, onPick, onSignOut, onReset }) {
-  const chapters = ENTRIES.filter(e => ['ch1','ch2','ch3'].includes(e.view))
-  const systems = ENTRIES.filter(e => e.view && !['ch1','ch2','ch3'].includes(e.view))
+  const chapters = CHAPTERS
   return (
     <BookShell eyebrow="Table of contents" title="The Archive" subtitle="Select a chapter. Your choices and inventory travel with you."
       left={<>
@@ -44,7 +33,7 @@ export default function StartMenu({ player, onPick, onSignOut, onReset }) {
       right={<>
         <PlayerRecord player={player} onNavigate={onPick} />
         <span className="reading-page-heading" style={{ marginTop: 28 }}>Additional activities</span>
-        {systems.map(e => <button className="reading-action" key={e.view} title={e.sub} onClick={() => onPick(e.view)}>{e.label}</button>)}
+        <button className="reading-action" onClick={() => onPick('tests-previews')}>Tests &amp; Previews</button>
         <button className="reading-action" onClick={onSignOut}>Sign out</button>
         <button className="reading-action" onClick={onReset}>Reset my character</button>
       </>}

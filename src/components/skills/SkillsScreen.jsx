@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { usePlayerStore } from '../../store/usePlayerStore'
+import { useInventoryStore } from '../../store/useInventoryStore'
+import { CORE_STATS, getEffectiveStats } from '../../game/playerStats'
 import { SKILL_NODES } from '../../game/skillTreeNodes'
 import { ELEMENT_TREES, isElementUnlocked } from '../../game/elementsTree'
 import { getActiveElement, activeElementChange } from '../../game/activeElement'
@@ -21,6 +23,10 @@ const BRANCHES = ['offense', 'defense', 'flow', 'arcane', 'decay']
 const COLORS = { offense:'#c75c52', defense:'#558d74', flow:'#69a7b5', arcane:'#a77acb', decay:'#9580b8', center:'#c9a66c' }
 const STAT_COL = { atk_bonus:'atk', def_bonus:'def', power_bonus:'power', guard_bonus:'guard', control_bonus:'control', speed_bonus:'speed', insight_bonus:'insight', luck_bonus:'luck' }
 const REGISTRY = { ...BATTLE_SKILLS_REGISTRY, ...NOTABLE_SKILLS_REGISTRY }
+const CORE_STAT_LABELS = {
+  atk:'Attack',def:'Defense',power:'Power',guard:'Guard',
+  speed:'Speed',control:'Control',insight:'Insight',luck:'Luck',agility:'Agility',
+}
 
 function TreeMap({ nodes, unlocked, available, selected, onSelect, color }) {
   const bounds = useMemo(() => {
@@ -54,6 +60,8 @@ function TreeMap({ nodes, unlocked, available, selected, onSelect, color }) {
 
 export default function SkillsScreen({ onReturn }) {
   const player = usePlayerStore(s => s.player)
+  const inventory = useInventoryStore(s => s.items)
+  const stats = getEffectiveStats(player, inventory.filter(item => item.equipped_slot))
   const setPlayerLocal = usePlayerStore(s => s.setPlayerLocal)
   const [tab, setTab] = useState('offense')
   const [selected, setSelected] = useState(null)
@@ -198,6 +206,26 @@ export default function SkillsScreen({ onReturn }) {
       <div><span>CHARACTER PROGRESSION</span><h1>The Living Skill Tree</h1></div>
       <div className="skills-currency"><span>{points} Skill Points</span><span>{shards} Resonance Shards</span></div>
     </header>
+    <section className="skills-character-stats" aria-labelledby="skills-stats-heading">
+      <h2 id="skills-stats-heading">Character stats</h2>
+      <div className="skills-combat-metrics" aria-label="Combat and player record stats">
+        {[
+          ['Combat ATK',stats.attack],['Combat DEF',stats.defense],
+          ['Initiative',stats.initiative],['Insight',stats.core.insight],
+          ['PvP Kills',player.pvp_kills ?? 0],['Helps Given',player.helps_given ?? 0],
+        ].map(([label,value])=><div key={label} className="skills-stat-tile">
+          <span>{label}</span><strong>{value}</strong>
+        </div>)}
+      </div>
+      <div className="skills-attribute-stats" aria-label="Character attributes">
+        {CORE_STATS.map(key=><div key={key} className="skills-stat-tile">
+          <span>{CORE_STAT_LABELS[key]}</span><strong>{stats.core[key]}</strong>
+          {stats.equipment[key]!==0&&<small>
+            {stats.base[key]} base · {stats.equipment[key]>0?'+':''}{stats.equipment[key]} gear
+          </small>}
+        </div>)}
+      </div>
+    </section>
     <nav className="skills-tabs" aria-label="Skill tree branches">
       {BRANCHES.map(b => <button key={b} className={tab===b?'active':''} onClick={() => choose(b)}>{b}</button>)}
     </nav>

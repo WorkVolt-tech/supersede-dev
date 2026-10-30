@@ -30,6 +30,8 @@ import EngineerAdventure from './components/professions/EngineerAdventure'
 import ResonanceWeaverAdventure from './components/professions/ResonanceWeaverAdventure'
 import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from './game/progression'
 import { resetOwnCharacter } from './game/resetCharacter'
+import { professionUnlocked } from './game/professions'
+import { TEST_PREVIEW_ENTRIES } from './components/menu/archiveLinks'
 import './App.css'
 
 // Which screen shows is just a piece of state (`view`) — no URL routing,
@@ -95,6 +97,8 @@ export default function App() {
   }
 
   function navigate(nextView) {
+    if ((nextView === 'professions' || nextView === 'profession-halls' ||
+      nextView.endsWith('-adventure')) && !professionUnlocked(player)) return
     if (nextView === 'drive' && !chapterOneComplete(player)) return
     if (nextView === 'drive3' && !chapterTwoComplete(player)) return
     if (nextView === 'ch2' && !firstDriveComplete(player)) return
@@ -142,8 +146,8 @@ export default function App() {
     inventory: <InventoryScreen />,
     'inventory-demo': <InventoryDemoPage />,
     'combat-demo': <CombatDemoPage />,
-    'judges-preview': <JudgesPreviewPage onReturn={() => setView('menu')} />,
-    'ch1-boss-preview': <ChapterOneBossPreviewPage onReturn={() => setView('menu')} />,
+    'judges-preview': <JudgesPreviewPage onReturn={() => setView('tests-previews')} />,
+    'ch1-boss-preview': <ChapterOneBossPreviewPage onReturn={() => setView('tests-previews')} />,
     drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 2)} />,
     drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 3)} />,
   }
@@ -155,6 +159,20 @@ export default function App() {
   }
 
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
+  if (view === 'tests-previews') return <BookShell
+    eyebrow="Archive · Testing room" title="Tests & Previews"
+    subtitle="Experiment with sample items, formations and animations without changing story progress."
+    left={<>
+      <h2>Testing room</h2>
+      <p className="story-text">Select a test or preview. These activities are separate from your adventure.</p>
+      {TEST_PREVIEW_ENTRIES.map(entry=><button key={entry.view}
+        className="reading-chapter" title={entry.sub} onClick={()=>navigate(entry.view)}>
+        {entry.label}<small>{entry.sub}</small>
+      </button>)}
+      <button className="reading-action" onClick={()=>setView('menu')}>← Return to Archive</button>
+    </>}
+    right={<PlayerRecord player={player} onNavigate={navigate} />}
+  />
   if (view === 'resonance-weaver-adventure') return <BookShell eyebrow="Profession · Resonance Weaver" title="The Shattered Harmony" subtitle="Restore an unstable resonance." left={<ResonanceWeaverAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'engineer-adventure') return <BookShell eyebrow="Profession · Engineer" title="Rise of the Machines" subtitle="Build, repair, and face your creation." left={<EngineerAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
   if (view === 'pathfinder-adventure') return <BookShell eyebrow="Profession · Pathfinder" title="The Forgotten World" subtitle="Discover what the System left behind." left={<PathfinderAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
@@ -210,7 +228,9 @@ export default function App() {
 
   return (
     <>
-      <div className="back-bar"><button onClick={() => setView('menu')}>← Menu</button></div>
+      <div className="back-bar"><button onClick={() => setView(
+        TEST_PREVIEW_ENTRIES.some(entry => entry.view === view) ? 'tests-previews' : 'menu'
+      )}>← {TEST_PREVIEW_ENTRIES.some(entry => entry.view === view) ? 'Tests & Previews' : 'Menu'}</button></div>
       <div style={{ padding: ['drive','drive3'].includes(view) ? 0 : '3rem 1rem 2rem', maxWidth: ['drive','drive3'].includes(view) ? 'none' : 720, margin: '0 auto' }}>
         {screens[view]}
       </div>
