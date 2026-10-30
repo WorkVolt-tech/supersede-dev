@@ -14,7 +14,7 @@ import { equipmentSubtype } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import { getActiveElement } from '../../game/activeElement'
 import { getFusionSignatureAction, planFusionSignature, canCastFusionSignature } from '../../game/signatureFusion'
-import { resolveElementalTriad } from '../../game/elementalTriad'
+import { resolveElementalTriad, triadArmorPierce } from '../../game/elementalTriad'
 import { getActiveFusion, getFusionRider, getFusionEligibility, awardFusionPractice,
   selectFusionChainTargets, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
@@ -299,15 +299,40 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(signature.kind==='triad'){
       Object.assign(statusRef.current,triad.playerStatus)
       for(const foe of plan.targets){
-        const hit=applyDamage(foesRef.current,single,foe.id,triad.damage)
+        const bonus=triadArmorPierce(triad.special,foe.def)
+        const hit=applyDamage(foesRef.current,single,foe.id,triad.damage+bonus)
         if(!hit.valid)continue
         const alive=foesRef.current.find(u=>u.id===foe.id&&u.hp>0)
         if(!alive)continue
         const effects=foeStatusesRef.current[foe.id]||{}
         for(const [key,value] of Object.entries(triad.enemyStatus))
           effects[key]=typeof value==='number'?Math.max(effects[key]||0,value):value
+        if(triad.special?.extraDecay)
+          effects.cfx_longDecayStacks=Math.min(5,
+            (effects.cfx_longDecayStacks||0)+triad.special.extraDecay)
         foeStatusesRef.current[foe.id]=effects
       }
+      if(triad.special?.chainDamage){
+        let arcs=selectFusionChainTargets(foesRef.current,target.id,
+          plan.targets.map(u=>u.id),triad.special.chainCount)
+        // In a compact formation the initial cross may already hit all foes.
+        // Let its electricity overload the focused survivor once instead.
+        if(!arcs.length){
+          const primary=foesRef.current.find(u=>u.id===target.id&&u.hp>0)
+          if(primary)arcs=[primary]
+        }
+        for(const arc of arcs)applyDamage(foesRef.current,single,
+          arc.id,triad.special.chainDamage)
+        note('Storm Circuit arcs to '+arcs.length+' target(s).')
+      }
+      if(triad.special?.ward)
+        fusionWardRef.current=Math.max(fusionWardRef.current,triad.special.ward)
+      if(triad.special?.dodge)fusionDodgeRef.current=true
+      if(triad.special?.regenTurns)fusionRegenRef.current={
+        turns:triad.special.regenTurns,amount:triad.special.regenAmount}
+      if(triad.special?.galeTurns)statusRef.current.cfx_tornadoTurns=
+        Math.max(statusRef.current.cfx_tornadoTurns||0,triad.special.galeTurns)
+      if(triad.special?.mpRefund)updateMp(mpRef.current+triad.special.mpRefund)
       if(triad.playerStatus.infernoTurns>0){
         const field=makeGroupField('triad-fire',signature.attack,target,
           triad.playerStatus.infernoTurns,
@@ -317,8 +342,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         statusRef.current.infernoDmg=0
       }
       if(triad.heal)updateHp(hpRef.current+triad.heal)
-      note(signature.label+': '+triad.components.map(c=>c.label).join(' + ')+
-        ' fused into one attack across '+plan.targets.length+' enemies.')
+      note(signature.label+' · '+signature.technique+': '+
+        triad.components.map(c=>c.label).join(' + ')+
+        ' fused into one attack across '+plan.targets.length+
+        ' enemies. '+triad.special.detail+'.')
     }else if(signature.kind==='phantom'){
       for(const hit of plan.hits){
         applyDamage(foesRef.current,single,hit.targetId,hit.damage)
@@ -884,7 +911,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
           ✦ {signature.label} · {signature.ap} AP · {signature.mp} MP
           <span className="combat-action-sub">
             {signatureCooldown>0?'Cooldown: '+signatureCooldown+' rounds':
-              fusionEnabled?'Signature '+signature.attack.shape:'Fusion inactive'}
+              fusionEnabled?(signature.technique||'Signature')+' · '+
+                signature.attack.shape:'Fusion inactive'}
           </span>
         </button>}
         {signature&&<button type="button" className="combat-action-btn combat-preview-btn"

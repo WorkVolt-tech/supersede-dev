@@ -28,7 +28,7 @@ import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, 
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
 import { getFusionSignatureAction, canCastFusionSignature } from '../../game/signatureFusion'
-import { resolveElementalTriad } from '../../game/elementalTriad'
+import { resolveElementalTriad, triadArmorPierce } from '../../game/elementalTriad'
 import { getActiveFusion, getFusionSignature,
   awardFusionPractice, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRegen,
@@ -265,10 +265,28 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if(signature.kind==='triad'){
       applyKeystoneStatuses(statusEffectsRef.current,{
         ...triad.playerStatus,...triad.enemyStatus})
-      foeHp=Math.max(0,foeHp-triad.damage)
+      const extra=triadArmorPierce(triad.special,enemyData.def||0)
+      const chain=triad.special?.chainDamage||0
+      foeHp=Math.max(0,foeHp-triad.damage-extra-chain)
       playerHp=Math.min(maxPlayerHp,playerHp+triad.heal)
-      pushLog(signature.label+': '+triad.components.map(x=>x.label).join(' + ')+
-        ' fused for '+triad.damage+' damage.')
+      if(triad.special?.extraDecay)statusEffectsRef.current.cfx_longDecayStacks=
+        Math.min(5,(statusEffectsRef.current.cfx_longDecayStacks||0)+
+          triad.special.extraDecay)
+      if(triad.special?.ward)fusionGuardRef.current.ward=
+        Math.max(fusionGuardRef.current.ward,triad.special.ward)
+      if(triad.special?.dodge)fusionGuardRef.current.dodge=true
+      if(triad.special?.regenTurns)fusionGuardRef.current={
+        ...fusionGuardRef.current,regenTurns:triad.special.regenTurns,
+        regenAmount:triad.special.regenAmount}
+      if(triad.special?.galeTurns)statusEffectsRef.current.cfx_tornadoTurns=
+        Math.max(statusEffectsRef.current.cfx_tornadoTurns||0,
+          triad.special.galeTurns)
+      if(triad.special?.mpRefund)
+        changeCombatMp(mpRef.current+triad.special.mpRefund)
+      pushLog(signature.label+' · '+signature.technique+': '+
+        triad.components.map(x=>x.label).join(' + ')+
+        ' fused for '+(triad.damage+extra+chain)+' damage. '+
+        triad.special.detail+'.')
     }else if(signature.kind==='phantom'){
       foeHp=Math.max(0,foeHp-signature.damage)
       statusEffectsRef.current.cfx_emberStacks=Math.min(5,
@@ -924,7 +942,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             ✦ {signature.label} · {signature.ap} AP · {signature.mp} MP
             <span className="combat-action-sub">
               {signatureCooldown>0?'Cooldown: '+signatureCooldown+' rounds':
-                fusionEnabled?'Signature '+signature.attack.shape:'Fusion inactive'}
+                fusionEnabled?(signature.technique||'Signature')+' · '+
+                  signature.attack.shape:'Fusion inactive'}
             </span>
           </button>}
           {signature&&<button type="button" className="combat-action-btn combat-preview-btn"
