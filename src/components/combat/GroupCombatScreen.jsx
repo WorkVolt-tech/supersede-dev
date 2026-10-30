@@ -17,7 +17,8 @@ import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
-  makeGroupField, advanceGroupFields } from '../../game/tacticalGroups'
+  makeGroupField, advanceGroupFields, planGroupMultiHits,
+  groupKeystoneHitDamages } from '../../game/tacticalGroups'
 import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from '../../game/tacticalFoeStatus'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
@@ -329,8 +330,24 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       return result
     })
     if(effect.consumesTurn===false)delete statusRef.current.cfx_extraTurn
-    if(effect.enemyDamage>0&&target)applyDamage(foesRef.current,
-      {from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,effect.enemyDamage)
+    if(effect.enemyDamage>0&&target) {
+      const multiHit=id==='lightning_aggr_ks'||id==='wind_aggr_ks'
+      if(multiHit) {
+        const damages=groupKeystoneHitDamages(
+          id,effect.enemyDamage,calcATK(player,equipped))
+        const combo=planGroupMultiHits(foesRef.current,target.id,damages)
+        const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+        for(const hit of combo.hits) {
+          // Apply each arc through the normal per-unit damage/kill hooks.
+          // No second application of effect.enemyDamage to the primary foe.
+          const struck=applyDamage(foesRef.current,single,hit.targetId,hit.damage)
+          if(struck.valid)
+            note((id==='lightning_aggr_ks'?'⚡ Arc':'💨 Cyclone hit')+
+              ' → '+hit.name+': '+hit.dealt+' damage.')
+        }
+      } else applyDamage(foesRef.current,
+        {from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,effect.enemyDamage)
+    }
     if(effect.healPlayer)updateHp(hpRef.current+effect.healPlayer)
     effect.messages?.forEach(note)
     if(effect.cooldown>0)setKeyCooldowns(prev=>({...prev,[id]:effect.cooldown}))
@@ -629,7 +646,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {keystones.map(k=><button key={k.id} type="button" className="combat-action-btn"
           disabled={!canPlay||!k.available||(!isFreeKey(k.id)&&ap<2)}
           onClick={()=>takeTurn('keystone',k.id)}>{k.label}
-          <span className="combat-action-sub">{isFreeKey(k.id)?'Free':'2 AP'} · Keystone</span>
+          <span className="combat-action-sub">{isFreeKey(k.id)?'Free':'2 AP'} · Keystone
+            {['lightning_aggr_ks','wind_aggr_ks'].includes(k.id)?' · 4 positional hits':''}</span>
         </button>)}
         {onEscape&&<button type="button" className="combat-action-btn" disabled={!canPlay}
           onClick={()=>finish('escape')}>Flee</button>}

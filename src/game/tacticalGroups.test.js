@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createTacticalGroup,applyGroupAttack,nextAliveTarget,
-  makeGroupField,advanceGroupFields } from './tacticalGroups.js'
+  makeGroupField,advanceGroupFields,planGroupMultiHits,
+  groupKeystoneHitDamages } from './tacticalGroups.js'
 import { TACTICAL_ATTACKS } from './tacticalGrid.js'
 
 test('real groups split previous total HP and have distinct squares',()=>{
@@ -79,4 +80,44 @@ test('field effects skip dead enemies and cannot trigger repeat kills',()=>{
   assert.equal(first.events[0].defeated,true)
   const second=advanceGroupFields(first.units,first.fields)
   assert.equal(second.events.length,0)
+})
+
+test('Chain Lightning selects living targets by proximity and does not duplicate lethal hits',()=>{
+  const units=[
+    {id:'a',name:'Rat A',hp:10,col:1,rank:0},
+    {id:'b',name:'Rat B',hp:10,col:0,rank:0},
+    {id:'c',name:'Rat C',hp:10,col:2,rank:0},
+  ]
+  const damages=groupKeystoneHitDamages('lightning_aggr_ks',32,15)
+  assert.deepEqual(damages,[15,9,5,3])
+  const combo=planGroupMultiHits(units,'a',damages)
+  assert.equal(combo.valid,true)
+  assert.deepEqual(combo.hits.map(h=>h.targetId),['a','b','c','b'])
+  assert.deepEqual(combo.units.map(u=>u.hp),[0,0,5])
+  assert.equal(combo.hits.filter(h=>h.defeated).length,2)
+  assert.equal(units[0].hp,10) // pure, no game-state mutation
+})
+test('Chain Lightning preserves the old total damage when all four arcs land',()=>{
+  for(const atk of [3,7,15,20,31,100]){
+    const arcs=groupKeystoneHitDamages('lightning_aggr_ks',0,atk)
+    let hit=Math.round(atk),original=0
+    for(let i=0;i<4;i++){original+=hit;hit=Math.round(hit*.6)}
+    assert.equal(arcs.reduce((sum,n)=>sum+n,0),original)
+  }
+})
+test('Cyclone distributes four hits without inflating its previous damage',()=>{
+  for(const damage of [1,3,13,18,20,49]){
+    const hits=groupKeystoneHitDamages('wind_aggr_ks',damage,10)
+    assert.equal(hits.length,4)
+    assert.equal(hits.reduce((sum,n)=>sum+n,0),damage)
+  }
+})
+test('Multi-hits can repeat against a lone living enemy and stop at defeat',()=>{
+  const units=[{id:'a',name:'A',hp:12,col:1,rank:0},
+    {id:'dead',name:'Dead',hp:0,col:0,rank:0}]
+  const combo=planGroupMultiHits(units,'a',[3,3,3,3,3])
+  assert.deepEqual(combo.hits.map(x=>x.targetId),['a','a','a','a'])
+  assert.equal(combo.units[0].hp,0)
+  assert.equal(combo.hits.filter(x=>x.defeated).length,1)
+  assert.equal(planGroupMultiHits(units,'dead',[10]).valid,false)
 })

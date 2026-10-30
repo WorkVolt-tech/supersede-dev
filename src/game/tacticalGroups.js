@@ -70,3 +70,59 @@ export function advanceGroupFields(units,fields=[]) {
   }
   return {units:next,fields:remaining,events}
 }
+
+/**
+ * Build a position-aware series of hits. Prefer living enemies not yet
+ * struck, then the nearest other surviving enemy. The plan simulates each
+ * impact so subsequent hits never target a corpse.
+ * Player combat hooks still run per actual hit in the React screen.
+ */
+export function planGroupMultiHits(units,initialId,damages=[]) {
+  let next=units.map(unit=>({...unit}))
+  let previous=next.find(unit=>unit.id===initialId&&unit.hp>0)
+  if(!previous)return {valid:false,hits:[],units:next}
+  const visited=new Set(),hits=[]
+  for(const amount of damages) {
+    const living=next.filter(unit=>unit.hp>0)
+    if(!living.length)break
+    let target
+    if(!hits.length)target=previous
+    else {
+      const others=living.filter(unit=>unit.id!==previous.id)
+      const options=others.length?others:living
+      const unseen=options.filter(unit=>!visited.has(unit.id))
+      const candidates=unseen.length?unseen:options
+      target=[...candidates].sort((a,b)=>
+        (Math.abs(a.col-previous.col)+Math.abs(a.rank-previous.rank))-
+        (Math.abs(b.col-previous.col)+Math.abs(b.rank-previous.rank))||
+        a.id.localeCompare(b.id))[0]
+    }
+    if(!target)break
+    const damage=Math.max(0,Math.round(Number(amount)||0))
+    const before=target.hp,after=Math.max(0,before-damage)
+    hits.push({targetId:target.id,name:target.name,damage,
+      dealt:before-after,defeated:after===0})
+    next=next.map(unit=>unit.id===target.id?{...unit,hp:after}:unit)
+    visited.add(target.id)
+    previous=target
+  }
+  return {valid:true,hits,units:next}
+}
+
+/** Retain exact legacy keystone damage totals and rounding. */
+export function groupKeystoneHitDamages(id,total,attack) {
+  const amount=Math.max(0,Math.round(Number(total)||0))
+  if(id==='lightning_aggr_ks') {
+    let current=Math.max(1,Math.round(Number(attack)||1))
+    const hits=[]
+    for(let i=0;i<4;i++){hits.push(current);current=Math.round(current*0.6)}
+    return hits
+  }
+  if(id==='wind_aggr_ks') {
+    // Attuned Cyclone has 4 hits; distribute rounding differences so the
+    // sum exactly matches elementalKeystones.applyKeystone's existing total.
+    const base=Math.floor(amount/4),remainder=amount%4
+    return Array.from({length:4},(_,i)=>base+(i<remainder?1:0))
+  }
+  return [amount]
+}
