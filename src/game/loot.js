@@ -38,7 +38,7 @@ export async function grantLoot(playerId, drops = [], luck = 0) {
     row.quantity = STACKABLE.has(item.item_type) ? qty : 1
     row.sockets_total = ['weapon','armor','accessory'].includes(item.item_type) ? 1 + Math.floor(Math.random()*3) : 0
     row.sockets_used = 0
-    row.socketed_runes = []
+    row.socketed_fragments = []
 
     if (STACKABLE.has(item.item_type)) {
       const { data: existing, error: lookupError } = await supabase.from('inventory')
