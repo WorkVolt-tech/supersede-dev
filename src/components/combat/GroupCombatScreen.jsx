@@ -343,6 +343,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       })
       else incoming=2
       actor.hp=Math.min(actor.maxHp,actor.hp+heal)
+      if(statusRef.current.cfx_longDecayStacks>0)
+        incoming=Math.max(0,incoming-3*statusRef.current.cfx_longDecayStacks)
+      if(statusRef.current.cfx_tornadoTurns>0)
+        incoming=Math.round(incoming*.7)
       const hit=ClsCombat.onPlayerHit(combatPlayer,statusRef.current,foeData,incoming,maxHp)
       let damage=Math.max(0,Math.round(incoming*(hit?.dmgMult??1)*resistMult(combatPlayer)))
       if(damage>0&&Math.random()<Math.min(.25,Math.max(0,effective.core.agility)*.01)){
@@ -381,6 +385,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     regen.messages?.forEach(note)
     setKeyCooldowns(prev=>advanceKeystoneCooldowns(prev,castKeyRef.current))
     setElemCooldowns(prev=>advanceKeystoneCooldowns(prev,castElementRef.current))
+    if(statusRef.current.cfx_tornadoTurns>0)statusRef.current.cfx_tornadoTurns--
+    if(statusRef.current.cfx_ironDomainTurns>0 &&
+        castElementRef.current!=='metal_ultimate_iron_domain')
+      statusRef.current.cfx_ironDomainTurns--
     castKeyRef.current=null;castElementRef.current=null
     defendingRef.current=false
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
