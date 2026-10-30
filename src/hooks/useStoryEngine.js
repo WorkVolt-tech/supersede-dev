@@ -76,11 +76,17 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     }
 
     if (choice.allianceTag || choice.allianceTagRepeatable) {
-      const log = player.alliance_log || []
-      const tag = choice.allianceTag || choice.allianceTagRepeatable
-      if (choice.allianceTagRepeatable || !log.includes(tag)) {
-        updates.alliance_log = [...log, tag]
+      const log = [...(player.alliance_log || [])]
+      // Some choices grant both a once-only story flag and repeatable
+      // cooperation credit. Keep both; repeatable credits are intentionally
+      // allowed to appear more than once in the player's record.
+      if (choice.allianceTag && !log.includes(choice.allianceTag)) {
+        log.push(choice.allianceTag)
       }
+      if (choice.allianceTagRepeatable) {
+        log.push(choice.allianceTagRepeatable)
+      }
+      updates.alliance_log = log
     }
 
     // Record boss victories only on the win route, never on defeat/escape.
