@@ -15,8 +15,8 @@ export const TACTICAL_ATTACKS = {
   jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1 },
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
   thrust:      { label:'Long Thrust',      reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
-  lunge:       { label:'Shadow Lunge',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
-  throw:       { label:'Thrown Blade',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1 },
+  lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
+  throw:       { label:'Dagger Throw',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1 },
   quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1 },
   aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1 },
   snapshot:    { label:'Quick Shot',       reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:4, ap:1 },
@@ -31,7 +31,8 @@ export const TACTICAL_ATTACKS = {
   masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
   masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
   masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2,masteryLevel:80 },
-  pulse:       { label:'System Pulse',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:1, fallback:true },
+  pulse:       { label:'Last Resort',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:1, fallback:true,
+    description:'Emergency basic attack, not a learned skill. Weak but can reach any enemy row.' },
 };
 
 export const TACTICAL_WEAPONS = {
@@ -112,7 +113,7 @@ export function tacticalAttackDescription(attack) {
   const shape=attack.shape==='single'?'one enemy':attack.shape+' area'
   const ranks=attack.to?.map(n=>['front','middle','rear'][n]).join(', ')||'any'
   return 'Targets '+ranks+' row'+(attack.to?.length===1?'':'s')+
-    ' · '+shape+' · '+attack.ap+' AP.'
+    ' · '+shape+'.'
 }
 export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const type=tacticalWeaponType(weaponType);
