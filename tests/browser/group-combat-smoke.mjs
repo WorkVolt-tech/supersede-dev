@@ -93,8 +93,14 @@ async function inspect(page,name,mobile){
   },null,{timeout:10000})
   const after=parseHps(await units.allTextContents())
   check(after.every(hp=>hp<40),name+': row AoE missed enemies: '+after)
-  check((await page.locator('.combat-turn-banner').textContent()).includes('2/2 AP'),
-    name+': turn did not reset after two-AP action')
+  // Damage is rendered before the asynchronous slower-enemy phase finishes.
+  // Wait until combat controls are usable again, not merely until HP changes.
+  await page.waitForFunction(()=>{
+    const banner=document.querySelector('.combat-turn-banner')
+    const end=[...document.querySelectorAll('.combat-actions button')]
+      .find(button=>button.textContent.trim()==='End turn')
+    return banner?.textContent.includes('2/2 AP')&&end&&!end.disabled
+  },null,{timeout:10000})
   await page.screenshot({path:'test-artifacts/'+name+'-after-aoe.png',fullPage:true})
 
   if(mobile){
@@ -108,7 +114,12 @@ async function inspect(page,name,mobile){
     check(await page.getByRole('button',{name:/Use Sweeping Arc/}).isDisabled(),
       name+': 2-AP AoE wrongly enabled with 1 AP')
     await page.getByRole('button',{name:'End turn'}).click()
-    await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')?.textContent.includes('2/2 AP'))
+    await page.waitForFunction(()=>{
+      const banner=document.querySelector('.combat-turn-banner')
+      const end=[...document.querySelectorAll('.combat-actions button')]
+        .find(button=>button.textContent.trim()==='End turn')
+      return banner?.textContent.includes('2/2 AP')&&end&&!end.disabled
+    },null,{timeout:10000})
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)
     check(!overflow,name+': horizontal scroll after combat interaction')
     await page.screenshot({path:'test-artifacts/'+name+'-after-move.png',fullPage:true})
