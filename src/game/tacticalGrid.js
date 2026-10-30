@@ -138,14 +138,26 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[])
   const valid=attacks.filter(a=>isTacticalTargetValid(a,from,target))
     .sort((a,b)=>b.damage-a.damage);
   if(valid.length)return {attack:valid[0]};
-  const next=[[0,-1],[-1,0],[1,0],[0,1]]
-    .map(([dc,dr])=>({col:from.col+dc,rank:from.rank+dr}))
-    .filter(p=>p.col>=0&&p.col<3&&p.rank>=0&&p.rank<3&&
-      !occupied.some(x=>x.col===p.col&&x.rank===p.rank))
-    .map(pos=>({pos,options:attacks.filter(a=>isTacticalTargetValid(a,pos,target))}))
-    .filter(candidate=>candidate.options.length)
-    .sort((a,b)=>b.options.length-a.options.length);
-  return next.length?{move:next[0].pos}:{attack:kit.find(a=>a.fallback)};
+  // A rear-rank melee fighter can move toward a valid firing square even
+  // if it takes several turns. Never enter an occupied allied tile.
+  const blocked=new Set(occupied.filter(u=>u.hp===undefined||u.hp>0)
+    .map(u=>u.col+':'+u.rank));
+  const visited=new Set([from.col+':'+from.rank]);
+  const queue=[{pos:from,first:null}];
+  for(let i=0;i<queue.length;i++){
+    const {pos,first}=queue[i];
+    if(first && attacks.some(a=>isTacticalTargetValid(a,pos,target)))
+      return {move:first};
+    for(const [dc,dr] of [[0,-1],[-1,0],[1,0],[0,1]]){
+      const candidate={col:pos.col+dc,rank:pos.rank+dr};
+      const key=candidate.col+':'+candidate.rank;
+      if(candidate.col<0||candidate.col>2||candidate.rank<0||candidate.rank>2||
+         blocked.has(key)||visited.has(key))continue;
+      visited.add(key);
+      queue.push({pos:candidate,first:first||candidate});
+    }
+  }
+  return {attack:kit.find(a=>a.fallback)};
 }
 
 // All class kits inherit their equipped weapon's baseline reach plus an
