@@ -4,6 +4,12 @@
 // Class abilities will eventually register patterns here, alongside weapon attacks.
 
 export const TACTICAL_ATTACKS = {
+  bareStrike:  { label:'Basic Strike', reach:'short', from:[0], to:[0],
+    cols:'near', shape:'single', damage:3, ap:1,
+    description:'Front row only: strike a front-row enemy in your column or an adjacent column.' },
+  improvisedThrow: { label:'Improvised Throw', reach:'long', from:[0,1,2],to:[1,2],
+    cols:'any',shape:'single',damage:2,ap:1, thrown:true,
+    description:'Throw an improvised object at a middle- or rear-row enemy. Retrieve it next round (middle) or after 2 rounds (rear).' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
   jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1 },
@@ -84,6 +90,29 @@ export function evolveTacticalWeaponAttack(attack,masteryLevel=1) {
   else if(shape==='cross')
     shape=lvl>=80?'all':lvl>=40?'diamond2':'cross'
   return {...attack,shape}
+}
+// A player with no equipped main-hand weapon does not receive dagger,
+// magical-wave or emergency skills just for being "unarmed". Existing
+// enemy AI and equipped-weapon kits still use getTacticalAttacks.
+export function getPlayerTacticalAttacks(hasMainhandWeapon,weaponType,masteryXp=0) {
+  if(!hasMainhandWeapon) return ['bareStrike','improvisedThrow']
+    .map(id=>({id,...TACTICAL_ATTACKS[id]}))
+  return getTacticalAttacks(weaponType,[],masteryXp)
+}
+export function startImprovisedThrowRecovery(currentRound,targetRank) {
+  if(targetRank!==1&&targetRank!==2)return currentRound
+  return currentRound+targetRank
+}
+export function improvisedThrowTurnsRemaining(readyRound,currentRound) {
+  return Math.max(0,Math.floor((Number(readyRound)||0)-(Number(currentRound)||0)))
+}
+export function tacticalAttackDescription(attack) {
+  if(attack?.description)return attack.description
+  if(!attack)return ''
+  const shape=attack.shape==='single'?'one enemy':attack.shape+' area'
+  const ranks=attack.to?.map(n=>['front','middle','rear'][n]).join(', ')||'any'
+  return 'Targets '+ranks+' row'+(attack.to?.length===1?'':'s')+
+    ' · '+shape+' · '+attack.ap+' AP.'
 }
 export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const type=tacticalWeaponType(weaponType);
