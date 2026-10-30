@@ -115,3 +115,20 @@ test('mastery techniques unlock at milestones without replacing baseline attacks
   assert.ok(expert.some(a=>a.id==='pulse'))
   assert.ok(!getTacticalAttacks('sword',['masterLine'],0).some(a=>a.id==='masterLine'))
 })
+
+test('enemy escapes an inferno square before attacking when a safe adjacent tile exists',()=>{
+  const start={col:1,rank:0},hero={col:1,rank:0}
+  const hazard=[{col:1,rank:0}]
+  const act=chooseTacticalEnemyAction('dagger',start,hero,[],hazard)
+  assert.ok(act.move,'enemy should evacuate dangerous tile')
+  assert.equal(hazard.some(p=>p.col===act.move.col&&p.rank===act.move.rank),false)
+  assert.equal(Math.abs(act.move.col-start.col)+Math.abs(act.move.rank-start.rank),1)
+})
+test('enemy cannot escape onto an occupied tile and can still attack if boxed in',()=>{
+  const start={col:1,rank:0},hero={col:1,rank:0}
+  const hazard=[{col:1,rank:0}]
+  const allies=[{col:0,rank:0,hp:5},{col:2,rank:0,hp:5},{col:1,rank:1,hp:5}]
+  const act=chooseTacticalEnemyAction('dagger',start,hero,allies,hazard)
+  assert.equal(Boolean(act.move),false)
+  assert.ok(act.attack)
+})

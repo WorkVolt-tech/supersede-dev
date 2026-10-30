@@ -79,6 +79,10 @@ async function inspect(page,name,mobile){
   // must take damage from the actual live weapon handler.
   await page.locator('.combat-tactical-weapons').getByRole('button',
     {name:/Sweeping Arc/}).click()
+  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===3,
+    name+': Sweeping Arc footprint preview misses front row')
+  check((await page.locator('.combat-attack-preview').textContent()).includes('3 enemies'),
+    name+': AoE preview hit count is inaccurate')
   await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
   await page.waitForFunction(()=>{
     const rows=[...document.querySelectorAll('.combat-group-unit')]

@@ -18,7 +18,7 @@ import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
   makeGroupField, advanceGroupFields, planGroupMultiHits,
-  groupKeystoneHitDamages } from '../../game/tacticalGroups'
+  groupKeystoneHitDamages, previewGroupAttack } from '../../game/tacticalGroups'
 import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from '../../game/tacticalFoeStatus'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
@@ -45,9 +45,8 @@ const GROUP_AREAS = {
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
 function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus }) {
-  const target=nextAliveTarget(foes,focused)
-  const area=target&&pattern&&isTacticalTargetValid(pattern,hero,target)
-    ?getTacticalAffectedSquares(pattern,target):[]
+  const preview=previewGroupAttack(foes,pattern,hero,focused)
+  const area=preview.squares
   function sideCells(side) {
     const ranks=side==='enemy'?[2,1,0]:[0,1,2]
     return ranks.flatMap(rank=>[0,1,2].map(col=>{
@@ -379,15 +378,16 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         note(actor.name+' is stunned and loses its turn.')
         continue
       }
-      if(enemyDamageBudgetRef.current<=0){
-        note(actor.name+' holds position while the group regroups.')
-        continue
-      }
       const occupied=next.filter(other=>other.id!==actor.id&&other.hp>0)
-      const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied)
+      const hazards=fieldsRef.current.flatMap(field=>field.squares)
+      const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards)
       if(choice.move){
         actor.col=choice.move.col;actor.rank=choice.move.rank
         note(actor.name+' moves to rank '+(actor.rank+1)+', column '+(actor.col+1)+'.')
+        continue
+      }
+      if(enemyDamageBudgetRef.current<=0){
+        note(actor.name+' holds position while the group regroups.')
         continue
       }
       const pulse=Boolean(choice.attack?.fallback)
@@ -590,7 +590,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const activeSkills=ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)||[]
   const elemental=getEquippedElementalAttack(combatPlayer)
   const keystones=getUnlockedKeystones(combatPlayer,keyCooldowns)
-  const attackLegal=Boolean(target&&isTacticalTargetValid(attack,hero,target))
+  const preview=previewGroupAttack(foes,attack,hero,chosen)
+  const attackLegal=preview.valid
   const canPlay=!busy&&!result
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
@@ -617,6 +618,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <span>Weapon: {weaponType} · Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}</span>
       <strong>{ap} AP</strong>
     </div>
+    {target&&attackLegal&&!result&&
+      <p className="combat-attack-preview" role="status">
+        {attack.label} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} hit · {attack.shape} pattern · {attack.ap} AP
+      </p>}
     {target&&!attackLegal&&!result&&
       <p className="combat-range-warning" role="status">
         {attack.label} cannot reach {target.name} from here. Move, choose a different attack, or select another enemy.

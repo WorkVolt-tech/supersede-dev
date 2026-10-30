@@ -126,3 +126,13 @@ export function groupKeystoneHitDamages(id,total,attack) {
   }
   return [amount]
 }
+
+/** Preview an attack's real hit footprint without changing combatants. */
+export function previewGroupAttack(units,attack,hero,targetId) {
+  const target=units.find(u=>u.id===targetId&&u.hp>0)
+  if(!target||!isTacticalTargetValid(attack,hero,target))
+    return {valid:false,squares:[],targets:[]}
+  return {valid:true,
+    squares:getTacticalAffectedSquares(attack,target),
+    targets:tacticalHitTargets(attack,target,units)}
+}

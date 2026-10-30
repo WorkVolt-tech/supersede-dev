@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { createTacticalGroup,applyGroupAttack,nextAliveTarget,
   makeGroupField,advanceGroupFields,planGroupMultiHits,
-  groupKeystoneHitDamages } from './tacticalGroups.js'
+  groupKeystoneHitDamages,previewGroupAttack } from './tacticalGroups.js'
 import { TACTICAL_ATTACKS } from './tacticalGrid.js'
 
 test('real groups split previous total HP and have distinct squares',()=>{
@@ -120,4 +120,23 @@ test('Multi-hits can repeat against a lone living enemy and stop at defeat',()=>
   assert.equal(combo.units[0].hp,0)
   assert.equal(combo.hits.filter(x=>x.defeated).length,1)
   assert.equal(planGroupMultiHits(units,'dead',[10]).valid,false)
+})
+
+test('attack preview matches the real row/column/cross/single targets',()=>{
+  const foes=createTacticalGroup({groupSize:9,hp:90,atk:9})
+  const hero={col:1,rank:0}
+  for(const id of ['sweep','wave','pulse','scatter']){
+    const attack=TACTICAL_ATTACKS[id]
+    const view=previewGroupAttack(foes,attack,hero,foes[0].id)
+    const applied=applyGroupAttack(foes,attack,hero,foes[0].id,3)
+    assert.deepEqual(view.targets.map(u=>u.id),applied.targets.map(u=>u.id))
+    assert.equal(view.valid,applied.valid)
+    assert.equal(foes[0].hp,10,'preview never mutates enemies')
+  }
+})
+test('preview shows no hits when selected target is outside attack range',()=>{
+  const foes=createTacticalGroup({groupSize:3,hp:30,atk:3})
+  const preview=previewGroupAttack(foes,TACTICAL_ATTACKS.slash,
+    {col:1,rank:0},foes[1].id)
+  assert.deepEqual(preview,{valid:false,squares:[],targets:[]})
 })

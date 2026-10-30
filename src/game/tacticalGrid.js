@@ -129,7 +129,7 @@ export function nextWeaponMasteryThreshold(xp) {
 // Enemy choices use the same legal targeting rules as player attacks.
 // Try a meaningful attack, otherwise move one adjacent square toward a legal
 // weapon shot. If no movement helps, use the weak universal fallback.
-export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[]) {
+export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[], avoidSquares=[]) {
   const kit=getTacticalAttacks(weaponType);
   // Low-tier unarmed foes do not inherit the player's advanced magical Wave;
   // they must close distance or use the weak emergency fallback.
@@ -137,25 +137,49 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[])
     !(tacticalWeaponType(weaponType)==='unarmed' && a.id==='wave'));
   const valid=attacks.filter(a=>isTacticalTargetValid(a,from,target))
     .sort((a,b)=>b.damage-a.damage);
-  if(valid.length)return {attack:valid[0]};
-  // A rear-rank melee fighter can move toward a valid firing square even
-  // if it takes several turns. Never enter an occupied allied tile.
+  // Persistent elemental fields are fixed hazards. An enemy standing in a
+  // burning square should step into a safe neighboring tile when possible,
+  // even if it could attack from the burning square.
   const blocked=new Set(occupied.filter(u=>u.hp===undefined||u.hp>0)
     .map(u=>u.col+':'+u.rank));
+  const hazard=new Set(avoidSquares.map(p=>p.col+':'+p.rank));
+  const directions=[[0,-1],[-1,0],[1,0],[0,1]];
+  const neighbors=pos=>directions.map(([dc,dr])=>({col:pos.col+dc,rank:pos.rank+dr}))
+    .filter(p=>p.col>=0&&p.col<3&&p.rank>=0&&p.rank<3&&
+      !blocked.has(p.col+':'+p.rank));
+  if(hazard.has(from.col+':'+from.rank)){
+    const safe=neighbors(from).filter(p=>!hazard.has(p.col+':'+p.rank))
+      .sort((a,b)=>{
+        const options=p=>attacks.filter(attack=>isTacticalTargetValid(attack,p,target));
+        return Math.max(0,...options(b).map(x=>x.damage))-
+          Math.max(0,...options(a).map(x=>x.damage));
+      });
+    if(safe.length)return {move:safe[0]};
+  }
+  if(valid.length)return {attack:valid[0]};
+  // Breadth-first movement through unoccupied cells. Avoid hazardous tiles
+  // where possible, but allow them if the formation leaves no other route.
   const visited=new Set([from.col+':'+from.rank]);
   const queue=[{pos:from,first:null}];
+  const options=[];
   for(let i=0;i<queue.length;i++){
     const {pos,first}=queue[i];
-    if(first && attacks.some(a=>isTacticalTargetValid(a,pos,target)))
-      return {move:first};
-    for(const [dc,dr] of [[0,-1],[-1,0],[1,0],[0,1]]){
-      const candidate={col:pos.col+dc,rank:pos.rank+dr};
-      const key=candidate.col+':'+candidate.rank;
-      if(candidate.col<0||candidate.col>2||candidate.rank<0||candidate.rank>2||
-         blocked.has(key)||visited.has(key))continue;
-      visited.add(key);
+    if(first && attacks.some(a=>isTacticalTargetValid(a,pos,target))){
+      options.push({first,pos,depth:i,risk:hazard.has(first.col+':'+first.rank)?1:0});
+    }
+    const next=neighbors(pos).filter(p=>!visited.has(p.col+':'+p.rank))
+      .sort((a,b)=>Number(hazard.has(a.col+':'+a.rank))-
+        Number(hazard.has(b.col+':'+b.rank)));
+    for(const candidate of next){
+      visited.add(candidate.col+':'+candidate.rank);
       queue.push({pos:candidate,first:first||candidate});
     }
+  }
+  if(options.length){
+    // The queue is in increasing step distance. Among equally reachable
+    // firing squares, prefer a safe first step.
+    options.sort((a,b)=>a.risk-b.risk||a.depth-b.depth);
+    return {move:options[0].first};
   }
   return {attack:kit.find(a=>a.fallback)};
 }
