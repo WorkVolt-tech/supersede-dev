@@ -8,7 +8,7 @@
 .ch1-sentinel.ch1-entering .ch1-boss-body{animation:ch1-sentinel-drop 2.4s cubic-bezier(.2,.75,.3,1) both}
 .ch1-sentinel .ch1-boss-energy{clip-path:ellipse(15% 12% at 55% 24%);animation:ch1-energy 3.1s infinite}
 .ch1-sentinel.ch1-entering .ch1-boss-energy{animation:ch1-eye-roar 2.4s ease-out both}
-.ch1-sentinel .ch1-boss-burst{animation:ch1-impact 2.4s ease-out both}
+.ch1-sentinel.ch1-entering .ch1-boss-burst{animation:ch1-impact 2.4s ease-out both}
 .ch1-surveyor .ch1-boss-body{animation:ch1-hover 4s ease-in-out infinite}
 .ch1-surveyor.ch1-entering .ch1-boss-body{animation:ch1-assemble 3.1s cubic-bezier(.18,.75,.25,1) both}
 .ch1-surveyor .ch1-boss-energy{clip-path:polygon(3% 10%,98% 8%,100% 53%,0 55%);animation:ch1-energy 2.1s infinite}
