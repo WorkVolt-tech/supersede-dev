@@ -122,11 +122,19 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         pushLog('Loot could not be saved: '+error.message)
       }
     }
+    // Let victory animations finish before leaving the arena. The Watcher's
+    // eight eye fragments stagger their dispersal for almost two seconds.
+    const victoryDelay = outcome === 'win'
+      ? /watcher/i.test(enemyData.name) ? 2000
+        : ['Sentinel of the First Eye', 'The Surveyor', 'The Unseen'].includes(enemyData.name) ? 1500
+        : enemyData.name === 'The Twin Judges' ? 1200
+        : 900
+      : 900
     setTimeout(() => {
       if (outcome === 'win') onWin?.()
       else if (outcome === 'escape') onEscape?.()
       else onLose?.()
-    }, 900)
+    }, victoryDelay)
   }
 
   function enemyTurn(playerHp, foeHp, isDefending = false) {
