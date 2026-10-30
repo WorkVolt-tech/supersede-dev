@@ -1,61 +1,109 @@
-// Chapter III — Signal Hunters. New React-native narrative, separate from profession questlines.
-const enemy=(name,icon,hp,atk,xp)=>({name,icon,hp,atk,def:3,speed:8,xp,loot:[]})
-export const NODES = {
- opening:{id:'opening',type:'story',text:`CHAPTER III — SIGNAL HUNTERS
+// Chapter III — Signal Hunters. Canon: metro tunnels / Echo Beast.
+// Story nodes use the existing React story engine and its persistent ch3_* save IDs.
+const foe=(name,icon,hp,attack,xp)=>({name,icon,hp,atk:attack,def:4,speed:9,xp,loot:[]})
+export const NODES={
+ opening:{id:'opening',type:'story',text:`CHAPTER 3 — SIGNAL HUNTERS
 
-The road from Kessler bends into a valley of antenna towers. Every screen in your vehicle blinks the same sentence: WE HEARD WHAT YOU DID TO THE JUDGES.
+ZONE: THE METRO TUNNELS
 
-At midnight, the radio switches itself on. A voice counts the seconds between your breaths. The System has stopped merely watching your choices. Now something is hunting the people who make them.
+A signal emerges below the city. Its frequency matches the System's oldest transmissions—possibly the source itself.
 
-Beyond the road sign—BLACKGLASS RELAY DISTRICT—you see a settlement lit by improvised power, and a distant tower broadcasting a signal that sounds almost human.`,choices:[{label:'Investigate the relay settlement',next:'settlement'},{label:'Survey the abandoned checkpoint',next:'checkpoint'}]},
- checkpoint:{id:'checkpoint',type:'story',text:`The checkpoint is deserted, except for drag marks and a handheld receiver. Its display identifies three missing operators. Their final recorded phrase: "The voice copied me. Do not answer yourself."
+The escalators are still. Water drips down the tiled stairwell. Your receiver plays a voice saying your name. It is your own voice, but you haven't spoken.
 
-A scavenger steps into the headlights and warns you that the Signal Hunters can imitate familiar voices. Someone is still transmitting from the tower.`,choices:[{label:'Help the scavenger repair a receiver',next:'receiver',moral:5},{label:'Follow the drag marks',next:'stalker'},{label:'Head toward the settlement',next:'settlement'}]},
- stalker:{id:'stalker',type:'combat',text:'A masked tracker rises from the ruined tollbooth. Its radio speaks in your voice.',enemy:enemy('Echo Stalker','📡',95,12,110),onWin:'receiver',onLose:'checkpoint',onEscape:'settlement'},
- settlement:{id:'settlement',type:'story',text:`The relay settlement is built from stacked freight containers and solar panels. Its people call themselves the Unheard.
+SYSTEM NOTICE: SIGNAL SOURCE UNCONFIRMED. OBSERVATION RECOMMENDED.
 
-Their leader, Ada, has three rules: never broadcast a real name, never follow a voice outside the perimeter, and never let the tower finish a countdown.
+A subway map shows three routes toward the abandoned central interchange. You feel the walls listening.`,choices:[{label:'Study the metro map before descending',next:'map'},{label:'Go straight down to the platform',next:'platform'},{label:'Investigate a weak secondary transmission',next:'side_signal'}]},
+ map:{id:'map',type:'story',text:`Three colored lines cross the map: BLUE (maintenance), RED (collapsed platform), GREEN (the old control room).
 
-Ada admits they captured one Signal Hunter. It is human. Or was, before the System rewrote their hearing.`,choices:[{label:'Meet Ada and question the captive',next:'captive',moral:5},{label:'Inspect the signal lab',next:'receiver'},{label:'Check the perimeter for a breach',next:'perimeter'}]},
- perimeter:{id:'perimeter',type:'combat',text:'A pair of synchronized silhouettes slip beneath the settlement lights. One breaks away to attack.',enemy:enemy('Signal Hound','🐺',105,14,125),onWin:'settlement_defended',onLose:'settlement',onEscape:'settlement'},
- settlement_defended:{id:'settlement_defended',type:'story',text:'Ada thanks you. A technician uncovers an encrypted tower map and marks a narrow route through the transmission fields.',choices:[{label:'Study the relay map',next:'receiver'},{label:'Question the prisoner',next:'captive'}]},
- captive:{id:'captive',type:'story',text:`The captive wears an earpiece fused into the skin. He calls himself Ren. When he hears your footsteps, he whispers: "I was assigned to hunt a signal. Then I realized the signal was a person."
+A penciled warning says: "Train 03 never completed its last journey. The clocks still count its stops."
 
-He says there are three relay anchors feeding the tower. Cut them, and the broadcast loses its grip. Destroy the central node, and the hunters become free—but the System will remember who did it.`,choices:[{label:'Promise to try to free the hunters',next:'receiver',moral:8,allianceTag:'ch3_free_hunters'},{label:'Demand the tower access code',next:'code_clue',moral:-3},{label:'Leave him and inspect the lab',next:'receiver'}]},
- receiver:{id:'receiver',type:'story',text:`In the lab, the recovered receiver ticks in groups of four. A dead operator left a handwritten note:
+The shortest path is not necessarily the safest.`,xp:35,choices:[{label:'Use the Blue maintenance route',next:'maintenance'},{label:'Take the Red platform shortcut',next:'platform'},{label:'Follow the Green signal to the control room',next:'control_room'}]},
+ platform:{id:'platform',type:'story',text:`On Platform 9, a train sits with its doors open. Every advertisement displays a different version of the same face. A metallic scraping comes from the far carriage.
 
-"The sequence follows the relay cycle: ECHO, STATIC, PULSE, SILENCE. Only the third word opens the gate."
+A station announcement crackles: "Passenger arriving... Passenger arriving..." It speaks using your own voice.`,choices:[{label:'Check the empty train',next:'carriage'},{label:'Keep to the wall and reach maintenance access',next:'maintenance'},{label:'Answer the voice',next:'voice_trap'}]},
+ voice_trap:{id:'voice_trap',type:'combat',text:'When you answer, your echo answers back. An Echo Mimic drops from the ceiling.',enemy:foe('Echo Mimic','👤',105,15,115),onWin:'carriage',onLose:'platform',onEscape:'maintenance'},
+ carriage:{id:'carriage',type:'story',text:`The final carriage contains six pairs of shoes and no passengers. The emergency intercom repeats a warning: "DO NOT TRUST A VOICE YOU DID NOT SEE SPEAK."
 
-The tower transmits four candidates. You can listen and solve the lock or force entry through the service tunnels.`,choices:[{label:'Open the cipher gate',next:'cipher_gate'},{label:'Take the maintenance tunnel',next:'tunnel'}]},
- code_clue:{id:'code_clue',type:'story',text:'Ren draws three concentric rings. "The answer is the third beat. The System expects you to hear it, not guess it." Outside, the tower flashes four times.',choices:[{label:'Approach the cipher gate',next:'cipher_gate'},{label:'Use the service tunnel instead',next:'tunnel'}]},
- cipher_gate:{id:'cipher_gate',type:'story',text:'CIPHER GATE — IDENTIFY THE THIRD TERM OF THE RELAY CYCLE. ECHO → STATIC → ? → SILENCE.',choices:[{label:'ECHO — reset cycle',next:'cipher_alarm'},{label:'STATIC — carrier noise',next:'cipher_alarm'},{label:'PULSE — third signal',next:'cipher_solved'},{label:'SILENCE — final stage',next:'cipher_alarm'}]},
- cipher_alarm:{id:'cipher_alarm',type:'combat',text:'The incorrect response activates a security warden. Solve the sequence once it falls.',enemy:enemy('Cipher Warden','🛡️',115,15,130),onWin:'cipher_gate',onLose:'receiver',onEscape:'tunnel'},
- cipher_solved:{id:'cipher_solved',type:'story',text:'The gate accepts PULSE. Behind the access panel, a signal schematic reveals the first anchor hidden inside the abandoned substation.',xp:90,choices:[{label:'Enter the substation',next:'anchor_one'}]},
- tunnel:{id:'tunnel',type:'story',text:'The maintenance tunnel is dry but threaded with speakers. Voices call your name from behind the walls. Ahead, a cracked hatch opens beneath the first relay anchor.',choices:[{label:'Climb into the substation',next:'anchor_one'},{label:'Turn back to decode the gate',next:'cipher_gate'}]},
- anchor_one:{id:'anchor_one',type:'story',text:'The first anchor is a coil of humming metal surrounded by discarded headsets. Each pulse makes you remember a choice you never made.',choices:[{label:'Sever the first relay anchor',next:'anchor_two',allianceTag:'ch3_anchor_one'},{label:'Inspect the captured headsets first',next:'headsets'}]},
- headsets:{id:'headsets',type:'story',text:'The headsets contain voices stolen from previous challengers. One belongs to a child who asks that the hunters be freed, not executed.',choices:[{label:'Preserve the recordings and sever the anchor',next:'anchor_two',moral:5,allianceTag:'ch3_rescue_recordings'}]},
- anchor_two:{id:'anchor_two',type:'combat',text:'The second anchor is guarded by a machine that rewrites its movements based on your last attack.',enemy:enemy('Adaptive Relay Sentinel','🤖',145,19,210),onWin:'anchor_two_down',onLose:'anchor_one'},
- anchor_two_down:{id:'anchor_two_down',type:'story',text:'The sentinel collapses. Its core reveals the last anchor: a transmission chamber beneath the central tower. Ada radios that the Unheard are losing contact with their own voices.',xp:150,choices:[{label:'Rush to the central tower',next:'tower_approach'},{label:'Send a warning to Ada first',next:'ada_warning',moral:5}]},
- ada_warning:{id:'ada_warning',type:'story',text:'You send a warning in code rather than speech. Ada understands. The settlement goes silent, cutting off the System from dozens of easy targets.',choices:[{label:'Advance to the tower',next:'tower_approach'}]},
- tower_approach:{id:'tower_approach',type:'story',text:`The tower door opens before you touch it. Inside, screens show your path from the Watcher through the Twin Judges, every betrayal and every mercy catalogued.
+Under the seat is a damaged service badge and a battered supply box.`,choices:[{label:'Search carefully under the seats',next:'carriage_cache'},{label:'Leave the train for the control room',next:'control_room'}]},
+ carriage_cache:{id:'carriage_cache',type:'story',text:'An emergency supply pack is lodged behind a loose panel. Your careful search pays off.',rewards:[{itemKey:'medical_pack',qty:2},{itemKey:'scrap_metal',qty:2}],choices:[{label:'Take the service badge toward the control room',next:'control_room'}]},
+ side_signal:{id:'side_signal',type:'story',text:`The secondary signal comes from a maintenance booth. A recorder inside bears a label: "LOG 17 — voices repeating before the speaker arrives."
 
-A figure steps from the static. It wears the insignia of the Signal Hunters.
+A cable leads behind a locked storage door. The lock shows four frequency positions.`,choices:[{label:'Examine the recorded pattern',next:'frequency_clue'},{label:'Return to the main platform',next:'platform'}]},
+ maintenance:{id:'maintenance',type:'story',text:`The maintenance corridor is dark except for a strobing emergency light. Rats with glowing eyes nest around a broken signal junction. Your receiver detects a hidden chamber beyond the wiring.`,choices:[{label:'Fight through the corrupted rats',next:'rat_swarm'},{label:'Follow the wiring to the control room',next:'control_room'},{label:'Inspect the hidden chamber signal',next:'frequency_clue'}]},
+ rat_swarm:{id:'rat_swarm',type:'combat',text:'The signal-corrupted rats gather into a chattering swarm.',enemy:foe('Signal Rat Swarm','🐀',90,12,95),onWin:'frequency_clue',onLose:'maintenance',onEscape:'control_room'},
+ frequency_clue:{id:'frequency_clue',type:'story',text:`An engineer's notebook lists the channel order: 88.1 — 92.4 — 96.7 — 101.3.
 
-"I am the Collector," it says. "The System does not predict choices. It collects the people willing to make them."
+The last entry is circled twice: "THIRD CHANNEL. The lock detects attention, not speed."
 
-The last anchor is built into the Collector's armor.`,choices:[{label:'Confront the Collector',next:'collector_boss'},{label:'Offer to free the enslaved hunters',next:'collector_mercy',moral:5,allianceTag:'ch3_offered_mercy'}]},
- collector_mercy:{id:'collector_mercy',type:'story',text:'The Collector hesitates. For half a second, dozens of human voices answer from inside its armor. "Then prove you can survive knowing what I am."',choices:[{label:'Fight to break the signal',next:'collector_boss'}]},
- collector_boss:{id:'collector_boss',type:'boss',bossKey:'signal_collector',text:'The Collector channels the three relay anchors into a single overwhelming broadcast. Silence the source.',enemy:enemy('The Signal Collector','📻',265,26,420),onWin:'collector_defeated',onLose:'tower_approach'},
- collector_defeated:{id:'collector_defeated',type:'story',text:`The Collector falls to one knee. The broadcast fractures. Across the valley, hunters tear the receivers from their ears and remember their own names.
+A second note: "The System remembers wrong answers, too."`,xp:60,choices:[{label:'Attempt the frequency lock',next:'frequency_lock'},{label:'Continue toward the control room',next:'control_room'}]},
+ frequency_lock:{id:'frequency_lock',type:'story',text:'STORAGE LOCK: SELECT THE THIRD FREQUENCY IN THE RECORDED CHANNEL ORDER.',choices:[{label:'88.1 MHz',next:'frequency_alarm'},{label:'92.4 MHz',next:'frequency_alarm'},{label:'96.7 MHz',next:'secret_vault'},{label:'101.3 MHz',next:'frequency_alarm'}]},
+ frequency_alarm:{id:'frequency_alarm',type:'combat',text:'The lock screams. A maintenance drone activates to contain the intruder.',enemy:foe('Tunnel Security Drone','🤖',125,17,135),onWin:'frequency_lock',onLose:'maintenance',onEscape:'control_room'},
+ secret_vault:{id:'secret_vault',type:'story',text:`The door opens into a hidden equipment depot. The shelves contain supplies overlooked by the surviving scavengers. A map on the wall marks a sealed path directly into the central interchange.
 
-One final message scrolls across the tower wall:
+SYSTEM OBSERVATION: INTELLIGENCE PATH RECOGNIZED.`,xp:100,rewards:[{itemKey:'rare_component',qty:2},{itemKey:'medkit',qty:2}],choices:[{label:'Use the secret service passage',next:'control_room'},{label:'Return to the main tunnel',next:'platform'}]},
+ control_room:{id:'control_room',type:'story',text:`The metro control room is still powered. Security feeds show a figure entering the tunnel forty seconds before you did.
 
-ADAPTATION COMPLETE.
-THE SYSTEM ADAPTS TO HUMAN CHOICES.
+It is you.
 
-You cannot tell whether the words are a warning or an invitation. Ada asks what you intend to do with the surviving signal network.`,choices:[{label:'Give the Unheard control of the network',next:'ending_freedom',moral:10,allianceTag:'ch3_network_freed'},{label:'Seal the tower to keep it out of everyone’s hands',next:'ending_sealed',moral:2,allianceTag:'ch3_network_sealed'},{label:'Record its secrets before shutting it down',next:'ending_archive',allianceTag:'ch3_network_archived'}]},
- ending_freedom:{id:'ending_freedom',type:'story',text:'The Unheard inherit the relays. You leave knowing their voices finally belong to them.',choices:[{label:'Finish Chapter 3',next:'chapter_end_ch3'}]},
- ending_sealed:{id:'ending_sealed',type:'story',text:'You fuse the control panel. The valley becomes quiet. No one can use this tower again—at least for now.',choices:[{label:'Finish Chapter 3',next:'chapter_end_ch3'}]},
- ending_archive:{id:'ending_archive',type:'story',text:'You copy the hidden transmission logs. Their metadata points toward a second, deeper network outside the valley.',choices:[{label:'Finish Chapter 3',next:'chapter_end_ch3'}]},
- chapter_end_ch3:{id:'chapter_end_ch3',type:'end',text:'CHAPTER III COMPLETE — SIGNAL HUNTERS. The Collector is defeated, the signal broken, and your choices recorded. The next chapter is still beyond the horizon.'}
+A battered console can restore the route to the central interchange. One of its tracks is safe; another loops through a flooded dead end.`,choices:[{label:'Read the route logs',next:'route_clue'},{label:'Follow the figure on the security feed',next:'shadow_route'},{label:'Enter the route selector immediately',next:'route_puzzle'}]},
+ shadow_route:{id:'shadow_route',type:'combat',text:'The figure in the security recording is waiting behind the control room door. Its mouth moves at the same time as yours.',enemy:foe('Voice Thief','🎭',155,19,185),onWin:'route_clue',onLose:'control_room',onEscape:'route_clue'},
+ route_clue:{id:'route_clue',type:'story',text:`ROUTE LOG — LAST SAFE TRAIN:
+
+Stop 1: Northbound Maintenance
+Stop 2: Flood Gate
+Stop 3: CENTRAL INTERCHANGE
+Stop 4: The signal repeats.
+
+The train never stops at the fourth station. The log is not telling you how to arrive. It tells you when to leave.`,xp:75,choices:[{label:'Select the correct stop',next:'route_puzzle'}]},
+ route_puzzle:{id:'route_puzzle',type:'story',text:'CONTROL CONSOLE: AT WHICH STOP MUST YOU EXIT TO REACH THE SOURCE WITHOUT ENTERING THE REPEATING LOOP?',choices:[{label:'Stop 1 — Maintenance',next:'route_wrong'},{label:'Stop 2 — Flood Gate',next:'route_wrong'},{label:'Stop 3 — Central Interchange',next:'interchange'},{label:'Stop 4 — The Loop',next:'route_wrong'}]},
+ route_wrong:{id:'route_wrong',type:'story',text:'The route selector resets as a ghost train thunders past. A whisper says: "Another choice recorded." No reward is lost, but the wrong route is closed.',choices:[{label:'Review the route logs',next:'route_clue'},{label:'Try the selector again',next:'route_puzzle'}]},
+ interchange:{id:'interchange',type:'story',text:`The Central Interchange is larger than the maps suggest. Unused rails lead into a black tunnel. Voices carry from every direction, each one belonging to someone you've heard before.
+
+A survivor, Imani, sits behind a barricade made from signal dampeners. She warns: "It learns your approach. If you attack everything, it sends something you can only defeat by thinking."
+
+Three relay amplifiers feed an enormous shadow behind the platform.`,choices:[{label:'Help Imani disable the amplifiers',next:'amplifier_clue',moral:5,allianceTag:'ch3_imani_helped'},{label:'Rush toward the voices',next:'echo_guardian'},{label:'Ask what happened to the missing passengers',next:'memory_log'}]},
+ memory_log:{id:'memory_log',type:'story',text:`Imani shows you recordings taken minutes before each disappearance. The victim hears their own voice giving advice. The advice changes whenever the victim changes their approach.
+
+"The signal doesn't simply repeat us," she says. "It studies how we react."`,xp:100,choices:[{label:'Study the amplifier sequence',next:'amplifier_clue'},{label:'Challenge the creature guarding the rails',next:'echo_guardian'}]},
+ echo_guardian:{id:'echo_guardian',type:'combat',text:'A shadow with many overlapping whispers rises between the rails. It copies your stance.',enemy:foe('Resonant Wraith','🌫️',185,22,260),onWin:'amplifier_clue',onLose:'interchange',onEscape:'amplifier_clue'},
+ amplifier_clue:{id:'amplifier_clue',type:'story',text:`Three amplifiers are marked A, B, and C. Imani's calibration instructions read:
+
+"To prevent feedback, shut down the source, then the echo, then the receiver."
+
+A = Receiver. B = Source. C = Echo.
+
+The sequence matters. The Beast is strongest while the circuit is closed.`,choices:[{label:'Choose the shutdown sequence',next:'amplifier_puzzle'},{label:'Search the tool lockers',next:'lockers'}]},
+ lockers:{id:'lockers',type:'story',text:'Behind a false locker wall you discover supplies and a surviving technician’s final report. It confirms that the Echo Beast is not the source of the System—only one of its creations.',rewards:[{itemKey:'rare_component',qty:1},{itemKey:'medical_pack',qty:2}],choices:[{label:'Return to the amplifiers',next:'amplifier_puzzle'}]},
+ amplifier_puzzle:{id:'amplifier_puzzle',type:'story',text:'AMPLIFIER CONTROL: THE SOURCE MUST GO FIRST, THEN ITS ECHO, THEN THE RECEIVER.',choices:[{label:'A → B → C',next:'amplifier_wrong'},{label:'B → C → A',next:'beast_chamber'},{label:'C → A → B',next:'amplifier_wrong'},{label:'B → A → C',next:'amplifier_wrong'}]},
+ amplifier_wrong:{id:'amplifier_wrong',type:'combat',text:'The wrong circuit resonates with a violent feedback pulse. A signal construct defends the amplifiers.',enemy:foe('Feedback Construct','⚡',155,23,180),onWin:'amplifier_clue',onLose:'interchange',onEscape:'amplifier_clue'},
+ beast_chamber:{id:'beast_chamber',type:'story',text:`The amplifiers die one by one. Silence lasts exactly three seconds.
+
+Then every stolen voice in the tunnels screams at once.
+
+Something enormous moves beyond the tracks—a mass of charcoal-black spectral flesh, green vapor, and half-formed human faces. Its central mouth opens impossibly wide, full of long, curved teeth.
+
+It speaks in your voice: "I already know what you will do."
+
+The Echo Beast has fed on recorded choices, repeating them until it learns how to break the next player.
+
+SYSTEM WARNING: PREDICTIVE ENTITY — ECHO BEAST.`,choices:[{label:'Steady your thoughts and confront the Echo Beast',next:'echo_beast'},{label:'Study the pattern in its stolen voices',next:'beast_insight'}]},
+ beast_insight:{id:'beast_insight',type:'story',text:`Some voices repeat events you recognize from earlier chapters. Others predict choices you haven't made yet.
+
+The Beast is not omniscient. It rehearses the choices it has already observed. Unexpected decisions create interference in its predictions.
+
+To survive, you must refuse to become predictable.`,xp:120,choices:[{label:'Break the pattern and challenge the Beast',next:'echo_beast'}]},
+ echo_beast:{id:'echo_beast',type:'boss',bossKey:'echo_beast',text:'The Echo Beast roars in a chorus of stolen voices. Its ghostly faces emerge from the green-black mist as its enormous jaws open.',enemy:foe('The Echo Beast','👹',330,29,550),onWin:'beast_defeated',onLose:'beast_chamber'},
+ beast_defeated:{id:'beast_defeated',type:'story',text:`The Echo Beast's great mouth collapses into the dark. The many stolen voices separate, becoming briefly human before dissolving into silence.
+
+Imani's receiver plays one last recording. It isn't a scream. It's a statement from the System itself:
+
+"THE SYSTEM LEARNS FROM PLAYERS."
+
+The truth is worse than you feared. The Beast wasn't the source. It was a test—built from the System's observations of everyone who entered these tunnels.
+
+Its lessons will survive its destruction.`,choices:[{label:'Release the recordings so the lost are remembered',next:'ending_mercy',moral:8,allianceTag:'ch3_voices_released'},{label:'Seal the tunnels to stop more victims entering',next:'ending_seal',moral:3,allianceTag:'ch3_tunnels_sealed'},{label:'Preserve the adaptation logs for the next chapter',next:'ending_knowledge',allianceTag:'ch3_logs_preserved'}]},
+ ending_mercy:{id:'ending_mercy',type:'story',text:'Imani hears the last voices of the missing passengers. The tunnels are silent at last. You carry their names with you.',choices:[{label:'Complete Chapter 3',next:'chapter_end_ch3'}]},
+ ending_seal:{id:'ending_seal',type:'story',text:'The metro doors close for the final time. You know locks alone cannot stop the System, but perhaps they can protect the next person.',choices:[{label:'Complete Chapter 3',next:'chapter_end_ch3'}]},
+ ending_knowledge:{id:'ending_knowledge',type:'story',text:'You save the recordings. Each choice is a data point; each player, a lesson. The next confrontation will require more than strength.',choices:[{label:'Complete Chapter 3',next:'chapter_end_ch3'}]},
+ chapter_end_ch3:{id:'chapter_end_ch3',type:'end',text:'CHAPTER III COMPLETE — SIGNAL HUNTERS. You defeated the Echo Beast deep in the metro tunnels. TRUTH REVEALED: THE SYSTEM LEARNS FROM PLAYERS.'}
 }
