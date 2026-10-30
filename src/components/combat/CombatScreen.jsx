@@ -21,7 +21,8 @@ import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '.
 import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
-import { getEquippedElementalAttack, canUseElementalAttack, resolveElementalAttack } from '../../game/elementalAttacks'
+import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
+import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
@@ -67,6 +68,15 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const combatPlayer = getCombatPlayer(player,equipped)
 
   const maxPlayerHp = calcMaxHp(player, equipped)
+  const maxCombatMp = getMaxCombatMp(combatPlayer)
+  const mpRegen = getCombatMpRegen(combatPlayer)
+  const [currentMp, setCurrentMp] = useState(maxCombatMp)
+  const mpRef = useRef(maxCombatMp)
+  function changeCombatMp(value) {
+    const next = clampCombatMp(value, maxCombatMp)
+    mpRef.current = next
+    setCurrentMp(next)
+  }
   const [currentHp, setCurrentHp] = useState(player.hp ?? maxPlayerHp)
   const [enemyHp, setEnemyHp] = useState(enemyData.hp)
   const [defending, setDefending] = useState(false)
@@ -228,6 +238,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const keystoneDefense = resolveKeystoneDefense(statusEffectsRef.current, finalDmg)
     finalDmg = keystoneDefense.damage
     messages.push(...keystoneDefense.messages)
+    if (keystoneDefense.mpGain > 0) {
+      const gained = recoverCombatMp(mpRef.current, keystoneDefense.mpGain, maxCombatMp) - mpRef.current
+      if (gained > 0) { changeCombatMp(mpRef.current + gained); messages.push(`Aegis restores ${gained} MP.`) }
+    }
     if (keystoneDefense.reflected > 0) {
       foeHp = Math.max(0, foeHp - keystoneDefense.reflected)
       messages.push(`${keystoneDefense.reflected} keystone damage reflected.`)
@@ -351,7 +365,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       atk: calcATK(player, equipped), def: calcDEF(player, equipped),
       enemyDef: enemyData.def || 0, currentHp: playerHp, maxHp: maxPlayerHp,
     })
-    if (!effect) return { foeHp, playerHp }
+    if (!effect || mpRef.current < effect.mpCost) return { foeHp, playerHp }
+    changeCombatMp(mpRef.current - effect.mpCost)
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
     foeHp = Math.max(0, foeHp - effect.enemyDamage)
@@ -369,7 +384,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // must not permit casting an unlearned or cooling-down keystone.
     if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
       .some(keystone => keystone.id === skillId && keystone.available)) return
-    if (action === 'elemental' && (!canUseElementalAttack(combatPlayer, skillId) || (elementalCooldowns[skillId] || 0) > 0)) return
+    if (action === 'elemental' && (!canUseElementalAttack(combatPlayer, skillId) ||
+        (elementalCooldowns[skillId] || 0) > 0 ||
+        mpRef.current < getAttackMpCost(combatPlayer, skillId, statusEffectsRef.current))) return
     setBusy(true)
     // Free keystones (Time Skip, Hurricane, etc.) may prepare another
     // action without giving the enemy an extra attack or ticking cooldowns.
@@ -433,6 +450,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setDefending(false)
     setKeystoneCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'keystone' ? skillId : null))
     setElementalCooldowns(prev => advanceKeystoneCooldowns(prev, action === 'elemental' ? skillId : null))
+    if (playerHp > 0 && mpRef.current < maxCombatMp) changeCombatMp(recoverCombatMp(mpRef.current, mpRegen, maxCombatMp))
     if (statusEffectsRef.current.cfx_ironDomainTurns > 0 &&
         !(action === 'elemental' && skillId === 'metal_ultimate_iron_domain')) {
       statusEffectsRef.current.cfx_ironDomainTurns -= 1
@@ -463,7 +481,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           <span className="combat-icon">🧑</span>
           <span className="combat-name">You</span>
           <HpBar hp={currentHp} maxHp={maxPlayerHp} />
-          <span className="combat-hp-num">{currentHp}/{maxPlayerHp}</span>
+          <span className="combat-hp-num">{currentHp}/{maxPlayerHp} HP</span>
+          <div className="combat-mp-label">MP · {currentMp}/{maxCombatMp}</div>
+          <div className="combat-mp-bar" role="progressbar" aria-label="Combat MP" aria-valuemin={0}
+            aria-valuemax={maxCombatMp} aria-valuenow={currentMp}>
+            <div className="combat-mp-fill" style={{ width: (currentMp / maxCombatMp * 100) + '%' }} />
+          </div>
           {statusChips.length > 0 && (
             <div className="combat-status-list">
               {statusChips.map(([k]) => <span key={k} className="combat-status-chip">{k}</span>)}
@@ -483,13 +506,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             </button>
           ))}
           {elementalAttack && <button type="button" className="combat-action-btn"
-            disabled={busy || !entranceReady || (elementalCooldowns[elementalAttack.id] || 0) > 0}
+            disabled={busy || !entranceReady || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
+              currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)}
             onClick={() => takeTurn('elemental', elementalAttack.id)}>
             {elementalAttack.label}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
                 ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
-                : `${elementalAttack.element} elemental attack`}
+                : `${getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)} MP · ${elementalAttack.element}`}
             </span>
           </button>}
           {keystones.map(keystone => (
