@@ -44,34 +44,42 @@ async function runScenario(scenario,view){
   }
   const enemyCell=view.locator('.combat-grid-board').first().locator('button.occupied')
   await enemyCell.click()
-  await view.waitForFunction(()=>document.querySelector('.combat-tactical-status')
-    ?.textContent.includes('1/2 AP'),null,{timeout:10000})
+  // The original class damage/crit system may defeat a light training foe
+  // in one swing. Both an AP-spending hit and an immediate victory are valid.
+  await view.waitForFunction(()=>
+    document.body.dataset.outcome==='win'||
+    document.querySelector('.combat-tactical-status')?.textContent.includes('1/2 AP'),
+    null,{timeout:10000})
+  const firstVictory=await view.evaluate(()=>document.body.dataset.outcome==='win')
   if(enabled){
     check((await view.locator('.combat-log').textContent()).includes('Phantom Inferno'),
       scenario+': no fusion rider on actual attack')
     check((await view.locator('.combat-status-list').textContent()).includes('cfx_emberStacks'),
       scenario+': existing ember status was not updated')
-    check(await view.evaluate(()=>window.__singleFusionMetrics.saves)===0,
+    if(!firstVictory)check(await view.evaluate(()=>window.__singleFusionMetrics.saves)===0,
       scenario+': fusion mastery saved before victory')
   }else{
     check(!(await view.locator('.combat-log').textContent()).includes('Phantom Inferno'),
       'unfused: rider applied without purchase')
   }
-  // A second original Sword Slash finishes the encounter without touching
-  // boss choreography or bypassing the normal save/transition code.
-  await enemyCell.click()
-  await view.waitForFunction(()=>document.body.dataset.outcome==='win',
-    null,{timeout:16000})
+  // A second normal attack finishes any surviving training foe. Do not
+  // assume a deterministic count of hits when criticals and class hooks run.
+  if(!firstVictory){
+    await enemyCell.click()
+    await view.waitForFunction(()=>document.body.dataset.outcome==='win',
+      null,{timeout:16000})
+  }
+  const expectedHits=firstVictory?1:2
   const saved=await view.evaluate(()=>window.__singleFusionMetrics)
   check(saved.saves===1,scenario+': victory was not saved once')
   if(enabled){
-    check(saved.lastUpdates.fusion_mastery?.['ghostblade:fire']===47,
-      scenario+': fusion practice was not credited for both hits')
+    check(saved.lastUpdates.fusion_mastery?.['ghostblade:fire']===45+expectedHits,
+      scenario+': fusion practice was not credited for successful attacks')
   }else{
     check(!saved.lastUpdates.fusion_mastery,
       'unfused: improperly added fusion mastery')
   }
-  check(saved.lastUpdates.weapon_mastery?.sword===2,
+  check(saved.lastUpdates.weapon_mastery?.sword===expectedHits,
     scenario+': existing weapon mastery was not saved')
   check(errors.length===0,scenario+': browser errors '+errors.join(' | '))
   await view.screenshot({path:'test-artifacts/single-'+scenario+'.png',fullPage:true})
