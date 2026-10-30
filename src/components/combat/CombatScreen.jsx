@@ -107,6 +107,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   const statusEffectsRef = useRef({})
   const enemyStateRef = useRef(initEnemyState(enemyData))
+  // Boss AI adjusts enemy.atk on certain phase transitions. Keep that
+  // mutable state private to this fight, not on the shared story node.
+  const combatEnemyRef = useRef({ ...enemyData })
   const dbUpdatesRef = useRef({})
 
   useEffect(() => {
@@ -167,7 +170,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       onEnemyHealSelf: (h) => { healAmt += h },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const aiMove = resolveEnemyTurn(enemyData, ctx)
+    const aiMove = resolveEnemyTurn(combatEnemyRef.current, ctx)
     // AI keeps full ownership of move selection and damage. The move key
     // only tells the Chapter 1 portrait which attack to animate.
     if (CH1_BOSS_ENTRANCE_MS[enemyData.name] > 0) {
