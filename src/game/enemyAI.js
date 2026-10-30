@@ -1180,13 +1180,13 @@ function _boss_sentinel(enemy, ctx, hpPct) {
     onEnemyDmgPlayer(dmg)
     messages.push(`👁 <em>Indexed wound</em> — the Sentinel exploits what it recorded for <strong>${dmg}</strong>!`)
     triggerAnimation(ANIM.PULSE)
-    return { anim: ANIM.PULSE }
+    return { anim: ANIM.PULSE, moveKey: 'indexed_wound' }
   }
 
   const pool = enemyState.phase === 3 ? phase3Moves : enemyState.phase === 2 ? phase2Moves : phase1Moves
   const move = pickWeighted(pool)
   const anim = move.exec()
-  return { anim }
+  return { anim, moveKey: move.key }
 }
 
 // ── The Surveyor — methodical, predictive, click-counting ────────────────────
@@ -1216,14 +1216,14 @@ function _boss_surveyor(enemy, ctx, hpPct) {
       onEnemyDmgPlayer(dmg)
       messages.push(`🔭 ⚡ <strong>PINPOINT ASSESSMENT</strong> — every weakness catalogued. <strong>${dmg}</strong>! DEF ignored.`)
       triggerAnimation(ANIM.TERROR)
-      return { anim: ANIM.TERROR }
+      return { anim: ANIM.TERROR, moveKey: 'pinpoint_assessment' }
     }
     // Still observing — applies a measurement tick
     const dmg = baseDmg(enemy.atk * 0.4, playerDEF, se, defending, 1)
     onEnemyDmgPlayer(dmg)
     messages.push(`🔭 <em>CLICK. CLICK.</em> Surveyor measures… (assessing turn ${enemyState.surveyorLockIn}) — <strong>${dmg}</strong> incidental.`)
     triggerAnimation(ANIM.GOLD)
-    return { anim: ANIM.GOLD }
+    return { anim: ANIM.GOLD, moveKey: 'assessment_tick' }
   }
 
   const phase1Moves = [
@@ -1326,7 +1326,7 @@ function _boss_surveyor(enemy, ctx, hpPct) {
   const pool = enemyState.phase === 3 ? phase3Moves : enemyState.phase === 2 ? phase2Moves : phase1Moves
   const move = pickWeighted(pool)
   const anim = move.exec()
-  return { anim }
+  return { anim, moveKey: move.key }
 }
 
 // ── The Unseen — distributed, invisible, consolidating ───────────────────────
@@ -1465,7 +1465,7 @@ function _boss_unseen(enemy, ctx, hpPct) {
   const pool = enemyState.phase === 3 ? phase3Moves : enemyState.phase === 2 ? phase2Moves : phase1Moves
   const move = pickWeighted(pool)
   const anim = move.exec()
-  return { anim }
+  return { anim, moveKey: move.key }
 }
 
 // ── The Watcher — final boss, 3-phase choreography ───────────────────────────
