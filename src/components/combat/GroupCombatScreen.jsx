@@ -126,6 +126,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const maxAp=maxCombatAp(player.level)
   const [ap,setAp]=useState(maxAp)
   const apRef=useRef(maxAp)
+  const [emergencyUsed,setEmergencyUsed]=useState(false)
+  const emergencyUsedRef=useRef(false)
   const roundStartedRef=useRef(false)
   const roundRef=useRef(1)
   const [round,setRound]=useState(1)
@@ -699,6 +701,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     defendingRef.current=false
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
     roundStartedRef.current=false
+    emergencyUsedRef.current=false;setEmergencyUsed(false)
     roundRef.current+=1;setRound(roundRef.current)
     apRef.current=maxAp;setAp(maxAp)
   }
@@ -714,7 +717,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(busyRef.current||pendingRef.current)return
     const target=nextAliveTarget(foesRef.current,kind==='attack'?id:focus)
     const selected=kind==='attack'?attack:null
-    if(kind==='attack'&&(!target||!isTacticalTargetValid(selected,heroRef.current,target)||
+    if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!target||!isTacticalTargetValid(selected,heroRef.current,target)||
       (selected?.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0)))return
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
@@ -791,6 +794,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       }else if(kind==='end')note('You end the turn.')
 
       if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
+      if(kind==='attack'&&attack.fallback){
+        emergencyUsedRef.current=true;setEmergencyUsed(true)
+      }
       apRef.current=Math.max(0,apRef.current-cost)
       setAp(apRef.current)
       if(apRef.current>0)return
@@ -894,7 +900,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       <div className="combat-tactical-weapons">
         {weaponKit.map(item=><button key={item.id} type="button"
           className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
-          disabled={!canPlay||(item.thrown&&throwTurns>0)}
+          disabled={!canPlay||(item.thrown&&throwTurns>0)||(item.fallback&&emergencyUsed)}
           aria-pressed={item.id===attack.id}
           onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)}}>
           {item.label}
@@ -913,7 +919,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       </div>
       <div className="combat-actions">
         <button type="button" className="combat-action-btn"
-          disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap}
+          disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
           onClick={()=>takeTurn('attack',chosen)}>Use {attack.label} · {attack.ap} AP</button>
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
           onClick={()=>takeTurn('defend')}>Defend · 2 AP</button>
