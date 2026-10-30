@@ -59,7 +59,8 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAttack }) {
+function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAttack,
+  signatureFx,signaturePreview }) {
   const affected = attack && isTacticalTargetValid(attack,hero,enemy)
     ? getTacticalAffectedSquares(attack,enemy):[]
   const labels=['Left','Centre','Right']
@@ -71,14 +72,20 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
       const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&occupied&&enemyHp>0&&canAttack&&isTacticalTargetValid(attack,hero,enemy)
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
+      const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
+      const area=signaturePreview?.side===side&&signaturePreview.squares.some(
+        p=>p.rank===rank&&p.col===col)
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
-          targetable?'targetable':'',move&&canMove?'movable':'',splash?'splash':''].join(' ')}
+          targetable?'targetable':'',move&&canMove?'movable':'',
+          splash?'splash':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAttack():onMove({col,rank})}
         aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
+        {fx&&<span key={signatureFx.id} aria-hidden="true"
+          className={'signature-grid-flash signature-'+signatureFx.kind}/>}
         <small>{occupied?(side==='enemy'?'FOE':'YOU'):names[rank]}</small>
       </button>
     }))
@@ -836,7 +843,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           className={'combat-signature-burst signature-'+signatureFx.kind}
           role="status">{signature?.label}</div>}
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
-          enemyIcon={enemyData.icon} enemyHp={enemyHp} attack={selectedAttack}
+          enemyIcon={enemyData.icon} enemyHp={enemyHp}
+          attack={signaturePreview&&signature?.target==='enemy'?signature.attack:selectedAttack}
+          signatureFx={signatureFx}
+          signaturePreview={signaturePreview&&signature?{
+            side:signature.target==='self'?'hero':'enemy',
+            squares:getTacticalAffectedSquares(signature.attack,
+              signature.target==='self'?heroPosition:enemyPosition)
+          }:null}
           canAttack={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}

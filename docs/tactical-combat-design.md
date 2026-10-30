@@ -176,3 +176,26 @@ single incoming enemy attack, Plant restores HP after enemy actions, and
 Lightning's supplemental chain hits the solo foe instead of seeking a
 nonexistent second target. Synthetic desktop browser smoke covers ordinary
 encounters, boss pathway and locked-fusion control hiding without Supabase.
+
+## Three new active signature fusion techniques
+
+Fusion mastery level 5 now enables a *separate* active signature button
+alongside the existing class and elemental abilities. This is never a class
+skill-tree node or an automatically equipped elemental attack. The player
+must have unlocked the specific class–element pair and enabled fusion
+before casting. Each signature costs 2 AP and 8 MP, with a 3-round
+cooldown. Patterns widen at Fusion Mastery levels 8 and 10.
+All 1v1, boss and 3×3 encounters use the same signature definitions:
+- Ghostblade + Fire: **Phantom Inferno** — cross→diamond2→full-grid,
+  an immediate burn that creates an additional, two-round positional
+  burning field in group combat. Classic/boss encounters reuse the existing
+  inferno damage-over-time ticker on the sole enemy.
+- Bastion + Earth: **Titan's Fortress** — protect player-side cross
+  →diamond2→full grid. Creates a larger ward and retaliates against each
+  enemy strike that *actually* consumes ward, without replacing defensive
+  class hooks or boss phases.
+- Wrathborn + Lightning: **Thunderous Fury** — fast, decreasing-damage
+  chains to distinct nearby living enemies (3, 4 or 5 hits), stunning
+  survivors. In solo fights, those arcs converge on the one enemy.
+Animated signature flashes show affected battlefield squares and a small
+signature banner. All visuals have reduced-motion support.

@@ -57,3 +57,17 @@ test('no fusion context never adds a rider',()=>{
   assert.equal(applySingleFusionHit(null,state),null)
   assert.equal(absorbSingleFusionDamage(0,initialSingleFusionGuard()).damage,0)
 })
+
+test('Titan fortress counter retaliates only when shield absorbs real damage',()=>{
+  const base={...initialSingleFusionGuard(),ward:12,counter:5}
+  const first=absorbSingleFusionDamage(6,base)
+  assert.equal(first.damage,0)
+  assert.equal(first.reflected,5)
+  assert.equal(first.guard.ward,6)
+  const second=absorbSingleFusionDamage(10,first.guard)
+  assert.equal(second.damage,4)
+  assert.equal(second.reflected,5)
+  assert.equal(second.guard.counter,0)
+  assert.equal(absorbSingleFusionDamage(6,second.guard).reflected,0)
+  assert.equal(absorbSingleFusionDamage(0,base).reflected,0)
+})

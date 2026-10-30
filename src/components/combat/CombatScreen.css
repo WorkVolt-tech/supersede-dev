@@ -165,3 +165,44 @@
   .combat-screen .combat-fusion-status {flex-direction:column;align-items:stretch;}
   .combat-screen .combat-fusion-status .combat-action-btn {width:100%;}
 }
+
+/* CSS-only signature animations, independently keyed per cast.
+   Keep artwork, book pagination and portrait components untouched. */
+.combat-signature-action { border-color:#ac8f56; background:linear-gradient(135deg,#31271e,#1c1721); }
+.combat-signature-burst {
+  --signature-accent:#e99a50;
+  border:1px solid var(--signature-accent); border-radius:5px;
+  background:linear-gradient(120deg,#1b181e,#332318);
+  color:var(--signature-accent);font:700 13px/1.5 'JetBrains Mono',monospace;
+  letter-spacing:.055em;text-align:center;padding:9px;margin:7px 0;
+  animation:signature-banner 1.15s ease-out forwards;
+}
+.signature-phantom { --signature-accent:#ff7646; }
+.signature-titan { --signature-accent:#a9d4b7; }
+.signature-thunder { --signature-accent:#b8b7ff; }
+.combat-grid-cell { position:relative;overflow:hidden; }
+.signature-grid-flash {
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  border:2px solid var(--signature-accent);border-radius:4px;
+  box-shadow:inset 0 0 19px var(--signature-accent),0 0 9px var(--signature-accent);
+  opacity:0;animation:signature-cell 1.05s ease-out forwards;
+}
+.signature-grid-flash.signature-phantom { --signature-accent:#ff733b; }
+.signature-grid-flash.signature-titan { --signature-accent:#9ddaac; }
+.signature-grid-flash.signature-thunder { --signature-accent:#9998ff; }
+.combat-grid-cell.signature-preview-guard { outline:2px solid #a5d3b5;outline-offset:-3px; }
+@keyframes signature-banner {
+  0% {opacity:0;transform:scale(.97)}
+  22% {opacity:1;transform:scale(1.01)}
+  72% {opacity:1;transform:scale(1)}
+  100% {opacity:0;transform:scale(1)}
+}
+@keyframes signature-cell {
+  0% {opacity:0;transform:scale(.6)}
+  25% {opacity:.95;transform:scale(1)}
+  67% {opacity:.7}
+  100% {opacity:0;transform:scale(1)}
+}
+@media(prefers-reduced-motion:reduce){
+  .combat-signature-burst,.signature-grid-flash {animation:none;opacity:1;}
+}

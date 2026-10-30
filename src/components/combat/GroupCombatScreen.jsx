@@ -37,7 +37,8 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus }) {
+function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus,
+  signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,focused)
   const area=preview.squares
   function sideCells(side) {
@@ -52,17 +53,24 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
+      const fx=signatureFx?.side===side&&signatureFx.squares.some(
+        p=>p.rank===rank&&p.col===col)
+      const barrier=side==='hero'&&protectedPreview.some(
+        p=>p.rank===rank&&p.col===col)
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
           foe||mine?'occupied':'',selected?'selected-foe':'',
           inRange?'attackable':'',
-          splash?'splash':'',hazard?'hazard':'',step?'movable':''].join(' ')}
+          splash?'splash':'',hazard?'hazard':'',step?'movable':'',
+          barrier?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!foe:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
         aria-label={foe?foe.name+' '+foe.hp+' HP · '+
           (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
         onClick={()=>side==='enemy'?onFocus(foe.id):onMove({col,rank})}>
         <span>{foe?foe.icon:mine?'🧑':'·'}</span>
+        {fx&&<span key={signatureFx.id} aria-hidden="true"
+          className={'signature-grid-flash signature-'+signatureFx.kind}/>}
         <small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':mine?'YOU':['FRONT','MID','REAR'][rank]}</small>
       </button>
     }))
@@ -726,7 +734,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     ?(signature?.target==='enemy'?signature.attack:null)
     :previewSkill?groupSpellPattern(previewSkill.id):attack
   const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
-  const displayName=previewSkill?.label||attack.label
+  const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
   const preview=previewGroupAttack(foes,displayPattern,hero,chosen)
   const attackLegal=previewGroupAttack(foes,attack,hero,chosen).valid
   const canPlay=!busy&&!result
@@ -735,6 +743,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/2 AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
     <Battlefield foes={foes} hero={hero} focused={chosen} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
+      signatureFx={signatureFx}
+      protectedPreview={signaturePreview&&signature?.target==='self'
+        ?signaturePlan.squares:[]}
       onFocus={id=>setFocus(id)}
       onMove={point=>takeTurn('move',null,point)} />
     <div className="combat-group-enemies" aria-live="polite">

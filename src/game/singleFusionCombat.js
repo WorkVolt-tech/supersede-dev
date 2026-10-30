@@ -4,7 +4,7 @@
 import { getFusionRider } from './classElementFusion.js'
 
 export function initialSingleFusionGuard() {
-  return {ward:0,dodge:false,regenTurns:0,regenAmount:0}
+  return {ward:0,counter:0,dodge:false,regenTurns:0,regenAmount:0}
 }
 
 export function applySingleFusionHit(fusion,{foeHp,playerHp,maxPlayerHp,status={},guard=initialSingleFusionGuard()}={}) {
@@ -40,15 +40,18 @@ export function absorbSingleFusionDamage(damage,guard=initialSingleFusionGuard()
   const next={...guard}
   let remaining=Math.max(0,Math.round(Number(damage)||0))
   const messages=[]
+  let reflected=0
   if(remaining>0&&next.dodge){
     remaining=0;next.dodge=false
     messages.push('Shadow Fusion evades an incoming strike.')
   }else if(remaining>0&&next.ward>0) {
     const amount=Math.min(remaining,next.ward)
     remaining-=amount;next.ward-=amount
+    if(amount>0&&next.counter>0)reflected=next.counter
+    if(next.ward<=0)next.counter=0
     messages.push('Earth Fusion absorbs '+amount+' damage.')
   }
-  return {damage:remaining,guard:next,messages}
+  return {damage:remaining,guard:next,messages,reflected}
 }
 
 export function advanceSingleFusionRegen(hp,maxHp,guard=initialSingleFusionGuard()) {
