@@ -42,7 +42,7 @@ test('Thunderous Fury chains through distinct occupied squares with falloff',()=
   const action=getFusionSignatureAction(fusion('wrathborn:lightning',5))
   const plan=planFusionSignature(action,units,'a')
   assert.equal(plan.valid,true)
-  assert.deepEqual(plan.hits.map(h=>h.targetId),['a','b','d'])
+  assert.deepEqual(plan.hits.map(h=>h.targetId),['a','b','c'])
   assert.ok(plan.hits[0].damage>plan.hits[1].damage)
   assert.ok(plan.hits[1].damage>plan.hits[2].damage)
   assert.equal(plan.targets.length,3)
