@@ -69,3 +69,45 @@
 .twin-G_verdict.twin-attacking .judge-transformation .judge-figure{animation:judge-verdict-strike .7s ease-in-out}
 @keyframes judge-verdict-strike{0%{transform:scale(1) rotate(0)}45%{transform:scale(1.13) rotate(-2deg)}70%{transform:scale(1.07) rotate(2deg)}100%{transform:scale(1) rotate(0)}}
 @media(prefers-reduced-motion:reduce){.judge-transformation,.judge-transformation *{animation:none!important}}
+
+/* Artwork-specific masks: original WebP illustrations are 1024x1024.
+   Each copy stays in the exact same coordinates as the base artwork.
+   Carefully cropped sword/scales animate instead of unrelated body regions. */
+.judge-mercy .judge-sword,.judge-absolution .judge-sword{
+ clip-path:polygon(0% 83%,12% 73%,21% 62%,30% 51%,41% 47%,46% 54%,33% 67%,16% 81%);
+ transform-origin:36% 52%;
+}
+.judge-wrath .judge-sword,.judge-ruin .judge-sword{
+ clip-path:polygon(3% 94%,13% 80%,25% 63%,34% 52%,43% 47%,45% 57%,34% 69%,19% 86%);
+ transform-origin:37% 53%;
+}
+.judge-verdict .judge-sword{
+ clip-path:polygon(0% 87%,10% 78%,22% 64%,31% 53%,39% 47%,43% 55%,28% 70%,12% 84%);
+ transform-origin:35% 52%;
+}
+.judge-mercy .judge-scales,.judge-absolution .judge-scales{
+ clip-path:polygon(61% 27%,78% 27%,83% 39%,83% 59%,65% 60%,54% 57%,55% 39%);
+ transform-origin:66% 34%;
+}
+.judge-wrath .judge-scales,.judge-ruin .judge-scales{
+ clip-path:polygon(63% 27%,87% 29%,94% 51%,87% 66%,63% 65%,59% 47%);
+ transform-origin:77% 36%;
+}
+.judge-verdict .judge-scales{
+ clip-path:polygon(65% 29%,90% 31%,95% 58%,80% 64%,63% 61%);
+ transform-origin:77% 37%;
+}
+/* Attack variants: regal control, brute force, empowered impact, unified verdict. */
+.twin-attacking .judge-mercy .judge-sword,
+.twin-attacking .judge-absolution .judge-sword{animation:judge-mercy-cut .7s ease-in-out both}
+.twin-attacking .judge-wrath .judge-sword,
+.twin-attacking .judge-ruin .judge-sword{animation:judge-ruin-cut .7s cubic-bezier(.15,.8,.3,1) both}
+.twin-attacking .judge-verdict .judge-sword{animation:judge-verdict-cut .7s ease-in-out both}
+.twin-attacking .judge-verdict .judge-scales{animation:judge-verdict-balance .7s ease-in-out both}
+.twin-phase-3 .judge-ruin .judge-glow{animation-duration:.9s}
+.twin-phase-3 .judge-absolution .judge-glow{animation-duration:1.1s}
+@keyframes judge-mercy-cut{0%{transform:rotate(-2deg)}35%{transform:rotate(-12deg)}67%{transform:rotate(10deg)}100%{transform:rotate(0)}}
+@keyframes judge-ruin-cut{0%{transform:rotate(-4deg)}30%{transform:rotate(-22deg)}63%{transform:rotate(19deg)}100%{transform:rotate(0)}}
+@keyframes judge-verdict-cut{0%{transform:rotate(-4deg)}45%{transform:rotate(-18deg) scale(1.04)}65%{transform:rotate(13deg)}100%{transform:rotate(0)}}
+@keyframes judge-verdict-balance{0%{transform:rotate(-2deg)}50%{transform:rotate(10deg)}100%{transform:rotate(0)}}
+@media(prefers-reduced-motion:reduce){.twin-judges .judge-sword,.twin-judges .judge-scales{animation:none!important}}
