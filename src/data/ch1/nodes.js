@@ -89,7 +89,7 @@ GLITCH RAT x2 — HP 25 each, ATK 4`,
   fight_rats_2: {
     id: 'fight_rats_2', type: 'combat',
     text: `Two at once. You've done this before — or at least the System thinks you have.`,
-    enemy: { name:'Glitch Rats x2', icon:'🐀🐀', hp:50, atk:4, xp:60, loot:[{itemKey:'scrap_metal', qty:1}] },
+    enemy: { name:'Glitch Rats x2', groupSize:2, groupUnitName:'Glitch Rat', groupIcon:'🐀', groupWeapon:'dagger', icon:'🐀🐀', hp:50, atk:4, xp:60, loot:[{itemKey:'scrap_metal', qty:1}] },
     onWin: 'search_deeper',
     onLose: 'search_deeper',
     onEscape: 'search_deeper',
@@ -275,7 +275,7 @@ Behind a dumpster you also spot a dropped bag. First things first.`,
   fight_crawlers: {
     id: 'fight_crawlers', type: 'combat',
     text: `Three of them — they move like static, flickering between positions. Hard to track. But fragile.`,
-    enemy: { name:'Static Crawlers', icon:'🦎', hp:45, atk:4, xp:65, loot:[{itemKey:'scrap_metal', qty:1}] },
+    enemy: { name:'Static Crawlers', groupSize:3, groupUnitName:'Static Crawler', groupIcon:'🦎', groupWeapon:'dagger', icon:'🦎', hp:45, atk:4, xp:65, loot:[{itemKey:'scrap_metal', qty:1}] },
     onWin: 'alley_loot',
     onLose: 'alley_loot',
     onEscape: 'alley_loot',
@@ -436,7 +436,7 @@ They share a location pin. A supply stash and a spawn point where System entitie
     text: `Kai fights differently than you — calculated, methodical. You take the front. They cover angles.
 
 A pair of FRACTURE WOLVES materializes from between frozen cars. Their howl sounds like dial-up.`,
-    enemy: { name:'Fracture Wolves', icon:'🐺', hp:80, atk:6, xp:100, loot:[{itemKey:'knife', qty:1}] },
+    enemy: { name:'Fracture Wolves', groupSize:2, groupUnitName:'Fracture Wolf', groupIcon:'🐺', groupWeapon:'dagger', icon:'🐺', hp:80, atk:6, xp:100, loot:[{itemKey:'knife', qty:1}] },
     onWin: 'sys_track_done',
     onLose: 'street_midpoint',
     onEscape: 'street_midpoint',
@@ -1101,7 +1101,7 @@ They knew you were coming.`,
     text: `Marcus takes the right flank without being asked. He moves differently now — no hesitation, no wasted motion. Whatever the System changed in him, his instincts are sharper for it.
 
 You take the left. Five crawlers. Two fighters. The math is manageable.`,
-    enemy: { name:'Static Crawlers', icon:'🦎', hp:75, atk:5, xp:80, loot:[{itemKey:'scrap_metal',qty:2},{itemKey:'energy_drink',qty:1}] },
+    enemy: { name:'Static Crawlers', groupSize:5, groupUnitName:'Static Crawler', groupIcon:'🦎', groupWeapon:'dagger', icon:'🦎', hp:75, atk:5, xp:80, loot:[{itemKey:'scrap_metal',qty:2},{itemKey:'energy_drink',qty:1}] },
     onWin: 'garage_b2_clear',
     onLose: 'garage_b2_clear',
     onEscape: 'garage_b2_clear',
@@ -1112,7 +1112,7 @@ You take the left. Five crawlers. Two fighters. The math is manageable.`,
     text: `Five of them. Just you. They're not fast individually — but they work as a system. The moment you face one, another flanks you.
 
 You learn to keep moving. Never stop. Never let them get behind you.`,
-    enemy: { name:'Static Crawlers x5', icon:'🦎', hp:90, atk:6, xp:90, loot:[{itemKey:'scrap_metal',qty:2}] },
+    enemy: { name:'Static Crawlers x5', groupSize:5, groupUnitName:'Static Crawler', groupIcon:'🦎', groupWeapon:'dagger', icon:'🦎', hp:90, atk:6, xp:90, loot:[{itemKey:'scrap_metal',qty:2}] },
     onWin: 'garage_b2_clear',
     onLose: 'garage_b2_clear',
     onEscape: 'garage_b2_clear',

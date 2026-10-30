@@ -7,6 +7,7 @@
 // for every other fight.
 import ChoiceList from './ChoiceList'
 import CombatScreen from '../combat/CombatScreen'
+import GroupCombatScreen from '../combat/GroupCombatScreen'
 import ClassChoice from './ClassChoice'
 
 export default function StoryNode({ node, player, goTo, judgeCtx }) {
@@ -17,10 +18,14 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
   }
 
   if (node.type === 'combat' || node.type === 'boss') {
+    // Group encounters are opt-in. Bosses and legacy singles retain their
+    // existing, bespoke combat engine and script behavior.
+    const Screen = node.type === 'combat' && Number(node.enemy?.groupSize) >= 2
+      ? GroupCombatScreen : CombatScreen
     return (
       <div className="story-encounter">
       {node.text && <p className="story-text">{node.text}</p>}
-      <CombatScreen
+      <Screen
         key={node.id}
         enemyData={node.enemy}
         isBoss={node.type === 'boss' || Boolean(node.bossKey)}
