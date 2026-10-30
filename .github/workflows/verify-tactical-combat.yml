@@ -6,12 +6,14 @@ on:
     paths:
       - '.github/workflows/verify-tactical-combat.yml'
       - 'src/**'
+      - 'tests/browser/**'
       - 'package.json'
       - 'package-lock.json'
   pull_request:
     paths:
       - '.github/workflows/verify-tactical-combat.yml'
       - 'src/**'
+      - 'tests/browser/**'
       - 'package.json'
       - 'package-lock.json'
 
@@ -41,3 +43,16 @@ jobs:
             src/game/tacticalSkills.test.js
       - name: Build React application
         run: npm run build
+      - name: Install isolated Chromium smoke-test tools
+        run: |
+          npm install --no-save --package-lock=false playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Test live 3×3 group combat on desktop and mobile
+        run: node tests/browser/group-combat-smoke.mjs
+      - name: Upload battlefield screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tactical-browser-screenshots
+          path: test-artifacts/
+          if-no-files-found: ignore
