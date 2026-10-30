@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './lib/supabaseClient'
 import { usePlayerStore } from './store/usePlayerStore'
 import { useInventoryStore } from './store/useInventoryStore'
@@ -41,6 +41,9 @@ export default function App() {
   const [resetDialog, setResetDialog] = useState(false)
   const [resetBusy, setResetBusy] = useState(false)
   const [resetError, setResetError] = useState('')
+  const [driveSaving, setDriveSaving] = useState(false)
+  const [driveSaveError, setDriveSaveError] = useState('')
+  const driveSavingRef = useRef(false)
 
   const player = usePlayerStore(s => s.player)
   const loading = usePlayerStore(s => s.loading)
@@ -48,6 +51,7 @@ export default function App() {
   const loadPlayer = usePlayerStore(s => s.loadPlayer)
   const loadInventory = useInventoryStore(s => s.loadInventory)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
+  const unlockChapter = usePlayerStore(s => s.unlockChapter)
 
   // Track the login session
   useEffect(() => {
@@ -95,15 +99,33 @@ export default function App() {
     if (nextView === 'drive3' && !chapterTwoComplete(player)) return
     if (nextView === 'ch2' && !firstDriveComplete(player)) return
     if (nextView === 'ch3' && !secondDriveComplete(player)) return
+    if (nextView === 'drive' || nextView === 'drive3') setDriveSaveError('')
     setView(nextView)
   }
 
   async function finishDrive(result, destination) {
-    if (result === 'win' && player) {
-      const chapters = [...new Set([...(player.chapters_unlocked || [1]), destination])]
-      await updatePlayer({ chapters_unlocked: chapters })
+    if (result !== 'win') {
+      setDriveSaveError('')
+      setView('menu')
+      return
     }
-    setView('menu')
+    if (driveSavingRef.current) return
+    driveSavingRef.current = true
+    setDriveSaving(true)
+    try {
+      const saved = await unlockChapter(destination)
+      if (!saved.ok) {
+        setDriveSaveError(saved.error || 'Could not save your chapter unlock. Please retry.')
+        return
+      }
+      setDriveSaveError('')
+      setView('menu')
+    } catch (error) {
+      setDriveSaveError(error?.message || 'Could not save your chapter unlock. Please retry.')
+    } finally {
+      driveSavingRef.current = false
+      setDriveSaving(false)
+    }
   }
 
   if (session === undefined) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
@@ -122,8 +144,8 @@ export default function App() {
     'combat-demo': <CombatDemoPage />,
     'judges-preview': <JudgesPreviewPage onReturn={() => setView('menu')} />,
     'ch1-boss-preview': <ChapterOneBossPreviewPage onReturn={() => setView('menu')} />,
-    drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} />,
-    drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} />,
+    drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 2)} />,
+    drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 3)} />,
   }
 
   const archivedSections = {
