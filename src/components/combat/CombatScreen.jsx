@@ -131,7 +131,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [busy, setBusy] = useState(false)
   const weaponItem = equipped.find(item => item.equipped_slot === 'mainhand')
   const weaponType = tacticalWeaponType(weaponItem ? equipmentSubtype(weaponItem) : null)
-  const weaponAttacks = getTacticalAttacks(weaponType)
+  const weaponAttacks = getTacticalAttacks(weaponType, [], (player.weapon_mastery || {})[weaponType] || 0)
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]

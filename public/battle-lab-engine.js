@@ -169,7 +169,7 @@ function renderSide(side){
 }
 function renderActions(){
   const container=$('actions');container.replaceChildren();
-  for(const atk of getTacticalAttacks(state.weapon)){
+  for(const atk of getTacticalAttacks(state.weapon,[],state.mastery[state.weapon]||0)){
     const btn=document.createElement('button');
     btn.type='button';btn.className='action';
     btn.disabled=state.over;

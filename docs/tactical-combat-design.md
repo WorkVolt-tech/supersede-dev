@@ -1,6 +1,6 @@
 # SuperSede — Tactical Battle Design (Working Draft)
 
-**Status:** Working rules, not final balance. The 3×3 Battle Lab is the experiment; SuperSede's live combat has **not** been converted.
+**Status:** Initial live integration shipped for existing one-versus-one React encounters. Balancing and group-combat extensions remain experimental. Original boss move scripts remain active; tactical enemy positioning applies to ordinary encounters.
 
 ## 1. Battlefield and actions
 
@@ -10,7 +10,7 @@
 - The nine spaces per side are **positions**, not nine mandatory party members. Some may be empty. Companions, multi-tile bosses, traps, summoned creatures and terrain will come later.
 - Attacks should have two independently defined rules: **where the attacker can stand** and **which opposing spaces they can target**. An effect then determines **which additional spaces are hit**.
 - Every player class and enemy archetype needs a **viable turn** when frontline targets are absent. A weak System Pulse, legal from all nine squares against any enemy square, is the current fallback. It does not earn weapon mastery.
-- Movement cost remains unresolved. Battle Lab compares (A) 2 action points; (B) move ends turn; (C) one free move. Do **not** replace the existing SPD-based turn order until these are tested.
+- Live React encounters now use **2 player AP per round**: move one square for 1 AP, a standard weapon attack for 1 AP, a wide-area weapon attack for 2 AP, or a class/elemental/keystone ability for 2 AP. Each enemy acts once per round, before the player if its SPD is higher, otherwise after. The Battle Lab still offers comparisons.
 
 ## 2. Weapon attacks, class abilities, elemental skills
 
@@ -51,7 +51,7 @@ Possible future shapes: diagonal, cone, full 3×3, one entire row, random multi-
 
 An AoE action earns at most **one use** of mastery XP, not one point per enemy hit.
 
-## 4. Weapon mastery — proposed, not yet in the live RPG
+## 4. Weapon mastery — saved in the live RPG
 
 Mastery belongs to the **weapon family**, not the weapon instance. A rare sword therefore retains the user's Sword mastery earned with a common sword.
 
@@ -63,11 +63,11 @@ Mastery belongs to the **weapon family**, not the weapon instance. A rare sword 
 | 4 | 28 | +3 |
 | 5 | 48 | +4 |
 
-Current experiment: one XP per **successful weapon attack action**; even a multi-target strike counts once. The emergency System Pulse awards **no weapon mastery XP**. Mastery retains progress in the current page session across rematches and weapon changes, but does **not** persist to the database. These thresholds and damage amounts are placeholders.
+Live rule: one mastery XP per successful non-Pulse weapon attack, capped at six per encounter and **saved on victory** in players.weapon_mastery (JSONB). Training applies to the weapon family, not its item instance. Mastery now extends to level 100, with a modest +1 attack bonus every ten levels (maximum +9). Master Arc unlocks at level 20, Master Piercing at level 40, and Grand Resonance at level 80 for compatible weapon families. Skill levels are a separate 1–10 upgrade system using skill points.
 
 Potential later mastery rewards: new targeting patterns, reduced ranged penalties, an extra square of reach for specific skills, parry/counter chances, or unlockable signature techniques. **Do not automatically expand every attack's reach:** that would erase weapon identity.
 
-Live implementation must decide: persistence model (`weapon_mastery` JSONB or separate user-weapon table); whether to credit on victory, defeat or valid action; mastery XP caps per encounter; anti-idle/anti-farming controls; and whether equipped offhand attacks count. These need to be atomic with confirmed combat saves and should not use unverified player columns.
+Further balancing is still needed for offhand attacks, PvP, defeat credits, and stronger anti-farming protections. No mastery is granted for System Pulse, failed attacks, or skill-only actions.
 
 ## 5. Enemies follow the same tactical rules
 
@@ -87,4 +87,4 @@ Live implementation must decide: persistence model (`weapon_mastery` JSONB or se
 6. Decide mastery progression and persistence. Confirm rewards are saved exactly once with fight outcomes.
 7. Only then integrate the grid into `CombatScreen.jsx`, with a migration-safe fallback until battle mechanics are thoroughly tested on PC and mobile.
 
-**Key non-goal for now:** Do not modify the character schema, boss difficulty, XP/loot rewards or live story combat. The Battle Lab remains a reversible and isolated prototype.
+**Remaining work:** Multi-enemy encounters, per-class positional metadata for every class/elemental skill, boss telegraphs, and complete mobile balancing. Keep existing boss scripts, loot and level-up rewards intact while integrating those features.

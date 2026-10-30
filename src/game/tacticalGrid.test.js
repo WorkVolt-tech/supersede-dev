@@ -69,19 +69,22 @@ test('mastery advances by successful uses, not by equipped item id', () => {
   assert.equal(after.bow,10)
   assert.equal(before.sword,4)
   assert.equal(weaponMasteryLevel(after.sword),2)
-  assert.equal(weaponMasteryBonus(after.sword),1)
+  assert.equal(weaponMasteryBonus(after.sword),0)
   assert.equal(nextWeaponMasteryThreshold(after.sword),14)
 })
 
-test('mastery level is capped with small flat damage bonus', () => {
+test('mastery progresses to level 100 with modest bonuses', () => {
   assert.equal(weaponMasteryLevel(0),1)
   assert.equal(weaponMasteryLevel(4),1)
   assert.equal(weaponMasteryLevel(5),2)
   assert.equal(weaponMasteryLevel(14),3)
   assert.equal(weaponMasteryLevel(28),4)
   assert.equal(weaponMasteryLevel(48),5)
-  assert.equal(weaponMasteryLevel(500000),5)
-  assert.equal(weaponMasteryBonus(500000),4)
+  assert.equal(weaponMasteryLevel(500000),100)
+  assert.equal(weaponMasteryBonus(500000),9)
+  assert.equal(weaponMasteryBonus(48),0)
+  assert.equal(nextWeaponMasteryThreshold(500000),null)
+  assert.ok(nextWeaponMasteryThreshold(48)>48)
 })
 
 test('additional valid class abilities do not remove basic attacks or the fallback', () => {
@@ -100,4 +103,15 @@ test('enemy tactical AI uses legal attacks, moves when necessary and has a fallb
   const blocked=chooseTacticalEnemyAction('bow',front,back,
     [{col:1,rank:1},{col:0,rank:0},{col:2,rank:0}])
   assert.equal(blocked.attack.id,'pulse')
+})
+
+test('mastery techniques unlock at milestones without replacing baseline attacks', () => {
+  const starter=getTacticalAttacks('sword',[],0)
+  assert.ok(!starter.some(a=>a.id==='masterArc'))
+  assert.ok(!starter.some(a=>a.id==='masterBurst'))
+  const expert=getTacticalAttacks('sword',[],500000)
+  assert.ok(expert.some(a=>a.id==='masterArc'))
+  assert.ok(expert.some(a=>a.id==='masterBurst'))
+  assert.ok(expert.some(a=>a.id==='pulse'))
+  assert.ok(!getTacticalAttacks('sword',['masterLine'],0).some(a=>a.id==='masterLine'))
 })

@@ -22,6 +22,9 @@ export const TACTICAL_ATTACKS = {
   wave:        { label:'Resonance Wave',   reach:'mid',   from:[0,1,2],to:[0,1,2], cols:'any',   shape:'cross',  damage:4, ap:2 },
   volley:      { label:'Arrow Volley',     reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'cross',  damage:3, ap:2 },
   shockwave:   { label:'Shield Shockwave', reach:'mid',   from:[0],   to:[0,1],     cols:'near',  shape:'row',    damage:4, ap:2 },
+  masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
+  masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
+  masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2,masteryLevel:80 },
   pulse:       { label:'System Pulse',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:1, fallback:true },
 };
 
@@ -42,6 +45,15 @@ export const TACTICAL_WEAPONS = {
 
 // Match current equipmentSlots.js subtype spellings. Future classes and
 // monsters also use this normalization, rather than requiring their own rules.
+// Mastery adds techniques without removing any base-weapon reach.
+export const MASTERY_TECHNIQUES = {
+  sword:['masterArc','masterBurst'], dagger:['masterArc','masterLine'],
+  spear:['masterArc','masterLine'], staff:['masterLine','masterBurst'],
+  bow:['masterLine','masterBurst'], crossbow:['masterLine','masterBurst'],
+  pistol:['masterLine','masterBurst'], rifle:['masterLine','masterBurst'],
+  shotgun:['masterArc','masterBurst'], shield:['masterArc','masterBurst'],
+  tome:['masterLine','masterBurst'], unarmed:['masterArc','masterBurst'],
+}
 export const WEAPON_ALIASES = {
   shortbow:'bow', longbow:'bow',
   firearm:'pistol', gun:'pistol', handgun:'pistol', revolver:'pistol',
@@ -53,10 +65,13 @@ export function tacticalWeaponType(type) {
   const key=String(type || '').toLowerCase().replace(/[\s-]/g,'_');
   return TACTICAL_WEAPONS[key] ? key : WEAPON_ALIASES[key] || 'unarmed';
 }
-export function getTacticalAttacks(weaponType, classAttackIds=[]) {
+export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const type=tacticalWeaponType(weaponType);
-  const ids=[...TACTICAL_WEAPONS[type].attacks,
-    ...classAttackIds.filter(id=>Boolean(TACTICAL_ATTACKS[id]))];
+  const level=weaponMasteryLevel(masteryXp);
+  const mastered=MASTERY_TECHNIQUES[type].filter(id=>level>=TACTICAL_ATTACKS[id].masteryLevel);
+  const ids=[...TACTICAL_WEAPONS[type].attacks, ...mastered,
+    ...classAttackIds.filter(id=>Boolean(TACTICAL_ATTACKS[id]) &&
+      (!TACTICAL_ATTACKS[id].masteryLevel || level>=TACTICAL_ATTACKS[id].masteryLevel))];
   return [...new Set(ids)].map(id=>({id,...TACTICAL_ATTACKS[id]}));
 }
 
@@ -90,7 +105,10 @@ export function tacticalHitTargets(attack, target, units) {
 // Mastery is earned through USE of a weapon type, not a particular drop.
 // In the lab it stays in memory across rematches; live DB persistence and
 // anti-farming policies must be agreed before activating this system for real.
-export const MASTERY_XP_THRESHOLDS=[0,5,14,28,48];
+// Fast first tiers; level 100 is a sustained specialization milestone.
+export const MASTERY_XP_THRESHOLDS=Array.from({length:100},(_,i)=>
+  i<5?[0,5,14,28,48][i]:
+    48+7*(i-4)+Math.ceil((i-4)*(i-4)*0.4));
 export function weaponMasteryLevel(xp=0) {
   const value=Math.max(0,Math.floor(Number(xp)||0));
   let level=1;
@@ -98,7 +116,7 @@ export function weaponMasteryLevel(xp=0) {
   return level;
 }
 export function weaponMasteryBonus(xp=0) {
-  return weaponMasteryLevel(xp)-1; // +0..+4 damage in this prototype
+  return Math.floor((weaponMasteryLevel(xp)-1)/10); // +0..+9 base damage
 }
 export function awardWeaponMastery(mastery, weaponType, successfulHits=1) {
   const type=tacticalWeaponType(weaponType);
