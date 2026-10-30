@@ -17,12 +17,13 @@ export default function JudgesPreviewPage({onReturn}){
  const [hit,setHit]=useState(false)
  const [defeated,setDefeated]=useState(false)
  const effectTimer=useRef(null)
- useEffect(()=>()=>clearTimeout(effectTimer.current),[])
- function playHit(){clearTimeout(effectTimer.current);setHit(false);effectTimer.current=setTimeout(()=>{setHit(true);effectTimer.current=setTimeout(()=>setHit(false),450)},30)}
+ const effectResetTimer=useRef(null)
+ useEffect(()=>()=>{clearTimeout(effectTimer.current);clearTimeout(effectResetTimer.current)},[])
+ function playHit(){clearTimeout(effectTimer.current);clearTimeout(effectResetTimer.current);setHit(false);effectTimer.current=setTimeout(()=>{setHit(true);effectResetTimer.current=setTimeout(()=>setHit(false),450)},30)}
  const [replay,setReplay]=useState(0)
  const [ready,setReady]=useState(true)
  const markReady=useCallback(()=>setReady(true),[])
- function restartPreview(){clearTimeout(effectTimer.current);setReady(false);setAttacking(false);setHit(false);setDefeated(false);setReplay(n=>n+1)}
+ function restartPreview(){clearTimeout(effectTimer.current);clearTimeout(effectResetTimer.current);setReady(false);setAttacking(false);setHit(false);setDefeated(false);setReplay(n=>n+1)}
  const attackRestartTimer=useRef(null)
  useEffect(()=>()=>clearTimeout(attackRestartTimer.current),[])
  function playAttack(){
