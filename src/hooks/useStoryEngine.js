@@ -5,6 +5,7 @@ import { grantXp } from '../game/progression'
 import { grantLoot } from '../game/loot'
 import { useInventoryStore } from '../store/useInventoryStore'
 import { getJudgesForm } from '../game/judgesClassRules'
+import { ZONE_ELEMENT_MAP } from '../data/ch2/config'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -42,6 +43,14 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
+    // On entering a Chapter 2 elemental-zone root, commit the visit marker
+    // with the checkpoint. Separate writes can lose a zone's visit even after
+    // the player has left it, changing the Judges' scenario on reload.
+    if (chapterPrefix === 'ch2' && Object.hasOwn(ZONE_ELEMENT_MAP, resolvedId)) {
+      updates.ch2_elements_attempted = [...new Set([
+        ...(player.ch2_elements_attempted || []), resolvedId,
+      ])]
+    }
 
     if (NODES[resolvedId]?.type === 'end' && chapterNumber) {
       updates.chapters_completed = [...new Set([...(player.chapters_completed || []), chapterNumber])]
