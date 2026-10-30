@@ -18,7 +18,7 @@ const HUNTER_CAPTAIN = {
 
 const BOSS_AT_KILLS = 15
 
-export default function VehicleCanvas({ onComplete, destination = 2 }) {
+export default function VehicleCanvas({ onComplete, destination = 2, saving = false, saveError = '', onRetrySave }) {
   const canvasRef = useRef(null)
   const { getSprite } = useSprites()
   const [hud, setHud] = useState({ hp: 100, maxHp: 100, kills: 0, score: 0, bossActive: false })
@@ -219,11 +219,32 @@ export default function VehicleCanvas({ onComplete, destination = 2 }) {
         <span>SCORE {hud.score}</span>
       </div>
       {gameOver && (
-        <div style={{
-          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        <div role="status" aria-live="polite" style={{
+          position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', gap: 14, padding: 20, textAlign: 'center',
           background: 'rgba(0,0,0,.85)', color: '#e8dcc2', fontFamily: 'monospace', fontSize: 20,
         }}>
-          {gameOver === 'win' ? '✓ HUNTER CAPTAIN DOWN' : '✕ HULL BREACHED'}
+          {gameOver === 'win' ? (
+            <>
+              <strong>✓ HUNTER CAPTAIN DOWN</strong>
+              <p style={{fontSize: 14, margin: 0}}>
+                {saving ? 'Saving your Chapter ' + destination + ' unlock…'
+                  : saveError ? 'Your victory is safe here, but the chapter unlock was not saved.'
+                  : 'Confirming your Chapter ' + destination + ' unlock…'}
+              </p>
+              {saveError && (
+                <>
+                  <p role="alert" style={{fontSize: 12, maxWidth: 500, color: '#ffaf95', margin: 0}}>{saveError}</p>
+                  <button type="button" disabled={saving} onClick={onRetrySave}
+                    style={{padding: '12px 18px', borderRadius: 8, border: '1px solid #e8b850',
+                      background: '#423015', color: '#fff1d1', cursor: saving ? 'wait' : 'pointer',
+                      fontFamily: 'inherit', fontSize: 14}}>
+                    {saving ? 'Saving…' : 'Retry saving chapter unlock'}
+                  </button>
+                </>
+              )}
+            </>
+          ) : '✕ HULL BREACHED'}
         </div>
       )}
       {!gameOver && (
