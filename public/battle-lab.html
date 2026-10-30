@@ -9,7 +9,7 @@
     :root { font-family: system-ui,-apple-system,Segoe UI,sans-serif; color:#ece5d4; background:#0f111b; }
     * { box-sizing:border-box; }
     body { margin:0; min-height:100vh; background: radial-gradient(ellipse at top,#2b2036 0,#121521 52%,#0e111a 100%); }
-    main { width:min(980px,calc(100% - 28px)); margin:24px auto 60px; }
+    main { width:min(710px,calc(100% - 24px)); margin:20px auto 55px; }
     h1 { font-family:Georgia,serif; letter-spacing:.035em; font-size:clamp(26px,4.3vw,40px); margin:6px 0 3px; }
     h2 { font-size:15px; letter-spacing:.08em; text-transform:uppercase; color:#ebd39b; margin:0 0 12px; }
     p { line-height:1.5; }
@@ -29,10 +29,17 @@
     .stat { background:#252638; border:1px solid #44425a; border-radius:8px; padding:10px 12px; font-size:13px; }
     .stat strong { color:#f8cf80; }
     .fieldheads { display:grid; grid-template-columns:1fr 1fr; text-align:center; gap:8px; margin-bottom:8px; color:#c9beab; font-size:12px; font-weight:700; letter-spacing:.12em; }
-    .board { display:grid; gap:7px; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); }
-    .cell { min-width:0; aspect-ratio:1.28; min-height:60px; border:1px solid #53566c; border-radius:9px; background:linear-gradient(155deg,#2b2c42,#1e2335); color:#e8e7ee; cursor:pointer; position:relative; display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; padding:4px; }
+    .battlefield { margin: 0 auto; width: min(100%, 450px); padding: 12px; border-radius: 14px; background: linear-gradient(180deg, rgba(91,46,61,.19),rgba(49,46,68,.28),rgba(30,97,95,.18)); border:1px solid #64536a; }
+    .side-label { text-align:center; margin:4px 0 8px; color:#e6c8c6; font:700 11px system-ui,sans-serif; letter-spacing:.17em; }
+    .side-label.allies { color:#a7e3d5; margin-top:12px; }
+    .board { display:grid; gap:6px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .frontline { width:100%; display:flex; align-items:center; justify-content:center; gap:9px; padding:12px 0; color:#ead59e; font-size:10px; letter-spacing:.17em; text-align:center; }
+    .frontline:before,.frontline:after { content:''; height:1px; flex:1; background:linear-gradient(90deg, transparent,#d09e65,transparent); }
+    .zone-note { text-align:center; font-size:10px; color:#b6b0bc; margin:7px 0 10px; }
+    .cell { min-width:0; aspect-ratio:1.42; min-height:57px; border:1px solid #53566c; border-radius:9px; background:linear-gradient(155deg,#2b2c42,#1e2335); color:#e8e7ee; cursor:pointer; position:relative; display:flex; flex-direction:column; gap:3px; align-items:center; justify-content:center; padding:4px; }
     .cell.enemy { background:linear-gradient(155deg,#412532,#292231); border-color:#805164; }
-    .cell.front-border { border-left:3px solid #e1b66c; }
+    .cell.front-border { border-bottom:3px solid #e1b66c; }
+    .cell.ally-front { border-top:3px solid #e1b66c; }
     .cell.hero { background:#284c54; border-color:#76d5c4; }
     .cell.reachable { border-color:#7cbdeb; box-shadow:inset 0 0 0 2px #3e7ba8; }
     .cell.targetable { border-color:#edbc69; box-shadow:inset 0 0 0 2px #b0793f; background:#593b36; }
@@ -40,7 +47,7 @@
     .cell small { color:#b5b7c3; font-size:clamp(8px,1.4vw,11px); }
     .cell.targetable small { color:#ffe2a8; }
     .cell .hp { font-size:10px; color:#ffe5dc; }
-    .ranks { display:grid; grid-template-columns:repeat(var(--cols),minmax(0,1fr)); margin:6px 0; color:#9b95a9; font-size:10px; text-align:center; }
+    .ranks { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); margin:6px 0 10px; color:#b9afbd; font-size:10px; text-align:center; }
     .actions { display:flex; flex-wrap:wrap; gap:8px; }
     .action { text-align:left; flex:1 1 135px; min-height:62px; padding:10px 12px; cursor:pointer; border:1px solid #5a526d; border-radius:10px; background:#252536; color:#e9e2d7; }
     .action[aria-pressed=true] { background:#443247; border-color:#e4b97e; }
@@ -60,16 +67,10 @@
 <main>
   <div class="eyebrow">SUPERSEDE · EXPERIMENTAL · NOT LIVE COMBAT</div>
   <h1>Battle Lab</h1>
-  <p class="lead">A playable position-based combat sketch: two lanes, three depth ranks per side, positional attacks and several movement-cost rules. Experiment here without changing your character, saved progress, or existing battles.</p>
+  <p class="lead">A portrait-friendly tactical encounter: <strong>nine squares per side</strong>, three columns and three ranks. Enemies appear above your team, with both front rows meeting at the center. Try positional targeting and different movement-cost rules without affecting saved progress.</p>
 
   <section class="panel toolbar" aria-label="Battle Lab configuration">
-    <fieldset>
-      <legend>Spaces per side</legend>
-      <div class="choices" id="size-options">
-        <button type="button" class="pill" data-size="3" aria-pressed="true">6 spaces · 2 × 3</button>
-        <button type="button" class="pill" data-size="2" aria-pressed="false">4 spaces · 2 × 2</button>
-      </div>
-    </fieldset>
+
     <fieldset>
       <legend>Movement costs</legend>
       <div class="choices" id="movement-options">
@@ -87,19 +88,24 @@
       <div class="stat">Actions left: <strong id="ap">2 AP</strong></div>
       <div class="stat">Opponents: <strong id="foes-left">2</strong></div>
     </div>
-    <div class="fieldheads"><span>ALLIES</span><span>ENEMIES</span></div>
-    <div class="ranks" id="ranks"></div>
-    <div class="board" id="board" aria-label="Two-lane battlefield. Select an ally square to move or a highlighted enemy to attack."></div>
-    <p class="hint" style="margin-top:12px">Blue outlines are one-step movement options. Gold outlines mark enemies your selected attack can reach. Only the hero is controllable in this prototype; unoccupied spaces are reserved for future allies.</p>
+    <div class="battlefield" aria-label="Vertical tactical battlefield, enemies above allies">
+      <div class="side-label">▼ ENEMIES · 3 × 3</div>
+      <div class="board" id="enemy-board" aria-label="Enemy battlefield: rear row at the top, front row nearest your team"></div>
+      <div class="frontline">FRONT LINE</div>
+      <div class="board" id="ally-board" aria-label="Your battlefield: front row nearest the enemies, rear row at the bottom"></div>
+      <div class="side-label allies">▲ YOUR SIDE · 3 × 3</div>
+      <div class="ranks" id="ranks" aria-hidden="true"><span>LEFT</span><span>CENTER</span><span>RIGHT</span></div>
+    </div>
+    <p class="hint" style="margin-top:12px">Each side has three columns (left, center, right) and three ranks (front, middle, rear). Blue outlines show one-square movement; gold outlines show valid targets. Only your hero is controllable for now; empty squares are reserved for allies.</p>
   </section>
 
   <section class="panel">
     <h2>Choose your attack</h2>
     <div class="actions" id="actions">
-      <button type="button" class="action" data-attack="slash" aria-pressed="true"><b>⚔ Slash</b><span>Front rank → front enemy, same lane · 6 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="spear" aria-pressed="false"><b>🔱 Spear</b><span>Mid/front → enemy front/mid, same lane · 5 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="bow" aria-pressed="false"><b>🏹 Bow</b><span>Rear/mid → any enemy · 4 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="burst" aria-pressed="false"><b>✨ Elemental Burst</b><span>Any rank → target + adjacent tile, same lane · 5 dmg · 2 AP</span></button>
+      <button type="button" class="action" data-attack="slash" aria-pressed="true"><b>⚔ Slash</b><span>Front rank → enemy front, same column · 6 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="spear" aria-pressed="false"><b>🔱 Spear</b><span>Middle/front → enemy front/middle, same column · 5 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="bow" aria-pressed="false"><b>🏹 Bow</b><span>Rear/middle → any enemy · 4 dmg · 1 AP</span></button>
+      <button type="button" class="action" data-attack="burst" aria-pressed="false"><b>✨ Elemental Burst</b><span>Any rank → target + adjacent tiles · 5 dmg · 2 AP</span></button>
     </div>
     <div class="bottom">
       <button type="button" class="mainbtn" id="end-turn">End turn</button>
@@ -112,7 +118,7 @@
     <h2>Combat log</h2>
     <ol class="log" id="log" aria-live="polite"></ol>
   </section>
-  <p class="disclaimer">Design prototype only. Enemy behavior, damage numbers and the three movement modes are placeholders for testing positioning—not the final SuperSede rules. No Supabase connection, rewards, or XP changes.</p>
+  <p class="disclaimer">Battle Lab only: nine squares on each side in a book-friendly vertical layout. The targeting rules, enemy AI and movement options are experimental. No changes to SuperSede's live combat, Supabase data, rewards, or XP.</p>
 </main>
 <script>
 (function () {
