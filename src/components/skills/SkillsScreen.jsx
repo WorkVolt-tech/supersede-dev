@@ -10,7 +10,8 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
-import { getFusionEligibility, unlockFusionPair, FUSION_UNLOCK_COST,
+import { getFusionEligibility, unlockFusionPair, fusionMasteryLevel,
+  getFusionSignature, FUSION_UNLOCK_COST,
   FUSION_MIN_LEVEL, FUSION_MIN_CLASS_NODES, FUSION_MIN_ELEMENT_NODES } from '../../game/classElementFusion'
 import './SkillsScreen.css'
 
@@ -202,6 +203,9 @@ export default function SkillsScreen({ onReturn }) {
             <p>Only one elemental attack can occupy the four combat slots. Other unlocked attacks remain learned.</p>
             {player.active_class&&(()=>{
               const fusion=getFusionEligibility(player,elementKey)
+              const fusionXp=Math.max(0,player.fusion_mastery?.[fusion.pair]||0)
+              const fusionLevel=fusionMasteryLevel(fusionXp)
+              const signature=getFusionSignature({key:fusion.pair,level:5})
               return <div className="skills-fusion-unlock">
                 <h3>✦ Class–element fusion</h3>
                 <p>{player.active_class} + {elementKey} · {fusion.unlocked?'Unlocked':
@@ -211,7 +215,15 @@ export default function SkillsScreen({ onReturn }) {
                   Unlock costs {FUSION_UNLOCK_COST} SP. Progress: Lv {fusion.level},
                   {' '}{fusion.classNodes} class nodes, {fusion.elementNodes} element nodes.</p>
                 {fusion.unlocked
-                  ?<p>Fusion mastery is tracked separately for this pairing.</p>
+                  ?<div>
+                    <p>Fusion Mastery Lv {fusionLevel}/10 · {fusionXp} XP.
+                      This pairing keeps its own progress when you change elements.</p>
+                    {signature&&<p>✦ Signature: <strong>{signature}</strong>
+                      {' · '}{fusionLevel>=5?'Available in combat':'Unlocks at Fusion Lv 5'}.
+                      {' '}Attack pattern expands at Fusion Lv 8 and Lv 10.</p>}
+                    {!signature&&<p>This pairing has an elemental infusion, with
+                      independent fusion mastery. No signature active is defined yet.</p>}
+                  </div>
                   :<button type="button" disabled={saving||!fusion.canUnlock}
                     onClick={()=>unlockFusion(elementKey)}>
                     Unlock this fusion · {FUSION_UNLOCK_COST} SP
