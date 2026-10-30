@@ -24,6 +24,7 @@ import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
+import TwinJudgesPortrait from './TwinJudgesPortrait'
 
 function HpBar({ hp, maxHp }) {
   const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100))
@@ -284,7 +285,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       <div className="combat-turn-banner" aria-live="polite">{turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
       <div className="combat-panel">
         <div className="combat-side">
-          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : /watcher/i.test(enemyData.name) ? <WatcherPortrait attacking={turnActor === 'enemy'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
+          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} /> : /watcher/i.test(enemyData.name) ? <WatcherPortrait attacking={turnActor === 'enemy'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
           <span className="combat-name">{enemyData.name}</span>
           <HpBar hp={enemyHp} maxHp={enemyData.hp} />
           <span className="combat-hp-num">{enemyHp}/{enemyData.hp}</span>
