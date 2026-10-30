@@ -138,8 +138,8 @@ async function verifyMastery(page) {
     {name:/Sword Slash/}).click()
   check((await page.locator('.combat-attack-preview').textContent()).includes('diamond2'),
     'mastery: Sword Slash did not evolve')
-  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===6,
-    'mastery: front-rank diamond2 should cover 6 board squares')
+  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===7,
+    'mastery: front-centre diamond2 should cover 7 board squares')
   await page.locator('.combat-tactical-weapons').getByRole('button',
     {name:/System Pulse/}).click()
   check((await page.locator('.combat-attack-preview').textContent()).includes('single'),
