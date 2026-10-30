@@ -55,13 +55,18 @@ An AoE action earns at most **one use** of mastery XP, not one point per enemy h
 
 Mastery belongs to the **weapon family**, not the weapon instance. A rare sword therefore retains the user's Sword mastery earned with a common sword.
 
-| Mastery level | Cumulative successful-use XP | Current lab-only damage boost |
+| Mastery level | Cumulative successful-use XP | Damage bonus |
 | --- | ---: | ---: |
 | 1 | 0 | +0 |
-| 2 | 5 | +1 |
-| 3 | 14 | +2 |
-| 4 | 28 | +3 |
-| 5 | 48 | +4 |
+| 2 | 5 | +0 |
+| 3 | 14 | +0 |
+| 4 | 28 | +0 |
+| 5 | 48 | +0 |
+| 10 | 93 | +0 |
+| 11 | 103 | +1 |
+| 100 | 4,356 | +9 |
+
+The leveling curve uses a growing threshold formula, and unlock thresholds (20/40/80) emphasize new techniques over raw damage.
 
 Live rule: one mastery XP per successful non-Pulse weapon attack, capped at six per encounter and **saved on victory** in players.weapon_mastery (JSONB). Training applies to the weapon family, not its item instance. Mastery now extends to level 100, with a modest +1 attack bonus every ten levels (maximum +9). Master Arc unlocks at level 20, Master Piercing at level 40, and Grand Resonance at level 80 for compatible weapon families. Skill levels are a separate 1–10 upgrade system using skill points.
 

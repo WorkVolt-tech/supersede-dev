@@ -388,8 +388,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     dmg = keystoneHit.damage
     // Existing ATK/DEF, criticals, status and gear effects remain the basis.
     // Tactical weapon techniques provide small relative modifiers only.
-    dmg += attack.fallback ? 0 : Math.max(0, attack.damage - 4) +
-      weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
+    dmg = attack.fallback
+      ? Math.max(1, Math.round(dmg * .25))
+      : dmg + Math.max(0, attack.damage - 4) +
+        weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     const newEnemyHp = Math.max(0, foeHp - dmg)
@@ -511,7 +513,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
       moveTo.rank<0||moveTo.rank>2 ||
       Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
-    const cost=action==='end'?actionPointsRef.current:
+    const freeStance=action==='skill' &&
+      (skillId==='stance_solar'||skillId==='stance_lunar')
+    // Keystone utilities that explicitly specify consumesTurn=false in
+    // elementalKeystones; leave them available even after spending 1 AP.
+    const freeKeystone=action==='keystone' &&
+      ['lightning_util_ks','arcane_util_ks','shadow_util_ks','wind_util_ks'].includes(skillId)
+    const cost=freeStance||freeKeystone?0:
+      action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:action==='move'?1:2
     if (cost > actionPointsRef.current) return
     if (action === 'skill' && !ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
@@ -699,7 +708,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           <button type="button" className="combat-action-btn" disabled={busy || !entranceReady}
             onClick={() => takeTurn('end')}>End turn</button>
           {activeSkills.map(skill => (
-            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2 || skill.available===false} onClick={() => takeTurn('skill', skill.id)}>
+            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
+              (actionPoints<2 && !['stance_solar','stance_lunar'].includes(skill.id)) ||
+              skill.available===false} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
             </button>
@@ -718,7 +729,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {keystones.map(keystone => (
             <button key={keystone.id} type="button" className="combat-action-btn"
               title={keystone.desc}
-              disabled={busy || !entranceReady || !keystone.available || actionPoints<2}
+              disabled={busy || !entranceReady || !keystone.available ||
+                (actionPoints<2 && !['lightning_util_ks','arcane_util_ks','shadow_util_ks','wind_util_ks'].includes(keystone.id))}
               onClick={() => takeTurn('keystone', keystone.id)}>
               {keystone.label}
               <span className="combat-action-sub">
