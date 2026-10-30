@@ -45,3 +45,107 @@
 @keyframes ch1-vanish{0%{opacity:1;transform:scale(1)}30%{opacity:.9;transform:translateY(-9px) scale(1.03)}100%{opacity:0;transform:translateY(27px) scale(.65);filter:blur(12px)}}
 @keyframes ch1-energy-out{0%{opacity:.7}100%{opacity:0}}
 @media(prefers-reduced-motion:reduce){.ch1-boss,.ch1-boss *{animation:none!important}.ch1-defeated .ch1-boss-body{opacity:.2}}
+
+
+/* Signature choreography keyed to the move actually selected by enemyAI.js.
+   These are purely visual; no battle rules, timers or damage values change. */
+.ch1-sentinel.ch1-attacking.ch1-attack-eye .ch1-boss-body{animation:ch1-sentinel-aim .65s ease-in-out both}
+.ch1-sentinel.ch1-attacking.ch1-attack-eye .ch1-boss-energy{clip-path:ellipse(10% 11% at 55% 23%);animation:ch1-eye-charge .65s ease-out both}
+.ch1-sentinel.ch1-attacking.ch1-attack-eye .ch1-boss-burst,
+.ch1-sentinel.ch1-attacking.ch1-attack-roar .ch1-boss-burst{
+ inset:auto;left:55%;top:23%;width:20%;aspect-ratio:1;
+ animation:ch1-eye-shockwave .65s ease-out both;
+}
+.ch1-sentinel.ch1-attacking.ch1-attack-roar .ch1-boss-body{animation:ch1-sentinel-roar .65s ease-out both}
+.ch1-sentinel.ch1-attacking.ch1-attack-roar .ch1-boss-energy{clip-path:ellipse(16% 16% at 55% 23%);animation:ch1-eye-charge .65s ease-out both}
+.ch1-sentinel.ch1-attacking.ch1-attack-strike .ch1-boss-body{animation:ch1-heavy-attack .65s ease-in-out both}
+
+.ch1-surveyor.ch1-attacking.ch1-attack-scan .ch1-boss-body{animation:ch1-surveyor-scan .65s ease-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-scan .ch1-boss-energy{animation:ch1-scan-sweep .65s ease-in-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-scan .ch1-boss-burst{
+ inset:12% 10% auto;height:55%;border-radius:12%;
+ animation:ch1-scan-ring .65s ease-out both;
+}
+.ch1-surveyor.ch1-attacking.ch1-attack-drone .ch1-boss-body{animation:ch1-drone-volley .65s ease-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-drone .ch1-boss-energy{animation:ch1-drone-glow .65s ease-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-burst .ch1-boss-body{animation:ch1-surveyor-overload .65s ease-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-burst .ch1-boss-energy{animation:ch1-drone-glow .65s ease-out both}
+.ch1-surveyor.ch1-attacking.ch1-attack-burst .ch1-boss-burst{animation:ch1-burst-shock .65s ease-out both}
+
+.ch1-unseen.ch1-attacking.ch1-attack-rush .ch1-boss-body{animation:ch1-ghost-attack .65s ease-out both}
+.ch1-unseen.ch1-attacking.ch1-attack-disperse .ch1-boss-body{animation:ch1-ghost-disperse .65s ease-in-out both}
+.ch1-unseen.ch1-attacking.ch1-attack-disperse .ch1-boss-energy{animation:ch1-mist-burst .65s ease-out both}
+.ch1-unseen.ch1-attacking.ch1-attack-form .ch1-boss-body{animation:ch1-ghost-consolidate .65s ease-out both}
+.ch1-unseen.ch1-attacking.ch1-attack-form .ch1-boss-energy{animation:ch1-mist-burst .65s ease-out both}
+
+@keyframes ch1-sentinel-aim{
+ 0%,100%{transform:translateY(0) scale(1)}
+ 40%{transform:translateY(-6px) scale(1.035)}
+ 65%{transform:translateY(1px) scale(1.02)}
+}
+@keyframes ch1-sentinel-roar{
+ 0%,100%{transform:scale(1)}
+ 30%{transform:scale(.97) translateY(4px)}
+ 65%{transform:scale(1.1) translateY(-9px);filter:brightness(1.5)}
+}
+@keyframes ch1-eye-charge{
+ 0%{opacity:.15;transform:scale(.7);filter:brightness(1)}
+ 45%{opacity:1;transform:scale(1.4);filter:brightness(3)}
+ 75%{opacity:1;transform:scale(1.75);filter:brightness(2.8)}
+ 100%{opacity:.2;transform:scale(1);filter:brightness(1)}
+}
+@keyframes ch1-eye-shockwave{
+ 0%,25%{opacity:0;transform:translate(-50%,-50%) scale(.2)}
+ 44%{opacity:1;transform:translate(-50%,-50%) scale(.7)}
+ 100%{opacity:0;transform:translate(-50%,-50%) scale(5)}
+}
+@keyframes ch1-surveyor-scan{
+ 0%,100%{transform:rotate(0) scale(1)}
+ 45%{transform:rotate(-6deg) scale(1.04)}
+ 70%{transform:rotate(4deg) scale(1.02)}
+}
+@keyframes ch1-scan-sweep{
+ 0%{opacity:0;transform:translateX(-24%) scaleX(.65)}
+ 50%{opacity:1;transform:translateX(0) scaleX(1.14);filter:brightness(3)}
+ 100%{opacity:0;transform:translateX(24%) scaleX(.65)}
+}
+@keyframes ch1-scan-ring{
+ 0%{opacity:0;transform:scaleX(.4)}
+ 50%{opacity:.95;transform:scaleX(1)}
+ 100%{opacity:0;transform:scaleX(1.25)}
+}
+@keyframes ch1-drone-volley{
+ 0%,100%{transform:translateX(0) scale(1)}
+ 24%{transform:translateX(-9px) rotate(-5deg) scale(1.03)}
+ 50%{transform:translateX(9px) rotate(5deg) scale(1.07)}
+ 75%{transform:translateX(-4px) rotate(-3deg) scale(1.02)}
+}
+@keyframes ch1-drone-glow{
+ 0%,100%{opacity:.25;filter:brightness(1.5)}
+ 25%,65%{opacity:1;filter:brightness(3)}
+}
+@keyframes ch1-surveyor-overload{
+ 0%,100%{transform:scale(1);filter:brightness(1)}
+ 45%{transform:scale(1.15) rotate(8deg);filter:brightness(1.6)}
+ 67%{transform:scale(1.08) rotate(-8deg);filter:brightness(2)}
+}
+@keyframes ch1-burst-shock{
+ 0%{opacity:0;transform:scale(.3)}
+ 40%{opacity:1;transform:scale(.85)}
+ 100%{opacity:0;transform:scale(1.85)}
+}
+@keyframes ch1-ghost-disperse{
+ 0%,100%{opacity:1;filter:blur(0);transform:translateX(0) scale(1)}
+ 42%{opacity:.14;filter:blur(14px);transform:translateX(35px) scale(1.15)}
+ 72%{opacity:.32;filter:blur(10px);transform:translateX(-12px) scale(.9)}
+}
+@keyframes ch1-ghost-consolidate{
+ 0%,100%{opacity:1;filter:blur(0);transform:scale(1)}
+ 28%{opacity:.12;filter:blur(15px);transform:scale(1.3)}
+ 58%{opacity:1;filter:blur(0);transform:scale(.83)}
+ 77%{opacity:1;filter:brightness(1.75);transform:scale(1.1)}
+}
+@keyframes ch1-mist-burst{
+ 0%,100%{opacity:.2;transform:scale(1);filter:blur(3px)}
+ 45%{opacity:.9;transform:scale(1.4) rotate(12deg);filter:blur(12px)}
+}
