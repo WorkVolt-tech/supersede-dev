@@ -8,6 +8,7 @@ import { getJudgesForm } from '../game/judgesClassRules'
 import { ZONE_ELEMENT_MAP } from '../data/ch2/config'
 import { resolveCh2HubInterrupt } from '../data/ch2/hubInterrupts'
 import { getChapterResonance } from '../data/ch2/elementalDifficulty'
+import { getActiveElement } from '../game/activeElement'
 
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
@@ -117,6 +118,9 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         const element = cur.bossKey.slice('zone_boss_'.length)
         if (Object.values(ZONE_ELEMENT_MAP).includes(element)) {
           defeated.push('element_resonance_' + element)
+          // The first guardian also activates the matching element, unless
+          // this character has a different, previously chosen active tree.
+          if (!getActiveElement(player)) updates.element = element
         }
       }
       updates.defeated_bosses = defeated
