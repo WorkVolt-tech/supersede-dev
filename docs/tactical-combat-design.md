@@ -35,7 +35,7 @@ A *character loadout*, not each individual attack, needs a mixture of **short / 
 
 Weapon subtype aliases follow the current `src/game/equipmentSlots.js` definitions. Unknown items fall back to Unarmed rather than soft-locking a fight.
 
-**Class skills and elemental skills:** These add their own targeting specifications atop the weapon kit. They should not replace or remove the emergency fallback. Some can be ranged from any row; others depend on front/middle/rear formation or exploit displaced enemies. Not every class should have identical attack power at every range.
+**Class skills and elemental skills:** These add targeting specifications atop the weapon kit. All 101 active class abilities and 30 elemental attacks are now categorized as self/support, close, mid or long in `src/game/tacticalSkills.js`. Close skills require a frontline/middle stance and a nearby enemy; mid skills can be cast from any rank into a nearby column; long skills can reach any cell; self/support actions remain available regardless of position. Out-of-range buttons are disabled with a movement prompt. This metadata currently gates **single-enemy** effects; group-target damage application is a separate phase.
 
 **Existing classes:** The current `src/game/classes.js` has 21 class keys; the shared base weapon kit currently guarantees range coverage for each. Distinct class signatures are **not yet mapped**. Next design phase: tag each existing active class skill with valid origins, targets, AoE shape and any push/pull/swap effects. Review skills individually, preserving the existing class unlock requirements.
 

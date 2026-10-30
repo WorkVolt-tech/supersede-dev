@@ -27,6 +27,7 @@ import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
   tacticalWeaponType, getTacticalAttacks, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
@@ -523,11 +524,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:action==='move'?1:2
     if (cost > actionPointsRef.current) return
-    if (action === 'skill' && !ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
-      .some(skill=>skill.id===skillId && skill.available!==false)) return
+    if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
+      .some(skill=>skill.id===skillId && skill.available!==false) ||
+      !canUseTacticalSkill(skillId,heroPosition,enemyPosition))) return
     if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
       .some(keystone => keystone.id === skillId && keystone.available)) return
-    if (action === 'elemental' && (!canUseElementalAttack(combatPlayer, skillId) ||
+    if (action === 'elemental' && (!canUseTacticalSkill(skillId,heroPosition,enemyPosition) ||
+        !canUseElementalAttack(combatPlayer, skillId) ||
         (elementalCooldowns[skillId] || 0) > 0 ||
         mpRef.current < getAttackMpCost(combatPlayer, skillId, statusEffectsRef.current))) return
     setBusy(true)
@@ -710,20 +713,28 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {activeSkills.map(skill => (
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
               (actionPoints<2 && !['stance_solar','stance_lunar'].includes(skill.id)) ||
-              skill.available===false} onClick={() => takeTurn('skill', skill.id)}>
+              skill.available===false ||
+              !canUseTacticalSkill(skill.id,heroPosition,enemyPosition)} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
+              {getTacticalSkillRule(skill.id) && <span className="combat-action-sub">
+                {getTacticalSkillRule(skill.id).label}
+                {!canUseTacticalSkill(skill.id,heroPosition,enemyPosition) && ' · MOVE TO REACH'}
+              </span>}
             </button>
           ))}
           {elementalAttack && <button type="button" className="combat-action-btn"
             disabled={busy || !entranceReady || actionPoints<2 || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
-              currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)}
+              currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current) ||
+              !canUseTacticalSkill(elementalAttack.id,heroPosition,enemyPosition)}
             onClick={() => takeTurn('elemental', elementalAttack.id)}>
             {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
                 ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
                 : `${getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current)} MP · ${elementalAttack.element}`}
+              {' · '}{getTacticalSkillRule(elementalAttack.id)?.label}
+              {!canUseTacticalSkill(elementalAttack.id,heroPosition,enemyPosition) && ' · MOVE TO REACH'}
             </span>
           </button>}
           {keystones.map(keystone => (
