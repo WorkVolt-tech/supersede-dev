@@ -24,6 +24,24 @@ export function applyKeystoneStatuses(status, changes = {}) {
   }
 }
 
+// Earth: Stoneborn builds when Defending once the defensive tier is learned.
+// Fault Line uses those stacks to pierce the enemy's defense on basic attacks.
+// These rules are from the original Chapter 2 elemental combat engine.
+export function applyStonebornDefend(player, status) {
+  if (getActiveElement(player) !== 'earth' ||
+      !(player?.elemental_unlocked || []).includes('earth_def_3')) return 0
+  const stacks = Math.min(3, (status.cfx_stonebornStacks || 0) + 1)
+  status.cfx_stonebornStacks = stacks
+  return stacks
+}
+
+export function stonebornArmorPierce(player, status, enemyDef) {
+  if (getActiveElement(player) !== 'earth' ||
+      !(player?.elemental_unlocked || []).includes('earth_aggr_3')) return 0
+  const stacks = Math.max(0, status.cfx_stonebornStacks || 0)
+  return Math.round(Math.max(0, enemyDef) * Math.min(0.9, 0.30 * stacks))
+}
+
 // Called instead of the enemy AI when a keystone (or class skill) stunned it.
 export function consumeEnemyStun(status) {
   if ((status.enemyStunTurns || 0) > 0) {
@@ -38,6 +56,7 @@ export function consumeEnemyStun(status) {
 }
 
 import { aegisMpGain } from './combatMp.js'
+import { getActiveElement } from './activeElement.js'
 
 export function resolveKeystoneDefense(status, incoming) {
   const messages = []
@@ -54,7 +73,7 @@ export function resolveKeystoneDefense(status, incoming) {
     }
     if (status.cfx_forgeDef) damage = Math.round(damage * 0.7)
     if (status.cfx_stonebornStacks > 0) {
-      damage = Math.round(damage * Math.max(0.5, 1 - status.cfx_stonebornStacks * 0.05))
+      damage = Math.round(damage * (1 - Math.min(0.60, status.cfx_stonebornStacks * 0.16)))
     }
     if (status.cfx_dodgeBuffTurns > 0 && Math.random() < 0.25) {
       damage = 0
