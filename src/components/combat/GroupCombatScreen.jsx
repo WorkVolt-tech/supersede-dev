@@ -17,6 +17,7 @@ import { getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget } from '../../game/tacticalGroups'
+import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from '../../game/tacticalFoeStatus'
 import { getUnlockedKeystones, applyKeystone } from '../../game/elementalKeystones'
 import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, resolveElementalAttack } from '../../game/elementalAttacks'
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
@@ -124,19 +125,31 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const aliveRef=useRef(true)
   const completionTimerRef=useRef(null)
   const enemyStatesRef=useRef(Object.fromEntries(foesRef.current.map(u=>[u.id,initEnemyState(u)])))
-  const enemyStunsRef=useRef({})
+  const foeStatusesRef=useRef({})
+  const enemyDamageBudgetRef=useRef(enemyActionBudget(enemyData.atk,enemyData.groupSize))
   const enemyCopiesRef=useRef(Object.fromEntries(foesRef.current.map(u=>[u.id,{...u,name:u.name.replace(/ \d+$/,'')}])))
 
   function note(message){setLog(prev=>[String(message),...prev].slice(0,35))}
   function updateFoes(next){foesRef.current=next;setFoes(next)}
   function updateHp(value){hpRef.current=Math.max(0,Math.min(maxHp,value));setHp(hpRef.current)}
   function updateMp(value){mpRef.current=clampCombatMp(value,mpMax);setMp(mpRef.current)}
-  function selectSurvivor(units){return nextAliveTarget(units,focus)}
-  function assignStun(targetId) {
-    const turns=statusRef.current.enemyStunTurns||0
-    if(turns>0&&targetId){
-      enemyStunsRef.current[targetId]=Math.max(enemyStunsRef.current[targetId]||0,turns)
-      delete statusRef.current.enemyStunTurns
+  // All enemy debuffs belong to the selected unit. Player buffs remain
+  // in statusRef, so existing class and elemental hooks still work.
+  function forFoe(id,fn){return withFoeStatus(statusRef.current,foeStatusesRef.current,id,fn)}
+  function onFoeDefeated(dead){
+    note(dead.name+' defeated.')
+    const kill=ClsCombat.onKill(combatPlayer,statusRef.current,dead)
+    kill?.messages?.forEach(note)
+    if(kill?.dbUpdates)Object.assign(dbUpdatesRef.current,kill.dbUpdates)
+  }
+  function propagateAreaStatus(changes,hitUnits,targetId){
+    if(!changes)return
+    for(const unit of hitUnits){
+      if(unit.id===targetId)continue
+      const status=foeStatusesRef.current[unit.id]||{}
+      for(const key of ['enemyStunTurns','cfx_longDecayStacks'])
+        if(changes[key]>0)status[key]=Math.max(status[key]||0,changes[key])
+      foeStatusesRef.current[unit.id]=status
     }
   }
 
@@ -201,16 +214,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(result.valid){
       for(const target of result.targets){
         const after=result.units.find(u=>u.id===target.id)
-        const hpChange=ClsCombat.onEnemyHpChange(
-          combatPlayer,statusRef.current,target,target.hp,after.hp,target.maxHp)
+        const hpChange=forFoe(target.id,()=>ClsCombat.onEnemyHpChange(
+          combatPlayer,statusRef.current,target,target.hp,after.hp,target.maxHp))
         hpChange?.messages?.forEach(note)
       }
-      for(const dead of result.defeated){
-        note(dead.name+' defeated.')
-        const kill=ClsCombat.onKill(combatPlayer,statusRef.current,dead)
-        kill?.messages?.forEach(note)
-        if(kill?.dbUpdates)Object.assign(dbUpdatesRef.current,kill.dbUpdates)
-      }
+      for(const dead of result.defeated)onFoeDefeated(dead)
       updateFoes(result.units)
     }
     return result
@@ -222,7 +230,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(!target)return
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const base=Math.max(1,calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
-    const mod=ClsCombat.onPlayerAttack(combatPlayer,statusRef.current,target,base)
+    const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
+      combatPlayer,statusRef.current,target,base))
     const crit=Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
       Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
         critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
@@ -241,7 +250,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     note(attack.label+': '+affected.targets.length+' target(s), '+damage+' damage'+(crit?' · Critical!':'')+'.')
     mod?.messages?.forEach(note);keystone.messages?.forEach(note)
     if(mod?.dbUpdates)Object.assign(dbUpdatesRef.current,mod.dbUpdates)
-    const post=ClsCombat.onPlayerAttackPost(combatPlayer,statusRef.current,target,damage,crit)
+    const post=forFoe(target.id,()=>ClsCombat.onPlayerAttackPost(
+      combatPlayer,statusRef.current,target,damage,crit))
     post?.messages?.forEach(note)
     if(post?.dbUpdates)Object.assign(dbUpdatesRef.current,post.dbUpdates)
     if(affected.targets.length&&!attack.fallback&&masteryHitsRef.current<6){
@@ -255,7 +265,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     return rule?.target==='enemy'?{...rule,shape:GROUP_AREAS[id]||'single'}:null
   }
   function resolveSkill(id,target) {
-    const response=ClsCombat.onActiveSkill(id,combatPlayer,statusRef.current,target)
+    const response=forFoe(target?.id,()=>ClsCombat.onActiveSkill(
+      id,combatPlayer,statusRef.current,target))
     response?.messages?.forEach(note)
     if(response?.dbUpdates)Object.assign(dbUpdatesRef.current,response.dbUpdates)
     const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
@@ -263,42 +274,47 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       groupSpellPattern(id)||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
     const heal=scaleSkillAmount(response?.selfHeal,getSkillLevel(player,id))
     if(heal)updateHp(hpRef.current+heal)
-    assignStun(target?.id)
     return response?.consumed!==false
   }
   function resolveElement(id,target) {
-    const effect=resolveElementalAttack(id,combatPlayer,statusRef.current,{
-      atk:calcATK(player,equipped),def:calcDEF(player,equipped),
-      enemyDef:target?.def||0,currentHp:hpRef.current,maxHp})
+    const effect=forFoe(target?.id,()=>{
+      const result=resolveElementalAttack(id,combatPlayer,statusRef.current,{
+        atk:calcATK(player,equipped),def:calcDEF(player,equipped),
+        enemyDef:target?.def||0,currentHp:hpRef.current,maxHp})
+      if(result&&mpRef.current>=result.mpCost)
+        applyKeystoneStatuses(statusRef.current,result.setStatus)
+      return result
+    })
     if(!effect||mpRef.current<effect.mpCost)return false
     updateMp(mpRef.current-effect.mpCost)
-    applyKeystoneStatuses(statusRef.current,effect.setStatus)
     const damage=scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target){
       const area=groupSpellPattern(id)
       const fraction=area?.shape!=='single'?0.7:1
       const affected=applyDamage(foesRef.current,area,target.id,Math.max(1,Math.round(damage*fraction)))
+      if(area?.shape!=='single')propagateAreaStatus(effect.setStatus,affected.targets,target.id)
       note(effect.label+': '+affected.targets.length+' target(s) hit.')
     }
     const heal=scaleSkillAmount(effect.healPlayer,getSkillLevel(player,id))
     if(heal)updateHp(hpRef.current+heal)
-    assignStun(target?.id)
     effect.messages?.forEach(note)
     if(effect.cooldown>0)setElemCooldowns(prev=>({...prev,[id]:effect.cooldown}))
     castElementRef.current=id
     return true
   }
   function resolveKeystone(id,target) {
-    const effect=applyKeystone(id,combatPlayer,statusRef.current,{
-      enemyHp:target?.hp||0,maxEnemyHp:target?.maxHp||0,
-      currentHp:hpRef.current,maxPlayerHp:maxHp,
-      playerATK:calcATK(player,equipped),playerDEF:calcDEF(player,equipped)})
-    applyKeystoneStatuses(statusRef.current,effect.setStatus)
+    const effect=forFoe(target?.id,()=>{
+      const result=applyKeystone(id,combatPlayer,statusRef.current,{
+        enemyHp:target?.hp||0,maxEnemyHp:target?.maxHp||0,
+        currentHp:hpRef.current,maxPlayerHp:maxHp,
+        playerATK:calcATK(player,equipped),playerDEF:calcDEF(player,equipped)})
+      applyKeystoneStatuses(statusRef.current,result.setStatus)
+      return result
+    })
     if(effect.consumesTurn===false)delete statusRef.current.cfx_extraTurn
     if(effect.enemyDamage>0&&target)applyDamage(foesRef.current,
       {from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,effect.enemyDamage)
     if(effect.healPlayer)updateHp(hpRef.current+effect.healPlayer)
-    assignStun(target?.id)
     effect.messages?.forEach(note)
     if(effect.cooldown>0)setKeyCooldowns(prev=>({...prev,[id]:effect.cooldown}))
     castKeyRef.current=id
@@ -314,10 +330,16 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     for(const foe of sorted){
       const actor=next.find(u=>u.id===foe.id)
       if(!actor||actor.hp<=0||currentHp<=0)continue
-      const stun=enemyStunsRef.current[actor.id]||0
+      const ownStatus=foeStatusesRef.current[actor.id]||{}
+      const stun=ownStatus.enemyStunTurns||0
       if(stun>0){
-        enemyStunsRef.current[actor.id]=stun-1
+        ownStatus.enemyStunTurns=stun-1
+        foeStatusesRef.current[actor.id]=ownStatus
         note(actor.name+' is stunned and loses its turn.')
+        continue
+      }
+      if(enemyDamageBudgetRef.current<=0){
+        note(actor.name+' holds position while the group regroups.')
         continue
       }
       const occupied=next.filter(other=>other.id!==actor.id&&other.hp>0)
@@ -332,7 +354,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       let incoming=0,heal=0
       const foeData=enemyCopiesRef.current[actor.id]
       const state=enemyStatesRef.current[actor.id]
-      if(!pulse)resolveEnemyTurn(foeData,{
+      if(!pulse)forFoe(actor.id,()=>resolveEnemyTurn(foeData,{
         enemyState:state,enemyHp:actor.hp,maxEnemyHp:actor.maxHp,
         currentHp,maxPlayerHp:maxHp,
         playerDEF:()=>calcDEF(player,equipped),defending:defendingRef.current,
@@ -340,11 +362,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         triggerAnimation:()=>{},
         onEnemyDmgPlayer:d=>{incoming+=d},
         onEnemyHealSelf:h=>{heal+=h},
-      })
+      }))
       else incoming=2
       actor.hp=Math.min(actor.maxHp,actor.hp+heal)
-      if(statusRef.current.cfx_longDecayStacks>0)
-        incoming=Math.max(0,incoming-3*statusRef.current.cfx_longDecayStacks)
+      const decay=foeStatusesRef.current[actor.id]?.cfx_longDecayStacks||0
+      if(decay>0)incoming=Math.max(0,incoming-3*decay)
       if(statusRef.current.cfx_tornadoTurns>0)
         incoming=Math.round(incoming*.7)
       const hit=ClsCombat.onPlayerHit(combatPlayer,statusRef.current,foeData,incoming,maxHp)
@@ -355,6 +377,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(legendary.has('legendary_miner'))damage=Math.max(0,damage-3)
       const guard=resolveKeystoneDefense(statusRef.current,damage)
       damage=guard.damage
+      damage=Math.min(damage,enemyDamageBudgetRef.current)
+      enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
       actor.hp=Math.max(0,actor.hp-(hit?.reflectAmount||0)-(guard.reflected||0)-
         Math.round(damage*reflectFraction(combatPlayer)))
       currentHp=Math.max(0,currentHp-damage)
@@ -362,6 +386,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       hit?.messages?.forEach(note);guard.messages?.forEach(note)
       messages.forEach(note)
       if(guard.mpGain)updateMp(mpRef.current+guard.mpGain)
+      if(actor.hp===0&&foe.hp>0)onFoeDefeated(actor)
       await sleep(170)
     }
     updateFoes(next)
@@ -373,6 +398,23 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     let units=foesRef.current
     const tick=ClsCombat.onTurnEnd(combatPlayer,statusRef.current)
     tick?.messages?.forEach(note)
+    const perFoe=advanceFoeStatuses(units,foeStatusesRef.current,combatPlayer)
+    foeStatusesRef.current=perFoe.statuses
+    units=perFoe.units
+    for(const event of perFoe.events){
+      note(event.name+' takes '+event.damage+' damage from ongoing effects.')
+      if(event.defeated)onFoeDefeated(units.find(u=>u.id===event.id))
+    }
+    // Global crowd-control generated by passive class effects.
+    if(statusRef.current.enemyStunTurns>0){
+      for(const unit of units.filter(u=>u.hp>0)){
+        const effects=foeStatusesRef.current[unit.id]||{}
+        effects.enemyStunTurns=Math.max(effects.enemyStunTurns||0,
+          statusRef.current.enemyStunTurns)
+        foeStatusesRef.current[unit.id]=effects
+      }
+      statusRef.current.enemyStunTurns=0
+    }
     const target=nextAliveTarget(units,focus)
     if(tick?.damageToEnemy>0&&target)units=units.map(u=>
       u.id===target.id?{...u,hp:Math.max(0,u.hp-tick.damageToEnemy)}:u)
@@ -432,6 +474,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       }
       if(!roundStartedRef.current){
         roundStartedRef.current=true
+        enemyDamageBudgetRef.current=enemyActionBudget(enemyData.atk,enemyData.groupSize)
         legendaryTurnRef.current++
         if(legendary.has('legendary_engineer')&&legendaryTurnRef.current%3===0){
           updateHp(hpRef.current+5)
@@ -493,6 +536,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         className={'combat-group-unit'+(unit.id===chosen?' current':'')}
         disabled={unit.hp<=0} onClick={()=>setFocus(unit.id)}>
         {unit.icon} {unit.name} · {unit.hp}/{unit.maxHp} HP
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_bleedingTurns>0?' 🩸':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_rotTurns>0?' ☣️':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_drownTurns>0?' 💧':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.enemyStunTurns>0?' ⚡':''}
+        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_markTurns>0?' 🎯':''}
       </button>)}
     </div>
     <div className="combat-tactical-status">

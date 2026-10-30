@@ -4292,7 +4292,7 @@ export function onTurnEnd(player, statusEffects) {
       if (hasSkill(player, 'abyss_walker_t3b') && stacks >= 5) tick *= 2
       // Drowned active: (50 + max HP × 10%) damage per turn
       if (statusEffects.cls_drownedActive) {
-        const eMax = enemy ? (enemy.hp_max || enemy.hp || 100) : 100
+        const eMax = Number(statusEffects._enemyMaxHp) || 100
         tick = 50 + Math.round(eMax * 0.10)
       }
       damageToEnemy += tick
