@@ -72,13 +72,20 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [turnActor, setTurnActor] = useState(null)
   const [judgeHit, setJudgeHit] = useState(false)
   const judgeHitTimer = useRef(null)
-  useEffect(() => () => clearTimeout(judgeHitTimer.current), [])
+  const judgeHitResetTimer = useRef(null)
+  useEffect(() => () => {
+    clearTimeout(judgeHitTimer.current)
+    clearTimeout(judgeHitResetTimer.current)
+  }, [])
   function showJudgeHit() {
     if (enemyData.name !== 'The Twin Judges') return
     clearTimeout(judgeHitTimer.current)
+    clearTimeout(judgeHitResetTimer.current)
     setJudgeHit(false)
-    judgeHitTimer.current = setTimeout(() => setJudgeHit(true), 20)
-    setTimeout(() => setJudgeHit(false), 430)
+    judgeHitTimer.current = setTimeout(() => {
+      setJudgeHit(true)
+      judgeHitResetTimer.current = setTimeout(() => setJudgeHit(false), 430)
+    }, 20)
   }
 
   const statusEffectsRef = useRef({})
