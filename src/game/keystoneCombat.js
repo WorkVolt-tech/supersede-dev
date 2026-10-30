@@ -37,6 +37,8 @@ export function consumeEnemyStun(status) {
   return null
 }
 
+import { aegisMpGain } from './combatMp.js'
+
 export function resolveKeystoneDefense(status, incoming) {
   const messages = []
   const before = Math.max(0, incoming)
@@ -65,12 +67,13 @@ export function resolveKeystoneDefense(status, incoming) {
     if (status.cfx_poisonReflectTurns > 0) reflected += Math.round(damage * 0.25)
     if (status.cfx_ironMaidenTurns > 0) reflected += Math.round(damage * 0.50)
   }
+  const mpGain = aegisMpGain(status, damage)
   for (const key of [
     'cfx_damageHalveTurns', 'cfx_fireReflectTurns', 'cfx_poisonReflectTurns',
     'cfx_ironMaidenTurns', 'cfx_dodgeBuffTurns', 'cfx_stunMeleeTurns',
     'cfx_dmgToMpTurns',
   ]) if (status[key] > 0) status[key] -= 1
-  return { damage, reflected, messages }
+  return { damage, reflected, mpGain, messages }
 }
 
 export function resolveKeystoneStrike(status, damage, criticalApplied = false) {
