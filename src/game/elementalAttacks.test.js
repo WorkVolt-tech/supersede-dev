@@ -93,3 +93,18 @@ test('attack effects include damage, healing, DoT, stuns, and three-turn buffs',
   assert.ok(run('plant','plant_skill_thorn_volley').healPlayer>0)
   assert.ok(run('poison','poison_mastery_pandemic').setStatus.cfx_longDecayStacks>0)
 })
+
+test('elemental MP costs follow attack tiers and one-time discounts', () => {
+  const attack = (id, status) => resolveElementalAttack(
+    id, {...makePlayer('arcane'),battle_skills:[id]},status,{atk:30})
+  assert.equal(attack('arcane_skill_resonant_bolt',{}).mpCost,8)
+  assert.equal(attack('arcane_ultimate_standing_chord',{}).mpCost,14)
+  assert.equal(attack('arcane_mastery_resonance',{}).mpCost,22)
+  const half=attack('arcane_ultimate_standing_chord',{cfx_refundMpHalf:true})
+  assert.equal(half.mpCost,7)
+  assert.equal(half.setStatus.cfx_refundMpHalf,false)
+  const free=attack('arcane_mastery_resonance',{cfx_perfectRecall:true})
+  assert.equal(free.mpCost,0)
+  assert.equal(free.cooldown,0)
+  assert.equal(free.setStatus.cfx_perfectRecall,false)
+})
