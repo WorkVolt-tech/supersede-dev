@@ -42,7 +42,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import CombatActionPoints from './CombatActionPoints'
+import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import './CombatScreen.css'
 import EchoBeastPortrait from './EchoBeastPortrait'
 import WatcherPortrait from './WatcherPortrait'
@@ -171,8 +171,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       Number.isInteger(position.rank)&&position.rank>=0&&position.rank<=2
       ?{col:position.col,rank:position.rank}:{col:1,rank:0}
   })
-  const [actionPoints, setActionPoints] = useState(2)
-  const actionPointsRef = useRef(2)
+  const maxAp = maxCombatAp(player.level)
+  const [actionPoints, setActionPoints] = useState(maxAp)
+  const actionPointsRef = useRef(maxAp)
   const roundStartedRef = useRef(false)
   const roundRef=useRef(1)
   const [round,setRound]=useState(1)
@@ -662,7 +663,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { foeHp, playerHp }
   }
 
-  // One enemy action per round, with two player AP. Faster enemies act
+  // One enemy action per round, with level-scaled player AP. Faster enemies act
   // before the first AP; slower enemies act after the last AP.
   function positionedEnemyTurn(playerHp, foeHp, defendAction, heroAt=heroPosition) {
     if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
@@ -833,8 +834,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       statusEffectsRef.current.cfx_ironDomainTurns--
     roundStartedRef.current=false
     roundRef.current+=1;setRound(roundRef.current)
-    actionPointsRef.current=2
-    setActionPoints(2)
+    actionPointsRef.current=maxAp
+    setActionPoints(maxAp)
     if (playerHp<=0) await endCombat('lose',playerHp)
     else if (foeHp<=0) await endCombat('win',playerHp)
     setBusy(false)
@@ -886,7 +887,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               ' / '+nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)}
           </span>
         </div>
-        <CombatActionPoints ap={actionPoints} round={round} />
+        <CombatActionPoints ap={actionPoints} max={maxAp} round={round} />
         {activeFusion && <div className="combat-fusion-status">
           <span>✦ {activeFusion.kind==='triad'
               ?activeFusion.element+' Elemental Triad'
