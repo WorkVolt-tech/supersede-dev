@@ -165,7 +165,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
-  const [enemyPosition, setEnemyPosition] = useState({col:1,rank:0})
+  const [enemyPosition, setEnemyPosition] = useState(()=>{
+    const position=enemyData.initialTacticalPosition
+    return position&&Number.isInteger(position.col)&&position.col>=0&&position.col<=2&&
+      Number.isInteger(position.rank)&&position.rank>=0&&position.rank<=2
+      ?{col:position.col,rank:position.rank}:{col:1,rank:0}
+  })
   const [actionPoints, setActionPoints] = useState(2)
   const actionPointsRef = useRef(2)
   const roundStartedRef = useRef(false)

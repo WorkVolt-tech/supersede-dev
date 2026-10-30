@@ -9,6 +9,7 @@ import { ELEMENT_TREES } from '../../src/game/elementsTree'
 import '../../src/index.css'
 
 const scenario=new URLSearchParams(location.search).get('scenario')
+const unarmedScenario=scenario?.startsWith('unarmed-')
 const signatureElement={
   'signature-fire':'fire','signature-earth':'earth','signature-lightning':'lightning'
 }[scenario]
@@ -21,7 +22,7 @@ const fusionElement=signatureElement||triadElement||'fire'
 const fusionClass=signatureElement==='earth'?'bastion':
   signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player = {
-  id:'test-only-player',name:'Tactical Tester',level:fusionScenario?25:1,hp:160,max_hp:160,
+  id:'test-only-player',name:'Tactical Tester',level:fusionScenario?25:unarmedScenario?3:1,hp:160,max_hp:160,
   atk:12,def:8,guard:3,speed:12,insight:1,luck:0,agility:1,
   power:0,control:0,active_class:triadScenario?null:fusionScenario?fusionClass:null,
   element:fusionScenario?fusionElement:'none',active_element:null,
@@ -54,7 +55,7 @@ usePlayerStore.setState({
 useInventoryStore.setState({
   loading:false,
   loadInventory:async()=>{},
-  items:[{
+  items:unarmedScenario?[]:[{
     id:'test-only-sword',player_id:player.id,
     name:'Training Sword',item_type:'weapon',subtype:'sword',
     item_key:'training_sword',equipped_slot:'mainhand',
@@ -65,9 +66,10 @@ useInventoryStore.setState({
 const victoryScenario=scenario==='victory'||scenario==='fusion-victory'||
   scenario==='triad-victory'
 const enemyData={
-  name:'Training Rats x3',groupSize:3,groupUnitName:'Training Rat',
+  name:'Training Rats x3',groupSize:scenario==='unarmed-rear'?7:
+    scenario==='unarmed-middle'?4:3,groupUnitName:'Training Rat',
   groupIcon:'🐀',groupWeapon:'dagger',icon:'🐀🐀🐀',
-  hp:victoryScenario?9:triadScenario?480:120,atk:6,speed:3,
+  hp:victoryScenario?9:unarmedScenario?490:triadScenario?480:120,atk:6,speed:3,
   def:triadElement==='metal'?20:0,xp:0,loot:[],
 }
 createRoot(document.getElementById('root')).render(

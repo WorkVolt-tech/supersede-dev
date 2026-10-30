@@ -8,6 +8,7 @@ import { ELEMENT_TREES } from '../../src/game/elementsTree'
 import '../../src/index.css'
 
 const params=new URLSearchParams(location.search)
+const unarmedScenario=params.get('scenario')?.startsWith('unarmed-')
 const boss=params.get('scenario')==='boss'
 const signatureElement={'signature-fire':'fire','signature-earth':'earth',
   'signature-lightning':'lightning'}[params.get('scenario')]
@@ -19,16 +20,18 @@ const fusionElement=signatureElement||triadElement||'fire'
 const fusionClass=signatureElement==='earth'?'bastion':
   signatureElement==='lightning'?'wrathborn':'ghostblade'
 const player={
-  id:'test-single-fusion',name:'Fusion Tester',level:25,
+  id:'test-single-fusion',name:'Fusion Tester',level:unarmedScenario?3:25,
   hp:160,max_hp:160,atk:30,def:10,guard:3,speed:12,insight:1,luck:0,
-  agility:1,power:0,control:0,active_class:triadScenario?null:fusionClass,element:fusionElement,
+  agility:1,power:0,control:0,
+  active_class:unarmedScenario||triadScenario?null:fusionClass,
+  element:unarmedScenario?'none':fusionElement,
   defeated_bosses:['zone_boss_'+fusionElement],
   class_nodes_unlocked:triadScenario?[]:
     [fusionClass+':'+fusionClass+'_t1a',fusionClass+':'+fusionClass+'_t1c'],
   elemental_unlocked:triadScenario?ELEMENT_TREES[fusionElement].nodes.slice(1).map(n=>n.id):
     [1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n)
       .concat([fusionElement+'_aggr_ks']),
-  fusion_unlocked:triadScenario?['triad:'+fusionElement]:
+  fusion_unlocked:unarmedScenario?[]:triadScenario?['triad:'+fusionElement]:
     fused?[fusionClass+':'+fusionElement]:[],
   fusion_mastery:triadScenario?{['triad:'+fusionElement]:0}:
     {[fusionClass+':'+fusionElement]:45},
@@ -48,12 +51,15 @@ usePlayerStore.setState({
 })
 useInventoryStore.setState({
   loading:false,loadInventory:async()=>{},
-  items:[{id:'test-sword',player_id:player.id,name:'Test Sword',
+  items:unarmedScenario?[]:[{id:'test-sword',player_id:player.id,name:'Test Sword',
     item_type:'weapon',subtype:'sword',item_key:'test_sword',
     equipped_slot:'mainhand',atk_bonus:0,sockets_total:0,socketed_runes:[]}],
 })
 const encounter={name:boss?'Training Guardian':'Training Rival',
-  hp:signatureElement||triadScenario?180:48,atk:3,def:0,
+  hp:unarmedScenario||signatureElement||triadScenario?180:48,atk:3,def:0,
+  initialTacticalPosition:unarmedScenario?{
+    col:1,rank:params.get('scenario')==='unarmed-middle'?1:2,
+  }:undefined,
   speed:3,weapon_type:'sword',xp:0,loot:[],icon:'👹'}
 createRoot(document.getElementById('root')).render(
   <CombatScreen enemyData={encounter} isBoss={boss}
