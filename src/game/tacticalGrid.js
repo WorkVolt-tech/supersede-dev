@@ -20,7 +20,7 @@ export const TACTICAL_ATTACKS = {
   quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1 },
   aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1 },
   snapshot:    { label:'Quick Shot',       reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:4, ap:1 },
-  bolt:        { label:'Arcane Bolt',      reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:5, ap:1 },
+  bolt:        { label:'Focused Bolt',      reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:5, ap:1 },
   shieldToss:  { label:'Shield Toss',      reach:'mid',   from:[0,1], to:[0,1,2],   cols:'near',  shape:'single', damage:4, ap:1 },
   scatter:     { label:'Buckshot Spread',  reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'row',    damage:4, ap:2 },
   sweep:       { label:'Sweeping Arc',     reach:'short', from:[0],   to:[0],       cols:'near',  shape:'row',    damage:5, ap:2 },
