@@ -19,6 +19,8 @@
     .toolbar { display:flex; flex-wrap:wrap; align-items:flex-start; gap:18px; }
     .toolbar fieldset { border:0; padding:0; margin:0; min-width:230px; flex:1 1 240px; }
     .toolbar legend { padding:0 0 8px; color:#e6ce9c; font-weight:700; font-size:12px; }
+    .weapon-select { border:1px solid #887257; background:#292637; color:#f5e7d0; border-radius:8px; padding:9px 12px; font:inherit; min-width:180px; max-width:100%; }
+    .weapon-select:focus-visible { outline:3px solid #ffe3a4; outline-offset:2px; }
     .choices { display:flex; flex-wrap:wrap; gap:6px; }
     button { font:inherit; }
     .pill { color:#dfd9d1; background:#282739; padding:9px 12px; border:1px solid #64586f; border-radius:8px; cursor:pointer; font-size:12px; }
@@ -72,6 +74,10 @@
   <section class="panel toolbar" aria-label="Battle Lab configuration">
 
     <fieldset>
+      <legend>Weapon family</legend>
+      <select class="weapon-select" id="weapon" aria-label="Equipped weapon family"></select>
+    </fieldset>
+    <fieldset>
       <legend>Movement costs</legend>
       <div class="choices" id="movement-options">
         <button type="button" class="pill" data-mode="ap" aria-pressed="true">2 action points</button>
@@ -83,10 +89,11 @@
 
   <section class="panel">
     <div class="hud">
-      <div class="stat">Hero HP: <strong id="hero-hp">24/24</strong></div>
+      <div class="stat">Hero HP: <strong id="hero-hp">36/36</strong></div>
       <div class="stat">Turn: <strong id="turn">1</strong></div>
       <div class="stat">Actions left: <strong id="ap">2 AP</strong></div>
-      <div class="stat">Opponents: <strong id="foes-left">2</strong></div>
+      <div class="stat">Opponents: <strong id="foes-left">3</strong></div>
+      <div class="stat">Mastery: <strong id="mastery">Sword Lv 1 · 0 XP</strong></div>
     </div>
     <div class="battlefield" aria-label="Vertical tactical battlefield, enemies above allies">
       <div class="side-label">▼ ENEMIES · 3 × 3</div>
@@ -100,13 +107,9 @@
   </section>
 
   <section class="panel">
-    <h2>Choose your attack</h2>
-    <div class="actions" id="actions">
-      <button type="button" class="action" data-attack="slash" aria-pressed="true"><b>⚔ Slash</b><span>Front rank → enemy front, same column · 6 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="spear" aria-pressed="false"><b>🔱 Spear</b><span>Middle/front → enemy front/middle, same column · 5 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="bow" aria-pressed="false"><b>🏹 Bow</b><span>Rear/middle → any enemy · 4 dmg · 1 AP</span></button>
-      <button type="button" class="action" data-attack="burst" aria-pressed="false"><b>✨ Elemental Burst</b><span>Any rank → target + adjacent tiles · 5 dmg · 2 AP</span></button>
-    </div>
+    <h2>Weapon attacks & position patterns</h2>
+    <p class="hint">Select a weapon above. Its short, mid and long attacks have different valid spaces; some specials hit rows, columns or cross patterns. A weak System Pulse can hit any square if you cannot get close.</p>
+    <div class="actions" id="actions"></div>
     <div class="bottom">
       <button type="button" class="mainbtn" id="end-turn">End turn</button>
       <button type="button" class="mainbtn secondary" id="restart">Restart encounter</button>
@@ -118,214 +121,8 @@
     <h2>Combat log</h2>
     <ol class="log" id="log" aria-live="polite"></ol>
   </section>
-  <p class="disclaimer">Battle Lab only: nine squares on each side in a book-friendly vertical layout. The targeting rules, enemy AI and movement options are experimental. No changes to SuperSede's live combat, Supabase data, rewards, or XP.</p>
+  <p class="disclaimer">Battle Lab only: weapon ranges, enemy tactical patterns and mastery levels are experimental. Mastery is kept only while this page is open. No changes to live combat, Supabase records, XP or loot.</p>
 </main>
-<script>
-(function () {
-  'use strict';
-  // Each faction has 3 columns × 3 ranks. Rank 0 always faces the enemy:
-  // enemy rank 0 is rendered at the BOTTOM of the upper grid;
-  // hero rank 0 is rendered at the TOP of the lower grid.
-  const COLUMNS = ['left', 'center', 'right'];
-  const RANKS = ['front', 'middle', 'rear'];
-  const attacks = {
-    slash: {cost:1, damage:6},
-    spear: {cost:1, damage:5},
-    bow: {cost:1, damage:4},
-    burst: {cost:2, damage:5}
-  };
-  const state = {
-    mode:'ap', attack:'slash', hero:{col:1,rank:0,hp:24},
-    enemies:[], ap:2, freeMoveUsed:false, turn:1, over:false, messages:[]
-  };
-  const $ = id => document.getElementById(id);
-
-  function reset() {
-    state.hero={col:1,rank:0,hp:24};
-    state.enemies=[
-      {id:'E1',col:1,rank:0,hp:13},
-      {id:'E2',col:0,rank:1,hp:11},
-      {id:'E3',col:2,rank:2,hp:9}
-    ];
-    state.ap=state.mode==='ap'?2:1;
-    state.freeMoveUsed=false;
-    state.turn=1;
-    state.over=false;
-    state.messages=[];
-    tell('A tactical encounter begins. Enemies occupy the upper nine squares.');
-    render();
-  }
-  function tell(message) {
-    state.messages.unshift(message);
-    state.messages=state.messages.slice(0,15);
-    $('status').textContent=message;
-  }
-  function playerCanAct(cost) { return !state.over && state.ap>=cost; }
-  function canMove(col,rank) {
-    return !state.over && state.ap>0 &&
-      !(state.mode==='free' && state.freeMoveUsed) &&
-      Math.abs(col-state.hero.col)+Math.abs(rank-state.hero.rank)===1;
-  }
-  function canAttack(enemy) {
-    const hero=state.hero;
-    if (state.attack==='slash') return hero.rank===0 && enemy.rank===0 && enemy.col===hero.col;
-    if (state.attack==='spear') return hero.rank<=1 && enemy.rank<=1 && enemy.col===hero.col;
-    if (state.attack==='bow') return hero.rank>=1;
-    return true;
-  }
-  function attackCost() { return state.mode==='ap'?attacks[state.attack].cost:1; }
-
-  function onCell(side,col,rank) {
-    if(state.over)return;
-    if(side==='hero') {
-      if(!canMove(col,rank)) {
-        tell('Reposition one empty square left, right, forward, or backward.');
-        return;
-      }
-      state.hero.col=col; state.hero.rank=rank;
-      if(state.mode==='ap') state.ap--;
-      if(state.mode==='turn') state.ap=0;
-      if(state.mode==='free') state.freeMoveUsed=true;
-      tell('You move to '+COLUMNS[col]+' column, '+RANKS[rank]+' rank.');
-      if(state.ap===0) enemyPhase(); else render();
-      return;
-    }
-    const enemy=state.enemies.find(e=>e.col===col && e.rank===rank && e.hp>0);
-    if(!enemy){tell('That enemy square is empty.');return;}
-    if(!canAttack(enemy)){tell('Target is out of range for '+state.attack+'. Reposition or choose another attack.');return;}
-    const cost=attackCost();
-    if(!playerCanAct(cost)){tell('Not enough actions. End your turn to recover.');return;}
-    let targets=[enemy];
-    if(state.attack==='burst') {
-      targets=state.enemies.filter(e=>e.hp>0 &&
-        Math.abs(e.col-col)+Math.abs(e.rank-rank)<=1);
-    }
-    for(const target of targets) target.hp=Math.max(0,target.hp-attacks[state.attack].damage);
-    state.enemies=state.enemies.filter(e=>e.hp>0);
-    state.ap-=cost;
-    tell(state.attack.toUpperCase()+' hits '+targets.map(t=>t.id).join(', ')+
-      ' for '+attacks[state.attack].damage+' damage each.');
-    if(state.enemies.length===0){
-      state.over=true;
-      tell('Victory! Restart to test another tactic.');
-      render();return;
-    }
-    if(state.ap===0) enemyPhase(); else render();
-  }
-
-  function isEnemySquareOccupied(col,rank,except) {
-    return state.enemies.some(e=>e!==except && e.col===col && e.rank===rank && e.hp>0);
-  }
-  function enemyPhase() {
-    if(state.over)return;
-    const messages=[];
-    for(const enemy of state.enemies){
-      // Enemy units advance toward the two facing front rows, without
-      // overlapping their own allies. Movement remains a simple placeholder.
-      if(enemy.rank>0) {
-        if(!isEnemySquareOccupied(enemy.col,enemy.rank-1,enemy)) {
-          enemy.rank--;
-          messages.push(enemy.id+' advances to '+RANKS[enemy.rank]+'.');
-        } else messages.push(enemy.id+' is blocked by an ally.');
-        continue;
-      }
-      if(enemy.col!==state.hero.col) {
-        const nextCol=enemy.col+Math.sign(state.hero.col-enemy.col);
-        if(!isEnemySquareOccupied(nextCol,0,enemy)) {
-          enemy.col=nextCol;
-          messages.push(enemy.id+' shifts to '+COLUMNS[enemy.col]+' column.');
-        } else messages.push(enemy.id+' holds its position.');
-        continue;
-      }
-      state.hero.hp=Math.max(0,state.hero.hp-3);
-      messages.push(enemy.id+' strikes for 3 damage.');
-      if(state.hero.hp===0)break;
-    }
-    if(state.hero.hp===0){
-      state.over=true;
-      tell('Defeat. '+messages.join(' ')+' Restart to try again.');
-      render();return;
-    }
-    state.turn++;
-    state.ap=state.mode==='ap'?2:1;
-    state.freeMoveUsed=false;
-    tell('Enemy phase: '+messages.join(' '));
-    render();
-  }
-
-  function renderSide(side) {
-    const board=$(side==='enemy'?'enemy-board':'ally-board');
-    board.replaceChildren();
-    // Top-to-bottom: enemy rear/middle/front, hero front/middle/rear.
-    const rows=side==='enemy'?[2,1,0]:[0,1,2];
-    for(const rank of rows){
-      for(let col=0;col<3;col++){
-        const cell=document.createElement('button');
-        cell.type='button';
-        const hero=side==='hero' && state.hero.col===col && state.hero.rank===rank;
-        const enemy=side==='enemy' ? state.enemies.find(e=>e.col===col&&e.rank===rank&&e.hp>0):null;
-        const reachable=side==='hero' && !hero && canMove(col,rank);
-        const targetable=Boolean(enemy && canAttack(enemy) && playerCanAct(attackCost()));
-        cell.className='cell '+side+(hero?' hero':'')+
-          (hero||enemy?' unit':'')+(reachable?' reachable':'')+
-          (targetable?' targetable':'')+
-          (side==='enemy'&&rank===0?' front-border':'')+
-          (side==='hero'&&rank===0?' ally-front':'');
-        cell.disabled=state.over;
-        cell.setAttribute('aria-label',(side==='hero'?'Ally':'Enemy')+' '+COLUMNS[col]+
-          ' column, '+RANKS[rank]+' rank'+
-          (hero?' hero':enemy?' '+enemy.id+' '+enemy.hp+' HP':' empty')+
-          (reachable?' move here':targetable?' valid attack target':''));
-        const glyph=document.createElement('span');
-        glyph.textContent=hero?'🧍':enemy?'👹':'·';
-        cell.append(glyph);
-        const small=document.createElement('small');
-        small.textContent=hero?'YOU':enemy?enemy.id:RANKS[rank];
-        cell.append(small);
-        if(enemy) {
-          const hp=document.createElement('span');
-          hp.className='hp';
-          hp.textContent=enemy.hp+' HP';
-          cell.append(hp);
-        }
-        cell.addEventListener('click',()=>onCell(side,col,rank));
-        board.append(cell);
-      }
-    }
-  }
-  function render() {
-    renderSide('enemy');
-    renderSide('hero');
-    $('hero-hp').textContent=state.hero.hp+'/24';
-    $('turn').textContent=String(state.turn);
-    $('ap').textContent=state.ap+(state.mode==='ap'?' AP':' action')+
-      (state.mode==='free'&&!state.freeMoveUsed?' + free move':'');
-    $('foes-left').textContent=String(state.enemies.length);
-    $('end-turn').disabled=state.over;
-    for(const button of document.querySelectorAll('[data-attack]'))
-      button.setAttribute('aria-pressed',String(button.dataset.attack===state.attack));
-    for(const button of document.querySelectorAll('[data-mode]'))
-      button.setAttribute('aria-pressed',String(button.dataset.mode===state.mode));
-    $('log').replaceChildren();
-    for(const msg of state.messages){
-      const li=document.createElement('li');
-      li.textContent=msg;
-      $('log').append(li);
-    }
-  }
-  document.querySelectorAll('[data-attack]').forEach(button=>button.addEventListener('click',()=>{
-    state.attack=button.dataset.attack;
-    tell('Selected '+state.attack+'. Gold outlines mark valid targets.');
-    render();
-  }));
-  document.querySelectorAll('[data-mode]').forEach(button=>button.addEventListener('click',()=>{
-    state.mode=button.dataset.mode;
-    reset();
-  }));
-  $('end-turn').addEventListener('click',enemyPhase);
-  $('restart').addEventListener('click',reset);
-  reset();
-}());
-</script>
+<script type="module" src="./battle-lab-engine.js"></script>
 </body>
 </html>
