@@ -112,9 +112,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const combatEnemyRef = useRef({ ...enemyData })
   const dbUpdatesRef = useRef({})
   const completionTimerRef = useRef(null)
-  // A player can leave the chapter before a victory animation finishes.
-  // Prevent the old encounter from navigating the story after unmount.
-  useEffect(() => () => clearTimeout(completionTimerRef.current), [])
+  const combatMountedRef = useRef(false)
+  // Do not let a delayed save or an old completion timer navigate away
+  // after this encounter has been replaced or the page has been closed.
+  useEffect(() => {
+    combatMountedRef.current = true
+    return () => {
+      combatMountedRef.current = false
+      clearTimeout(completionTimerRef.current)
+    }
+  }, [])
 
   useEffect(() => {
     const r = ClsCombat.onCombatStart(combatPlayer, statusEffectsRef.current)
@@ -153,8 +160,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         : enemyData.name === 'The Twin Judges' ? 1200
         : 900
       : 900
+    if (!combatMountedRef.current) return
     clearTimeout(completionTimerRef.current)
     completionTimerRef.current = setTimeout(() => {
+      if (!combatMountedRef.current) return
       if (outcome === 'win') onWin?.()
       else if (outcome === 'escape') onEscape?.()
       else onLose?.()
