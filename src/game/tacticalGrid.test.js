@@ -6,6 +6,8 @@ import {
   isTacticalTargetValid, getTacticalAffectedSquares, tacticalHitTargets,
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold, hasFullTacticalCoverage, chooseTacticalEnemyAction,
+  getPlayerTacticalAttacks, startImprovisedThrowRecovery,
+  improvisedThrowTurnsRemaining, tacticalAttackDescription,
 } from './tacticalGrid.js'
 
 test('all existing weapon families cover short, middle and long targets', () => {
@@ -152,4 +154,39 @@ test('new progressive footprints stay inside the 3×3 board',()=>{
   assert.equal(getTacticalAffectedSquares({shape:'all'},{col:2,rank:2}).length,9)
   assert.equal(getTacticalAffectedSquares({shape:'crossPlus'},{col:1,rank:1}).length,7)
   assert.equal(getTacticalAffectedSquares({shape:'crossPlus'},{col:1,rank:0}).length,6)
+})
+
+test('unequipped player starts with only Basic Strike and Improvised Throw',()=>{
+  const kit=getPlayerTacticalAttacks(false,'unarmed',500000)
+  assert.deepEqual(kit.map(attack=>attack.id),['bareStrike','improvisedThrow'])
+  assert.equal(kit.some(a=>['stab','lunge','wave','pulse'].includes(a.id)),false)
+  assert.equal(kit.every(a=>a.ap===1),true)
+  assert.ok(tacticalAttackDescription(kit[0]).includes('Front row'))
+  assert.ok(tacticalAttackDescription(kit[1]).includes('2 rounds'))
+  assert.ok(getPlayerTacticalAttacks(true,'sword',0).some(a=>a.id==='slash'))
+  assert.ok(getPlayerTacticalAttacks(true,'sword',0).some(a=>a.id==='pulse'))
+})
+test('unarmed front strike cannot magically reach middle or rear rows',()=>{
+  const hero={col:1,rank:0}
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:0}),true)
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:0,rank:0}),true)
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:1}),false)
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:2}),false)
+  assert.equal(isTacticalTargetValid('bareStrike',{col:1,rank:1},{col:1,rank:0}),false)
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:0,rank:2}),false)
+})
+test('improvised throw targets middle/rear but not frontline and has shared recovery',()=>{
+  const hero={col:1,rank:0}
+  assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:0,rank:0}),false)
+  assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:0,rank:1}),true)
+  assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:2,rank:2}),true)
+  const middle=startImprovisedThrowRecovery(1,1)
+  const rear=startImprovisedThrowRecovery(1,2)
+  assert.equal(middle,2)
+  assert.equal(rear,3)
+  assert.equal(improvisedThrowTurnsRemaining(middle,1),1)
+  assert.equal(improvisedThrowTurnsRemaining(middle,2),0)
+  assert.equal(improvisedThrowTurnsRemaining(rear,2),1)
+  assert.equal(improvisedThrowTurnsRemaining(rear,3),0)
+  assert.equal(startImprovisedThrowRecovery(1,0),1)
 })
