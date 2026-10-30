@@ -113,7 +113,10 @@ export function nextWeaponMasteryThreshold(xp) {
 // weapon shot. If no movement helps, use the weak universal fallback.
 export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[]) {
   const kit=getTacticalAttacks(weaponType);
-  const attacks=kit.filter(a=>!a.fallback);
+  // Low-tier unarmed foes do not inherit the player's advanced magical Wave;
+  // they must close distance or use the weak emergency fallback.
+  const attacks=kit.filter(a=>!a.fallback &&
+    !(tacticalWeaponType(weaponType)==='unarmed' && a.id==='wave'));
   const valid=attacks.filter(a=>isTacticalTargetValid(a,from,target))
     .sort((a,b)=>b.damage-a.damage);
   if(valid.length)return {attack:valid[0]};

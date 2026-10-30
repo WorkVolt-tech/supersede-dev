@@ -96,6 +96,7 @@ test('enemy tactical AI uses legal attacks, moves when necessary and has a fallb
   const move=chooseTacticalEnemyAction('bow',front,back)
   assert.deepEqual(move.move,{col:1,rank:1})
   assert.equal(chooseTacticalEnemyAction('sword',front,back).attack.id,'pulse')
+  assert.equal(chooseTacticalEnemyAction('unarmed',front,back).attack.id,'pulse')
   const blocked=chooseTacticalEnemyAction('bow',front,back,
     [{col:1,rank:1},{col:0,rank:0},{col:2,rank:0}])
   assert.equal(blocked.attack.id,'pulse')

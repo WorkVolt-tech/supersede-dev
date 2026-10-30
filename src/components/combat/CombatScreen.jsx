@@ -53,7 +53,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAct, onMove, onAttack }) {
+function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAttack }) {
   const affected = attack && isTacticalTargetValid(attack,hero,enemy)
     ? getTacticalAffectedSquares(attack,enemy):[]
   const labels=['Left','Centre','Right']
@@ -63,15 +63,15 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
     return rows.flatMap(rank=>[0,1,2].map(col=>{
       const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
       const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
-      const targetable=side==='enemy'&&occupied&&enemyHp>0&&canAct&&isTacticalTargetValid(attack,hero,enemy)
+      const targetable=side==='enemy'&&occupied&&enemyHp>0&&canAttack&&isTacticalTargetValid(attack,hero,enemy)
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
-          targetable?'targetable':'',move&&canAct?'movable':'',splash?'splash':''].join(' ')}
-        disabled={!canAct||(side==='enemy'?!targetable:!move)}
+          targetable?'targetable':'',move&&canMove?'movable':'',splash?'splash':''].join(' ')}
+        disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAttack():onMove({col,rank})}
         aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
-          (targetable?' — attack':move&&canAct?' — move':'')}>
+          (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
         <small>{occupied?(side==='enemy'?'FOE':'YOU'):names[rank]}</small>
       </button>
@@ -488,9 +488,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   // One enemy action per round, with two player AP. Faster enemies act
   // before the first AP; slower enemies act after the last AP.
-  function positionedEnemyTurn(playerHp, foeHp, defendAction) {
+  function positionedEnemyTurn(playerHp, foeHp, defendAction, heroAt=heroPosition) {
     if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
-    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroPosition)
+    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt)
     if (next.move) {
       setEnemyPosition(next.move)
       pushLog(`${enemyData.name} repositions to column ${next.move.col+1}, rank ${next.move.rank+1}.`)
@@ -511,7 +511,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
       moveTo.rank<0||moveTo.rank>2 ||
       Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
-    const cost=action==='attack'?attack.ap:action==='move'?1:2
+    const cost=action==='end'?actionPointsRef.current:
+      action==='attack'?attack.ap:action==='move'?1:2
     if (cost > actionPointsRef.current) return
     if (action === 'skill' && !ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false)) return
@@ -573,7 +574,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
     setTurnActor('player')
     setDefending(defendAction)
-    if (action==='move') {
+    if (action==='end') {
+      pushLog('You end your turn.')
+    } else if (action==='move') {
       setHeroPosition(moveTo)
       pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
     } else if (action==='attack') {
@@ -610,7 +613,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
     if (!enemyFirst) {
       setTurnActor('enemy')
-      ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction))
+      ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction,
+        action==='move'?moveTo:heroPosition))
       await pause(650)
     }
     setTurnActor(null)
@@ -676,7 +680,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         </div>
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp} attack={selectedAttack}
-          canAct={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
+          canAttack={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
+          canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
           onAttack={()=>takeTurn('attack',selectedAttack.id)} />
         <div className="combat-tactical-weapons">
@@ -691,6 +696,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         </div>
         <div className="combat-actions">
           <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
+          <button type="button" className="combat-action-btn" disabled={busy || !entranceReady}
+            onClick={() => takeTurn('end')}>End turn</button>
           {activeSkills.map(skill => (
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2 || skill.available===false} onClick={() => takeTurn('skill', skill.id)}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
