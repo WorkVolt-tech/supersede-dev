@@ -27,6 +27,10 @@ import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
 import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import { getActiveFusion, getFusionRider, getFusionSignature,
+  awardFusionPractice, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
+import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRegen,
+  initialSingleFusionGuard } from '../../game/singleFusionCombat'
 import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
   tacticalWeaponType, getTacticalAttacks, isTacticalTargetValid,
@@ -111,6 +115,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const legendaryTurnRef = useRef(0)
   const effective = getEffectiveStats(player,equipped)
   const combatPlayer = getCombatPlayer(player,equipped)
+  const activeFusion = getActiveFusion(player)
+  const [fusionEnabled, setFusionEnabled] = useState(false)
+  const fusionGuardRef = useRef(initialSingleFusionGuard())
+  const fusionPracticeRef = useRef(0)
 
   const maxPlayerHp = calcMaxHp(player, equipped)
   const maxCombatMp = getMaxCombatMp(combatPlayer)
@@ -207,6 +215,28 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function pushLog(line) { setLog(l => [line, ...l].slice(0, 30)) }
 
+  // Fusion is an optional extra after a successful existing weapon or class
+  // attack. It never substitutes for boss AI, class hooks or elemental casts.
+  function infuseSingleHit(foeHp, playerHp, originalDamage) {
+    if(!fusionEnabled || !activeFusion || originalDamage<=0 ||
+       mpRef.current<FUSION_MP_COST)return {foeHp,playerHp}
+    const effect=applySingleFusionHit(activeFusion,{
+      foeHp,playerHp,maxPlayerHp,status:statusEffectsRef.current,
+      guard:fusionGuardRef.current,
+    })
+    if(!effect)return {foeHp,playerHp}
+    changeCombatMp(mpRef.current-FUSION_MP_COST)
+    statusEffectsRef.current=effect.status
+    fusionGuardRef.current=effect.guard
+    fusionPracticeRef.current=Math.min(FUSION_MAX_PRACTICE_PER_FIGHT,
+      fusionPracticeRef.current+1)
+    pushLog('✦ '+effect.rider.label+' · '+activeFusion.element+' infusion (-'+
+      FUSION_MP_COST+' MP). Fusion practice +1 on victory.')
+    if(effect.bonusDamage>0)pushLog('Fusion deals '+effect.bonusDamage+' additional damage.')
+    if(effect.bonusDamage>0)showJudgeHit()
+    return {foeHp:effect.foeHp,playerHp:effect.playerHp}
+  }
+
   async function saveCombatOutcome() {
     const pending = combatOutcomeRef.current
     if (!pending || pending.saving || pending.notified) return
@@ -268,6 +298,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         finalUpdates.weapon_mastery = awardWeaponMastery(player.weapon_mastery || {},
           weaponType, masteryHitsRef.current)
       }
+      if (activeFusion && fusionPracticeRef.current) {
+        finalUpdates.fusion_mastery = awardFusionPractice(player.fusion_mastery || {},
+          activeFusion.key, fusionPracticeRef.current)
+      }
       const rewards = grantXp({ ...player, hp: finalUpdates.hp, ...finalUpdates }, enemyData.xp || 0)
       Object.assign(finalUpdates, rewards)
       victoryText = `Victory! +${enemyData.xp || 0} XP${rewards.level > (player.level || 1) ? ` · Level ${rewards.level}!` : ''}`
@@ -292,6 +326,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     foeHp = keystoneTick.enemyHp
     nextHp = keystoneTick.playerHp
     keystoneTick.messages.forEach(pushLog)
+    const fusionRegen=advanceSingleFusionRegen(nextHp,maxPlayerHp,fusionGuardRef.current)
+    fusionGuardRef.current=fusionRegen.guard
+    nextHp=fusionRegen.playerHp
+    if(fusionRegen.healed>0)pushLog('Plant Fusion restores '+fusionRegen.healed+' HP.')
 
     setEnemyHp(foeHp)
     setCurrentHp(nextHp)
@@ -356,6 +394,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const keystoneDefense = resolveKeystoneDefense(statusEffectsRef.current, finalDmg)
     finalDmg = keystoneDefense.damage
     messages.push(...keystoneDefense.messages)
+    const fusionDefense=absorbSingleFusionDamage(finalDmg,fusionGuardRef.current)
+    finalDmg=fusionDefense.damage
+    fusionGuardRef.current=fusionDefense.guard
+    messages.push(...fusionDefense.messages)
     if (keystoneDefense.mpGain > 0) {
       const gained = recoverCombatMp(mpRef.current, keystoneDefense.mpGain, maxCombatMp) - mpRef.current
       if (gained > 0) { changeCombatMp(mpRef.current + gained); messages.push(`Aegis restores ${gained} MP.`) }
@@ -404,8 +446,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
-    const newEnemyHp = Math.max(0, foeHp - dmg)
+    let newEnemyHp = Math.max(0, foeHp - dmg)
+    ;({foeHp:newEnemyHp,playerHp}=infuseSingleHit(newEnemyHp,playerHp,dmg))
     setEnemyHp(newEnemyHp)
+    setCurrentHp(playerHp)
     if (dmg > 0) showJudgeHit()
 
     const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
@@ -449,9 +493,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (skillDamage > 0) foeHp = Math.max(0, foeHp - skillDamage)
     if (skillHeal > 0) {
       playerHp = Math.min(maxPlayerHp, playerHp + skillHeal)
-      setCurrentHp(playerHp)
+    }
+    if (skillDamage > 0 && r?.consumed!==false && !isFreeClassAction(skillId)) {
+      ;({foeHp,playerHp}=infuseSingleHit(foeHp,playerHp,skillDamage))
     }
     setEnemyHp(foeHp)
+    setCurrentHp(playerHp)
     if (typeof r?.enemyDamage === 'number' && r.enemyDamage > 0) showJudgeHit()
     return { foeHp, playerHp, consumed: r?.consumed !== false }
   }
@@ -709,6 +756,19 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               ' / '+nextWeaponMasteryThreshold((player.weapon_mastery||{})[weaponType]||0)}
           </span>
         </div>
+        {activeFusion && <div className="combat-fusion-status">
+          <span>✦ {activeFusion.classKey} + {activeFusion.element}
+            {' · '}Fusion Lv {activeFusion.level}
+            {getFusionSignature(activeFusion) && ' · '+getFusionSignature(activeFusion)}
+            {' · '}{FUSION_MP_COST} MP per infused hit
+          </span>
+          <button type="button" className="combat-action-btn"
+            disabled={busy || !entranceReady}
+            aria-pressed={fusionEnabled}
+            onClick={()=>setFusionEnabled(enabled=>!enabled)}>
+            {fusionEnabled?'Disable Fusion':'Enable Fusion'}
+          </button>
+        </div>}
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp} attack={selectedAttack}
           canAttack={!busy&&entranceReady&&actionPoints>=selectedAttack.ap}
