@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { withFoeStatus, advanceFoeStatuses, enemyActionBudget } from './tacticalFoeStatus.js'
 import { chooseTacticalEnemyAction } from './tacticalGrid.js'
 import * as ClassCombat from './classCombat.js'
+import { resolveKeystoneStrike } from './keystoneCombat.js'
 
 test('different enemies retain separate bleeds and marks',()=>{
   const shared={cls_markTurns:0,cls_stance:'solar'},perFoe={}
@@ -90,4 +91,23 @@ test('poison and ember stacks damage only their own foe each round',()=>{
   assert.equal(first.statuses.b.cfx_emberStacks,3)
   const second=advanceFoeStatuses(first.units,first.statuses)
   assert.deepEqual(second.units.map(x=>x.hp),[18,6,30])
+})
+
+test('real Cinder Step and Plague Fang apply stacks to the struck enemy only',()=>{
+  const global={cfx_emberStepTurns:2,cfx_plagueFangTurns:2,cfx_forgeAtk:true}
+  const perFoe={}
+  const attack=foeId=>withFoeStatus(global,perFoe,foeId,()=>
+    resolveKeystoneStrike(global,10,false))
+  assert.equal(attack('foe-1').damage,13)
+  assert.equal(perFoe['foe-1'].cfx_emberStacks,1)
+  assert.equal(perFoe['foe-1'].cfx_longDecayStacks,1)
+  assert.equal(global.cfx_emberStacks,undefined)
+  assert.equal(global.cfx_longDecayStacks,undefined)
+  assert.equal(global.cfx_emberStepTurns,1)
+  attack('foe-2')
+  assert.equal(perFoe['foe-1'].cfx_emberStacks,1)
+  assert.equal(perFoe['foe-2'].cfx_emberStacks,1)
+  assert.equal(perFoe['foe-2'].cfx_longDecayStacks,1)
+  assert.equal(global.cfx_emberStepTurns,0)
+  assert.equal(global.cfx_plagueFangTurns,0)
 })

@@ -246,7 +246,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(legendary.has('legendary_hunter')&&target.hp===target.maxHp)priorDamage+=15
     if(legendary.has('legendary_resonance_weaver'))priorDamage+=4
     if(statusRef.current.cfx_ironDomainTurns>0)priorDamage*=2
-    const keystone=resolveKeystoneStrike(statusRef.current,priorDamage,crit)
+    // Cinder Step and Plague Fang are player buffs that inflict stacks on
+    // the struck enemy. Scope only the resulting stacks to this foe.
+    const keystone=forFoe(target.id,()=>resolveKeystoneStrike(
+      statusRef.current,priorDamage,crit))
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
