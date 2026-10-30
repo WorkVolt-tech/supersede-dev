@@ -30,7 +30,7 @@ export default function StartMenu({ player, onPick, onSignOut, onReset }) {
           const driveLocked = isCh3 ? !chapterTwoComplete(player) : !chapterOneComplete(player)
           const chapterLocked = isCh3 ? !secondDriveComplete(player) : !firstDriveComplete(player)
           return <div className="reading-chapter-row" key={e.view}>
-            <div className="reading-chapter-details"><span>{e.label}</span><small>{e.sub}</small><small className="reading-chapter-hint">{driveLocked ? `Complete Chapter ${isCh3 ? 2 : 1} to unlock the drive` : chapterLocked ? `Complete the drive to unlock Chapter ${isCh3 ? 3 : 2}` : isCh3 ? 'Chapter 3 story is awaiting migration' : 'Chapter 2 is ready'}</small></div>
+            <div className="reading-chapter-details"><span>{e.label}</span><small>{e.sub}</small><small className="reading-chapter-hint">{driveLocked ? `Complete Chapter ${isCh3 ? 2 : 1} to unlock the drive` : chapterLocked ? `Complete the drive to unlock Chapter ${isCh3 ? 3 : 2}` : isCh3 ? 'Chapter 3 is ready' : 'Chapter 2 is ready'}</small></div>
             <div className="reading-chapter-actions">
               <button disabled={driveLocked} onClick={() => onPick(isCh3 ? 'drive3' : 'drive')}>{driveLocked ? '🔒 ' : ''}Drive ›</button>
               <button disabled={chapterLocked} onClick={() => onPick(e.view)}>{chapterLocked ? '🔒 ' : ''}Chapter ›</button>
