@@ -938,7 +938,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
   const autoAim=bestTacticalAim(displayPattern,hero,foes,chosen,aim)
   const legalAim=hoverAim&&isTacticalTargetValid(displayPattern,hero,hoverAim)
-    ?hoverAim:autoAim
+    ?hoverAim:aim&&isTacticalTargetValid(displayPattern,hero,aim)?aim:autoAim
   const preview=previewGroupAttack(foes,displayPattern,hero,legalAim)
   const attackLegal=Boolean(legalAim&&isTacticalTargetValid(attack,hero,legalAim))
   const canPlay=!busy&&!result
@@ -955,9 +955,12 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         ?signaturePlan.squares:[]}
       onHoverAim={setHoverAim}
       onAttack={(square,id)=>{
-        if(id)setFocus(id)
-        setAim(square);setHoverAim(null)
-        if(signaturePreview)return
+        if(signaturePreview||!isTacticalTargetValid(displayPattern,hero,square))return
+        if(!sameBattleSquare(aim,square)){
+          if(id)setFocus(id)
+          setAim(square);setHoverAim(null);return
+        }
+        setHoverAim(null)
         if(previewSkill){
           if(isTacticalTargetValid(displayPattern,hero,square))
             void takeTurn(previewSkill.kind,previewSkill.id,square)
@@ -1000,7 +1003,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       </p>}
     {displayPattern&&legalAim&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">
-        {displayName} · {displayPattern.shape} area · {preview.squares.length} squares · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} in range · {previewSkill?'Tap a highlighted square to cast':'Tap a highlighted square to attack'}
+        {displayName} · {displayPattern.shape} area · {preview.squares.length} squares · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} in range · {previewSkill?'Tap a blue square to preview, then tap again to cast':'Tap a blue square to preview, then tap again to attack'}
       </p>}
     {previewSkill&&!displayPattern&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">{displayName} · self/support, no enemy squares targeted.</p>}
