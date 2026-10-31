@@ -29,9 +29,9 @@ const enemyImage = name => enemyArt[name] ? '/assets/enemy/' + enemyArt[name] : 
 const dropLabel = key => String(key || '').replace(/^rune_/, '').replace(/_/g, ' ')
 
 const RANGED_ZONE_DROPS = {
-  loc_garage: [{itemKey:'improvised_bow',chance:.06},{itemKey:'rusted_pistol',chance:.04}],
-  loc_market: [{itemKey:'salvaged_crossbow',chance:.05}],
-  loc_tower: [{itemKey:'security_rifle',chance:.05}],
+  loc_garage: [{itemKey:'improvised_bow',chance:.06},{itemKey:'rusted_pistol',chance:.04},{itemKey:'worn_leather_belt',chance:.12},{itemKey:'copper_pendant',chance:.10}],
+  loc_market: [{itemKey:'salvaged_crossbow',chance:.05},{itemKey:'reinforced_utility_belt',chance:.08},{itemKey:'flicker_necklace',chance:.08}],
+  loc_tower: [{itemKey:'security_rifle',chance:.05},{itemKey:'sentinel_war_belt',chance:.05},{itemKey:'resonance_amulet',chance:.05}],
 }
 
 export default function FarmingAreas({ onReturn }) {
