@@ -299,3 +299,27 @@
 @media (prefers-reduced-motion:no-preference) {
   .combat-grid-cell.foe.splash {transition:background .12s ease,box-shadow .12s ease;}
 }
+
+/* Unified tactical presentation across story, farming, solo and group fights. */
+.combat-grid-field { width:min(100%,520px);gap:7px; }
+.combat-grid-board { gap:6px; }
+.combat-grid-cell { min-height:82px;padding:7px 5px;gap:4px; }
+.group-combat .combat-grid-cell { min-height:82px; }
+.combat-grid-cell.occupied { opacity:1; }
+.combat-unit-visual { display:flex;align-items:center;justify-content:center;width:100%;height:35px;max-height:35px;font-size:25px;line-height:1;animation:combat-unit-idle 2.8s ease-in-out infinite; }
+.combat-unit-visual > * { max-width:100%;max-height:100%; }
+.combat-unit-visual img { max-width:100%;max-height:35px;object-fit:contain; }
+.combat-unit-hud { width:100%;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0; }
+.combat-unit-hud small { max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#f7e7cd; }
+.combat-unit-hud .combat-hp-bar { height:6px;width:96%;background:rgba(0,0,0,.55); }
+.combat-unit-hud .combat-mp-bar { height:4px;width:96%; }
+.combat-unit-hud .combat-hp-fill,.combat-unit-hud .combat-mp-fill { display:block; }
+@keyframes combat-unit-idle { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-3px) } }
+@media(max-width:480px) {
+ .combat-grid-field { width:100%; }
+ .combat-grid-cell,.group-combat .combat-grid-cell { min-height:69px;padding:5px 2px; }
+ .combat-unit-visual { height:26px;max-height:26px;font-size:21px; }
+ .combat-unit-visual img { max-height:26px; }
+ .combat-unit-hud small { font-size:8px; }
+}
+@media(prefers-reduced-motion:reduce) { .combat-unit-visual { animation:none; } }
