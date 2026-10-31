@@ -125,3 +125,13 @@ test('control immunity leaves offensive stun intact',()=>{const st={playerStunTu
 test('Prescience lowers critical chance',()=>{assert.equal(notableEnemyCritChance(new Set(['arn4']),{insight:5},.25),.15)})
 
 test('offensive notable skills have legal battlefield patterns',()=>{for(const id of ['ofn4','ofn5','fln3','fln6','dcn6']){const pattern=notableTargeting(id);assert.equal(pattern.target,'enemy');assert.equal(pattern.shape,'single')}assert.equal(notableTargeting('ofn6'),null)})
+
+test('Flicker belongs to the player and stacks with Ricochet without contaminating enemy poison',()=>{
+ const owner={notableFlickerReady:true},enemy={}
+ const hit=notablePassiveOutgoing(new Set(['fln4','arn5','ofn3']),20,25,()=>0,enemy,owner)
+ assert.equal(hit.damage,50)
+ assert.equal(owner.notableFlickerReady,undefined)
+ assert.equal(enemy.notableFlickerReady,undefined)
+ assert.equal(enemy.notableSpellbladePoisonTurns,2)
+ assert.equal(notablePassiveOutgoing(new Set(['fln4']),20,25,()=>1,enemy,owner).damage,20)
+})
