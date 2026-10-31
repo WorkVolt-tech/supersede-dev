@@ -844,19 +844,26 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setBusy(false)
       return
     }
+    // SPD determines who acts first, not whether the slower combatant gets
+    // a turn at all. The enemy responds after the first paid player action,
+    // rather than waiting for the player's entire AP pool to run out.
+    if (firstAction && !enemyFirst) {
+      setTurnActor('enemy')
+      ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction,heroPosition))
+      await pause(650)
+      setEnemyArea([])
+      if (playerHp<=0 || foeHp<=0) {
+        setTurnActor(null)
+        await endCombat(playerHp<=0?'lose':'win',playerHp)
+        setBusy(false)
+        return
+      }
+    }
     if (remaining>0) {
       setTurnActor(null)
       setDefending(false)
       setBusy(false)
       return
-    }
-
-    if (!enemyFirst) {
-      setTurnActor('enemy')
-      ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction,
-        action==='move'?moveTo:heroPosition))
-      await pause(650)
-      setEnemyArea([])
     }
     setTurnActor(null)
     setDefending(false)
