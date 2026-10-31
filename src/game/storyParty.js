@@ -10,11 +10,14 @@ export const COMPANIONS = {
 }
 const JOIN_SCENES={
   garage_b2_together:['marcus'], boss_sentinel_fight_yara:['yara'],
+  fight_with_kai:['kai'],fight_plaza_spawn:['yara'],pre_boss_team:['yara'],
+  tower_approach:['kai'],boss_unseen_fight_team:['kai','yara'],
   market_b2_ally_path:['lena'], market_b4_gio_cross:['gio'],
   tower_b2_rhen_invite:['rhen'],
 }
 const LEAVE_SCENES={
   garage_b2_alone:['marcus'],boss_sentinel_fight:['yara'],
+  street_midpoint:['kai'],plaza_grind_done:['yara'],pre_boss_solo:['yara'],
   market_b4_solo_cross:['lena'],market_b4_gio_cross:['lena'],
   boss_surveyor_fight_lena:['gio'],boss_surveyor_fight_gio:['lena'],
 }
