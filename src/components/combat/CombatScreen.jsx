@@ -660,6 +660,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const r = ClsCombat.onActiveSkill(skillId, combatPlayer, statusEffectsRef.current, enemyData)
     if(r?.consumed!==false)notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
     if (r?.messages?.length) r.messages.forEach(pushLog)
+    if(!r||r.consumed===false)return {foeHp,playerHp,consumed:false}
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     const skillLevel = getSkillLevel(player, skillId)
     const skillDamage = notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(r?.enemyDamage, skillLevel),enemyData.def||0)
