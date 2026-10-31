@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notableIncomingDamage} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -105,4 +105,18 @@ test('Iron Tide triggers once below half health and expires',()=>{
  advanceNotableTurn(status);advanceNotableTurn(status)
  assert.equal(notableIncomingDamage(status,30),30)
  assert.equal(activateNotableIronTide(p,status,30,100),false)
+})
+
+test('Absorption heals after three hits and consumes the trigger',()=>{
+ const p=new Set(['dfn2']),status={}
+ for(let i=0;i<3;i++)assert.equal(notablePassiveResolveHit(p,status,12),12)
+ assert.equal(notablePassiveDefend(p,status,60,100).heal,15)
+ assert.equal(notablePassiveDefend(p,status,60,100).heal,0)
+})
+test('Ancient Root shields twenty percent of max health',()=>{
+ const p=new Set(['dc_ks2']),status={}
+ notablePassiveBattleStart(p,status,100)
+ assert.equal(notablePassiveResolveHit(p,status,12),0)
+ assert.equal(notablePassiveResolveHit(p,status,12),4)
+ assert.equal(notablePassiveResolveHit(p,status,12),12)
 })
