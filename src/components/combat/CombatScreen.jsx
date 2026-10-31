@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -520,7 +520,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // the vanilla engines did. Real return shape is {dmgMult, reflectAmount,
     // messages} — not a flat "final damage" field, so apply the multiplier
     // ourselves.
+    enforceNotableControlImmunity(learnedNotablePassives(player),statusEffectsRef.current)
     const hitResult = ClsCombat.onPlayerHit(combatPlayer, statusEffectsRef.current, enemyData, aiDmg, maxPlayerHp)
+    enforceNotableControlImmunity(learnedNotablePassives(player),statusEffectsRef.current)
     let finalDmg = Math.max(0, Math.round(aiDmg * (hitResult?.dmgMult ?? 1) * resistMult(combatPlayer)))
     const dodgeChance = Math.min(.25,Math.max(0,effective.core.agility)*.01)
     if (finalDmg > 0 && Math.random() < dodgeChance) {
