@@ -20,6 +20,10 @@ const LEAVE_SCENES={
 }
 export function partyTagsForScene(log=[],scene) {
   let tags=[...log]
+  // Zone transitions disband temporary travel companions.
+  if(scene==='district_hub'||scene==='market_approach'||scene==='tower_approach'||
+     scene==='garage_approach'||scene==='plaza_allies')
+    tags=tags.filter(tag=>!tag.startsWith('party:'))
   for(const id of LEAVE_SCENES[scene]||[])tags=tags.filter(t=>t!=='party:'+id)
   for(const id of JOIN_SCENES[scene]||[])
     if(!tags.includes('party:'+id))tags.push('party:'+id)
