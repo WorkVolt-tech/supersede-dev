@@ -117,10 +117,27 @@ async function runScenario(scenario,view){
   await enemyCell.click()
   // The original class damage/crit system may defeat a light training foe
   // in one swing. Both an AP-spending hit and an immediate victory are valid.
-  await view.waitForFunction(()=>
-    document.body.dataset.outcome==='win'||
-    document.querySelector('[role="progressbar"][aria-label="Action Points"]')?.getAttribute('aria-valuenow')==='29',
-    null,{timeout:10000})
+  try {
+    await view.waitForFunction(()=>
+      document.body.dataset.outcome==='win'||
+      document.querySelector('[role="progressbar"][aria-label="Action Points"]')?.getAttribute('aria-valuenow')==='29',
+      null,{timeout:10000})
+  }catch(error){
+    const diagnostic=await view.evaluate(()=>({
+      banner:document.querySelector('.combat-turn-banner')?.textContent,
+      ap:document.querySelector('[aria-label="Action Points"]')?.getAttribute('aria-valuenow'),
+      equipped:[...document.querySelectorAll('.combat-tactical-weapons button')].map(x=>({
+        name:x.textContent,selected:x.getAttribute('aria-pressed'),disabled:x.disabled
+      })),
+      targets:[...document.querySelectorAll('.combat-grid-board:first-of-type button')].map(x=>({
+        text:x.textContent,disabled:x.disabled,className:x.className
+      })),
+      log:document.querySelector('.combat-log')?.textContent?.slice(-1200),
+      outcome:document.body.dataset.outcome,
+    }))
+    console.error('Solo targeting diagnostic '+scenario,JSON.stringify(diagnostic))
+    throw error
+  }
   const firstVictory=await view.evaluate(()=>document.body.dataset.outcome==='win')
   if(enabled){
     check((await view.locator('.combat-log').textContent()).includes('Phantom Inferno'),
