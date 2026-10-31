@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -492,7 +492,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   }
 
   function groupSpellPattern(id) {
-    const rule=getProgressedTacticalSkillRule(id,getSkillLevel(player,id))
+    const rule=notableTargeting(id)||getProgressedTacticalSkillRule(id,getSkillLevel(player,id))
     return rule?.target==='enemy'?rule:null
   }
   function resolveSkill(id,target,aimSquare=null) {
@@ -808,7 +808,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
 
   async function takeTurn(kind,id=null,position=null) {
     if(busyRef.current||pendingRef.current)return
-    const targetedSkill=(kind==='skill'||kind==='elemental')&&position
+    const targetedSkill=(kind==='skill'||kind==='elemental'||kind==='loadout')&&position
     const skillPattern=targetedSkill?groupSpellPattern(id):null
     const skillHit=skillPattern?previewGroupAttack(foesRef.current,skillPattern,heroRef.current,position):null
     const target=targetedSkill
@@ -824,7 +824,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
-    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)))return
+    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(notableTargeting(id)&&!position)))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
       !canUseTacticalSkill(id,heroRef.current,position||target,getSkillLevel(player,id))))return
@@ -1068,8 +1068,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       <div className="combat-actions">
         {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
         {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
-          title={skill.desc} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)}
-          onClick={()=>takeTurn('loadout',skill.id)}>
+          title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)}
+          onClick={()=>{if(notableTargeting(skill.id)){setPreviewSkill({id:skill.id,label:skill.label,kind:'loadout'});setAim(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
           {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
           <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
         </button>)}
