@@ -227,3 +227,23 @@ test('Spell Surge penetrates half DEF and consumes its bonus on damage',()=>{
  assert.equal(notableSkillDamage(status,20,10),38)
  assert.equal(notableSkillDamage(status,20,10),20)
 })
+
+test('Shade Walk gives two turns of speed after a kill',()=>{
+ const passives=new Set(['dcn4']),status={}
+ assert.equal(notablePassiveKill(passives,status),true)
+ assert.equal(notablePassiveStatBonus(passives,{notableShadeWalkTurns:status.notableShadeWalkTurns}).speed,20)
+ advanceNotableTurn(status)
+ assert.equal(notablePassiveStatBonus(passives,{notableShadeWalkTurns:status.notableShadeWalkTurns}).speed,20)
+ advanceNotableTurn(status)
+ assert.equal(notablePassiveStatBonus(passives,{notableShadeWalkTurns:status.notableShadeWalkTurns}).speed,5)
+})
+test('Thornwall only reflects defended absorbed damage',()=>{
+ const passives=new Set(['dcn3'])
+ assert.equal(notablePassiveDefendReflect(passives,true,20),3)
+ assert.equal(notablePassiveDefendReflect(passives,false,20),0)
+})
+test('Razor Tempo prioritizes only basic strikes',()=>{
+ const passives=new Set(['fln1'])
+ assert.equal(notableRazorTempo(passives,'basic_strike'),true)
+ assert.equal(notableRazorTempo(passives,'heavy_slash'),false)
+})
