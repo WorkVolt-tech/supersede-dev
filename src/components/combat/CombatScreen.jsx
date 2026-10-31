@@ -13,6 +13,7 @@
 // handler — this component doesn't need to know or care which.
 import { useState, useEffect, useRef } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
+import { activeCompanions } from '../../game/storyParty'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
@@ -65,7 +66,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
+function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
   signatureFx,signaturePreview }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -75,7 +76,8 @@ function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon
     const rows=side==='enemy'?[2,1,0]:[0,1,2]
     return rows.flatMap(rank=>[0,1,2].map(col=>{
       const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
-      const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
+      const ally=side==='hero'&&!occupied?companions.find((_,i)=>[0,2,3,5,6,8][i]===rank*3+col):null
+      const move=side==='hero'&&!occupied&&!ally&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
       const reachable=side==='enemy'&&isTacticalTargetValid(attack,hero,{col,rank})
@@ -84,18 +86,18 @@ function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon
       const area=signaturePreview?.side===side&&signaturePreview.squares.some(
         p=>p.rank===rank&&p.col===col)
       return <button key={side+'-'+col+'-'+rank} type="button"
-        className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
+        className={['combat-grid-cell',occupied||ally?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
           splash?'splash':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
-        aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
+        aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
-        <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
+        <span>{ally?ally.icon:occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {occupied&&<small>{side==='enemy'?'FOE':'YOU'}</small>}
+        {(occupied||ally)&&<small>{ally?ally.name:side==='enemy'?'FOE':'YOU'}</small>}
       </button>
     }))
   }
@@ -124,6 +126,7 @@ function CombatMessage({ message }) {
 
 export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBoss, judgeCtx }) {
   const player = usePlayerStore(s => s.player)
+  const companions=activeCompanions(player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
@@ -837,6 +840,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       const stacks=applyStonebornDefend(combatPlayer,statusEffectsRef.current)
       if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
     }
+    if(firstAction&&companions.length&&foeHp>0){
+      for(const member of companions){
+        if(foeHp<=0)break
+        foeHp=Math.max(0,foeHp-member.damage)
+        pushLog(member.name+' strikes '+enemyData.name+' for '+member.damage+' damage.')
+      }
+      setEnemyHp(foeHp)
+    }
     await pause(450)
     if (action==='attack' && attack.fallback) {
       emergencyUsedRef.current=true
@@ -981,7 +992,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           className={'combat-signature-burst signature-'+signatureFx.kind+
         (signatureFx.element?' triad-'+signatureFx.element:'')}
           role="status">{signature?.label}</div>}
-        <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} enemyName={enemyData.name}
+        <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={companions} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp}
           attack={signaturePreview&&signature?.target==='enemy'?signature.attack:selectedAttack}
           signatureFx={signatureFx}
