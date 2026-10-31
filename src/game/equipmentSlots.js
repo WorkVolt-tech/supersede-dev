@@ -31,8 +31,11 @@ export const SLOTS = [
   { key: 'chest',      label: 'Chest',       icon: '🦺', accepts: ['chest', 'armor', 'cloak'] },
   { key: 'gloves',     label: 'Gloves',      icon: '🧤', accepts: ['gloves'] },
   { key: 'boots',      label: 'Boots',       icon: '👢', accepts: ['boots'] },
-  { key: 'accessory1', label: 'Accessory 1', icon: '💍', accepts: ['accessory', 'ring'] },
-  { key: 'accessory2', label: 'Accessory 2', icon: '📿', accepts: ['accessory', 'ring'] },
+  // Retain the original database keys so existing rings stay equipped.
+  { key: 'accessory1', label: 'Ring 1', icon: '💍', accepts: ['accessory', 'ring'] },
+  { key: 'accessory2', label: 'Ring 2', icon: '💍', accepts: ['accessory', 'ring'] },
+  { key: 'necklace', label: 'Necklace', icon: '📿', accepts: ['necklace', 'amulet'] },
+  { key: 'belt', label: 'Belt', icon: '🪢', accepts: ['belt'] },
   { key: 'mainhand',   label: 'Weapon',      icon: '⚔️', accepts: ['sword', 'dagger', 'staff', 'spear', 'shield', ...RANGED_WEAPONS] },
   { key: 'offhand',    label: 'Off-hand',    icon: '🛡', accepts: ['shield', 'dagger', 'tome', 'sword', 'pistol', 'revolver', 'handgun'] },
 ]
