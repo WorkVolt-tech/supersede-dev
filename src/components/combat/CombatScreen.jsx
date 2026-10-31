@@ -42,6 +42,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -545,7 +546,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
-    const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) +
+    const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
+    const base = Math.max(1, warboundBonus + calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
@@ -729,6 +731,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:2
     if (cost > actionPointsRef.current) return
+    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId))) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
       !canUseTacticalSkill(skillId,heroPosition,enemyPosition))) return
@@ -821,6 +824,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       ;({foeHp,playerHp}=castElementalAttack(skillId,foeHp,playerHp))
     } else if (action==='signature') {
       ;({foeHp,playerHp}=castSignature(foeHp,playerHp))
+    } else if (action==='loadout') {
+      const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0})
+      effect.messages.forEach(pushLog)
+      if(effect.damage>0){foeHp=Math.max(0,foeHp-scaleSkillAmount(effect.damage,getSkillLevel(player,skillId)));setEnemyHp(foeHp);showJudgeHit()}
     } else if (action==='skill') {
       const skillResult=playerSkill(skillId,foeHp,playerHp)
       foeHp=skillResult.foeHp
@@ -903,6 +910,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   }
 
   const activeSkills = ClsCombat.getActiveClassSkills(combatPlayer, statusEffectsRef.current) || []
+  const loadoutSkills = equippedNotableSkills(player)
   const keystones = getUnlockedKeystones(combatPlayer, keystoneCooldowns)
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
@@ -1020,6 +1028,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
           <button type="button" className="combat-action-btn" disabled={busy || !entranceReady}
             onClick={() => takeTurn('end')}>End turn</button>
+          {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
+          {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
+            title={skill.desc} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)}
+            onClick={()=>takeTurn('loadout',skill.id)}>
+            {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
+            <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
+          </button>)}
           {activeSkills.map(skill => (
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
               (actionPoints<2 && !isFreeClassAction(skill.id)) ||
