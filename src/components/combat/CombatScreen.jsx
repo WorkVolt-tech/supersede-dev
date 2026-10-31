@@ -883,6 +883,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       const skillResult=playerSkill(skillId,foeHp,playerHp)
       foeHp=skillResult.foeHp
       playerHp=skillResult.playerHp
+      if(!skillResult.consumed){
+        pushLog('Skill did not activate; no AP spent.')
+        setBusy(false)
+        return
+      }
     } else {
       pushLog('You brace yourself.')
       const stacks=applyStonebornDefend(combatPlayer,statusEffectsRef.current)
