@@ -198,7 +198,7 @@ export function nextWeaponMasteryThreshold(xp) {
 // Enemy choices use the same legal targeting rules as player attacks.
 // Try a meaningful attack, otherwise move one adjacent square toward a legal
 // weapon shot. If no movement helps, use the weak universal fallback.
-export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[], avoidSquares=[]) {
+export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[], avoidSquares=[], options={}) {
   // Unarmed enemies get the same plain strike as an unequipped player,
   // not the dagger/magical techniques in the legacy unarmed mastery kit.
   const kit=tacticalWeaponType(weaponType)==='unarmed'
@@ -218,7 +218,8 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
   const neighbors=pos=>directions.map(([dc,dr])=>({col:pos.col+dc,rank:pos.rank+dr}))
     .filter(p=>p.col>=0&&p.col<3&&p.rank>=0&&p.rank<3&&
       !blocked.has(p.col+':'+p.rank));
-  if(hazard.has(from.col+':'+from.rank)){
+  const mobile=options.canMove!==false
+  if(mobile&&hazard.has(from.col+':'+from.rank)){
     const safe=neighbors(from).filter(p=>!hazard.has(p.col+':'+p.rank))
       .sort((a,b)=>{
         const options=p=>attacks.filter(attack=>isTacticalTargetValid(attack,p,target));
@@ -228,6 +229,7 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
     if(safe.length)return {move:safe[0]};
   }
   if(valid.length)return {attack:valid[0]};
+  if(!mobile)return {wait:true}
   // Breadth-first movement through unoccupied cells. Avoid hazardous tiles
   // where possible, but allow them if the formation leaves no other route.
   const visited=new Set([from.col+':'+from.rank]);
@@ -252,7 +254,7 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
     options.sort((a,b)=>a.risk-b.risk||a.depth-b.depth);
     return {move:options[0].first};
   }
-  return {attack:kit.find(a=>a.fallback)};
+  return {wait:true};
 }
 
 // All class kits inherit their equipped weapon's baseline reach plus an
