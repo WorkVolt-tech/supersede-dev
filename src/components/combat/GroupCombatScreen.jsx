@@ -629,6 +629,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note(actor.name+' is stunned and loses its turn.')
         continue
       }
+      if(notableFreezeEnemy(statusRef.current)) { note(actor.name+' is frozen by Time Lock.');continue }
       const occupied=next.filter(other=>other.id!==actor.id&&other.hp>0)
       const hazards=fieldsRef.current.flatMap(field=>field.squares)
       const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards,{canMove:actor.canMove!==false&&actor.mobile!==false&&enemyData.canMove!==false})
@@ -645,7 +646,6 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note(actor.name+' holds position while the group regroups.')
         continue
       }
-      if(notableFreezeEnemy(statusRef.current)) { note(actor.name+' is frozen by Time Lock.');continue }
       const enemySquares=choice.attack?getTacticalAffectedSquares(choice.attack,heroAt):[]
       setEnemyArea(enemySquares)
       await sleep(320)
