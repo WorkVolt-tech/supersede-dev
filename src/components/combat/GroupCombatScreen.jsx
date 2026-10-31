@@ -1,6 +1,7 @@
 // Explicit Chapter 1 multi-enemy encounters. Kept separate from CombatScreen
 // so bosses and existing one-on-one fights retain their mature story scripts.
 import { activeCompanions } from '../../game/storyParty'
+import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useInventoryStore } from '../../store/useInventoryStore'
@@ -53,7 +54,7 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
     return ranks.flatMap(rank=>[0,1,2].map(col=>{
       const foe=side==='enemy'?foes.find(f=>f.hp>0&&f.col===col&&f.rank===rank):null
       const mine=side==='hero'&&hero.rank===rank&&hero.col===col
-      const member=side==='hero'&&!mine?companions.find((_,i)=>[0,2,3,5,6,8][i]===rank*3+col):null
+      const member=side==='hero'&&!mine?companions.find(ally=>ally.rank===rank&&ally.col===col):null
       const status=foe?foeStatuses[foe.id]||{}:{}
       const effects=foe?[
         status.cls_bleedingTurns>0?'🩸':'',status.cls_rotTurns>0?'☣️':'',
@@ -105,6 +106,8 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
 export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }) {
   const player=usePlayerStore(s=>s.player)
   const companions=activeCompanions(player)
+  const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
+  const partyRef=useRef(partyPositions)
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
@@ -577,14 +580,23 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
 
   async function enemyPhase(fast,heroAt) {
     let next=foesRef.current.map(u=>({...u}))
-    if(!fast&&companions.length){
-      for(const member of companions){
-        const victim=next.find(foe=>foe.hp>0)
-        if(!victim)break
-        victim.hp=Math.max(0,victim.hp-member.damage)
-        note(member.name+' attacks '+victim.name+' for '+member.damage+' damage.')
-        if(victim.hp===0)onFoeDefeated(victim)
+    if(!fast&&partyRef.current.length){
+      const allies=partyRef.current.map(member=>({...member}))
+      for(const member of allies){
+        const choice=decideCompanionAction(member,allies,next,enemyArea,heroRef.current)
+        if(choice.kind==='move'){
+          member.col=choice.to.col;member.rank=choice.to.rank
+          note(member.name+' '+choice.reason+'.')
+        } else if(choice.kind==='attack'){
+          const victim=next.find(foe=>foe.id===choice.target.id)
+          if(!victim||victim.hp<=0)continue
+          victim.hp=Math.max(0,victim.hp-member.damage)
+          note(member.name+' attacks '+victim.name+' for '+member.damage+' damage.')
+          if(victim.hp===0)onFoeDefeated(victim)
+        } else note(member.name+' holds position.')
       }
+      partyRef.current=allies
+      setPartyPositions(allies)
       updateFoes(next)
     }
     let currentHp=hpRef.current
@@ -766,6 +778,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!isTacticalTargetValid(selected,heroRef.current,attackSquare)||
       (selected?.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0)))return
+    if(kind==='move'&&partyRef.current.some(ally=>ally.col===position?.col&&ally.rank===position?.rank))return
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
@@ -912,7 +925,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} companions={companions} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} companions={partyPositions} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
