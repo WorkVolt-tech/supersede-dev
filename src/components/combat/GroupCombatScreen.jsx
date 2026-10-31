@@ -1,6 +1,7 @@
 // Explicit Chapter 1 multi-enemy encounters. Kept separate from CombatScreen
 // so bosses and existing one-on-one fights retain their mature story scripts.
 import { activeCompanions } from '../../game/storyParty'
+import { bestTacticalAim, sameBattleSquare } from '../../game/tacticalPreview'
 import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
@@ -45,7 +46,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
+function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onAttack, onHoverAim,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -67,6 +68,8 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
       const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
+      const primary=side==='enemy'&&reachable&&sameBattleSquare(aim,{col,rank})
+      const affectedFoe=Boolean(foe&&splash)
       const reachable=side==='enemy'&&isTacticalTargetValid(pattern,hero,{col,rank})
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
@@ -79,13 +82,17 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
           foe||mine||member?'occupied':'',selected?'selected-foe':'',
           inRange?'attackable':'',reachable?'reachable':'',
-          splash?'splash':'',enemyThreat?'enemy-threat':'',hazard?'hazard':'',step?'movable':'',
+          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',enemyThreat?'enemy-threat':'',hazard?'hazard':'',step?'movable':'',
           barrier?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?false:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
         aria-label={member?member.name+' · party ally':foe?foe.name+' '+foe.hp+' HP · '+
           (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
-        onClick={()=>side==='enemy'?onAttack({col,rank},foe?.id):onMove({col,rank})}>
+        onClick={()=>side==='enemy'?onAttack({col,rank},foe?.id):onMove({col,rank})}
+        onPointerEnter={()=>{if(side==='enemy'&&reachable)onHoverAim({col,rank})}}
+        onPointerLeave={()=>{if(side==='enemy')onHoverAim(null)}}
+        onFocus={()=>{if(side==='enemy'&&reachable)onHoverAim({col,rank})}}
+        onBlur={()=>{if(side==='enemy')onHoverAim(null)}}>
         <span>{foe?foe.icon:mine?'🧑':member?member.icon:'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
@@ -141,6 +148,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const [signatureFx,setSignatureFx]=useState(null)
   const signatureFxId=useRef(0)
   const [previewSkill,setPreviewSkill]=useState(null)
+  const [hoverAim,setHoverAim]=useState(null)
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
   const heroRef=useRef(hero)
@@ -486,10 +494,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const rule=getProgressedTacticalSkillRule(id,getSkillLevel(player,id))
     return rule?.target==='enemy'?rule:null
   }
-  function resolveSkill(id,target) {
+  function resolveSkill(id,target,aimSquare=null) {
     const pattern=groupSpellPattern(id)
     const footprint=target&&pattern
-      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,target.id):null
+      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,aimSquare||target.id):null
     const before={...(foeStatusesRef.current[target?.id]||{})}
     const response=forFoe(target?.id,()=>ClsCombat.onActiveSkill(
       id,combatPlayer,statusRef.current,target))
@@ -501,17 +509,17 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target){
       const affected=applyDamage(foesRef.current,
-        pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},target.id,damage)
+        pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},aimSquare||target.id,damage)
       if(pattern)infuseHit(affected,target.id)
     }
     const heal=scaleSkillAmount(response?.selfHeal,getSkillLevel(player,id))
     if(heal)updateHp(hpRef.current+heal)
     return response?.consumed!==false
   }
-  function resolveElement(id,target) {
+  function resolveElement(id,target,aimSquare=null) {
     const pattern=groupSpellPattern(id)
     const footprint=target&&pattern
-      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,target.id):null
+      ?previewGroupAttack(foesRef.current,pattern,heroRef.current,aimSquare||target.id):null
     const before={...(foeStatusesRef.current[target?.id]||{})}
     const effect=forFoe(target?.id,()=>{
       const result=resolveElementalAttack(id,combatPlayer,statusRef.current,{
@@ -529,7 +537,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         effect.setStatus?.infernoTurns>0) {
       // Inferno occupies a fixed pattern of squares. A target can escape
       // the fire by moving, and other enemies entering the area are hit.
-      const zone=makeGroupField('inferno',groupSpellPattern(id),target,
+      const zone=makeGroupField('inferno',groupSpellPattern(id),aimSquare||target,
         effect.setStatus.infernoTurns,effect.setStatus.infernoDmg||40)
       fieldsRef.current=[...fieldsRef.current.filter(f=>f.kind!=='inferno'),zone]
       // Do not also damage a separately selected enemy through the legacy
@@ -541,7 +549,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const damage=scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id))
     if(damage>0&&target){
       const fraction=pattern?.shape!=='single'?0.7:1
-      const affected=applyDamage(foesRef.current,pattern,target.id,Math.max(1,Math.round(damage*fraction)))
+      const affected=applyDamage(foesRef.current,pattern,aimSquare||target.id,Math.max(1,Math.round(damage*fraction)))
       note(effect.label+': '+affected.targets.length+' target(s) hit.')
     }
     const heal=scaleSkillAmount(effect.healPlayer,getSkillLevel(player,id))
@@ -780,8 +788,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
 
   async function takeTurn(kind,id=null,position=null) {
     if(busyRef.current||pendingRef.current)return
-    const target=nextAliveTarget(foesRef.current,focus)
+    const targetedSkill=(kind==='skill'||kind==='elemental')&&position
+    const skillPattern=targetedSkill?groupSpellPattern(id):null
+    const skillHit=skillPattern?previewGroupAttack(foesRef.current,skillPattern,heroRef.current,position):null
+    const target=targetedSkill
+      ?skillHit?.targets.find(unit=>unit.id===focus)||skillHit?.targets[0]||null
+      :nextAliveTarget(foesRef.current,focus)
     const attackSquare=kind==='attack'?(position||aim):null
+    if(targetedSkill&&skillPattern&&(!skillHit?.valid||!skillHit.targets.length))return
     const selected=kind==='attack'?attack:null
     if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!isTacticalTargetValid(selected,heroRef.current,attackSquare)||
       (selected?.thrown&&improvisedThrowTurnsRemaining(
@@ -868,8 +882,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           if(live){live.hp=Math.max(0,live.hp-scaleSkillAmount(effect.damage,getSkillLevel(player,id)));updateFoes([...foesRef.current]);if(live.hp===0)onFoeDefeated(live)}
         }
       }
-      else if(kind==='skill')resolveSkill(id,liveTarget||target)
-      else if(kind==='elemental')resolveElement(id,liveTarget||target)
+      else if(kind==='skill')resolveSkill(id,liveTarget||target,position)
+      else if(kind==='elemental')resolveElement(id,liveTarget||target,position)
       else if(kind==='signature')castSignature(liveTarget||target)
       else if(kind==='keystone')resolveKeystone(id,liveTarget||target)
       else if(kind==='defend'){
@@ -923,9 +937,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     :previewSkill?groupSpellPattern(previewSkill.id):attack
   const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
   const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
-  const legalAim=aim&&isTacticalTargetValid(displayPattern,hero,aim)?aim:
-    Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))
-      .find(square=>isTacticalTargetValid(displayPattern,hero,square))||null
+  const autoAim=bestTacticalAim(displayPattern,hero,foes,chosen,aim)
+  const legalAim=hoverAim&&isTacticalTargetValid(displayPattern,hero,hoverAim)
+    ?hoverAim:autoAim
   const preview=previewGroupAttack(foes,displayPattern,hero,legalAim)
   const attackLegal=Boolean(legalAim&&isTacticalTargetValid(attack,hero,legalAim))
   const canPlay=!busy&&!result
@@ -939,9 +953,17 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
-      onFocus={(square,id)=>{setAim(square);if(id)setFocus(id)}}
-      onAttack={(square,id)=>{setAim(square);if(id)setFocus(id);if(!signaturePreview&&!previewSkill&&isTacticalTargetValid(attack,hero,square))takeTurn('attack',null,square)}}
-      onMove={point=>takeTurn('move',null,point)} />
+      onHoverAim={setHoverAim}
+      onAttack={(square,id)=>{
+        if(id)setFocus(id)
+        setAim(square);setHoverAim(null)
+        if(signaturePreview)return
+        if(previewSkill){
+          if(isTacticalTargetValid(displayPattern,hero,square))
+            void takeTurn(previewSkill.kind,previewSkill.id,square)
+        }else if(isTacticalTargetValid(attack,hero,square))void takeTurn('attack',null,square)
+      }}
+      onMove={point=>{setHoverAim(null);takeTurn('move',null,point)}} />
     <div className="combat-tactical-status">
       <span>{weapon?'Weapon: '+weaponType:'No weapon equipped · Basic combat'}
         {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
@@ -976,9 +998,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           ?signaturePlan.squares.length+' protected ally squares'
           :signaturePlan.hits.length+' targets'} · {signature.attack.shape} pattern
       </p>}
-    {target&&attackLegal&&!signaturePreview&&!result&&
+    {displayPattern&&legalAim&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">
-        {displayName} preview · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} {previewSkill?'affected':'hit'} · {displayPattern.shape} pattern
+        {displayName} · {displayPattern.shape} area · {preview.squares.length} squares · {preview.targets.length} {preview.targets.length===1?'enemy':'enemies'} in range · {previewSkill?'Tap a highlighted square to cast':'Tap a highlighted square to attack'}
       </p>}
     {previewSkill&&!displayPattern&&!signaturePreview&&!result&&
       <p className="combat-attack-preview" role="status">{displayName} · self/support, no enemy squares targeted.</p>}
@@ -993,7 +1015,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           disabled={!canPlay||(item.thrown&&throwTurns>0)||(item.fallback&&emergencyUsed)}
           aria-pressed={item.id===attack.id}
           onClick={()=>{
-            setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)
+            setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false);setHoverAim(null)
             if(!isTacticalTargetValid(item,hero,aim)){
               const cells=Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))
               const closest=cells.find(cell=>isTacticalTargetValid(item,hero,cell))
@@ -1030,27 +1052,28 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         {activeSkills.map(skill=><button key={skill.id} type="button" className="combat-action-btn"
           disabled={!canPlay||skill.available===false||
             (!isFreeClass(skill.id)&&ap<2)||
-            !canUseTacticalSkill(skill.id,hero,target,getSkillLevel(player,skill.id))}
-          onClick={()=>takeTurn('skill',skill.id)}>
+            (groupSpellPattern(skill.id)&&!bestTacticalAim(groupSpellPattern(skill.id),hero,foes,chosen))}
+          aria-pressed={previewSkill?.id===skill.id}
+          onClick={()=>{
+            if(groupSpellPattern(skill.id)){
+              setPreviewSkill({id:skill.id,label:skill.label,kind:'skill'});setSignaturePreview(false);setHoverAim(null)
+            } else takeTurn('skill',skill.id)
+          }}>
           {skill.label} · Lv {getSkillLevel(player,skill.id)}
           <span className="combat-action-sub">{groupSpellPattern(skill.id)?.shape||'Self / support'} · 2 AP</span>
         </button>)}
-        {activeSkills.map(skill=><button key={skill.id+'-preview'} type="button"
-          className="combat-action-btn combat-preview-btn" disabled={!canPlay}
-          onClick={()=>setPreviewSkill({id:skill.id,label:skill.label})}>
-          Preview {skill.label} · Lv {getSkillLevel(player,skill.id)}
-        </button>)}
         {elemental&&<button type="button" className="combat-action-btn"
-          disabled={!canPlay||ap<2||!canUseTacticalSkill(elemental.id,hero,target,getSkillLevel(player,elemental.id))||
+          disabled={!canPlay||ap<2||(groupSpellPattern(elemental.id)&&!bestTacticalAim(groupSpellPattern(elemental.id),hero,foes,chosen))||
             (elemCooldowns[elemental.id]||0)>0||
             mp<getAttackMpCost(combatPlayer,elemental.id,statusRef.current)}
-          onClick={()=>takeTurn('elemental',elemental.id)}>
+          aria-pressed={previewSkill?.id===elemental.id}
+          onClick={()=>{
+            if(groupSpellPattern(elemental.id)){
+              setPreviewSkill({id:elemental.id,label:elemental.label,kind:'elemental'});setSignaturePreview(false);setHoverAim(null)
+            } else takeTurn('elemental',elemental.id)
+          }}>
           {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
           <span className="combat-action-sub">{groupSpellPattern(elemental.id)?.shape||'Self / support'} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
-        </button>}
-        {elemental&&<button type="button" className="combat-action-btn combat-preview-btn"
-          disabled={!canPlay} onClick={()=>setPreviewSkill({id:elemental.id,label:elemental.label})}>
-          Preview {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
         </button>}
         {signature&&<button type="button" className="combat-action-btn combat-signature-action"
           disabled={!canPlay||!canCastFusionSignature(signature,{
