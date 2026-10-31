@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notablePassiveDefendReflect, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -715,7 +715,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       damage=notablePassiveResolveHit(learnedNotablePassives(player),statusRef.current,notableIncomingDamage(statusRef.current,damage))
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
-      actor.hp=Math.max(0,actor.hp-reflect-(hit?.reflectAmount||0)-(guard.reflected||0)-
+      const thornwall=notablePassiveDefendReflect(learnedNotablePassives(player),defendingRef.current,Math.max(0,incoming-damage))
+      if(thornwall)note('Thornwall reflects '+thornwall+' damage.')
+      actor.hp=Math.max(0,actor.hp-thornwall-reflect-(hit?.reflectAmount||0)-(guard.reflected||0)-
         Math.round(damage*reflectFraction(combatPlayer)))
       currentHp=Math.max(0,currentHp-damage)
       note(actor.name+(pulse?' fires an emergency pulse':' attacks')+' for '+damage+' damage.')
