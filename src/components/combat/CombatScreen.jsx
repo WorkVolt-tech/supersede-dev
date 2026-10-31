@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -641,6 +641,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     msgs.forEach(pushLog)
 
     if (newEnemyHp <= 0) {
+      const bloodthirst=notableOnKill(statusEffectsRef.current,maxPlayerHp)
+      playerHp=Math.min(maxPlayerHp,playerHp+bloodthirst.heal)
+      setCurrentHp(playerHp)
+      bloodthirst.messages.forEach(pushLog)
       const killResult = ClsCombat.onKill(combatPlayer, statusEffectsRef.current, enemyData)
       if (killResult?.messages?.length) killResult.messages.forEach(pushLog)
       if (killResult?.dbUpdates) Object.assign(dbUpdatesRef.current, killResult.dbUpdates)
