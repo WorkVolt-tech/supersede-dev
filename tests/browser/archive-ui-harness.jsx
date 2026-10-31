@@ -6,6 +6,7 @@ import {useInventoryStore} from '../../src/store/useInventoryStore'
 import StartMenu from '../../src/components/menu/StartMenu'
 import TestsPreviewsPage from '../../src/components/menu/TestsPreviewsPage'
 import SkillsScreen from '../../src/components/skills/SkillsScreen'
+import WeaponMasteryScreen from '../../src/components/mastery/WeaponMasteryScreen'
 import {getEffectiveStats} from '../../src/game/playerStats'
 import '../../src/index.css'
 import '../../src/components/book/BookShell.css'
@@ -37,7 +38,8 @@ function Harness(){
     onSignOut={()=>setView('signed-out')} onReset={()=>setView('reset')}/>
   if(view==='tests-previews')return <TestsPreviewsPage
     player={player} onPick={handlePick} onReturn={()=>setView('menu')}/>
-  if(view==='skills')return <SkillsScreen onReturn={()=>setView('menu')}/>
+  if(view==='skills')return <SkillsScreen onReturn={()=>setView('menu')} onOpenMastery={()=>setView('mastery')}/>
+  if(view==='mastery')return <WeaponMasteryScreen onReturn={()=>setView('menu')} onSkills={()=>setView('skills')}/>
   return <div id="archive-selected-route" data-view={view}>
     <button onClick={()=>setView('tests-previews')}>Back to Tests & Previews</button>
   </div>
