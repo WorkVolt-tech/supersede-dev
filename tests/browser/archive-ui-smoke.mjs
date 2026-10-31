@@ -45,15 +45,8 @@ async function verifyMenu(page,chapter){
     .getByRole('button',{name:/Professions/})
   check(await profession.count()===(chapter==='3'?1:0),
     'Chapter 3 profession visibility mismatch')
-  const statLabels=await page.locator('.reading-minor-stats div')
-    .allTextContents()
-  check(statLabels.length===6,'record should contain six metrics in one group')
-  for(const [i,label] of [
-    'Combat ATK','Combat DEF','Initiative','Insight','PvP kills','Helps given'
-  ].entries())
-    check(statLabels[i].startsWith(label),label+' displayed out of order')
-  check(await page.locator('.reading-derived-grid').count()===0,
-    'derived stats should not have a second block')
+  check(await page.locator('.reading-minor-stats, .reading-attribute-grid').count()===0,
+    'combat stats and attributes belong in Skills, not on the book page')
   console.log('PASS archive chapter '+chapter+': no duplicates, gated professions, stat order')
 }
 async function verifyTestingRoom(page) {
@@ -82,6 +75,11 @@ async function verifySkills(page,viewport){
     .allTextContents()
   check(metrics.length===7,'Skills missing Max AP in combat stats')
   check(attrs.length===9,'Skills missing all nine attributes')
+  check(await page.getByRole('heading',{name:'Weapon mastery'}).count()===1,
+    'Weapon mastery section missing from Skills')
+  check(await page.locator('.skills-tabs.elemental button').count()===0,
+    'Locked elemental paths should not be displayed')
+
   const expected=await page.evaluate(()=>window.__archiveExpectedStats)
   for(const [i,label,value] of [
     [0,'Combat ATK',expected.attack],[1,'Combat DEF',expected.defense],
