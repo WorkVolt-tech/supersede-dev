@@ -184,6 +184,7 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
   const allLearned = [...(player.skills_unlocked||[]), ...(player.elemental_unlocked||[])]
   const eligibleSkills = Object.entries(REGISTRY).filter(([key, skill]) => !isElementalAttack(key) && allLearned.includes(key) && skill.type!=='passive')
   const classBattleSkills = getActiveClassSkills(player, {}) || []
+  const availableElementalAttacks = availableElements.flatMap(el => getElementalAttackProgress(player,el.key).filter(skill => skill.unlocked))
   // Upgrades are restricted to already learned skills, not arbitrary IDs.
   const upgradeableSkills = [...new Map([
     ...eligibleSkills.map(([id, skill]) => [id, { id, label: skill.label }]),
@@ -253,6 +254,15 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
             <button key={key} type="button" disabled={saving||slots.length>=4}
               onClick={()=>toggleSlot(key)}>{skill.label} <span>Equip +</span></button>)}
         </div>}
+      {availableElementalAttacks.length>0&&<>
+        <h3>Unlocked elemental attacks · one can be equipped</h3>
+        <div className="skills-loadout-options">
+          {availableElementalAttacks.map(skill=><button key={skill.id} type="button"
+            disabled={saving||skill.equipped} onClick={()=>equipAttack(skill.id)}>
+            {skill.label} <span>{skill.equipped?'Equipped':'Equip +'}</span>
+          </button>)}
+        </div>
+      </>}
       {classBattleSkills.length>0&&<p className="skills-loadout-auto">Active class abilities (automatic): {classBattleSkills.map(skill=>skill.label).join(' · ')}</p>}
       <p className="skills-loadout-auto">Weapon attacks are determined by your equipped weapon and weapon mastery. They do not occupy these four slots.</p>
     </section>
