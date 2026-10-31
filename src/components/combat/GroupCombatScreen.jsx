@@ -23,6 +23,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -754,6 +755,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
+    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
       !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))))return
@@ -822,6 +824,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         heroRef.current=position;setHero(position)
         note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
       }
+      else if(kind==='loadout'){
+        const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0})
+        effect.messages.forEach(note)
+        if(effect.damage>0&&target){
+          const live=foesRef.current.find(foe=>foe.id===target.id&&foe.hp>0)
+          if(live){live.hp=Math.max(0,live.hp-scaleSkillAmount(effect.damage,getSkillLevel(player,id)));updateFoes([...foesRef.current]);if(live.hp===0)onFoeDefeated(live)}
+        }
+      }
       else if(kind==='skill')resolveSkill(id,liveTarget||target)
       else if(kind==='elemental')resolveElement(id,liveTarget||target)
       else if(kind==='signature')castSignature(liveTarget||target)
@@ -869,6 +879,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const target=nextAliveTarget(foes,focus)
   const chosen=target?.id||null
   const activeSkills=ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)||[]
+  const loadoutSkills=equippedNotableSkills(player)
   const elemental=getEquippedElementalAttack(combatPlayer)
   const keystones=getUnlockedKeystones(combatPlayer,keyCooldowns)
   const displayPattern=signaturePreview
@@ -969,6 +980,13 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       </div>
       <BattleConsumables items={inventory} hp={hp} maxHp={maxHp} disabled={!canPlay||ap<1} onUse={useBattlePotion}/>
       <div className="combat-actions">
+        {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
+        {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
+          title={skill.desc} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)}
+          onClick={()=>takeTurn('loadout',skill.id)}>
+          {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
+          <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
+        </button>)}
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
           onClick={()=>takeTurn('defend')}>Defend · 2 AP</button>
         <button type="button" className="combat-action-btn" disabled={!canPlay}
