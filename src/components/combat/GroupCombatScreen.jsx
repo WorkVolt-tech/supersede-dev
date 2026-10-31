@@ -42,7 +42,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, aim, pattern, fields, canMove, onMove, onFocus,
+function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, canMove, onMove, onFocus,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -60,13 +60,14 @@ function Battlefield({ foes, hero, focused, aim, pattern, fields, canMove, onMov
         p=>p.rank===rank&&p.col===col))
       const fx=signatureFx?.side===side&&signatureFx.squares.some(
         p=>p.rank===rank&&p.col===col)
+      const enemyThreat=side==='hero'&&enemyArea.some(p=>p.col===col&&p.rank===rank)
       const barrier=side==='hero'&&protectedPreview.some(
         p=>p.rank===rank&&p.col===col)
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
           foe||mine?'occupied':'',selected?'selected-foe':'',
           inRange?'attackable':'',
-          splash?'splash':'',hazard?'hazard':'',step?'movable':'',
+          splash?'splash':'',enemyThreat?'enemy-threat':'',hazard?'hazard':'',step?'movable':'',
           barrier?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?false:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
@@ -115,6 +116,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
   const [aim,setAim]=useState({col:foesRef.current[0].col,rank:foesRef.current[0].rank})
+  const [enemyArea,setEnemyArea]=useState([])
   const [selectedAttack,setSelectedAttack]=useState(null)
   const [fusionEnabled,setFusionEnabled]=useState(false)
   const [signaturePreview,setSignaturePreview]=useState(false)
@@ -588,6 +590,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         note(actor.name+' holds position while the group regroups.')
         continue
       }
+      const enemySquares=choice.attack?getTacticalAffectedSquares(choice.attack,heroAt):[]
+      setEnemyArea(enemySquares)
+      await sleep(320)
+      const occupiedByHero=enemySquares.some(cell=>cell.col===heroAt.col&&cell.rank===heroAt.rank)
       const pulse=Boolean(choice.attack?.fallback)
       const hpBeforeAction=actor.hp
       const messages=[]
@@ -604,6 +610,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         onEnemyHealSelf:h=>{heal+=h},
       }))
       else incoming=2
+      if(!occupiedByHero)incoming=0
       actor.hp=Math.min(actor.maxHp,actor.hp+heal)
       const decay=foeStatusesRef.current[actor.id]?.cfx_longDecayStacks||0
       if(decay>0)incoming=Math.max(0,incoming-3*decay)
@@ -642,6 +649,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       if(guard.mpGain)updateMp(mpRef.current+guard.mpGain)
       if(actor.hp===0&&hpBeforeAction>0)onFoeDefeated(actor)
       await sleep(170)
+      setEnemyArea([])
     }
     updateFoes(next)
     updateHp(currentHp)
@@ -855,7 +863,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
