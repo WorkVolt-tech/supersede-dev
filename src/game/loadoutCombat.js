@@ -82,6 +82,7 @@ export function notableArmorPierce(status,defense) {
   return Math.max(0,defense||0)
 }
 export function consumeNotableCrit(status) {
+  if(status.loadoutMindPierce)return true
   if(!status.loadoutNextCrit)return false
   delete status.loadoutNextCrit
   return true
