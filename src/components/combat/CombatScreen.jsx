@@ -625,6 +625,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function playerSkill(skillId, foeHp, playerHp) {
     const r = ClsCombat.onActiveSkill(skillId, combatPlayer, statusEffectsRef.current, enemyData)
+    if(r?.consumed!==false)notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     const skillLevel = getSkillLevel(player, skillId)
@@ -673,6 +674,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     })
     if (!effect || mpRef.current < effect.mpCost) return { foeHp, playerHp }
     changeCombatMp(mpRef.current - effect.mpCost)
+    notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
     const skillLevel = getSkillLevel(player, skillId)
