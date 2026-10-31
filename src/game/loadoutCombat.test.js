@@ -198,3 +198,19 @@ test('Nightshroud returns half attack damage after preventing its next hit',()=>
  assert.equal(notableIncomingDamage(status,20),0)
  assert.equal(consumeNotableReflection(status,20),0)
 })
+
+test('Spell Surge boosts a damaging skill with partial defense penetration',()=>{
+ const status={}
+ useNotableSkill('of_ks2',{status})
+ assert.equal(notableSkillDamage(status,20,10),38)
+ assert.equal(notableSkillDamage(status,20,10),20)
+})
+test('Nightshroud cannot activate after the first round',()=>{
+ const status={}
+ const late=useNotableSkill('dcn1',{status,round:2,attack:30})
+ assert.equal(late.consumed,false)
+ assert.equal(status.loadoutUntargetable,undefined)
+ const first=useNotableSkill('dcn1',{status,round:1,attack:30})
+ assert.equal(first.damage,0)
+ assert.equal(status.loadoutUntargetable,1)
+})
