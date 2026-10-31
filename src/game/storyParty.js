@@ -59,7 +59,16 @@ export function partyAwareText(text,player) {
     {id:'rhen',from:"If Rhen is with you, they're ahead — always just around the next corner, never quite in sight until the fighting starts, and then suddenly and completely present.",
       with:"Rhen scouts ahead and returns for the fighting.",without:""},
   ]
+  replacements.push(
+    {id:'marcus',from:"\"If Marcus is with you\" — he doesn't look at Marcus — \"you should know he's not NEUTRAL-UNKNOWN because the System glitched. He's UNKNOWN because the System is still deciding what he is. What he does next writes the result. Same as everyone.\"",
+      with:"\"Marcus,\" he says without looking at him, \"you're not NEUTRAL-UNKNOWN because the System glitched. You're UNKNOWN because the System is still deciding what you are. What you do next writes the result. Same as everyone.\"",
+      without:"\"The System doesn't assign UNKNOWN status without a reason,\" he says. \"It watches what everyone does next. Same as everyone.\""},
+    {id:'rhen',from:"Rhen — if present — steps forward.",
+      with:"Rhen steps forward.",without:""},
+  )
   for(const entry of replacements)
     text=text.replace(entry.from,party.has(entry.id)?entry.with:entry.without)
+  if(text.includes('Four of you. Maybe.'))text=text.replace('Four of you. Maybe.',
+    party.has('rhen')?'Four of you, together.':'Three of you, together.')
   return text
 }
