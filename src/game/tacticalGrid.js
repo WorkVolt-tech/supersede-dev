@@ -6,13 +6,13 @@
 export const TACTICAL_ATTACKS = {
   bareStrike:  { label:'Basic Strike', reach:'short', from:[0], to:[0],
     cols:'near', shape:'single', damage:3, ap:1,
-    description:'Strike an enemy within 2 squares.' },
+    description:'Strike directly ahead, 1 square away.' },
   improvisedThrow: { label:'Improvised Throw', reach:'long', from:[0,1,2],to:[1,2],
-    cols:'any',shape:'single',damage:2,ap:1, diagonal:true, thrown:true, maxRange:3,
-    description:'Throw an improvised object up to 3 squares away. Retrieval takes 1–2 rounds.' },
+    cols:'any',shape:'single',damage:2,ap:1, diagonal:true, thrown:true, minRange:2, maxRange:4,
+    description:'Throw an improvised object 2–4 squares away. Retrieval takes 1–2 rounds.' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
-  jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1 },
+  jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1, maxRange:2 },
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
   thrust:      { label:'Long Thrust',      reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
   lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
@@ -32,7 +32,7 @@ export const TACTICAL_ATTACKS = {
   masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
   masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
   masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2, diagonal:true,masteryLevel:80 },
-  pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, diagonal:true, fallback:true,
+  pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, diagonal:true, maxRange:7, fallback:true,
     description:'Basic emergency action (not a skill). Reaches any enemy row; once per round.' },
 };
 
@@ -73,7 +73,7 @@ export function tacticalWeaponType(type) {
   const key=String(type || '').toLowerCase().replace(/[\s-]/g,'_');
   return TACTICAL_WEAPONS[key] ? key : WEAPON_ALIASES[key] || 'unarmed';
 }
-/** Existing weapon techniques expand with mastery; System Pulse never does. */
+/** Existing weapon techniques expand with mastery; emergency attack never does. */
 export function evolveTacticalWeaponAttack(attack,masteryLevel=1) {
   if(attack.fallback)return {...attack}
   const lvl=Math.max(1,Math.floor(Number(masteryLevel)||1))
@@ -112,7 +112,7 @@ export function tacticalAttackDescription(attack) {
   if(attack?.description)return attack.description
   if(!attack)return ''
   const shape=attack.shape==='single'?'one enemy':attack.shape+' area'
-  const range=attack.maxRange??(attack.reach==='short'?2:attack.reach==='mid'?3:6)
+  const range=attack.maxRange??(attack.reach==='short'?1:attack.reach==='mid'?3:7)
   return 'Range: '+range+' squares · '+shape+'.'
 }
 export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
@@ -135,7 +135,8 @@ export function isTacticalTargetValid(attack,from,target) {
   const a=typeof attack==='string'?TACTICAL_ATTACKS[attack]:attack
   if (!a || !from || !target) return false
   const distance=tacticalDistance(from,target)
-  const range=a.maxRange ?? (a.reach==='short'?2:a.reach==='mid'?3:6)
+  const range=a.maxRange ?? (a.reach==='short'?1:a.reach==='mid'?3:7)
+  if(distance<(a.minRange??1))return false
   // A different column is a diagonal shot across the two opposed boards.
   // Only attacks explicitly marked for diagonal targeting may make that shot.
   const diagonal=from.col!==target.col
@@ -197,11 +198,13 @@ export function nextWeaponMasteryThreshold(xp) {
 // Try a meaningful attack, otherwise move one adjacent square toward a legal
 // weapon shot. If no movement helps, use the weak universal fallback.
 export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[], avoidSquares=[]) {
-  const kit=getTacticalAttacks(weaponType);
-  // Low-tier unarmed foes do not inherit the player's advanced magical Wave;
-  // they must close distance or use the weak emergency fallback.
-  const attacks=kit.filter(a=>!a.fallback &&
-    !(tacticalWeaponType(weaponType)==='unarmed' && a.id==='wave'));
+  // Unarmed enemies get the same plain strike as an unequipped player,
+  // not the dagger/magical techniques in the legacy unarmed mastery kit.
+  const kit=tacticalWeaponType(weaponType)==='unarmed'
+    ? [{id:'bareStrike',...TACTICAL_ATTACKS.bareStrike},
+       {id:'pulse',...TACTICAL_ATTACKS.pulse}]
+    : getTacticalAttacks(weaponType);
+  const attacks=kit.filter(a=>!a.fallback);
   const valid=attacks.filter(a=>isTacticalTargetValid(a,from,target))
     .sort((a,b)=>b.damage-a.damage);
   // Persistent elemental fields are fixed hazards. An enemy standing in a
@@ -252,7 +255,7 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
 }
 
 // All class kits inherit their equipped weapon's baseline reach plus an
-// always-available weak Pulse. A class is free to replace/add class skills,
+// always-available weak emergency attack. A class is free to replace/add class skills,
 // but never loses the emergency target-anywhere fallback.
 export function hasFullTacticalCoverage(weaponType, classAttackIds=[]) {
   const set=getTacticalAttacks(weaponType,classAttackIds);
