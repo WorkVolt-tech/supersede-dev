@@ -69,7 +69,7 @@ async function inspect(page,name,mobile) {
     const foes=[...document.querySelectorAll('.combat-grid-board')][0]
       ?.querySelectorAll('button.occupied')||[]
     return foes.length===3&&[...foes].every(cell=>{
-      const match=cell.textContent.match(/#\\d+ (\\d+) HP/)
+      const match=cell.textContent.match(/#\d+ (\d+) HP/)
       return match&&Number(match[1])<40
     })
   },null,{timeout:10000})
