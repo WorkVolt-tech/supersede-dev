@@ -1,7 +1,7 @@
 import {NOTABLE_SKILLS_REGISTRY} from './skillsRegistry.js'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting,notableOnKill,notableAttackBonus} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -146,4 +146,18 @@ test('all 20 registered active notables have a non-null action result',()=>{
   assert.ok(SUPPORTED_NOTABLES.has(id),id+' absent from battle adapter')
   assert.ok(result&&Array.isArray(result.messages)&&Number.isFinite(result.damage),id+' missing executable result')
  }
+})
+
+test('Bloodthirst heals only after a kill and buffs two turns',()=>{
+ const status={}
+ useNotableSkill('of_ks1',{status})
+ assert.equal(notableAttackBonus(status,20),0)
+ const result=notableOnKill(status,100)
+ assert.equal(result.heal,20)
+ assert.equal(notableAttackBonus(status,20),10)
+ advanceNotableTurn(status)
+ assert.equal(notableAttackBonus(status,20),10)
+ advanceNotableTurn(status)
+ assert.equal(notableAttackBonus(status,20),0)
+ assert.equal(notableOnKill(status,100).heal,0)
 })
