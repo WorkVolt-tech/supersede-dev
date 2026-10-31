@@ -25,13 +25,13 @@ export function useNotableSkill(id,ctx) {
   const buff=(key,value=1)=>{status[key]=value;return {messages:[NOTABLE_SKILLS_REGISTRY[id].label+' activated.'],damage:0}}
   switch(id){
     case 'ofn4':return {messages:['Executioner strikes.'],damage:Math.round(atk*(ctx.enemyHp<ctx.enemyMaxHp*.3?1.25:1))}
-    case 'ofn5':status.loadoutPoisonTurns=3;return {messages:['Hex Cannon poisons the target.'],damage:Math.max(1,atk-def)}
+    case 'ofn5':return {messages:['Hex Cannon poisons the target.'],damage:Math.max(1,atk-def),debuff:{poisonTurns:3,poisonDamage:5}}
     case 'of_ks1':return buff('loadoutBloodthirst')
     case 'of_ks2':return buff('loadoutSpellSurge')
     case 'dfn4':return ctx.playerHp<ctx.playerMaxHp*.3?(status.loadoutFortressTurns=1,{messages:['Fortress activated.'],damage:15}):{messages:['Fortress requires HP below 30%.'],damage:0}
     case 'df_ks1':status.loadoutDefenseTurns=2;return buff('loadoutAbsorb')
     case 'df_ks2':return buff('loadoutReflect',.4)
-    case 'fln3':return buff('loadoutLockdown')
+    case 'fln3':return {messages:['Lockdown reduces enemy speed by 6.'],damage:0,debuff:{speedPenalty:6}}
     case 'fl_ks1':status.loadoutNextCrit=1;return buff('loadoutUntargetable')
     case 'fl_ks2':status.loadoutDoubleStrike=true;return buff('loadoutFreeze')
     case 'arn2':return buff('loadoutForesight')
@@ -39,7 +39,7 @@ export function useNotableSkill(id,ctx) {
     case 'ar_ks1':return buff('loadoutSixthSense')
     case 'ar_ks2':return Math.random()<.5?{messages:['Chaos Engine erupts.'],damage:atk*2}:buff('loadoutAbsorb')
     case 'dcn1':return buff('loadoutUntargetable')
-    case 'dcn6':return buff('loadoutDreadPulse',3)
+    case 'dcn6':return {messages:['Dread Pulse weakens the enemy attack.'],damage:0,debuff:{attackPenalty:2}}
     case 'dc_ks1':return buff('loadoutReaper')
   }
   if(id==='fln6'){
@@ -94,4 +94,25 @@ export function notableFreezeEnemy(status) {
   if(!status.loadoutFreeze)return false
   delete status.loadoutFreeze
   return true
+}
+
+/** The same per-foe status format is used in single and group battles. */
+export function applyNotableDebuff(status={},effect) {
+  if(!effect?.debuff)return status
+  const debuff=effect.debuff
+  if(debuff.poisonTurns){
+    status.notablePoisonTurns=Math.max(status.notablePoisonTurns||0,debuff.poisonTurns)
+    status.notablePoisonDamage=debuff.poisonDamage
+  }
+  if(debuff.speedPenalty)status.notableSpeedPenalty=Math.max(status.notableSpeedPenalty||0,debuff.speedPenalty)
+  if(debuff.attackPenalty)status.notableAttackPenalty=Math.min(6,(status.notableAttackPenalty||0)+debuff.attackPenalty)
+  return status
+}
+export function tickNotableDebuff(status={}) {
+  const damage=status.notablePoisonTurns>0?(status.notablePoisonDamage||5):0
+  if(status.notablePoisonTurns>0)status.notablePoisonTurns--
+  return damage
+}
+export function notableEnemyAttackPenalty(status={}) {
+  return status.notableAttackPenalty||0
 }
