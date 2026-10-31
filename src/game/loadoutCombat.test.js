@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notableIncomingDamage} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -89,4 +89,20 @@ test('Stagger only interrupts if learned and its chance succeeds',()=>{
  assert.equal(notablePassiveStagger(new Set(),()=>0),false)
  assert.equal(notablePassiveStagger(new Set(['fln5']),()=>0),true)
  assert.equal(notablePassiveStagger(new Set(['fln5']),()=>.9),false)
+})
+
+test('Sharp Mind and Shade Walk give learned-only stat bonuses',()=>{
+ const stats=notablePassiveStatBonus(new Set(['arn1','dcn4']),{insight:8})
+ assert.equal(stats.attack,2)
+ assert.equal(stats.speed,5)
+ assert.equal(notablePassiveStatBonus(new Set(),{insight:8}).attack,0)
+})
+test('Iron Tide triggers once below half health and expires',()=>{
+ const status={},p=new Set(['dfn1'])
+ assert.equal(activateNotableIronTide(p,status,60,100),false)
+ assert.equal(activateNotableIronTide(p,status,40,100),true)
+ assert.equal(notableIncomingDamage(status,30),10)
+ advanceNotableTurn(status);advanceNotableTurn(status)
+ assert.equal(notableIncomingDamage(status,30),30)
+ assert.equal(activateNotableIronTide(p,status,30,100),false)
 })
