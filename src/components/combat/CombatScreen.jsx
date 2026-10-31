@@ -1032,10 +1032,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     ?(targetMode.kind==='loadout'?notableTargeting(targetMode.id):getProgressedTacticalSkillRule(targetMode.id,getSkillLevel(player,targetMode.id))):null
   const displayedAttack=signaturePreview&&signature?.target==='enemy'
     ?signature.attack:aimedSkill?.target==='enemy'?aimedSkill:selectedAttack
+  // Only display an impact preview after the player aims or hovers a square.
+  // Automatic aim is used for legality checks, never as visual selection.
   const selectedAim=hoverAim&&isTacticalTargetValid(displayedAttack,heroPosition,hoverAim)
     ?hoverAim:aimSquare&&isTacticalTargetValid(displayedAttack,heroPosition,aimSquare)
-      ?aimSquare:bestTacticalAim(displayedAttack,heroPosition,
-      [{id:'enemy',...enemyPosition,hp:enemyHp}], 'enemy',aimSquare)
+      ?aimSquare:null
+  const hasLegalAim=Boolean(bestTacticalAim(displayedAttack,heroPosition,
+    [{id:'enemy',...enemyPosition,hp:enemyHp}], 'enemy',null))
   const attackFootprint=tacticalPreview(displayedAttack,heroPosition,selectedAim,
     [{id:'enemy',...enemyPosition,hp:enemyHp}])
   const statusChips = Object.entries(statusEffectsRef.current)
@@ -1090,7 +1093,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           }:null}
           aim={selectedAim}
           enemyArea={enemyArea}
-          canAttack={!busy&&entranceReady&&!!selectedAim&&
+          canAttack={!busy&&entranceReady&&hasLegalAim&&
             (targetMode? (actionPoints>=2&&
               (targetMode.kind!=='elemental'||(elementalCooldowns[targetMode.id]||0)===0&&
                 currentMp>=getAttackMpCost(combatPlayer,targetMode.id,statusEffectsRef.current))):
