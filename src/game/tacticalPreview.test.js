@@ -14,9 +14,10 @@ test('AoE aims to maximize real enemies hit instead of unrelated first tile',()=
 })
 test('hovering a different legal AoE center updates exact footprint without moving units',()=>{
  const enemies=[{id:'one',col:0,rank:1,hp:8},{id:'two',col:2,rank:1,hp:12}]
- const pattern=TACTICAL_ATTACKS.wave
+ const pattern=TACTICAL_ATTACKS.volley
  const left=tacticalPreview(pattern,hero,{col:0,rank:1},enemies)
  const right=tacticalPreview(pattern,hero,{col:2,rank:1},enemies)
+ assert.ok(left.squares.length>0&&right.squares.length>0)
  assert.ok(!sameBattleSquare(left.squares[0],right.squares[0]))
  assert.deepEqual(enemies.map(e=>e.hp),[8,12])
 })
