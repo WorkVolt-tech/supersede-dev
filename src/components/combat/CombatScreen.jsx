@@ -582,7 +582,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
-    const base = Math.max(1, warboundBonus + notablePassiveStatBonus(learnedNotablePassives(player),player).attack + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
+    const base = Math.max(1, warboundBonus + notablePassiveStatBonus(learnedNotablePassives(player),{...player,power:effective.core.power}).attack + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + notableArmorPierce(statusEffectsRef.current,enemyData.def || 0) + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
