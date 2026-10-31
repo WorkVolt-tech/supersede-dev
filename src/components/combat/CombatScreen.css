@@ -247,3 +247,6 @@
 .reading-page .combat-ap-meter {background:#e8d9bb;border-color:#b4976d;color:#533e28;}
 .reading-page .combat-ap-track {background:#b7a991;border-color:#b29c7b;}
 .reading-page .combat-ap-fill {background:linear-gradient(90deg,#b78032,#e9c77b);}
+
+/* Enemy targeting uses the same square footprint as player targeting. */
+.combat-grid-cell.enemy-threat {outline:2px solid #d95c4b;outline-offset:-3px;box-shadow:inset 0 0 14px rgba(217,92,75,.3);}
