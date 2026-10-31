@@ -13,6 +13,7 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
+import { weaponMasteryLevel, nextWeaponMasteryThreshold, weaponMasteryBonus } from '../../game/tacticalGrid'
 import { getElementalTriadAction, getTriadSpecial } from '../../game/elementalTriad'
 import { getFusionEligibility, unlockFusionPair, getElementalTriadEligibility,
   unlockElementalTriad, committedFusionKey, fusionMasteryLevel,
@@ -85,6 +86,10 @@ export default function SkillsScreen({ onReturn }) {
   const points = player.skill_points || 0
   const shards = player.resonance_shards || 0
   const activeElement = getActiveElement(player)
+  const availableElements = Object.values(ELEMENT_TREES).filter(el => isElementUnlocked(el.key,player))
+  const masteryEntries = Object.entries(player.weapon_mastery || {})
+    .filter(([,xp]) => Number(xp) > 0)
+    .sort((a,b) => Number(b[1]||0)-Number(a[1]||0))
   const slots = player.battle_skills || []
   const elementalAttacks = elementKey ? getElementalAttackProgress(player, elementKey) : []
 
@@ -232,11 +237,29 @@ export default function SkillsScreen({ onReturn }) {
     <nav className="skills-tabs" aria-label="Skill tree branches">
       {BRANCHES.map(b => <button key={b} className={tab===b?'active':''} onClick={() => choose(b)}>{b}</button>)}
     </nav>
-    <div className="skills-section-label">Elemental paths · learn multiple trees, activate one for combat</div>
-    <p className="skills-resonance-status">Active combat element: <strong>{activeElement ? ELEMENT_TREES[activeElement]?.sigil+' '+ELEMENT_TREES[activeElement]?.label : 'None selected'}</strong>. Only nodes from your active element contribute combat bonuses. Learned nodes in other trees stay saved.</p>
-    <nav className="skills-tabs elemental" aria-label="Elemental paths">
-      {Object.values(ELEMENT_TREES).map(el => <button key={el.key} className={tab==='element:'+el.key?'active':''} onClick={() => choose('element:'+el.key)}>{el.sigil} {el.label}{activeElement===el.key?' ★ ACTIVE':''}{!isElementUnlocked(el.key,player)?' 🔒':''}</button>)}
-    </nav>
+    <section className="skills-weapon-mastery" aria-labelledby="weapon-mastery-heading">
+      <h2 id="weapon-mastery-heading">Weapon mastery</h2>
+      <p>Mastery grows as you land hits with each weapon type. Progress is saved separately for every weapon.</p>
+      {masteryEntries.length===0
+        ? <p className="skills-weapon-empty">No weapon mastery earned yet. Use an equipped weapon in combat to begin.</p>
+        : <div className="skills-mastery-grid">{masteryEntries.map(([weapon,xp])=>{
+          const value=Math.max(0,Number(xp)||0)
+          const level=weaponMasteryLevel(value)
+          const next=nextWeaponMasteryThreshold(value)
+          return <div className="skills-mastery-card" key={weapon}>
+            <div className="skills-mastery-top"><strong>{weapon.replaceAll('_',' ')}</strong><span>Lv {level}/100</span></div>
+            <div className="skills-mastery-track"><div style={{width:`${next===null?100:Math.min(100,value/next*100)}%`}} /></div>
+            <small>{value} mastery XP{next!==null?' · '+Math.max(0,next-value)+' XP to next milestone':' · MAX LEVEL'} · +{weaponMasteryBonus(value)} damage</small>
+          </div>
+        })}</div>}
+    </section>
+    <div className="skills-section-label">Elemental paths · unlocked elements only</div>
+    <p className="skills-resonance-status">Active combat element: <strong>{activeElement ? ELEMENT_TREES[activeElement]?.sigil+' '+ELEMENT_TREES[activeElement]?.label : 'None selected'}</strong>. Defeat an elemental guardian to reveal its path here.</p>
+    {availableElements.length>0
+      ? <nav className="skills-tabs elemental" aria-label="Elemental paths">
+          {availableElements.map(el => <button key={el.key} className={tab==='element:'+el.key?'active':''} onClick={() => choose('element:'+el.key)}>{el.sigil} {el.label}{activeElement===el.key?' ★ ACTIVE':''}</button>)}
+        </nav>
+      : <p className="skills-locked-class">No elemental paths unlocked yet.</p>}
     <div className="skills-section-label">Class paths · chosen through the Judges' story</div>
     {player.active_class
       ? <nav className="skills-tabs class-tabs" aria-label="Classes">
