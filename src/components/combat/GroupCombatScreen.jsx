@@ -437,7 +437,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
     const affected=applyDamage(units,attack,square,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
-    if(!attack.fallback)infuseHit(affected,id)
+    if(!attack.fallback)infuseHit(affected,target.id)
     if(attack.thrown&&affected.targets.length){
       const ready=startImprovisedThrowRecovery(roundRef.current,target.rank)
       throwReadyRef.current=ready;setThrowReady(ready)
