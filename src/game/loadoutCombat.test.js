@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -39,4 +39,21 @@ test('Time Lock stops exactly one enemy attack',()=>{
  useNotableSkill('fl_ks2',{status})
  assert.equal(notableFreezeEnemy(status),true)
  assert.equal(notableFreezeEnemy(status),false)
+})
+
+test('Hex Cannon poison ticks three times on the target, not the player',()=>{
+ const effect=useNotableSkill('ofn5',{status:{},attack:12,enemyDef:2})
+ const target=applyNotableDebuff({},effect)
+ assert.equal(tickNotableDebuff(target),5)
+ assert.equal(tickNotableDebuff(target),5)
+ assert.equal(tickNotableDebuff(target),5)
+ assert.equal(tickNotableDebuff(target),0)
+})
+test('Lockdown and Dread Pulse track per-enemy status',()=>{
+ const target={}
+ applyNotableDebuff(target,useNotableSkill('fln3',{status:{}}))
+ assert.equal(target.notableSpeedPenalty,6)
+ for(let i=0;i<4;i++)applyNotableDebuff(target,useNotableSkill('dcn6',{status:{}}))
+ assert.equal(notableEnemyAttackPenalty(target),6)
+ assert.equal(notableEnemyAttackPenalty({}),0)
 })
