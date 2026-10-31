@@ -1,5 +1,12 @@
 // Resonance recipes restored from Supersede. Legacy rune IDs remain stable for saved games.
 export const RUNE_NAMES = ['ignis','aqua','terra','aero','umbra','lux','venin','ferro','flora','volt']
+export function fragmentElement(key) {
+  const element=String(key||'').replace(/^(?:rune_|fragment_)/,'')
+  return RUNE_NAMES.includes(element)?element:null
+}
+export function isFragment(item) {
+  return Boolean(fragmentElement(item?.item_key))
+}
 export function fragmentName(key) {
   const element = String(key || '').replace(/^rune_|^fragment_/, '')
   return `${element.charAt(0).toUpperCase()}${element.slice(1)} Fragment`
