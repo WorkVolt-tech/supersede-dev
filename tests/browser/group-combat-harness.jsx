@@ -27,7 +27,8 @@ const player = {
   power:0,control:0,active_class:triadScenario?null:fusionScenario?fusionClass:null,
   element:fusionScenario?fusionElement:'none',active_element:null,
   weapon_mastery:{sword:new URLSearchParams(location.search).get('scenario')==='mastery'?500000:0},
-  skill_levels:{},elemental_unlocked:triadScenario
+  skill_levels:{},skills_unlocked:scenario==='loadout'?['ofn1']:[],
+  battle_skills:scenario==='loadout'?['ofn1']:[],elemental_unlocked:triadScenario
     ?ELEMENT_TREES[fusionElement].nodes.slice(1).map(n=>n.id)
     :fusionScenario?[1,2,3,4,5].map(n=>fusionElement+'_aggr_'+n)
       .concat([fusionElement+'_aggr_ks']):[],
