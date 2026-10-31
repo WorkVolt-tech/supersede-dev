@@ -24,7 +24,7 @@ const PATTERNS = {
   close: { label:'Close · front/mid', target:'enemy', reach:'short',
            from:[0,1], to:[0,1], cols:'near', shape:'single' },
   mid:   { label:'Mid · nearby column', target:'enemy', reach:'mid',
-           from:[0,1,2], to:[0,1,2], cols:'near', shape:'single' },
+           from:[0,1,2], to:[0,1,2], cols:'near', diagonal:true, shape:'single' },
   long:  { label:'Long · any position', target:'enemy', reach:'long',
            from:[0,1,2], to:[0,1,2], cols:'any', shape:'single' },
 }
