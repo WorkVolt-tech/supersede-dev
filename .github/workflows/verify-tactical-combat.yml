@@ -43,6 +43,7 @@ jobs:
             src/game/skillReset.test.js \
             src/game/companionTactics.test.js \
             src/game/tacticalGrid.test.js \
+            src/game/tacticalPreview.test.js \
             src/game/tacticalIntegration.test.js \
             src/game/tacticalGroups.test.js \
             src/game/tacticalFoeStatus.test.js \
