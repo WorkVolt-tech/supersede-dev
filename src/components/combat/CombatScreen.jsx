@@ -158,7 +158,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [skillPracticeUses,setSkillPracticeUses]=useState({})
   function recordSkillUse(id){
     if(!id)return
-    recordSkillUse(id)
+    notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     setSkillPracticeUses(previous=>({...previous,[id]:(previous[id]||0)+1}))
   }
   function skillPracticeLabel(id){
