@@ -171,7 +171,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const foesRef=useRef(createTacticalGroup(enemyData))
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
-  const [aim,setAim]=useState({col:foesRef.current[0].col,rank:foesRef.current[0].rank})
+  const [aim,setAim]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
   const [selectedAttack,setSelectedAttack]=useState(null)
   const [fusionEnabled,setFusionEnabled]=useState(false)
