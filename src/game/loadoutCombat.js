@@ -30,7 +30,7 @@ export function useNotableSkill(id,ctx) {
     case 'of_ks2':return buff('loadoutSpellSurge')
     case 'dfn4':return ctx.playerHp<ctx.playerMaxHp*.3?(status.loadoutFortressTurns=1,{messages:['Fortress activated.'],damage:15}):{messages:['Fortress requires HP below 30%.'],damage:0}
     case 'df_ks1':status.loadoutDefenseTurns=2;return buff('loadoutAbsorb')
-    case 'df_ks2':status.loadoutDefenseTurns=1;return buff('loadoutReflect',.4)
+    case 'df_ks2':return buff('loadoutReflect',.4)
     case 'fln3':return buff('loadoutLockdown')
     case 'fl_ks1':status.loadoutNextCrit=1;return buff('loadoutUntargetable')
     case 'fl_ks2':status.loadoutDoubleStrike=true;return buff('loadoutFreeze')
@@ -74,11 +74,21 @@ export function consumeNotableCrit(status) {
   return true
 }
 export function notableIncomingDamage(status,damage) {
+  if(damage<=0)return 0
   if(status.loadoutAbsorb){delete status.loadoutAbsorb;return 0}
   if(status.loadoutUntargetable){delete status.loadoutUntargetable;return 0}
   if(status.loadoutForesight){delete status.loadoutForesight;return Math.ceil(damage*.1)}
   if(status.loadoutSixthSense){delete status.loadoutSixthSense;return Math.ceil(damage*.2)}
+  if(status.loadoutDefenseTurns>0)damage=Math.max(0,damage-30)
+  else if(status.loadoutFortressTurns>0)damage=Math.max(0,damage-20)
+  else if(status.loadoutReflect>0)damage=Math.max(0,damage-15)
   return damage
+}
+export function consumeNotableReflection(status,damage) {
+  if(!status.loadoutReflect||damage<=0)return 0
+  const amount=Math.round(damage*status.loadoutReflect)
+  delete status.loadoutReflect
+  return amount
 }
 export function notableFreezeEnemy(status) {
   if(!status.loadoutFreeze)return false
