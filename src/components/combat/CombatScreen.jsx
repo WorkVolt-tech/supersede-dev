@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -453,7 +453,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   // movement and stunned turns. Moving must never suppress bleed, poison,
   // class regeneration or keystone duration ticks.
   function finishEnemyAction(nextHp, foeHp) {
-    const poison=tickNotableDebuff(statusEffectsRef.current)
+    const poison=tickNotableDebuff(statusEffectsRef.current)+tickNotableSpellblade(statusEffectsRef.current)
     if(poison&&foeHp>0){foeHp=Math.max(0,foeHp-poison);pushLog(enemyData.name+' suffers '+poison+' poison damage.')}
     statusEffectsRef.current._enemyMaxHp = enemyData.hp
     const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
@@ -595,7 +595,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       ? Math.max(1, Math.round(dmg * .25))
       : dmg + Math.max(0, attack.damage - 4) +
         weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
-    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),dmg,calcATK(player,equipped))
+    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),dmg,calcATK(player,equipped),Math.random,statusEffectsRef.current)
     dmg=passiveHit.damage
     passiveHit.messages.forEach(pushLog)
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
