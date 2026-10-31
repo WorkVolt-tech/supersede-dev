@@ -104,7 +104,13 @@ test('enemy tactical AI attacks when in reach, advances unarmed, and falls back 
   assert.deepEqual(chooseTacticalEnemyAction('unarmed',back,front).move,{col:1,rank:1})
   const blocked=chooseTacticalEnemyAction('unarmed',back,front,
     [{col:0,rank:1},{col:1,rank:1},{col:2,rank:1}])
-  assert.equal(blocked.attack.id,'pulse')
+  assert.equal(blocked.wait,true)
+})
+
+test('stationary melee enemies hold position when out of range',()=>{
+  const rear={col:1,rank:2},front={col:1,rank:0}
+  assert.equal(chooseTacticalEnemyAction('unarmed',rear,front,[],[],{canMove:false}).wait,true)
+  assert.equal(chooseTacticalEnemyAction('bow',rear,front,[],[],{canMove:false}).attack.id,'aimed')
 })
 
 test('mastery techniques unlock at milestones without replacing baseline attacks', () => {
