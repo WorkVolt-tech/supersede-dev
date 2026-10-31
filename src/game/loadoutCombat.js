@@ -54,7 +54,7 @@ export function consumeWarboundBonus(status,atk) {
 }
 
 export function advanceNotableTurn(status) {
-  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns','notableIronTideTurns','loadoutBloodthirstTurns'])if(status[key]>0)status[key]--
+  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns','notableIronTideTurns','loadoutBloodthirstTurns','notableShadeWalkTurns'])if(status[key]>0)status[key]--
   if(status.loadoutPredatorTurns>0) {
     status.loadoutPredatorTurns--
     if(!status.loadoutPredatorTurns)delete status.loadoutPredatorTurns
@@ -176,7 +176,7 @@ export function notablePassiveStatBonus(passives,player={}) {
  const insight=Math.max(0,Number(player.insight)||0)
  const luck=Math.max(0,Number(player.luck)||0)
  return {attack:(passives.has('arn1')?Math.floor(insight/3):0),
-   speed:passives.has('dcn4')?5:0,
+   speed:(passives.has('dcn4')?5:0)+(passives.has('dcn4')&&player.notableShadeWalkTurns>0?15:0),
    criticalDamage:passives.has('arn3')?luck*.005:0,
    criticalProtection:passives.has('arn4')?Math.min(1,insight*.02):0}
 }
@@ -251,4 +251,16 @@ export function notableOnKill(status={},maxHp=0) {
  status.loadoutBloodthirstTurns=2
  const heal=Math.max(0,Math.round(maxHp*.2))
  return {heal,messages:['Bloodthirst: restore '+heal+' HP and gain +10 ATK for 2 turns.']}
+}
+
+export function notablePassiveKill(passives,status={}) {
+ if(!passives.has('dcn4'))return false
+ status.notableShadeWalkTurns=2
+ return true
+}
+export function notablePassiveDefendReflect(passives,wasDefending,absorbedDamage) {
+ return wasDefending&&passives.has('dcn3')?Math.max(0,Math.round(absorbedDamage*.15)):0
+}
+export function notableRazorTempo(passives,attackId) {
+ return passives.has('fln1')&&Boolean(attackId)&&/^(strike|basic|unarmed)/i.test(attackId)
 }
