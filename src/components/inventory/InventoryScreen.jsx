@@ -4,7 +4,7 @@ import { useInventoryStore } from '../../store/useInventoryStore'
 import { SLOTS, RARITY, equipmentSubtype } from '../../game/equipmentSlots'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { calcMaxHp } from '../../game/playerStats'
-import { findResonance, RESONANCES, fragmentName, normalizedItem } from '../../game/runes'
+import { findResonance, RESONANCES, fragmentName, normalizedItem, isFragment, fragmentElement } from '../../game/runes'
 import './InventoryScreen.css'
 
 export default function InventoryScreen() {
@@ -33,8 +33,8 @@ export default function InventoryScreen() {
   const selected = items.find(i => i.id===selectedId)
   const displayItem = selected && normalizedItem(selected)
   const resonance = selected && findResonance(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
-  const runes = items.filter(i=>i.item_key?.startsWith('rune_') && (i.quantity||1)>0)
-  const fragmentCounts = Object.fromEntries(runes.map(r=>[r.item_key,(runes.filter(other=>other.item_key===r.item_key).reduce((n,item)=>n+Math.max(0,Number(item.quantity)||0),0))]))
+  const runes = items.filter(i=>isFragment(i) && (i.quantity||1)>0)
+  const fragmentCounts = Object.fromEntries(runes.map(r=>['rune_'+fragmentElement(r.item_key),(runes.filter(other=>fragmentElement(other.item_key)===fragmentElement(r.item_key)).reduce((n,item)=>n+Math.max(0,Number(item.quantity)||0),0))]))
   const codexRecipes = RESONANCES.filter(recipe=>recipe.slot===codexType).map(recipe=>{
     const remaining={...fragmentCounts}
     const missing=recipe.runes.filter(key=>{
@@ -52,6 +52,11 @@ export default function InventoryScreen() {
     ['Agility',displayItem.agility_bonus],['Max AP',displayItem.ap_bonus],['Healing',displayItem.hp_restore],
   ].filter(([,value])=>Number(value)>0) : []
 
+  async function insertSelectedFragment(item) {
+    if(!selected || !isFragment(selected))return
+    const result=await socketRune(item.id,selected.id)
+    setMessage(result.reason)
+  }
   async function equipSelected(slotKey) {
     if (!selected) return
     const result = await equipItem(selected.id,slotKey)
@@ -166,9 +171,19 @@ export default function InventoryScreen() {
       </div>
       <section className="inv-detail" aria-live="polite">
         {selected ? <>
-          <h3>{selected.icon || '📦'} {selected.item_key?.startsWith('rune_') ? fragmentName(selected.item_key) : selected.name}</h3>
+          <h3>{selected.icon || '📦'} {isFragment(selected) ? fragmentName(selected.item_key) : selected.name}</h3>
           <p className="inv-meta">{selected.rarity || 'common'} · {selected.subtype || selected.item_type} · ×{selected.quantity||1}</p>
           {itemStats.length>0 && <div className="inv-stats">{itemStats.map(([label,value])=><span key={label}>{label} +{value}</span>)}</div>}
+          {isFragment(selected) && <div className="inv-socket-panel">
+            <p><strong>Insert fragment into equipment</strong></p>
+            <p>Choose an item with an empty fragment socket. Fragments are inserted into equipment, not worn directly.</p>
+            {items.filter(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_runes||[]).length<Number(item.sockets_total)).map(item=>
+              <button key={item.id} className="inv-action" onClick={()=>insertSelectedFragment(item)}>
+                ◆ {item.name} · {(item.socketed_runes||[]).length}/{item.sockets_total} sockets
+              </button>)}
+            {!items.some(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_runes||[]).length<Number(item.sockets_total))&&
+              <p>No equipment with empty fragment sockets is available.</p>}
+          </div>}
           {Number(selected.sockets_total)>0 && <div className="inv-socket-panel">
             <p><strong>Fragment slots:</strong> {(selected.socketed_runes||[]).length}/{selected.sockets_total}</p>
             <p>{Array.from({length:selected.sockets_total},(_,i)=>selected.socketed_runes?.[i] ? `◆ ${fragmentName(selected.socketed_runes[i])}` : '◇ Empty').join(' · ')}</p>
