@@ -103,7 +103,7 @@ function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon
     <div className="combat-grid-board">{cells('enemy')}</div>
     <div className="combat-grid-divider">⚔</div>
     <div className="combat-grid-board">{cells('hero')}</div>
-    <div className="combat-grid-caption">YOU · TAP AN ADJACENT CELL TO MOVE</div>
+    <div className="combat-grid-caption">YOU · MOVE FREELY · 0 AP</div>
   </div>
 }
 
@@ -675,7 +675,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   // before the first AP; slower enemies act after the last AP.
   function positionedEnemyTurn(playerHp, foeHp, defendAction, heroAt=heroPosition) {
     if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
-    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt)
+    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove:enemyData.canMove!==false&&enemyData.mobile!==false})
     if (next.attack) setEnemyArea(getTacticalAffectedSquares(next.attack,heroAt))
     if (next.move) {
       const stunned = consumeEnemyStun(statusEffectsRef.current)
@@ -684,6 +684,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         setEnemyPosition(next.move)
         pushLog(`${enemyData.name} repositions to column ${next.move.col+1}, rank ${next.move.rank+1}.`)
       }
+      return finishEnemyAction(playerHp,foeHp)
+    }
+    if (next.wait) {
+      pushLog(`${enemyData.name} holds position; no legal attack from this square.`)
       return finishEnemyAction(playerHp,foeHp)
     }
     if (next.attack?.fallback) {
