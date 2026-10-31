@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { activeCompanions } from '../../game/storyParty'
+import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
 import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
@@ -76,7 +77,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
     const rows=side==='enemy'?[2,1,0]:[0,1,2]
     return rows.flatMap(rank=>[0,1,2].map(col=>{
       const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
-      const ally=side==='hero'&&!occupied?companions.find((_,i)=>[0,2,3,5,6,8][i]===rank*3+col):null
+      const ally=side==='hero'&&!occupied?companions.find(member=>member.rank===rank&&member.col===col):null
       const move=side==='hero'&&!occupied&&!ally&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
@@ -127,6 +128,8 @@ function CombatMessage({ message }) {
 export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBoss, judgeCtx }) {
   const player = usePlayerStore(s => s.player)
   const companions=activeCompanions(player)
+  const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
+  const partyRef=useRef(partyPositions)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
@@ -840,13 +843,21 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       const stacks=applyStonebornDefend(combatPlayer,statusEffectsRef.current)
       if (stacks) pushLog(`Stoneborn hardens your guard (${stacks} stacks).`)
     }
-    if(firstAction&&companions.length&&foeHp>0){
-      for(const member of companions){
+    if(firstAction&&partyRef.current.length&&foeHp>0){
+      const nextParty=partyRef.current.map(member=>({...member}))
+      for(const member of nextParty){
         if(foeHp<=0)break
-        foeHp=Math.max(0,foeHp-member.damage)
-        pushLog(member.name+' strikes '+enemyData.name+' for '+member.damage+' damage.')
+        const choice=decideCompanionAction(member,nextParty,[{...enemyPosition,hp:foeHp,id:'enemy'}],
+          enemyArea,heroPosition)
+        if(choice.kind==='move'){
+          member.col=choice.to.col;member.rank=choice.to.rank
+          pushLog(member.name+' '+choice.reason+'.')
+        }else if(choice.kind==='attack'){
+          foeHp=Math.max(0,foeHp-member.damage)
+          pushLog(member.name+' strikes '+enemyData.name+' for '+member.damage+' damage.')
+        }else pushLog(member.name+' holds position.')
       }
-      setEnemyHp(foeHp)
+      partyRef.current=nextParty;setPartyPositions(nextParty);setEnemyHp(foeHp)
     }
     await pause(450)
     if (action==='attack' && attack.fallback) {
@@ -992,7 +1003,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           className={'combat-signature-burst signature-'+signatureFx.kind+
         (signatureFx.element?' triad-'+signatureFx.element:'')}
           role="status">{signature?.label}</div>}
-        <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={companions} enemyName={enemyData.name}
+        <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={partyPositions} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp}
           attack={signaturePreview&&signature?.target==='enemy'?signature.attack:selectedAttack}
           signatureFx={signatureFx}
