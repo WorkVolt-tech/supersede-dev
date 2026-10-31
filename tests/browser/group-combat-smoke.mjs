@@ -130,6 +130,7 @@ async function verifySignatures(page) {
       element+': no unique signature animation')
     check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
       element+': signature saved player before victory')
+    await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>
       document.querySelector('.combat-turn-banner')?.textContent.includes('5/5 AP'),
       null,{timeout:10000})
@@ -179,6 +180,7 @@ async function verifyClasslessTriad(page) {
       'triad: missing source formula '+label)
   check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
     'triad: mastery saved before victory')
+  await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
     ?.textContent.includes('5/5 AP'),null,{timeout:15000})
   check((await signature.textContent()).includes('Cooldown: 4 rounds'),
