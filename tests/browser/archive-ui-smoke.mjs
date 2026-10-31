@@ -75,7 +75,7 @@ async function verifySkills(page,viewport){
     .allTextContents()
   check(metrics.length===7,'Skills missing Max AP in combat stats')
   check(attrs.length===9,'Skills missing all nine attributes')
-  check(await page.getByRole('heading',{name:'Weapon mastery'}).count()===1,
+  check(await page.getByRole('heading',{name:'Weapon mastery',exact:true}).count()===1,
     'Weapon mastery section missing from Skills')
   check(await page.locator('.skills-tabs.elemental button').count()===0,
     'Locked elemental paths should not be displayed')
