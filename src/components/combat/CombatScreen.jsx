@@ -176,7 +176,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       Number.isInteger(position.rank)&&position.rank>=0&&position.rank<=2
       ?{col:position.col,rank:position.rank}:{col:1,rank:0}
   })
-  const maxAp = maxCombatAp(player.level)
+  const maxAp = maxCombatAp(player, equipped)
   const [actionPoints, setActionPoints] = useState(maxAp)
   const actionPointsRef = useRef(maxAp)
   const [emergencyUsed,setEmergencyUsed]=useState(false)
