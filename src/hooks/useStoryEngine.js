@@ -14,7 +14,7 @@ const CH1_GUARDIANS = ['sentinel', 'surveyor', 'unseen']
 const CH1_FINAL_NODES = new Set([
   'plaza_allies', 'watcher_sees_final', 'plaza_talk',
   'pre_boss_check', 'pre_boss_team', 'pre_boss_solo',
-  'pre_boss_betray', 'boss',
+  'pre_boss_betray', 'boss', 'chapter_end',
 ])
 function missingCh1Guardians(player) {
   const defeated = new Set(player?.defeated_bosses || [])
@@ -94,7 +94,9 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     if (choice.outcome === 'attack') moralDelta -= 20
     if (choice.moral) moralDelta += choice.moral
     if (moralDelta !== 0) {
-      const r = applyMoralChange(player, moralDelta)
+      // Do not mutate the Zustand player before the checkpoint is saved.
+      // Failed saves must never apply the same moral decision twice.
+      const r = applyMoralChange({...player}, moralDelta)
       Object.assign(updates, r.updates)
     }
 
