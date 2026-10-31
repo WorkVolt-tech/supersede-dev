@@ -706,7 +706,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove:enemyData.canMove!==false&&enemyData.mobile!==false})
     if (next.attack) setEnemyArea(getTacticalAffectedSquares(next.attack,heroAt))
     if (next.move) {
-      const stunned = consumeEnemyStun(statusEffectsRef.current)
+      const stunned = notableFreezeEnemy(statusEffectsRef.current)?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
       if (stunned) pushLog(stunned)
       else {
         setEnemyPosition(next.move)
