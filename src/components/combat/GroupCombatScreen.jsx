@@ -510,7 +510,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(response?.consumed!==false)notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     if(response?.consumed!==false&&footprint?.valid)
       spreadAreaEffects(before,footprint.targets,target.id)
-    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id)))
+    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id)),target?.def||0)
     if(damage>0&&target){
       const affected=applyDamage(foesRef.current,
         pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},aimSquare||target.id,damage)
@@ -550,7 +550,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       statusRef.current.infernoDmg=0
       note('Inferno Zone ignites '+zone.squares.length+' battlefield squares.')
     }
-    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id)))
+    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id)),target?.def||0)
     if(damage>0&&target){
       const fraction=pattern?.shape!=='single'?0.7:1
       const affected=applyDamage(foesRef.current,pattern,aimSquare||target.id,Math.max(1,Math.round(damage*fraction)))
@@ -827,7 +827,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
-    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(notableTargeting(id)&&(!position||!skillHit?.valid||!skillHit.targets.length))))return
+    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(id==='dcn1'&&roundRef.current!==1)||(notableTargeting(id)&&(!position||!skillHit?.valid||!skillHit.targets.length))))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
       !canUseTacticalSkill(id,heroRef.current,position||target,getSkillLevel(player,id))))return
@@ -897,7 +897,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
       }
       else if(kind==='loadout'){
-        const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0,attack:calcATK(player,equipped),enemyHp:target?.hp||0,enemyMaxHp:target?.maxHp||1,playerHp:hpRef.current,playerMaxHp:maxHp})
+        const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0,attack:calcATK(player,equipped),enemyHp:target?.hp||0,enemyMaxHp:target?.maxHp||1,playerHp:hpRef.current,playerMaxHp:maxHp,round:roundRef.current})
         effect.messages.forEach(note)
         if(effect.debuff&&target){const own=foeStatusesRef.current[target.id]||{};applyNotableDebuff(own,effect);foeStatusesRef.current[target.id]=own}
         notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
@@ -1071,7 +1071,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       <div className="combat-actions">
         {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
         {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
-          title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)}
+          title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
           onClick={()=>{if(notableTargeting(skill.id)){setPreviewSkill({id:skill.id,label:skill.label,kind:'loadout'});setAim(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
           {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
           <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
