@@ -807,9 +807,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
-      !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))))return
+      !canUseTacticalSkill(id,heroRef.current,position||target,getSkillLevel(player,id))))return
     if(kind==='elemental'&&(!canUseElementalAttack(combatPlayer,id)||
-      !canUseTacticalSkill(id,heroRef.current,target,getSkillLevel(player,id))||
+      !canUseTacticalSkill(id,heroRef.current,position||target,getSkillLevel(player,id))||
       (elemCooldowns[id]||0)>0||mpRef.current<getAttackMpCost(combatPlayer,id,statusRef.current)))return
     if(kind==='signature'&&!canCastFusionSignature(signature,{
       enabled:fusionEnabled,ap:apRef.current,mp:mpRef.current,
@@ -863,7 +863,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
               throwReadyRef.current,roundRef.current)>0)
           : kind==='signature'
           ? !planFusionSignature(signature,foesRef.current,liveTarget.id,heroRef.current).valid
-          : !canUseTacticalSkill(id,heroRef.current,liveTarget,getSkillLevel(player,id))))){
+          : !canUseTacticalSkill(id,heroRef.current,position||liveTarget,getSkillLevel(player,id))))){
         note('Your target moved or fell before your action. Select a new target; no AP spent.')
         return
       }
