@@ -34,3 +34,31 @@ export function activeCompanions(player) {
   return Object.entries(COMPANIONS).filter(([key])=>tags.has('party:'+key))
     .map(([id,member])=>({id,...member}))
 }
+
+export function partyAwareText(text,player) {
+  if(typeof text!=='string')return text
+  const party=new Set(activeCompanions(player).map(member=>member.id))
+  const segments=[
+    ['Not Marcus (if he\'s with you, he goes still the moment he sees it).',
+      'Not Marcus. Marcus goes still the moment he sees it.','Not the person you met before.'],
+    ['Marcus — if he\'s with you — says nothing. Just looks at the ramp.\n\n"There's one more level," he says finally.\n\n"I know," you say.',
+      'Marcus says nothing. Just looks at the ramp.\n\n"There's one more level," he says finally.\n\n"I know," you say.',
+      'You look toward the ramp. One more level.'],
+    ['Marcus — if he\'s with you — exhales slowly. "Why did you let him go?"\n\nYou don\'t answer. You\'re not entirely sure yourself.',
+      'Marcus exhales slowly. "Why did you let him go?"\n\nYou don\'t answer. You\'re not entirely sure yourself.',
+      'You consider why you let him go. You\'re not entirely sure yourself.'],
+    ['Lena — if she\'s with you — moves to intercept a Drone immediately. Her fighting style is focused: one clean strike, reposition, repeat. No flourishes. Pure function.',
+      'Lena intercepts a Drone immediately. One clean strike, reposition, repeat. No flourishes. Pure function.',''],
+    ['Gio — if he\'s with you — does something unexpected. He throws frozen produce. A suspended melon swings down from a vendor\'s display and catches a Drone mid-arc. It\'s not combat. It works.',
+      'Gio throws frozen produce. A suspended melon swings into a Drone mid-arc. It works.',''],
+    ['Rhen — if they\'re with you — makes a sound that might be recognition.',
+      'Rhen makes a sound that might be recognition.',''],
+  ]
+  const people=['marcus','marcus','marcus','lena','gio','rhen']
+  segments.forEach(([original,present,absent],i)=>{
+    if(text.includes(original))text=text.replace(original,party.has(people[i])?present:absent)
+  })
+  text=text.replace('If Rhen is with you, they\'re ahead — always just around the next corner, never quite in sight until the fighting starts, and then suddenly and completely present.',
+    party.has('rhen')?'Rhen scouts ahead and returns for the fighting.':'')
+  return text
+}
