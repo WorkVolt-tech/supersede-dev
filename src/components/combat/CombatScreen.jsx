@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -567,12 +567,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
-    const base = Math.max(1, warboundBonus + notableAttackBonus(statusEffectsRef.current) + calcATK(player, equipped) - (enemyData.def || 0) +
+    const base = Math.max(1, warboundBonus + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
-    const wasCrit = Boolean(statusEffectsRef.current.cfx_guaranteedCrit) || atkResult?.wasCrit || Math.random() < critChance
-    let dmg = Math.max(0, Math.round(base * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
+    const wasCrit = consumeNotableCrit(statusEffectsRef.current) || Boolean(statusEffectsRef.current.cfx_guaranteedCrit) || atkResult?.wasCrit || Math.random() < critChance
+    let dmg = Math.max(0, Math.round(base * notableAttackMultiplier(statusEffectsRef.current) * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
     if (legendary.has('legendary_forger') && wasCrit) dmg += 12
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
@@ -848,7 +848,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     } else if (action==='signature') {
       ;({foeHp,playerHp}=castSignature(foeHp,playerHp))
     } else if (action==='loadout') {
-      const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0})
+      const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0,attack:calcATK(player,equipped),enemyHp:foeHp,enemyMaxHp:enemyData.hp,playerHp,playerMaxHp:maxPlayerHp})
       effect.messages.forEach(pushLog)
       notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
       if(effect.damage>0){foeHp=Math.max(0,foeHp-scaleSkillAmount(effect.damage,getSkillLevel(player,skillId)));setEnemyHp(foeHp);showJudgeHit()}
