@@ -30,7 +30,7 @@ async function verifyMenu(page,chapter){
   await page.getByText('Archive & systems').waitFor()
   const quick=await page.locator('.reading-quick-nav .reading-action').allTextContents()
   check(JSON.stringify(quick.map(x=>x.toLowerCase()))===
-    JSON.stringify(['chapters','inventory','skills','trader','lobby','badges']),
+    JSON.stringify(['chapters','inventory','skills','mastery','trader','lobby','badges']),
     'Archive main shortcuts changed or duplicated')
   const extra=await page.locator('.reading-page-right .reading-action')
     .filter({hasText:/Tests & Previews|Sign out|Reset my character/}).allTextContents()
@@ -75,8 +75,13 @@ async function verifySkills(page,viewport){
     .allTextContents()
   check(metrics.length===7,'Skills missing Max AP in combat stats')
   check(attrs.length===9,'Skills missing all nine attributes')
-  check(await page.getByRole('heading',{name:'Weapon mastery',exact:true}).count()===1,
-    'Weapon mastery section missing from Skills')
+  check(await page.locator('.skills-weapon-mastery').count()===0,
+    'Weapon mastery must be separate from Skills')
+  await page.getByRole('button',{name:/Weapon Mastery/}).click()
+  await page.getByRole('heading',{name:'Weapon Mastery',exact:true}).waitFor()
+  check(await page.locator('.skills-weapon-mastery').count()===1,
+    'Weapon mastery page missing')
+  await page.getByRole('button',{name:'Skills & Attributes'}).click()
   check(await page.locator('.skills-tabs.elemental button').count()===0,
     'Locked elemental paths should not be displayed')
 
