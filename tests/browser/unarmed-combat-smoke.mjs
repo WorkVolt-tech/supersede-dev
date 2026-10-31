@@ -100,7 +100,7 @@ async function testSolo(page,distance){
   await page.waitForFunction(()=>document.querySelector('.combat-attack-details[role="status"]')
     ?.textContent.includes('Thrown object recovery') &&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-      ?.getAttribute('aria-valuenow')==='1',null,{timeout:12000})
+      ?.getAttribute('aria-valuenow')==='4',null,{timeout:12000})
   await checkMeter(page,4)
   check(await choices.nth(1).isDisabled(),'solo thrown object could be reused immediately')
   await page.getByRole('button',{name:'End turn'}).click()
