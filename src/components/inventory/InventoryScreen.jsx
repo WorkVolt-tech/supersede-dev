@@ -38,7 +38,7 @@ export default function InventoryScreen() {
     ['Attack',displayItem.atk_bonus],['Defense',displayItem.def_bonus],['Max HP',displayItem.max_hp_bonus],
     ['Power',displayItem.power_bonus],['Guard',displayItem.guard_bonus],['Speed',displayItem.speed_bonus],
     ['Control',displayItem.control_bonus],['Insight',displayItem.insight_bonus],['Luck',displayItem.luck_bonus],
-    ['Agility',displayItem.agility_bonus],['Healing',displayItem.hp_restore],
+    ['Agility',displayItem.agility_bonus],['Max AP',displayItem.ap_bonus],['Healing',displayItem.hp_restore],
   ].filter(([,value])=>Number(value)>0) : []
 
   async function equipSelected(slotKey) {
