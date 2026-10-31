@@ -189,7 +189,7 @@ test('improvised throw uses distance and diagonal permission with shared recover
   assert.equal(improvisedThrowTurnsRemaining(middle,2),0)
   assert.equal(improvisedThrowTurnsRemaining(rear,2),1)
   assert.equal(improvisedThrowTurnsRemaining(rear,3),0)
-  assert.equal(startImprovisedThrowRecovery(1,0),1)
+  assert.equal(startImprovisedThrowRecovery(1,0),2)
 })
 
 // Range and diagonal rules must be symmetric for players and enemies.
