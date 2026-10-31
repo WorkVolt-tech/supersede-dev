@@ -92,12 +92,12 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        <small>{occupied?(side==='enemy'?'FOE':'YOU'):names[rank]}</small>
+        {occupied&&<small>{side==='enemy'?'FOE':'YOU'}</small>}
       </button>
     }))
   }
   return <div className="combat-grid-field" aria-label="Three by three tactical battlefield">
-    <div className="combat-grid-caption">ENEMY · FRONT ROW NEAREST CENTRE</div>
+    <div className="combat-grid-caption">ENEMY</div>
     <div className="combat-grid-board">{cells('enemy')}</div>
     <div className="combat-grid-divider">⚔</div>
     <div className="combat-grid-board">{cells('hero')}</div>
