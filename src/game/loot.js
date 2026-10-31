@@ -15,7 +15,7 @@ const FALLBACK_ITEMS = {
 const STACKABLE = new Set(['consumable', 'material', 'key'])
 const ITEM_COLUMNS = ['item_key','name','item_type','subtype','rarity','icon','atk_bonus','def_bonus','max_hp_bonus',
   'hp_restore','two_handed','element','power_bonus','guard_bonus','control_bonus','speed_bonus',
-  'insight_bonus','luck_bonus','agility_bonus','special_effect']
+  'insight_bonus','luck_bonus','agility_bonus','ap_bonus','special_effect']
 
 export async function grantLoot(playerId, drops = [], luck = 0) {
   if (!playerId || !Array.isArray(drops) || !drops.length) return []
