@@ -161,9 +161,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     setSkillPracticeUses(previous=>({...previous,[id]:(previous[id]||0)+1}))
   }
+  function skillLevelInFight(id){
+    const practice=awardSkillPractice(player.skill_levels||{},{[id]:skillPracticeUses[id]||0})
+    return getSkillLevel({skill_levels:practice.skill_levels},id)
+  }
   function skillPracticeLabel(id){
-    const total=Number(player.skill_levels?.['__practice_'+id]||0)+(skillPracticeUses[id]||0)
-    return getSkillLevel(player,id)>=10?'MAX':(total%10)+'/10 uses'
+    const practice=awardSkillPractice(player.skill_levels||{},{[id]:skillPracticeUses[id]||0})
+    return skillLevelInFight(id)>=10?'MAX':practice.skill_levels['__practice_'+id]||0
+      ?(practice.skill_levels['__practice_'+id]||0)+'/10 uses':'0/10 uses'
   }
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
@@ -1145,7 +1150,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
             title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
             onClick={()=>{if(notableTargeting(skill.id)){setTargetMode({kind:'loadout',id:skill.id,label:skill.label});setAimSquare(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
-            {skill.label} · Lv {getSkillLevel(player,skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
+            {skill.label} · Lv {skillLevelInFight(skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
             <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
           </button>)}
           {activeSkills.map(skill => (
@@ -1162,7 +1167,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                   setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
                 }else takeTurn('skill',skill.id)
               }}>
-              {skill.label} · Lv {getSkillLevel(player, skill.id)} · {skillPracticeLabel(skill.id)}
+              {skill.label} · Lv {skillLevelInFight(skill.id)} · {skillPracticeLabel(skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
               {getTacticalSkillRule(skill.id) && <span className="combat-action-sub">
                 {getTacticalSkillRule(skill.id).label}
@@ -1183,7 +1188,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                 setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
               }else takeTurn('elemental',elementalAttack.id)
             }}>
-            {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)} · {skillPracticeLabel(elementalAttack.id)}
+            {elementalAttack.label} · Lv {skillLevelInFight(elementalAttack.id)} · {skillPracticeLabel(elementalAttack.id)}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
                 ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
