@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -454,14 +454,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const warboundBonus=consumeWarboundBonus(statusRef.current,calcATK(player,equipped))
-    const base=Math.max(1,warboundBonus+notableAttackBonus(statusRef.current)+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
+    const base=Math.max(1,warboundBonus+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
       combatPlayer,statusRef.current,target,base))
-    const crit=Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
+    const crit=consumeNotableCrit(statusRef.current)||Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
       Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
         critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
     const mult=(mod?.dmgMult??1)*(crit?1.5+critDamageBonus(combatPlayer):1)
-    let priorDamage=Math.max(1,Math.round(base*mult))
+    let priorDamage=Math.max(1,Math.round(base*mult*notableAttackMultiplier(statusRef.current)))
     if(legendary.has('legendary_forger')&&crit)priorDamage+=12
     if(legendary.has('legendary_hunter')&&target.hp===target.maxHp)priorDamage+=15
     if(legendary.has('legendary_resonance_weaver'))priorDamage+=4
@@ -874,7 +874,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
       }
       else if(kind==='loadout'){
-        const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0})
+        const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0,attack:calcATK(player,equipped),enemyHp:target?.hp||0,enemyMaxHp:target?.maxHp||1,playerHp:hpRef.current,playerMaxHp:maxHp})
         effect.messages.forEach(note)
         notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
         if(effect.damage>0&&target){
