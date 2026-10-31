@@ -42,7 +42,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
+function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -51,6 +51,13 @@ function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, can
     return ranks.flatMap(rank=>[0,1,2].map(col=>{
       const foe=side==='enemy'?foes.find(f=>f.hp>0&&f.col===col&&f.rank===rank):null
       const mine=side==='hero'&&hero.rank===rank&&hero.col===col
+      const status=foe?foeStatuses[foe.id]||{}:{}
+      const effects=foe?[
+        status.cls_bleedingTurns>0?'🩸':'',status.cls_rotTurns>0?'☣️':'',
+        status.cls_drownTurns>0?'💧':'',status.enemyStunTurns>0?'⚡':'',
+        status.cls_markTurns>0?'🎯':'',status.cfx_longDecayStacks>0?'☠️':'',
+        status.cfx_emberStacks>0?'🔥':'',
+      ].filter(Boolean).join(''):''
       const step=side==='hero'&&!mine&&canMove&&
         Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
@@ -78,7 +85,7 @@ function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, can
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(foe||mine)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':'YOU'}</small>}
+        {(foe||mine)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':'YOU'}{effects&&' '+effects}</small>}
       </button>
     }))
   }
@@ -862,7 +869,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} enemyArea={enemyArea} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
