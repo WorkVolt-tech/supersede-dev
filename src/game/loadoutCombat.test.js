@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -123,3 +123,5 @@ test('Ancient Root shields twenty percent of max health',()=>{
 
 test('control immunity leaves offensive stun intact',()=>{const st={playerStunTurns:2,enemyStunTurns:1};enforceNotableControlImmunity(new Set(['dcn5']),st);assert.equal(st.playerStunTurns,0);assert.equal(st.enemyStunTurns,1)})
 test('Prescience lowers critical chance',()=>{assert.equal(notableEnemyCritChance(new Set(['arn4']),{insight:5},.25),.15)})
+
+test('offensive notable skills have legal battlefield patterns',()=>{for(const id of ['ofn4','ofn5','fln3','fln6','dcn6']){const pattern=notableTargeting(id);assert.equal(pattern.target,'enemy');assert.equal(pattern.shape,'single')}assert.equal(notableTargeting('ofn6'),null)})
