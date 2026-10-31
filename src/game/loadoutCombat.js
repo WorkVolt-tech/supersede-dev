@@ -35,12 +35,12 @@ export function useNotableSkill(id,ctx) {
     case 'fl_ks1':status.loadoutNextCrit=1;return buff('loadoutUntargetable')
     case 'fl_ks2':status.loadoutDoubleStrike=true;return buff('loadoutFreeze')
     case 'arn2':return buff('loadoutForesight')
-    case 'arn6':return buff('loadoutNextCrit')
+    case 'arn6':return buff('loadoutMindPierce')
     case 'ar_ks1':return buff('loadoutSixthSense')
     case 'ar_ks2':return Math.random()<.5?{messages:['Chaos Engine erupts.'],damage:atk*2}:buff('loadoutAbsorb')
     case 'dcn1':return buff('loadoutUntargetable')
     case 'dcn6':return {messages:['Dread Pulse weakens the enemy attack.'],damage:0,debuff:{attackPenalty:2}}
-    case 'dc_ks1':return buff('loadoutReaper')
+    case 'dc_ks1':status.loadoutReaperPierce=true;return buff('loadoutReaper')
   }
   if(id==='fln6'){
     return {messages:['Momentum launches a ground spike.'],damage:Math.max(1,20-Math.floor((ctx.enemyDef||0)*0.3))}
@@ -65,8 +65,21 @@ export function notableAttackBonus(status,base=0) {
 }
 export function notableAttackMultiplier(status) {
   if(status.loadoutDoubleStrike){delete status.loadoutDoubleStrike;return 2}
-  if(status.loadoutSpellSurge){delete status.loadoutSpellSurge;return 1.5}
   return 1
+}
+export function notableSkillDamage(status,damage) {
+  if(!status.loadoutSpellSurge||damage<=0)return damage
+  delete status.loadoutSpellSurge
+  return Math.max(1,Math.round(damage*1.5))
+}
+export function notableCriticalMultiplier(status,base=1.5) {
+  if(status.loadoutMindPierce){delete status.loadoutMindPierce;return 1.75}
+  return base
+}
+export function notableArmorPierce(status,defense) {
+  if(!status.loadoutReaperPierce)return 0
+  delete status.loadoutReaperPierce
+  return Math.max(0,defense||0)
 }
 export function consumeNotableCrit(status) {
   if(!status.loadoutNextCrit)return false
