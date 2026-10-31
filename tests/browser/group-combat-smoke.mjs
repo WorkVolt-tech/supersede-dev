@@ -224,7 +224,11 @@ async function verifyTriadVictory(page) {
   await page.locator('.combat-fusion-status').waitFor()
   await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
   await page.locator('.combat-signature-action').click()
-  if(!(await page.evaluate(()=>document.body.dataset.outcome==='win')))
+  // Signature may win immediately. Only end the round if foes survive.
+  await page.waitForFunction(()=>document.body.dataset.outcome==='win'||
+    document.querySelector('.combat-result.win'),null,{timeout:4000}).catch(()=>{})
+  if(!(await page.evaluate(()=>document.body.dataset.outcome==='win'))&&
+    !(await page.locator('.combat-result.win').count()))
     await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.body.dataset.outcome==='win',
     null,{timeout:15000})
