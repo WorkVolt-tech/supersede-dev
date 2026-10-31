@@ -18,20 +18,20 @@ export const TACTICAL_ATTACKS = {
   lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
   throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, maxRange:2,
     description:'Throw a dagger at an enemy up to 2 squares away.' },
-  quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1 },
-  aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1 },
-  snapshot:    { label:'Quick Shot',       reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:4, ap:1 },
-  bolt:        { label:'Focused Bolt',      reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:5, ap:1 },
-  shieldToss:  { label:'Shield Toss',      reach:'mid',   from:[0,1], to:[0,1,2],   cols:'near',  shape:'single', damage:4, ap:1 },
-  scatter:     { label:'Buckshot Spread',  reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'row',    damage:4, ap:2 },
+  quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1, diagonal:true },
+  aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1, diagonal:true },
+  snapshot:    { label:'Quick Shot',       reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:4, ap:1, diagonal:true },
+  bolt:        { label:'Focused Bolt',      reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:5, ap:1, diagonal:true },
+  shieldToss:  { label:'Shield Toss',      reach:'mid',   from:[0,1], to:[0,1,2],   cols:'near',  shape:'single', damage:4, ap:1, diagonal:true },
+  scatter:     { label:'Buckshot Spread',  reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'row',    damage:4, ap:2, diagonal:true },
   sweep:       { label:'Sweeping Arc',     reach:'short', from:[0],   to:[0],       cols:'near',  shape:'row',    damage:5, ap:2 },
   pierce:      { label:'Piercing Line',    reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'column', damage:4, ap:2 },
   wave:        { label:'Resonance Wave',   reach:'mid',   from:[0,1,2],to:[0,1,2], cols:'any',   shape:'cross',  damage:4, ap:2 },
-  volley:      { label:'Arrow Volley',     reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'cross',  damage:3, ap:2 },
+  volley:      { label:'Arrow Volley',     reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'cross',  damage:3, ap:2, diagonal:true },
   shockwave:   { label:'Shield Shockwave', reach:'mid',   from:[0],   to:[0,1],     cols:'near',  shape:'row',    damage:4, ap:2 },
   masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
   masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
-  masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2,masteryLevel:80 },
+  masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2, diagonal:true,masteryLevel:80 },
   pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, fallback:true,
     description:'Basic emergency action (not a skill). Reaches any enemy row; once per round.' },
 };
@@ -136,7 +136,10 @@ export function isTacticalTargetValid(attack,from,target) {
   if (!a || !from || !target) return false
   const distance=tacticalDistance(from,target)
   const range=a.maxRange ?? (a.reach==='short'?2:a.reach==='mid'?3:6)
-  return distance<=range && (a.cols!=='same'||from.col===target.col)
+  // A different column is a diagonal shot across the two opposed boards.
+  // Only attacks explicitly marked for diagonal targeting may make that shot.
+  const diagonal=from.col!==target.col
+  return distance<=range && (!diagonal || a.diagonal===true)
 }
 export function getTacticalAffectedSquares(attack, target) {
   const a=typeof attack==='string'?TACTICAL_ATTACKS[attack]:attack;
