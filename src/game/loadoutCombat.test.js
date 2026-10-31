@@ -1,3 +1,4 @@
+import {NOTABLE_SKILLS_REGISTRY} from './skillsRegistry.js'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
 import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting} from './loadoutCombat.js'
@@ -134,4 +135,15 @@ test('Flicker belongs to the player and stacks with Ricochet without contaminati
  assert.equal(enemy.notableFlickerReady,undefined)
  assert.equal(enemy.notableSpellbladePoisonTurns,2)
  assert.equal(notablePassiveOutgoing(new Set(['fln4']),20,25,()=>1,enemy,owner).damage,20)
+})
+
+test('all 20 registered active notables have a non-null action result',()=>{
+ const active=Object.entries(NOTABLE_SKILLS_REGISTRY).filter(([,skill])=>skill.type==='active')
+ assert.equal(active.length,20)
+ for(const [id] of active){
+  const status={}
+  const result=useNotableSkill(id,{status,enemyDef:4,attack:30,enemyHp:20,enemyMaxHp:100,playerHp:20,playerMaxHp:100})
+  assert.ok(SUPPORTED_NOTABLES.has(id),id+' absent from battle adapter')
+  assert.ok(result&&Array.isArray(result.messages)&&Number.isFinite(result.damage),id+' missing executable result')
+ }
 })
