@@ -135,7 +135,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const attack=weaponKit.find(a=>a.id===selectedAttack)||weaponKit[0]
   const [hero,setHero]=useState({col:1,rank:0})
   const heroRef=useRef(hero)
-  const maxAp=maxCombatAp(player.level)
+  const maxAp=maxCombatAp(player,equipped)
   const [ap,setAp]=useState(maxAp)
   const apRef=useRef(maxAp)
   const [emergencyUsed,setEmergencyUsed]=useState(false)
