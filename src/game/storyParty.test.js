@@ -20,3 +20,11 @@ test('narration reflects actual membership rather than exposing conditional dire
  assert.match(partyAwareText(line,{alliance_log:['party:lena']}),/Lena intercepts/)
  assert.equal(partyAwareText(line,{alliance_log:[]}),"")
 })
+
+test('choosing a solo fight removes party combatants',()=>{
+ for(const scene of ['garage_b2_fight_alone','boss','boss_unseen_fight','boss_surveyor_fight']){
+   const next=partyTagsForScene(['party:marcus','party:yara','met_marcus'],scene)
+   assert.deepEqual(activeCompanions({alliance_log:next}),[])
+   assert.ok(next.includes('met_marcus'))
+ }
+})
