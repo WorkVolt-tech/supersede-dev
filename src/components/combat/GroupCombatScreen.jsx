@@ -96,7 +96,7 @@ function Battlefield({ foes, hero, companions=[], heroHp, heroMaxHp, heroMp, her
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(foe||mine||member)&&<div className="combat-unit-hud"><small>{foe?foe.name||'Enemy':member?member.name:'YOU'}{effects&&' '+effects}</small>{(foe||mine)&&<><div className="combat-hp-bar"><div className="combat-hp-fill" style={{width:Math.max(0,Math.min(100,(foe?foe.hp/Math.max(1,foe.maxHp||foe.max_hp||foe.hp):heroHp/Math.max(1,heroMaxHp))*100))+'%'}}/></div><small>{foe?foe.hp+'/'+(foe.maxHp||foe.max_hp||foe.hp):heroHp+'/'+heroMaxHp} HP</small>{mine&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</div>}
+        {(foe||mine||member)&&<div className="combat-unit-hud"><small>{foe?foe.name||'Enemy':member?member.name:'YOU'}{effects&&' '+effects}</small>{(foe||mine)&&<><div className="combat-hp-bar"><div className="combat-hp-fill" style={{width:Math.max(0,Math.min(100,(foe?foe.hp/Math.max(1,foe.maxHp||foe.max_hp||foe.hp):heroHp/Math.max(1,heroMaxHp))*100))+'%'}}/></div><small>{foe?foe.hp+'/'+(foe.maxHp||foe.max_hp||foe.hp):heroHp+'/'+heroMaxHp} HP</small>{mine&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</>}</div>}
       </button>
     }))
   }
