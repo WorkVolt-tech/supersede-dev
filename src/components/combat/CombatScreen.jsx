@@ -771,7 +771,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:2
     if (cost > actionPointsRef.current) return
-    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId) || (notableTargeting(skillId)&&(!moveTo||!isTacticalTargetValid(notableTargeting(skillId),heroPosition,moveTo))))) return
+    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId) || (notableTargeting(skillId)&&(!moveTo||!isTacticalTargetValid(notableTargeting(skillId),heroPosition,moveTo)||!tacticalPreview(notableTargeting(skillId),heroPosition,moveTo,[{id:'enemy',...enemyPosition,hp:enemyHp}]).targets.length)))) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
       !canUseTacticalSkill(skillId,heroPosition,moveTo||enemyPosition))) return
