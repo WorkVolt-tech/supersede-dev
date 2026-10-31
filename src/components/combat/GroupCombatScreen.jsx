@@ -91,8 +91,7 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
         onClick={()=>side==='enemy'?onAttack({col,rank},foe?.id):onMove({col,rank})}
         onPointerEnter={()=>{if(side==='enemy'&&reachable)onHoverAim({col,rank})}}
         onPointerLeave={()=>{if(side==='enemy')onHoverAim(null)}}
-        onFocus={()=>{if(side==='enemy'&&reachable)onHoverAim({col,rank})}}
-        onBlur={()=>{if(side==='enemy')onHoverAim(null)}}>
+>
         <span>{foe?foe.icon:mine?'🧑':member?member.icon:'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
