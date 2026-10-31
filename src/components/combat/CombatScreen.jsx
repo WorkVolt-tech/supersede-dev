@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -453,6 +453,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   // movement and stunned turns. Moving must never suppress bleed, poison,
   // class regeneration or keystone duration ticks.
   function finishEnemyAction(nextHp, foeHp) {
+    const poison=tickNotableDebuff(statusEffectsRef.current)
+    if(poison&&foeHp>0){foeHp=Math.max(0,foeHp-poison);pushLog(enemyData.name+' suffers '+poison+' poison damage.')}
     statusEffectsRef.current._enemyMaxHp = enemyData.hp
     const turnEnd = ClsCombat.onTurnEnd(combatPlayer, statusEffectsRef.current)
     if (turnEnd?.messages?.length) turnEnd.messages.forEach(pushLog)
@@ -512,7 +514,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
     foeHp = Math.min(enemyData.hp, foeHp + healAmt)
 
-    aiDmg = Math.min(damageLimit, aiDmg)
+    aiDmg = Math.max(0,Math.min(damageLimit, aiDmg)-notableEnemyAttackPenalty(statusEffectsRef.current))
     // Route the AI's intended damage through onPlayerHit so defensive class
     // skills (shields, counters, thorns) get a chance to react, same as
     // the vanilla engines did. Real return shape is {dmgMult, reflectAmount,
@@ -854,6 +856,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     } else if (action==='loadout') {
       const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0,attack:calcATK(player,equipped),enemyHp:foeHp,enemyMaxHp:enemyData.hp,playerHp,playerMaxHp:maxPlayerHp})
       effect.messages.forEach(pushLog)
+      applyNotableDebuff(statusEffectsRef.current,effect)
       notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
       if(effect.damage>0){foeHp=Math.max(0,foeHp-scaleSkillAmount(effect.damage,getSkillLevel(player,skillId)));setEnemyHp(foeHp);showJudgeHit()}
     } else if (action==='skill') {
