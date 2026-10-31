@@ -125,9 +125,9 @@ function CombatMessage({ message }) {
   })
 }
 
-export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBoss, judgeCtx }) {
+export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBoss, judgeCtx, solo=false }) {
   const player = usePlayerStore(s => s.player)
-  const companions=activeCompanions(player)
+  const companions=solo?[]:activeCompanions(player)
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
   const notableUsesRef=useRef({})
