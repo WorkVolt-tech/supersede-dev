@@ -34,18 +34,19 @@ test('existing equipment subtypes resolve to meaningful weapon families', () => 
   assert.equal(tacticalWeaponType(null),'unarmed')
 })
 
-test('frontline sword slash cannot reach a distant back-row enemy', () => {
+test('short sword slash hits only the directly adjacent square', () => {
   assert.equal(isTacticalTargetValid('slash',{col:1,rank:0},{col:1,rank:0}),true)
   assert.equal(isTacticalTargetValid('slash',{col:1,rank:0},{col:1,rank:2}),false)
   assert.equal(isTacticalTargetValid('slash',{col:1,rank:1},{col:1,rank:0}),false)
   assert.equal(isTacticalTargetValid('slash',{col:1,rank:0},{col:0,rank:0}),false)
 })
 
-test('spear reaches mid and ranged shot reaches rear without ignoring the firing position', () => {
-  assert.equal(isTacticalTargetValid('thrust',{col:0,rank:1},{col:1,rank:1}),true)
-  assert.equal(isTacticalTargetValid('thrust',{col:0,rank:2},{col:0,rank:0}),false)
+test('distance and diagonal permissions control spear and bow attacks', () => {
+  assert.equal(isTacticalTargetValid('thrust',{col:0,rank:1},{col:0,rank:0}),true)
+  assert.equal(isTacticalTargetValid('thrust',{col:0,rank:1},{col:1,rank:0}),false)
+  assert.equal(isTacticalTargetValid('thrust',{col:0,rank:2},{col:0,rank:2}),false)
   assert.equal(isTacticalTargetValid('aimed',{col:2,rank:2},{col:0,rank:2}),true)
-  assert.equal(isTacticalTargetValid('aimed',{col:2,rank:0},{col:0,rank:2}),false)
+  assert.equal(isTacticalTargetValid('aimed',{col:2,rank:0},{col:0,rank:2}),true)
 })
 
 test('cross attacks cover centre and orthogonally adjacent cells only', () => {
@@ -95,15 +96,14 @@ test('additional valid class abilities do not remove basic attacks or the fallba
   assert.ok(getTacticalAttacks('dagger',['not_a_real_attack']).every(a=>TACTICAL_ATTACKS[a.id]))
 })
 
-test('enemy tactical AI uses legal attacks, moves when necessary and has a fallback', () => {
+test('enemy tactical AI attacks when in reach, advances unarmed, and falls back if blocked', () => {
   const front={col:1,rank:0}, back={col:1,rank:2}
-  assert.equal(chooseTacticalEnemyAction('sword', front,front).attack.id,'slash')
-  const move=chooseTacticalEnemyAction('bow',front,back)
-  assert.deepEqual(move.move,{col:1,rank:1})
-  assert.equal(chooseTacticalEnemyAction('sword',front,back).attack.id,'pulse')
-  assert.equal(chooseTacticalEnemyAction('unarmed',front,back).attack.id,'pulse')
-  const blocked=chooseTacticalEnemyAction('bow',front,back,
-    [{col:1,rank:1},{col:0,rank:0},{col:2,rank:0}])
+  assert.equal(chooseTacticalEnemyAction('sword',front,front).attack.id,'slash')
+  assert.equal(chooseTacticalEnemyAction('bow',front,back).attack.id,'quickArrow')
+  assert.equal(chooseTacticalEnemyAction('sword',front,back).attack.id,'thrust')
+  assert.deepEqual(chooseTacticalEnemyAction('unarmed',back,front).move,{col:1,rank:1})
+  const blocked=chooseTacticalEnemyAction('unarmed',back,front,
+    [{col:0,rank:1},{col:1,rank:1},{col:2,rank:1}])
   assert.equal(blocked.attack.id,'pulse')
 })
 
@@ -161,25 +161,26 @@ test('unequipped player starts with only Basic Strike and Improvised Throw',()=>
   assert.deepEqual(kit.map(attack=>attack.id),['bareStrike','improvisedThrow'])
   assert.equal(kit.some(a=>['stab','lunge','wave','pulse'].includes(a.id)),false)
   assert.equal(kit.every(a=>a.ap===1),true)
-  assert.ok(tacticalAttackDescription(kit[0]).includes('Front row'))
+  assert.ok(tacticalAttackDescription(kit[0]).includes('1 square'))
   assert.ok(tacticalAttackDescription(kit[1]).includes('2 rounds'))
   assert.ok(getPlayerTacticalAttacks(true,'sword',0).some(a=>a.id==='slash'))
   assert.ok(getPlayerTacticalAttacks(true,'sword',0).some(a=>a.id==='pulse'))
 })
-test('unarmed front strike cannot magically reach middle or rear rows',()=>{
+test('unarmed basic strike only reaches the adjacent square straight ahead',()=>{
   const hero={col:1,rank:0}
   assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:0}),true)
-  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:0,rank:0}),true)
+  assert.equal(isTacticalTargetValid('bareStrike',hero,{col:0,rank:0}),false)
   assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:1}),false)
   assert.equal(isTacticalTargetValid('bareStrike',hero,{col:1,rank:2}),false)
   assert.equal(isTacticalTargetValid('bareStrike',{col:1,rank:1},{col:1,rank:0}),false)
   assert.equal(isTacticalTargetValid('bareStrike',hero,{col:0,rank:2}),false)
 })
-test('improvised throw targets middle/rear but not frontline and has shared recovery',()=>{
+test('improvised throw uses distance and diagonal permission with shared recovery',()=>{
   const hero={col:1,rank:0}
-  assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:0,rank:0}),false)
+  assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:0,rank:0}),true)
   assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:0,rank:1}),true)
   assert.equal(isTacticalTargetValid('improvisedThrow',hero,{col:2,rank:2}),true)
+  assert.equal(isTacticalTargetValid('improvisedThrow',{col:0,rank:2},{col:2,rank:2}),false)
   const middle=startImprovisedThrowRecovery(1,1)
   const rear=startImprovisedThrowRecovery(1,2)
   assert.equal(middle,2)
@@ -189,4 +190,16 @@ test('improvised throw targets middle/rear but not frontline and has shared reco
   assert.equal(improvisedThrowTurnsRemaining(rear,2),1)
   assert.equal(improvisedThrowTurnsRemaining(rear,3),0)
   assert.equal(startImprovisedThrowRecovery(1,0),1)
+})
+
+// Range and diagonal rules must be symmetric for players and enemies.
+test('straight melee cannot hit diagonally; dagger throw reaches two squares',()=>{
+  const attacker={col:1,rank:0}
+  const diagonal={col:0,rank:0}
+  assert.equal(isTacticalTargetValid('stab',attacker,diagonal),false)
+  assert.equal(isTacticalTargetValid('bareStrike',attacker,diagonal),false)
+  assert.equal(isTacticalTargetValid('throw',attacker,diagonal),true)
+  assert.equal(isTacticalTargetValid('throw',attacker,{col:1,rank:1}),true)
+  assert.equal(isTacticalTargetValid('throw',attacker,{col:0,rank:1}),false)
+  assert.equal(isTacticalTargetValid('stab',diagonal,attacker),false)
 })
