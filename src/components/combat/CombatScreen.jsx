@@ -64,10 +64,10 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAttack,
+function TacticalBattlefield({ hero, enemy, aim, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
   signatureFx,signaturePreview }) {
-  const affected = attack && isTacticalTargetValid(attack,hero,enemy)
-    ? getTacticalAffectedSquares(attack,enemy):[]
+  const affected = attack && isTacticalTargetValid(attack,hero,aim)
+    ? getTacticalAffectedSquares(attack,aim):[]
   const labels=['Left','Centre','Right']
   const names=['Front','Middle','Rear']
   function cells(side) {
@@ -75,7 +75,7 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
     return rows.flatMap(rank=>[0,1,2].map(col=>{
       const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
       const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
-      const targetable=side==='enemy'&&occupied&&enemyHp>0&&canAttack&&isTacticalTargetValid(attack,hero,enemy)
+      const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
       const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
       const area=signaturePreview?.side===side&&signaturePreview.squares.some(
@@ -85,7 +85,7 @@ function TacticalBattlefield({ hero, enemy, enemyName, enemyIcon, enemyHp, attac
           targetable?'targetable':'',move&&canMove?'movable':'',
           splash?'splash':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
-        onClick={()=>side==='enemy'?onAttack():onMove({col,rank})}
+        onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
         aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
@@ -165,6 +165,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     (player.weapon_mastery || {})[weaponType] || 0)
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
+  const [aimSquare,setAimSquare]=useState(null)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
   const [enemyPosition, setEnemyPosition] = useState(()=>{
@@ -697,7 +698,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (busy || result || !entranceReady) return
     const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
     if (action==='attack' && (attack?.fallback&&emergencyUsedRef.current || !attack ||
-      !isTacticalTargetValid(attack,heroPosition,enemyPosition) ||
+      !isTacticalTargetValid(attack,heroPosition,aimSquare||enemyPosition) ||
       (attack.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0))) return
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
@@ -786,7 +787,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setHeroPosition(moveTo)
       pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
     } else if (action==='attack') {
-      ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
+      if(getTacticalAffectedSquares(attack,aimSquare||enemyPosition).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank))
+        ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
+      else pushLog(attack.label+': empty squares hit. No enemy struck.')
     } else if (action==='keystone') {
       ;({foeHp,playerHp}=castKeystone(skillId,foeHp,playerHp))
     } else if (action==='elemental') {
@@ -871,6 +874,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=selectedAttack.thrown&&throwTurns>0
+  const selectedAim=aimSquare||enemyPosition
+  const aimedAttackLegal=isTacticalTargetValid(selectedAttack,heroPosition,selectedAim)
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -943,10 +948,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             squares:getTacticalAffectedSquares(signature.attack,
               signature.target==='self'?heroPosition:enemyPosition)
           }:null}
+          aim={selectedAim}
           canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
-          onAttack={()=>takeTurn('attack',selectedAttack.id)} />
+          onAim={setAimSquare} />
         <div className="combat-tactical-weapons">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
             className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
@@ -962,6 +968,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             </span>
           </button>)}
         </div>
+        <button type="button" className="combat-action-btn" disabled={busy||!entranceReady||!aimedAttackLegal||throwUnavailable||actionPoints<selectedAttack.ap||(selectedAttack.fallback&&emergencyUsed)} onClick={()=>takeTurn('attack',selectedAttack.id)}>Attack selected squares · {selectedAttack.ap} AP</button>
         <div className="combat-attack-details" role="status">
           <strong>{selectedAttack.label} · {selectedAttack.ap} AP</strong>
           <p>{tacticalAttackDescription(selectedAttack)}</p>
