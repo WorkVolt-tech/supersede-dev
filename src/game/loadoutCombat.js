@@ -122,8 +122,10 @@ export function learnedNotablePassives(player={}) {
  const learned=new Set(player.skills_unlocked||[])
  return new Set([...learned].filter(id=>NOTABLE_SKILLS_REGISTRY[id]?.type==='passive'))
 }
-export function notablePassiveOutgoing(passives,damage,atk=0,rng=Math.random) {
+export function notablePassiveOutgoing(passives,damage,atk=0,rng=Math.random,status={}) {
  let bonus=0;const messages=[]
+ if(passives.has('ofn3')&&rng()<.15){status.notableSpellbladePoisonTurns=2;messages.push('Spellblade poisons the enemy.')}
+ if(status.notableFlickerReady){bonus+=damage;delete status.notableFlickerReady;messages.push('Flicker doubles damage.')}
  if(passives.has('arn5')&&rng()<.20){bonus=Math.max(1,Math.round(atk*.4));messages.push('Ricochet strikes again for '+bonus+'.')}
  return {damage:Math.max(0,damage)+bonus,messages}
 }
@@ -132,6 +134,7 @@ export function notablePassiveIncoming(passives,status,damage,atk=0,rng=Math.ran
  if(damage>0&&(passives.has('fln2')||passives.has('dcn2'))&&rng()<.15){
    damage=0
    reflect=Math.max(1,Math.round(atk*.5))
+   if(passives.has('fln4'))status.notableFlickerReady=true
    messages.push('Ghost Step dodges and counters for '+reflect+'.')
  }else if(damage>0){
    if(passives.has('dfn3')&&rng()<.20){stun=true;messages.push('Thorns stun the attacker.')}
@@ -146,3 +149,6 @@ export function notablePassiveIncoming(passives,status,damage,atk=0,rng=Math.ran
  }
  return {damage,reflect,stun,messages}
 }
+
+export function notablePassiveStagger(passives,rng=Math.random){return passives.has('fln5')&&rng()<.2}
+export function tickNotableSpellblade(status={}){if(!status.notableSpellbladePoisonTurns)return 0;status.notableSpellbladePoisonTurns--;return 3}
