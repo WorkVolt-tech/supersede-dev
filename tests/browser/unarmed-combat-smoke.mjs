@@ -97,7 +97,6 @@ async function testSolo(page,distance){
   const target=page.locator('.combat-grid-board').first().locator('button.occupied')
   check(await target.isEnabled(),'throw cannot reach '+distance+' foe')
   await target.click()
-  await page.getByRole('button',{name:/Attack selected squares/}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-attack-details')
     ?.textContent.includes('Thrown object recovery') &&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
