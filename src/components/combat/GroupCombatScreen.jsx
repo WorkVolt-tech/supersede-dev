@@ -589,10 +589,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       }
       const occupied=next.filter(other=>other.id!==actor.id&&other.hp>0)
       const hazards=fieldsRef.current.flatMap(field=>field.squares)
-      const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards)
+      const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards,{canMove:actor.canMove!==false&&actor.mobile!==false&&enemyData.canMove!==false})
       if(choice.move){
         actor.col=choice.move.col;actor.rank=choice.move.rank
         note(actor.name+' moves to rank '+(actor.rank+1)+', column '+(actor.col+1)+'.')
+        continue
+      }
+      if(choice.wait){
+        note(actor.name+' holds position: no target in range.')
         continue
       }
       if(enemyDamageBudgetRef.current<=0){
