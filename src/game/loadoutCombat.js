@@ -27,7 +27,7 @@ export function useNotableSkill(id,ctx) {
     case 'ofn4':return {messages:['Executioner strikes.'],damage:Math.round(atk*(ctx.enemyHp<ctx.enemyMaxHp*.3?1.25:1))}
     case 'ofn5':return {messages:['Hex Cannon poisons the target.'],damage:Math.max(1,atk-def),debuff:{poisonTurns:3,poisonDamage:5}}
     case 'of_ks1':return buff('loadoutBloodthirst')
-    case 'of_ks2':return buff('loadoutSpellSurge')
+    case 'of_ks2':return buff('loadoutSpellSurge',true)
     case 'dfn4':return ctx.playerHp<ctx.playerMaxHp*.3?(status.loadoutFortressTurns=1,{messages:['Fortress activated.'],damage:15}):{messages:['Fortress requires HP below 30%.'],damage:0}
     case 'df_ks1':status.loadoutDefenseTurns=2;return buff('loadoutAbsorb')
     case 'df_ks2':return buff('loadoutReflect',.4)
@@ -38,7 +38,7 @@ export function useNotableSkill(id,ctx) {
     case 'arn6':return buff('loadoutMindPierce')
     case 'ar_ks1':return buff('loadoutSixthSense')
     case 'ar_ks2':return Math.random()<.5?{messages:['Chaos Engine erupts.'],damage:atk*2}:buff('loadoutAbsorb')
-    case 'dcn1':status.loadoutNightshroudCounter=Math.max(1,Math.round(atk*.5));return buff('loadoutUntargetable')
+    case 'dcn1':if((ctx.round??1)!==1)return {messages:['Nightshroud is only available on the first round.'],damage:0,consumed:false};status.loadoutNightshroudCounter=Math.max(1,Math.round(atk*.5));return buff('loadoutUntargetable')
     case 'dcn6':return {messages:['Dread Pulse weakens the enemy attack.'],damage:0,debuff:{attackPenalty:2}}
     case 'dc_ks1':status.loadoutReaperPierce=true;return buff('loadoutReaper')
   }
@@ -175,7 +175,7 @@ export function tickNotableSpellblade(status={}){if(!status.notableSpellbladePoi
 export function notablePassiveStatBonus(passives,player={}) {
  const insight=Math.max(0,Number(player.insight)||0)
  const luck=Math.max(0,Number(player.luck)||0)
- return {attack:(passives.has('arn1')?Math.floor(insight/3):0),
+ return {attack:(passives.has('arn1')?Math.floor(insight/3):0)+(passives.has('ofn2')?Math.round(Math.max(0,Number(player.power)||0)*.4):0),
    speed:(passives.has('dcn4')?5:0)+(passives.has('dcn4')&&player.notableShadeWalkTurns>0?15:0),
    criticalDamage:passives.has('arn3')?luck*.005:0,
    criticalProtection:passives.has('arn4')?Math.min(1,insight*.02):0}
