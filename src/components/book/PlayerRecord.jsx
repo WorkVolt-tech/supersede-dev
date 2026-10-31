@@ -31,24 +31,6 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-meter-label"><span>Moral alignment</span><span>{player.moral_score ?? 0}</span></div>
     <div className="reading-moral-track"><span style={{left:`${getMoralBarPct(player.moral_score)}%`}} /></div>
     <div className="reading-meter-endpoints"><span>Villain</span><span>Hero</span></div>
-    <div className="reading-minor-stats" aria-label="Combat and player record stats">
-      <div>Combat ATK <b>{stats.attack}</b></div>
-      <div>Combat DEF <b>{stats.defense}</b></div>
-      <div>Initiative <b>{stats.initiative}</b></div>
-      <div>Insight <b>{stats.core.insight}</b></div>
-      <div>PvP kills <b>{player.pvp_kills ?? 0}</b></div>
-      <div>Helps given <b>{player.helps_given ?? 0}</b></div>
-    </div>
-    <span className="reading-page-heading" style={{marginTop:22}}>Attributes &amp; skill points</span>
-    <p className="reading-stat-summary"><strong>{player.skill_points ?? 0}</strong> unspent skill points · <strong>{player.resonance_shards ?? 0}</strong> resonance shards</p>
-    <div className="reading-attribute-grid">
-      {[
-        ['Attack','atk'],['Defense','def'],['Power','power'],['Guard','guard'],
-        ['Speed','speed'],['Control','control'],['Insight','insight'],['Luck','luck'],['Agility','agility'],
-      ].map(([label,key])=><div key={key}>{label}<strong>{stats.core[key]}</strong>
-        {stats.equipment[key] !== 0 && <small>{stats.base[key]} base {stats.equipment[key]>0?'+':''}{stats.equipment[key]} gear</small>}
-      </div>)}
-    </div>
     <span className="reading-page-heading" style={{marginTop:26}}>Archive &amp; systems</span>
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
