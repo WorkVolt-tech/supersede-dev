@@ -63,6 +63,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
       const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
+      const reachable=side==='enemy'&&isTacticalTargetValid(pattern,hero,{col,rank})
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
       const fx=signatureFx?.side===side&&signatureFx.squares.some(
@@ -73,7 +74,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
           foe||mine?'occupied':'',selected?'selected-foe':'',
-          inRange?'attackable':'',
+          inRange?'attackable':'',reachable?'reachable':'',
           splash?'splash':'',enemyThreat?'enemy-threat':'',hazard?'hazard':'',step?'movable':'',
           barrier?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?false:!step}
@@ -94,7 +95,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
     <div className="combat-grid-board">{sideCells('enemy')}</div>
     <div className="combat-grid-divider">⚔</div>
     <div className="combat-grid-board">{sideCells('hero')}</div>
-    <div className="combat-grid-caption">YOU · MOVE ONE SQUARE FOR 1 AP</div>
+    <div className="combat-grid-caption">YOU · MOVE FREELY · 0 AP</div>
   </div>
 }
 
@@ -761,9 +762,17 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     }))return
     if(kind==='keystone'&&!getUnlockedKeystones(combatPlayer,keyCooldowns)
       .some(k=>k.id===id&&k.available))return
+    // Movement is tactical positioning, not an AP-spending combat action.
+    // Do not advance enemy phases or cooldowns on a free step.
+    if(kind==='move'){
+      heroRef.current=position;setHero(position)
+      setAim(null)
+      note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
+      return
+    }
     const free=(kind==='skill'&&isFreeClass(id))||(kind==='keystone'&&isFreeKey(id))
     const cost=free?0:kind==='end'?apRef.current:
-      kind==='move'?1:kind==='attack'?attack.ap:2
+      kind==='attack'?attack.ap:2
     if(cost>apRef.current)return
     busyRef.current=true;setBusy(true)
     try{
@@ -872,7 +881,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
     <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
-      fields={fieldsRef.current} canMove={canPlay&&ap>=1}
+      fields={fieldsRef.current} canMove={canPlay}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
