@@ -26,7 +26,7 @@ const PATTERNS = {
   mid:   { label:'Mid · nearby column', target:'enemy', reach:'mid',
            from:[0,1,2], to:[0,1,2], cols:'near', diagonal:true, shape:'single' },
   long:  { label:'Long · any position', target:'enemy', reach:'long',
-           from:[0,1,2], to:[0,1,2], cols:'any', shape:'single' },
+           from:[0,1,2], to:[0,1,2], cols:'any', diagonal:true, shape:'single' },
 }
 
 function rulesFor(group) {
