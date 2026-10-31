@@ -34,6 +34,9 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
   const currentNode = NODES[currentNodeId] || null
 
   const goTo = useCallback(async (nextId, choice = {}) => {
+    // Legacy Watcher Eye returns used a synthetic target that is not a node.
+    // Resolve it before validating, so no Chapter 1 choice is a dead end.
+    if (chapterPrefix === 'ch1' && nextId === '__eye_return__') nextId = 'street_midpoint'
     if (!NODES[nextId]) return { ok:false, error:`Story destination not found: ${nextId}` }
 
     let resolvedId = nextId
