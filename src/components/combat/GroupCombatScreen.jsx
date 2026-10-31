@@ -42,9 +42,9 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, onFocus,
+function Battlefield({ foes, hero, focused, aim, pattern, fields, canMove, onMove, onFocus,
   signatureFx,protectedPreview=[] }) {
-  const preview=previewGroupAttack(foes,pattern,hero,focused)
+  const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
   function sideCells(side) {
     const ranks=side==='enemy'?[2,1,0]:[0,1,2]
@@ -54,7 +54,7 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
       const step=side==='hero'&&!mine&&canMove&&
         Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
-      const selected=Boolean(foe&&foe.id===focused)
+      const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
@@ -68,11 +68,11 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
           inRange?'attackable':'',
           splash?'splash':'',hazard?'hazard':'',step?'movable':'',
           barrier?'signature-preview-guard':''].join(' ')}
-        disabled={side==='enemy'?!foe:!step}
+        disabled={side==='enemy'?false:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
         aria-label={foe?foe.name+' '+foe.hp+' HP · '+
           (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
-        onClick={()=>side==='enemy'?onFocus(foe.id):onMove({col,rank})}>
+        onClick={()=>side==='enemy'?onFocus({col,rank},foe?.id):onMove({col,rank})}>
         <span>{foe?foe.icon:mine?'🧑':'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
@@ -82,7 +82,7 @@ function Battlefield({ foes, hero, focused, pattern, fields, canMove, onMove, on
     }))
   }
   return <div className="combat-grid-field">
-    <div className="combat-grid-caption">ENEMIES · SELECT A LIVING TARGET</div>
+    <div className="combat-grid-caption">ENEMIES · SELECT A SQUARE TO AIM</div>
     <div className="combat-grid-board">{sideCells('enemy')}</div>
     <div className="combat-grid-divider">⚔</div>
     <div className="combat-grid-board">{sideCells('hero')}</div>
@@ -114,6 +114,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const foesRef=useRef(createTacticalGroup(enemyData))
   const [foes,setFoes]=useState(foesRef.current)
   const [focus,setFocus]=useState(foesRef.current[0].id)
+  const [aim,setAim]=useState({col:foesRef.current[0].col,rank:foesRef.current[0].rank})
   const [selectedAttack,setSelectedAttack]=useState(null)
   const [fusionEnabled,setFusionEnabled]=useState(false)
   const [signaturePreview,setSignaturePreview]=useState(false)
@@ -403,10 +404,16 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     return true
   }
 
-  function strike(id) {
+  function strike(square) {
     const units=foesRef.current
-    const target=units.find(u=>u.id===id)
-    if(!target)return
+    const footprint=previewGroupAttack(units,attack,heroRef.current,square)
+    const target=footprint.targets[0]
+    if(!footprint.valid)return
+    if(!target){
+      applyDamage(units,attack,square,0)
+      note(attack.label+': no enemy in the affected squares.')
+      return
+    }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const base=Math.max(1,calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
@@ -427,7 +434,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
-    const affected=applyDamage(units,attack,id,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
+    const affected=applyDamage(units,attack,square,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,id)
     if(attack.thrown&&affected.targets.length){
       const ready=startImprovisedThrowRecovery(roundRef.current,target.rank)
@@ -717,9 +724,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
 
   async function takeTurn(kind,id=null,position=null) {
     if(busyRef.current||pendingRef.current)return
-    const target=nextAliveTarget(foesRef.current,kind==='attack'?id:focus)
+    const target=nextAliveTarget(foesRef.current,focus)
+    const attackSquare=kind==='attack'?{...aim}:null
     const selected=kind==='attack'?attack:null
-    if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!target||!isTacticalTargetValid(selected,heroRef.current,target)||
+    if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!isTacticalTargetValid(selected,heroRef.current,attackSquare)||
       (selected?.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0)))return
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
@@ -767,7 +775,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       // AP hitting a stale square or applying debuffs to an absent enemy.
       const liveTarget=target&&foesRef.current.find(
         foe=>foe.id===target.id&&foe.hp>0)
-      if((['attack','skill','elemental'].includes(kind) ||
+      if((['skill','elemental'].includes(kind) ||
            (kind==='signature'&&signature?.target==='enemy')) &&
         (!liveTarget || (kind==='attack'
           ? !isTacticalTargetValid(attack,heroRef.current,liveTarget)||
@@ -780,7 +788,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         return
       }
       if(['attack','skill','elemental'].includes(kind))setPreviewSkill(null)
-      if(kind==='attack')strike(liveTarget.id)
+      if(kind==='attack')strike(attackSquare)
       else if(kind==='move'){
         heroRef.current=position;setHero(position)
         note('You move to rank '+(position.rank+1)+', column '+(position.col+1)+'.')
@@ -839,25 +847,25 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     :previewSkill?groupSpellPattern(previewSkill.id):attack
   const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
   const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
-  const preview=previewGroupAttack(foes,displayPattern,hero,chosen)
-  const attackLegal=previewGroupAttack(foes,attack,hero,chosen).valid
+  const preview=previewGroupAttack(foes,displayPattern,hero,aim)
+  const attackLegal=previewGroupAttack(foes,attack,hero,aim).valid
   const canPlay=!busy&&!result
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=attack.thrown&&throwTurns>0
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay&&ap>=1}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
-      onFocus={id=>setFocus(id)}
+      onFocus={(square,id)=>{setAim(square);if(id)setFocus(id)}}
       onMove={point=>takeTurn('move',null,point)} />
     <div className="combat-group-enemies" aria-live="polite">
       {foes.map(unit=><button key={unit.id} type="button"
         className={'combat-group-unit'+(unit.id===chosen?' current':'')}
-        disabled={unit.hp<=0} onClick={()=>setFocus(unit.id)}>
+        disabled={unit.hp<=0} onClick={()=>{setFocus(unit.id);setAim({col:unit.col,rank:unit.rank})}}>
         {unit.icon} {unit.name} · {unit.hp}/{unit.maxHp} HP
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_bleedingTurns>0?' 🩸':''}
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_rotTurns>0?' ☣️':''}
@@ -870,7 +878,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     </div>
     <button type="button" className="combat-action-btn"
       disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
-      onClick={()=>takeTurn('attack',chosen)}>
+      onClick={()=>takeTurn('attack')}>
       Attack {target?.name||'target'} · {attack.label} · {attack.ap} AP
     </button>
     <div className="combat-tactical-status">
