@@ -1,7 +1,7 @@
 import {NOTABLE_SKILLS_REGISTRY} from './skillsRegistry.js'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting,notableOnKill,notableAttackBonus} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting,notableOnKill,notableAttackBonus,notableSkillDamage,notableCriticalMultiplier,notableAttackMultiplier,notableArmorPierce} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -160,4 +160,26 @@ test('Bloodthirst heals only after a kill and buffs two turns',()=>{
  advanceNotableTurn(status)
  assert.equal(notableAttackBonus(status,20),0)
  assert.equal(notableOnKill(status,100).heal,0)
+})
+
+test('Spell Surge is consumed by damaging skills, not weapon strikes',()=>{
+ const status={}
+ useNotableSkill('of_ks2',{status})
+ assert.equal(notableAttackMultiplier(status),1)
+ assert.equal(status.loadoutSpellSurge,true)
+ assert.equal(notableSkillDamage(status,20),30)
+ assert.equal(notableSkillDamage(status,20),20)
+})
+test('Mind Pierce guarantees its own 1.75 critical multiplier',()=>{
+ const status={}
+ useNotableSkill('arn6',{status})
+ assert.equal(notableCriticalMultiplier(status),1.75)
+ assert.equal(notableCriticalMultiplier(status),1.5)
+})
+test('Reaper Form pierces defense once and maintains attack boost',()=>{
+ const status={}
+ useNotableSkill('dc_ks1',{status})
+ assert.equal(notableArmorPierce(status,24),24)
+ assert.equal(notableArmorPierce(status,24),0)
+ assert.equal(notableAttackBonus(status,40),20)
 })
