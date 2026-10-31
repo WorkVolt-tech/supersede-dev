@@ -495,6 +495,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       id,combatPlayer,statusRef.current,target))
     response?.messages?.forEach(note)
     if(response?.dbUpdates)Object.assign(dbUpdatesRef.current,response.dbUpdates)
+    if(response?.consumed!==false)notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     if(response?.consumed!==false&&footprint?.valid)
       spreadAreaEffects(before,footprint.targets,target.id)
     const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
@@ -523,6 +524,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(!effect||mpRef.current<effect.mpCost)return false
     if(footprint?.valid)spreadAreaEffects(before,footprint.targets,target.id)
     updateMp(mpRef.current-effect.mpCost)
+    notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     if(id==='fire_ultimate_inferno_zone' && target &&
         effect.setStatus?.infernoTurns>0) {
       // Inferno occupies a fixed pattern of squares. A target can escape
