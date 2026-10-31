@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { activeCompanions } from '../../game/storyParty'
+import { bestTacticalAim, tacticalPreview, sameBattleSquare } from '../../game/tacticalPreview'
 import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
@@ -35,7 +36,7 @@ import { getActiveFusion, getFusionSignature,
   awardFusionPractice, FUSION_MP_COST, FUSION_MAX_PRACTICE_PER_FIGHT } from '../../game/classElementFusion'
 import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRegen,
   initialSingleFusionGuard } from '../../game/singleFusionCombat'
-import { getTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
+import { getTacticalSkillRule, getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
   tacticalWeaponType, getPlayerTacticalAttacks,
   startImprovisedThrowRecovery, improvisedThrowTurnsRemaining,
@@ -67,7 +68,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
+function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim, onHoverAim,
   signatureFx,signaturePreview }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -81,6 +82,8 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
       const move=side==='hero'&&!occupied&&!ally&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
+      const primary=side==='enemy'&&targetable&&sameBattleSquare(aim,{col,rank})
+      const affectedFoe=side==='enemy'&&occupied&&splash
       const reachable=side==='enemy'&&isTacticalTargetValid(attack,hero,{col,rank})
       const threat=side==='hero'&&enemyArea.some(c=>c.rank===rank&&c.col===col)
       const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
@@ -89,9 +92,13 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied||ally?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
-          splash?'splash':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
+          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
+        onPointerEnter={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
+        onPointerLeave={()=>{if(side==='enemy')onHoverAim(null)}}
+        onFocus={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
+        onBlur={()=>{if(side==='enemy')onHoverAim(null)}}
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{ally?ally.icon:occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
@@ -176,6 +183,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const [aimSquare,setAimSquare]=useState(null)
+  const [hoverAim,setHoverAim]=useState(null)
+  const [targetMode,setTargetMode]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
@@ -748,17 +757,18 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId))) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
-      !canUseTacticalSkill(skillId,heroPosition,enemyPosition))) return
+      !canUseTacticalSkill(skillId,heroPosition,moveTo||enemyPosition))) return
     if (action === 'signature' && !canCastFusionSignature(signature,{
       enabled:fusionEnabled,ap:actionPointsRef.current,mp:mpRef.current,
       cooldown:signatureCooldownRef.current,target:{hp:enemyHp}
     }))return
     if (action === 'keystone' && !getUnlockedKeystones(combatPlayer, keystoneCooldowns)
       .some(keystone => keystone.id === skillId && keystone.available)) return
-    if (action === 'elemental' && (!canUseTacticalSkill(skillId,heroPosition,enemyPosition) ||
+    if (action === 'elemental' && (!canUseTacticalSkill(skillId,heroPosition,moveTo||enemyPosition) ||
         !canUseElementalAttack(combatPlayer, skillId) ||
         (elementalCooldowns[skillId] || 0) > 0 ||
         mpRef.current < getAttackMpCost(combatPlayer, skillId, statusEffectsRef.current))) return
+    if(action==='skill'||action==='elemental')setTargetMode(null)
     setBusy(true)
 
     // Preserve special free actions, including stance toggles and keystones.
@@ -946,9 +956,15 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=selectedAttack.thrown&&throwTurns>0
-  const selectedAim=aimSquare&&isTacticalTargetValid(selectedAttack,heroPosition,aimSquare)
-    ?aimSquare:([enemyPosition,...Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))]
-      .find(square=>isTacticalTargetValid(selectedAttack,heroPosition,square))||enemyPosition)
+  const aimedSkill=targetMode?.id
+    ?getProgressedTacticalSkillRule(targetMode.id,getSkillLevel(player,targetMode.id)):null
+  const displayedAttack=signaturePreview&&signature?.target==='enemy'
+    ?signature.attack:aimedSkill?.target==='enemy'?aimedSkill:selectedAttack
+  const selectedAim=hoverAim&&isTacticalTargetValid(displayedAttack,heroPosition,hoverAim)
+    ?hoverAim:bestTacticalAim(displayedAttack,heroPosition,
+      [{id:'enemy',...enemyPosition,hp:enemyHp}], 'enemy',aimSquare)
+  const attackFootprint=tacticalPreview(displayedAttack,heroPosition,selectedAim,
+    [{id:'enemy',...enemyPosition,hp:enemyHp}])
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -1014,7 +1030,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           role="status">{signature?.label}</div>}
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={partyPositions} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp}
-          attack={signaturePreview&&signature?.target==='enemy'?signature.attack:selectedAttack}
+          attack={displayedAttack}
           signatureFx={signatureFx}
           signaturePreview={signaturePreview&&signature?{
             side:signature.target==='self'?'hero':'enemy',
@@ -1023,14 +1039,30 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           }:null}
           aim={selectedAim}
           enemyArea={enemyArea}
-          canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
+          canAttack={!busy&&entranceReady&&!!selectedAim&&
+            (targetMode? (actionPoints>=2&&
+              (targetMode.kind!=='elemental'||(elementalCooldowns[targetMode.id]||0)===0&&
+                currentMp>=getAttackMpCost(combatPlayer,targetMode.id,statusEffectsRef.current))):
+             !throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed))}
           canMove={!busy&&entranceReady}
-          onMove={position=>takeTurn('move',null,position)}
+          onMove={position=>{setHoverAim(null);takeTurn('move',null,position)}}
+          onHoverAim={setHoverAim}
           onAim={position=>{
-            setAimSquare(position)
-            if(!signaturePreview&&isTacticalTargetValid(selectedAttack,heroPosition,position))
-              void takeTurn('attack',selectedAttack.id,position)
+            setAimSquare(position);setHoverAim(null)
+            if(signaturePreview||!isTacticalTargetValid(displayedAttack,heroPosition,position))return
+            if(targetMode){
+              if(tacticalPreview(displayedAttack,heroPosition,position,
+                [{id:'enemy',...enemyPosition,hp:enemyHp}]).targets.length)
+                void takeTurn(targetMode.kind,targetMode.id,position)
+            } else void takeTurn('attack',selectedAttack.id,position)
           }} />
+        {!signaturePreview&&selectedAim&&attackFootprint.squares.length>0&&
+          <p className="combat-attack-preview" role="status">
+            {(targetMode?.label||selectedAttack.label)} · {displayedAttack.shape} area ·
+            {' '}{attackFootprint.squares.length} squares illuminated ·
+            {' '}{attackFootprint.targets.length} {attackFootprint.targets.length===1?'enemy':'enemies'} affected ·
+            {' '}Tap a highlighted square to {targetMode?'cast':'attack'}
+          </p>}
         <div className="combat-tactical-weapons">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
             className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
@@ -1038,7 +1070,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             disabled={busy || !entranceReady || actionPoints<attack.ap||
               (attack.fallback&&emergencyUsed)||
               (attack.thrown&&throwTurns>0)}
-            onClick={()=>setSelectedAttackId(attack.id)}>
+            onClick={()=>{setSelectedAttackId(attack.id);setTargetMode(null);setSignaturePreview(false);setHoverAim(null);setAimSquare(null)}}>
             {attack.label}{attack.fallback?' · Emergency':''}
             <span className="combat-action-sub">
               {attack.ap} AP · {tacticalAttackDescription(attack)}
@@ -1070,7 +1102,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
               (actionPoints<2 && !isFreeClassAction(skill.id)) ||
               skill.available===false ||
-              !canUseTacticalSkill(skill.id,heroPosition,enemyPosition)} onClick={() => takeTurn('skill', skill.id)}>
+              (getTacticalSkillRule(skill.id)?.target==='enemy'&&
+                !bestTacticalAim(getProgressedTacticalSkillRule(skill.id,getSkillLevel(player,skill.id)),
+                  heroPosition,[{id:'enemy',...enemyPosition,hp:enemyHp}],'enemy'))}
+              aria-pressed={targetMode?.id===skill.id}
+              onClick={()=>{
+                if(getTacticalSkillRule(skill.id)?.target==='enemy'){
+                  setTargetMode({kind:'skill',id:skill.id,label:skill.label})
+                  setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
+                }else takeTurn('skill',skill.id)
+              }}>
               {skill.label} · Lv {getSkillLevel(player, skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
               {getTacticalSkillRule(skill.id) && <span className="combat-action-sub">
@@ -1082,8 +1123,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {elementalAttack && <button type="button" className="combat-action-btn"
             disabled={busy || !entranceReady || actionPoints<2 || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
               currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current) ||
-              !canUseTacticalSkill(elementalAttack.id,heroPosition,enemyPosition)}
-            onClick={() => takeTurn('elemental', elementalAttack.id)}>
+              (getTacticalSkillRule(elementalAttack.id)?.target==='enemy'&&
+                !bestTacticalAim(getProgressedTacticalSkillRule(elementalAttack.id,getSkillLevel(player,elementalAttack.id)),
+                  heroPosition,[{id:'enemy',...enemyPosition,hp:enemyHp}],'enemy'))}
+            aria-pressed={targetMode?.id===elementalAttack.id}
+            onClick={()=>{
+              if(getTacticalSkillRule(elementalAttack.id)?.target==='enemy'){
+                setTargetMode({kind:'elemental',id:elementalAttack.id,label:elementalAttack.label})
+                setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
+              }else takeTurn('elemental',elementalAttack.id)
+            }}>
             {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
