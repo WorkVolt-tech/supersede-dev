@@ -23,8 +23,8 @@ export const useInventoryStore = create((set, get) => ({
     const rune = items.find(i=>i.id===runeId)
     if (!item || !rune || item.player_id!==rune.player_id) return {ok:false,reason:'Equipment or fragment not found.'}
     if (!['weapon','armor','accessory'].includes(item.item_type)) return {ok:false,reason:'Only equipment accepts fragments.'}
-    const runeName = rune.item_key?.replace(/^rune_/, '')
-    if (!rune.item_key?.startsWith('rune_') || !RUNE_NAMES.includes(runeName)) return {ok:false,reason:'Select a fragment.'}
+    const runeName = fragmentElement(rune.item_key)
+    if (!runeName) return {ok:false,reason:'Select a fragment.'}
     const used = (item.socketed_runes || []).length
     if (!item.sockets_total || used>=item.sockets_total) return {ok:false,reason:'No empty sockets.'}
     const socketed_runes = [...(item.socketed_runes || []),runeName]
