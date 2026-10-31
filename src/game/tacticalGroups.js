@@ -23,18 +23,19 @@ export function createTacticalGroup(encounter) {
     weapon:encounter.groupWeapon||encounter.weapon_type||'unarmed',
   }))
 }
-export function applyGroupAttack(units, attack, origin, targetId, damage) {
-  const target=units.find(u=>u.id===targetId&&u.hp>0)
-  if(!target||!isTacticalTargetValid(attack,origin,target))
+export function applyGroupAttack(units,attack,origin,aim,damage) {
+  const square=typeof aim==='string'?units.find(u=>u.id===aim):aim
+  if(!square||!isTacticalTargetValid(attack,origin,square))
     return {units,targets:[],defeated:[],valid:false}
-  const targets=tacticalHitTargets(attack,target,units)
+  const targets=tacticalHitTargets(attack,square,units)
   const hits=new Set(targets.map(unit=>unit.id))
   const updated=units.map(unit=>hits.has(unit.id)?
     {...unit,hp:Math.max(0,unit.hp-Math.max(0,Math.round(
       typeof damage==='function'?damage(unit):damage)))}:unit)
   const defeated=updated.filter(unit=>hits.has(unit.id)&&unit.hp===0&&
     units.find(previous=>previous.id===unit.id).hp>0)
-  return {units:updated,targets,defeated,valid:true}
+  return {units:updated,targets,defeated,valid:true,
+    squares:getTacticalAffectedSquares(attack,square)}
 }
 export function nextAliveTarget(units,preferredId) {
   return units.find(u=>u.id===preferredId&&u.hp>0)||units.find(u=>u.hp>0)||null
@@ -128,11 +129,11 @@ export function groupKeystoneHitDamages(id,total,attack) {
 }
 
 /** Preview an attack's real hit footprint without changing combatants. */
-export function previewGroupAttack(units,attack,hero,targetId) {
-  const target=units.find(u=>u.id===targetId&&u.hp>0)
-  if(!target||!isTacticalTargetValid(attack,hero,target))
+export function previewGroupAttack(units,attack,hero,aim) {
+  const square=typeof aim==='string'?units.find(u=>u.id===aim):aim
+  if(!square||!isTacticalTargetValid(attack,hero,square))
     return {valid:false,squares:[],targets:[]}
   return {valid:true,
-    squares:getTacticalAffectedSquares(attack,target),
-    targets:tacticalHitTargets(attack,target,units)}
+    squares:getTacticalAffectedSquares(attack,square),
+    targets:tacticalHitTargets(attack,square,units)}
 }
