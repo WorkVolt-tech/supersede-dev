@@ -101,7 +101,7 @@
 .combat-grid-cell small { font-size:9px; color:#9f8b70; }
 .combat-grid-cell.ally.occupied { background:#23313b; border-color:#688a9d; }
 .combat-grid-cell.foe.occupied { background:#38231f; border-color:#a65e53; }
-.combat-grid-cell.splash { box-shadow:inset 0 0 0 1px #c76d47; }
+.combat-grid-cell.splash { background:#99652b; border:2px solid #ffca70; box-shadow:inset 0 0 18px rgba(255,194,91,.7); opacity:1; }
 .combat-grid-cell.targetable { cursor:crosshair; outline:2px solid #dfb260; outline-offset:-2px; }
 .combat-grid-cell.movable { cursor:pointer; border-style:dashed; border-color:#88abbb; }
 .combat-grid-cell:disabled { cursor:default; opacity:.72; }
@@ -135,7 +135,7 @@
 }
 
 /* Show actual affected squares and hit count before committing an action. */
-.group-combat .combat-grid-cell.foe.splash { box-shadow:inset 0 0 0 2px #dfa65a; }
+.group-combat .combat-grid-cell.foe.splash { background:#99652b; border:2px solid #ffca70; box-shadow:inset 0 0 18px rgba(255,194,91,.7); opacity:1; }
 .combat-attack-preview {
   margin:0; padding:7px 9px; border:1px solid #6e7550;
   border-radius:4px; background:rgba(68,82,45,.12);
