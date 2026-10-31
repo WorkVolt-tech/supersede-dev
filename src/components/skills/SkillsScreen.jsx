@@ -10,7 +10,8 @@ import { getActiveElement, activeElementChange } from '../../game/activeElement'
 import { getElementalAttackProgress, equipElementalAttack, isElementalAttack, countLearnedElementNodes } from '../../game/elementalAttacks'
 import { CLASSES, isClassNodeAvailable, isClassNodeUnlocked, unlockClassNode } from '../../game/classes'
 import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skillsRegistry'
-import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
+import { getSkillLevel, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
+import { refundableSkillPoints, skillResetCost, skillResetUpdates } from '../../game/skillReset'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
 import { getElementalTriadAction, getTriadSpecial } from '../../game/elementalTriad'
@@ -185,18 +186,19 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
   const eligibleSkills = Object.entries(REGISTRY).filter(([key, skill]) => !isElementalAttack(key) && allLearned.includes(key) && skill.type!=='passive')
   const classBattleSkills = getActiveClassSkills(player, {}) || []
   const availableElementalAttacks = availableElements.flatMap(el => getElementalAttackProgress(player,el.key).filter(skill => skill.unlocked))
-  // Upgrades are restricted to already learned skills, not arbitrary IDs.
   const upgradeableSkills = [...new Map([
-    ...eligibleSkills.map(([id, skill]) => [id, { id, label: skill.label }]),
-    ...Object.values(ELEMENT_TREES).flatMap(el => getElementalAttackProgress(player, el.key)
-      .filter(skill => skill.unlocked).map(skill => [skill.id, { id: skill.id, label: skill.label }])),
-    ...classBattleSkills.map(skill => [skill.id, { id: skill.id, label: skill.label }]),
+    ...eligibleSkills.map(([id,skill])=>[id,{id,label:skill.label}]),
+    ...classBattleSkills.map(skill=>[skill.id,{id,label:skill.label}]),
   ]).values()]
-  async function upgradeLearnedSkill(id) {
-    if (saving || !upgradeableSkills.some(skill => skill.id === id)) return
-    const updates = getSkillUpgrade(player, id)
-    if (!updates) { setMessage('Maximum skill level reached or insufficient skill points.'); return }
-    await save(updates, 'Skill upgraded to level ' + updates.skill_levels[id] + '.')
+  const resetCost=skillResetCost(player)
+  const refundable=refundableSkillPoints(player)
+  const [confirmReset,setConfirmReset]=useState(false)
+  async function resetSkillPoints() {
+    if(saving||!confirmReset)return
+    const updates=skillResetUpdates(player)
+    if(!updates){setMessage('Insufficient gold for a skill reset.');return}
+    const ok=await save(updates, 'Skill Points refunded. Skill practice levels remain unchanged.')
+    if(ok){setConfirmReset(false);setSelected(null)}
   }
   const status = selectedNode && (unlocked.includes(selectedNode.id) ? 'Learned' : available(selectedNode) ? 'Available' : 'Locked')
   const selectedColor = isElement ? element.color : isClass ? cls.color : COLORS[tab]
@@ -376,31 +378,19 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
           {selectedNode.requires?.length>0 && <p>Connected to: {selectedNode.requires.map(id => nodes.find(n=>n.id===id)?.label || id).join(', ')}</p>}
           {status==='Available' && <button className="skills-primary" disabled={saving || (!isClass && (isElement?shards:points)<cost(selectedNode))} onClick={unlock}>Unlock {selectedNode.label}</button>}
         </> : <p>Explore every node in the original progression system. Connected paths light up as you learn new skills.</p>}
-        <h3>Skill upgrades · separate from weapon mastery</h3>
-        <p>Spend skill points to strengthen learned abilities. Every skill begins at level 1, up to level {MAX_SKILL_LEVEL}.</p>
-        {upgradeableSkills.map(skill => {
-          const level = getSkillLevel(player, skill.id)
-          const cost = skillUpgradeCost(level)
-          const shape = getProgressedTacticalSkillRule(skill.id, level)
-          const nextLevel = [4,7,10].find(milestone => milestone > level)
-          const nextShape = nextLevel && getProgressedTacticalSkillRule(skill.id, nextLevel)
-          return <div key={skill.id} className="skills-slot">
-            <div className="skills-upgrade-label">
-              <span>{skill.label} · Lv {level}/{MAX_SKILL_LEVEL}</span>
-              {shape?.target==='enemy'&&<small>
-                Target area: {shape.shape}
-                {nextShape&&nextShape.shape!==shape.shape
-                  ? ' · Lv '+nextLevel+': '+nextShape.shape
-                  : ''}
-              </small>}
-              {shape?.target==='self'&&<small>Support skill · no enemy area</small>}
-            </div>
-            <button type="button" disabled={saving || level >= MAX_SKILL_LEVEL || points < cost}
-              onClick={() => upgradeLearnedSkill(skill.id)}>
-              {level >= MAX_SKILL_LEVEL ? 'MAX' : 'Upgrade · ' + cost + ' SP'}
-            </button>
-          </div>
-        })}
+        <h3>Battle-earned skill levels</h3>
+        <p>Skills grow only through successful use in battle. Skill Points unlock tree nodes; they cannot purchase skill levels.</p>
+        {upgradeableSkills.map(skill=><div key={skill.id} className="skills-slot">
+          <span>{skill.label} · Lv {getSkillLevel(player,skill.id)}/{MAX_SKILL_LEVEL}</span>
+          <small>Practice {Number(player.skill_levels?.['__practice_'+skill.id]||0)}/10 toward next level</small>
+        </div>)}
+        <h3>Reset Skill Points</h3>
+        <p>Refund {refundable} SP spent on general skill-tree nodes for {resetCost} gold. Your battle-earned skill levels, elemental progress and class unlocks are preserved.</p>
+        {!confirmReset?<button type="button" className="skills-primary" disabled={saving||refundable===0} onClick={()=>setConfirmReset(true)}>Reset Skill Tree · {resetCost} gold</button>:
+          <div><p>Confirm reset? Learned general-tree nodes and their stat bonuses will be removed.</p>
+            <button type="button" className="skills-primary" disabled={saving||Number(player.gold||0)<resetCost} onClick={resetSkillPoints}>Confirm reset · {resetCost} gold</button>
+            <button type="button" onClick={()=>setConfirmReset(false)}>Cancel</button>
+          </div>}
         {message && <p className="skills-message" role="status">{message}</p>}
       </aside>
     </section>
