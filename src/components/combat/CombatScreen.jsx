@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -567,7 +567,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
-    const base = Math.max(1, warboundBonus + calcATK(player, equipped) - (enemyData.def || 0) +
+    const base = Math.max(1, warboundBonus + notableAttackBonus(statusEffectsRef.current) + calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
@@ -926,6 +926,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     emergencyUsedRef.current=false
     setEmergencyUsed(false)
     roundStartedRef.current=false
+    advanceNotableTurn(statusEffectsRef.current)
     roundRef.current+=1;setRound(roundRef.current)
     actionPointsRef.current=maxAp
     setActionPoints(maxAp)
