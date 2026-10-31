@@ -253,3 +253,49 @@
 
 /* Enemy targeting uses the same square footprint as player targeting. */
 .combat-grid-cell.enemy-threat {outline:2px solid #d95c4b;outline-offset:-3px;box-shadow:inset 0 0 14px rgba(217,92,75,.3);}
+
+/* Fire Emblem-style targeting: legal aim positions are blue, the exact
+   attack footprint is amber, and the chosen impact center has a solid ring.
+   This same vocabulary is used by weapon attacks and active skills. */
+.combat-grid-cell.foe.reachable:not(.splash) {
+  background:linear-gradient(135deg,rgba(50,118,147,.44),rgba(28,70,94,.36));
+  border:1px solid #69b9dc;
+  outline:2px solid rgba(113,205,237,.76);
+  outline-offset:-3px;
+  box-shadow:inset 0 0 13px rgba(63,160,209,.28);
+  opacity:1;
+}
+.combat-grid-cell.foe.splash {
+  background:linear-gradient(155deg,#825018,#c27b27);
+  border:2px solid #ffcc68;
+  box-shadow:inset 0 0 20px rgba(255,199,73,.6),0 0 9px rgba(255,173,58,.26);
+  color:#fff4d5; opacity:1;
+}
+.combat-grid-cell.foe.aim-center {
+  outline:3px solid #fff3c2;
+  outline-offset:-4px;
+  box-shadow:inset 0 0 0 2px #fdf1bb,0 0 10px rgba(255,237,151,.68);
+}
+.combat-grid-cell.foe.aoe-target {
+  color:#fff;
+  text-shadow:0 0 4px #4b2411;
+}
+.combat-grid-cell.foe.aoe-target small {color:#fff3bf;font-weight:700;}
+.combat-grid-cell.foe.reachable:hover,
+.combat-grid-cell.foe.reachable:focus-visible {
+  outline:3px solid #fff3c2;outline-offset:-3px;
+}
+.combat-actions .combat-action-btn[aria-pressed="true"] {
+  outline:2px solid #ffd678;outline-offset:-3px;
+  border-color:#ffd678;
+  background:rgba(170,108,39,.25);
+}
+.combat-attack-preview {border-color:#b89555;color:#f9dea1;background:rgba(142,96,39,.17);}
+.combat-aim-legend {font-size:10px;text-align:center;color:#c9b99f;margin:2px 0 6px;line-height:1.45;}
+.combat-aim-legend .aim-legal {color:#79c9ed;font-weight:700;}
+.combat-aim-legend .aim-hit {color:#ffc56d;font-weight:700;}
+.reading-page .combat-aim-legend {color:#6d5941;}
+.reading-page .combat-attack-preview {color:#61421e;background:#f4e3c6;}
+@media (prefers-reduced-motion:no-preference) {
+  .combat-grid-cell.foe.splash {transition:background .12s ease,box-shadow .12s ease;}
+}
