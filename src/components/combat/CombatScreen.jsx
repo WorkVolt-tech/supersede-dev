@@ -542,7 +542,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return finishEnemyAction(nextHp, foeHp)
   }
 
-  function playerAttack(foeHp, playerHp, attack) {
+  function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const base = Math.max(1, calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
@@ -566,7 +566,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     let newEnemyHp = Math.max(0, foeHp - dmg)
     if(attack.thrown&&dmg>0){
-      const ready=startImprovisedThrowRecovery(roundRef.current,(aimSquare||enemyPosition).rank)
+      const ready=startImprovisedThrowRecovery(roundRef.current,attackSquare.rank)
       throwReadyRef.current=ready;setThrowReady(ready)
       setSelectedAttackId(null)
       pushLog('Your thrown object will be recovered '+(enemyPosition.rank===1
@@ -700,8 +700,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   async function takeTurn(action, skillId, moveTo=null) {
     if (busy || result || !entranceReady) return
     const attack=action==='attack' ? weaponAttacks.find(a=>a.id===skillId) : null
+    const attackSquare=action==='attack'?(moveTo||aimSquare||enemyPosition):null
     if (action==='attack' && (attack?.fallback&&emergencyUsedRef.current || !attack ||
-      !isTacticalTargetValid(attack,heroPosition,aimSquare||enemyPosition) ||
+      !isTacticalTargetValid(attack,heroPosition,attackSquare) ||
       (attack.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0))) return
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
@@ -791,11 +792,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setHeroPosition(moveTo)
       pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
     } else if (action==='attack') {
-      if (getTacticalAffectedSquares(attack,aimSquare||enemyPosition).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank)) {
-        ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
+      if (getTacticalAffectedSquares(attack,attackSquare).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank)) {
+        ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack,attackSquare))
       } else {
         if(attack.thrown){
-          const ready=startImprovisedThrowRecovery(roundRef.current,(aimSquare||enemyPosition).rank)
+          const ready=startImprovisedThrowRecovery(roundRef.current,attackSquare.rank)
           throwReadyRef.current=ready;setThrowReady(ready)
           setSelectedAttackId(null)
           pushLog('Thrown weapon must be recovered before using it again.')
@@ -888,7 +889,6 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=selectedAttack.thrown&&throwTurns>0
   const selectedAim=aimSquare||enemyPosition
-  const aimedAttackLegal=isTacticalTargetValid(selectedAttack,heroPosition,selectedAim)
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
@@ -966,7 +966,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
-          onAim={setAimSquare} />
+          onAim={position=>{
+            setAimSquare(position)
+            if(isTacticalTargetValid(selectedAttack,heroPosition,position))
+              void takeTurn('attack',selectedAttack.id,position)
+          }} />
         <div className="combat-tactical-weapons">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
             className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
@@ -982,7 +986,6 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             </span>
           </button>)}
         </div>
-        <button type="button" className="combat-action-btn" disabled={busy||!entranceReady||!aimedAttackLegal||throwUnavailable||actionPoints<selectedAttack.ap||(selectedAttack.fallback&&emergencyUsed)} onClick={()=>takeTurn('attack',selectedAttack.id)}>Attack selected squares · {selectedAttack.ap} AP</button>
         <div className="combat-attack-details" role="status">
           <strong>{selectedAttack.label} · {selectedAttack.ap} AP</strong>
           <p>{tacticalAttackDescription(selectedAttack)}</p>
