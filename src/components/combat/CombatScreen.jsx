@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -487,7 +487,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       onEnemyHealSelf: (h) => { healAmt += h },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const stunned = consumeEnemyStun(statusEffectsRef.current)
+    const frozen=notableFreezeEnemy(statusEffectsRef.current)
+    const stunned = frozen?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
     if (stunned) messages.push(stunned)
     // The emergency pulse must not secretly trigger an enemy AI special
     // attack, including its stun/bleed/status side effects.
@@ -546,6 +547,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       foeHp = Math.max(0, foeHp - keystoneDefense.reflected)
       messages.push(`${keystoneDefense.reflected} keystone damage reflected.`)
     }
+    const notableReflect=consumeNotableReflection(statusEffectsRef.current,finalDmg)
+    finalDmg=notableIncomingDamage(statusEffectsRef.current,finalDmg)
+    if(notableReflect>0){foeHp=Math.max(0,foeHp-notableReflect);messages.push('Iron Mirror reflects '+notableReflect+' damage.')}
     let nextHp = Math.max(0, playerHp - finalDmg)
     setCurrentHp(nextHp)
 
