@@ -166,6 +166,15 @@ try{
   await loadout.waitFor()
   check(await loadout.isEnabled(),'saved Warbound skill should be available in solo combat')
   console.log('PASS solo: saved Warbound loadout is visible and usable')
+  await page.locator('.combat-tactical-weapons').getByRole('button',{name:/Sweeping Arc/}).click()
+  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===3,
+    'solo: selecting an AoE attack must illuminate the entire row')
+  await page.locator('.combat-tactical-weapons').getByRole('button',{name:/Emergency Attack/}).click()
+  const distantAim=page.locator('.combat-grid-board').first().locator('button').nth(8)
+  await distantAim.hover()
+  check(await distantAim.evaluate(node=>node.classList.contains('splash')&&
+    node.classList.contains('aim-center')),
+    'solo: hovering a legal target must preview the chosen impact center')
   await page.goto(host+'/tests/browser/single-combat.html?scenario=companions',{waitUntil:'networkidle'})
   check(await page.getByRole('button',{name:/Left Front Marcus party ally/}).count()===1,
     'Marcus should occupy a solo battlefield square')
