@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -645,6 +645,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note(actor.name+' holds position while the group regroups.')
         continue
       }
+      if(notableFreezeEnemy(statusRef.current)) { note(actor.name+' is frozen by Time Lock.');continue }
       const enemySquares=choice.attack?getTacticalAffectedSquares(choice.attack,heroAt):[]
       setEnemyArea(enemySquares)
       await sleep(320)
@@ -693,9 +694,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
          }
          if(fusionWardRef.current<=0)fortressCounterRef.current=0
       }
+      const reflect=consumeNotableReflection(statusRef.current,damage)
+      damage=notableIncomingDamage(statusRef.current,damage)
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
-      actor.hp=Math.max(0,actor.hp-(hit?.reflectAmount||0)-(guard.reflected||0)-
+      actor.hp=Math.max(0,actor.hp-reflect-(hit?.reflectAmount||0)-(guard.reflected||0)-
         Math.round(damage*reflectFraction(combatPlayer)))
       currentHp=Math.max(0,currentHp-damage)
       note(actor.name+(pulse?' fires an emergency pulse':' attacks')+' for '+damage+' damage.')
