@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -75,4 +75,18 @@ test('Retaliation requires three consecutive incoming hits',()=>{
  assert.equal(notablePassiveIncoming(passives,status,9,20).reflect,0)
  assert.equal(notablePassiveIncoming(passives,status,9,20).reflect,10)
  assert.equal(status.notableConsecutiveHits,0)
+})
+
+test('Spellblade applies a two-tick poison to the struck target',()=>{
+ const target={}
+ const result=notablePassiveOutgoing(new Set(['ofn3']),12,20,()=>0,target)
+ assert.equal(result.damage,12)
+ assert.equal(tickNotableSpellblade(target),3)
+ assert.equal(tickNotableSpellblade(target),3)
+ assert.equal(tickNotableSpellblade(target),0)
+})
+test('Stagger only interrupts if learned and its chance succeeds',()=>{
+ assert.equal(notablePassiveStagger(new Set(),()=>0),false)
+ assert.equal(notablePassiveStagger(new Set(['fln5']),()=>0),true)
+ assert.equal(notablePassiveStagger(new Set(['fln5']),()=>.9),false)
 })
