@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -454,7 +454,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const warboundBonus=consumeWarboundBonus(statusRef.current,calcATK(player,equipped))
-    const base=Math.max(1,warboundBonus+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
+    const base=Math.max(1,warboundBonus+notableAttackBonus(statusRef.current)+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
       combatPlayer,statusRef.current,target,base))
     const crit=Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
@@ -774,6 +774,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(mpRef.current<mpMax)updateMp(recoverCombatMp(mpRef.current,mpRegen,mpMax))
     roundStartedRef.current=false
     emergencyUsedRef.current=false;setEmergencyUsed(false)
+    advanceNotableTurn(statusRef.current)
     roundRef.current+=1;setRound(roundRef.current)
     apRef.current=maxAp;setAp(maxAp)
   }
