@@ -877,7 +877,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
       onFocus={(square,id)=>{setAim(square);if(id)setFocus(id)}}
-      onAttack={(square,id)=>{setAim(square);if(id)setFocus(id);if(isTacticalTargetValid(attack,hero,square))takeTurn('attack',null,square)}}
+      onAttack={(square,id)=>{setAim(square);if(id)setFocus(id);if(!signaturePreview&&!previewSkill&&isTacticalTargetValid(attack,hero,square))takeTurn('attack',null,square)}}
       onMove={point=>takeTurn('move',null,point)} />
     <div className="combat-tactical-status">
       <span>{weapon?'Weapon: '+weaponType:'No weapon equipped · Basic combat'}
