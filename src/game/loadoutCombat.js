@@ -54,14 +54,14 @@ export function consumeWarboundBonus(status,atk) {
 }
 
 export function advanceNotableTurn(status) {
-  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns','notableIronTideTurns'])if(status[key]>0)status[key]--
+  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns','notableIronTideTurns','loadoutBloodthirstTurns'])if(status[key]>0)status[key]--
   if(status.loadoutPredatorTurns>0) {
     status.loadoutPredatorTurns--
     if(!status.loadoutPredatorTurns)delete status.loadoutPredatorTurns
   }
 }
 export function notableAttackBonus(status,base=0) {
-  return (status.loadoutPredatorTurns>0?20:0)+(status.loadoutReaper?Math.round(base*.5):0)
+  return (status.loadoutPredatorTurns>0?20:0)+(status.loadoutBloodthirstTurns>0?10:0)+(status.loadoutReaper?Math.round(base*.5):0)
 }
 export function notableAttackMultiplier(status) {
   if(status.loadoutDoubleStrike){delete status.loadoutDoubleStrike;return 2}
@@ -228,3 +228,12 @@ export const NOTABLE_TARGETING=Object.freeze({
  dcn6:{label:'Dread Pulse · mid',target:'enemy',from:[0,1,2],to:[0,1,2],cols:'near',diagonal:true,shape:'single'},
 })
 export const notableTargeting=id=>NOTABLE_TARGETING[id]||null
+
+/** Bloodthirst is armed until a kill; it never heals merely on activation. */
+export function notableOnKill(status={},maxHp=0) {
+ if(!status.loadoutBloodthirst)return {heal:0,messages:[]}
+ delete status.loadoutBloodthirst
+ status.loadoutBloodthirstTurns=2
+ const heal=Math.max(0,Math.round(maxHp*.2))
+ return {heal,messages:['Bloodthirst: restore '+heal+' HP and gain +10 ATK for 2 turns.']}
+}
