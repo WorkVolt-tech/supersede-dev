@@ -107,12 +107,16 @@ export default function InventoryScreen() {
     <div className="inv-screen">
       <h2>Inventory &amp; Equipment</h2>
       <p className="inv-help">Select an item to inspect or equip it. You can also drag equipment into a slot.</p>
-      <p className="choices-label" style={{ fontSize: 11, letterSpacing: '.1em', color: '#8a7255' }}>EQUIPMENT</p>
-      <div className={`inv-slots ${rejectFlash ? 'reject-flash' : ''}`}>
+      <div className="inv-armory">
+        <section className="inv-equipment-panel" aria-label="Equipped armor and weapons">
+          <div className="inv-section-heading"><span>CHARACTER EQUIPMENT</span><small>SELECT AN ITEM, THEN ITS BODY SLOT</small></div>
+          <div className={`inv-paper-doll ${rejectFlash ? 'reject-flash' : ''}`}>
+            <div className="inv-doll-silhouette" aria-hidden="true"><div className="inv-doll-head"/><div className="inv-doll-torso"/><div className="inv-doll-arm left"/><div className="inv-doll-arm right"/><div className="inv-doll-leg left"/><div className="inv-doll-leg right"/></div>
+            <div className="inv-slots">
         {SLOTS.map(slot => {
           const item = equippedBySlot[slot.key]
           return (
-            <div key={slot.key} ref={el => (slotRefs.current[slot.key] = el)} className={`inv-slot ${item ? 'filled' : ''}`}>
+            <div key={slot.key} ref={el => (slotRefs.current[slot.key] = el)} className={`inv-slot inv-slot-${slot.key} ${item ? 'filled' : ''} ${selected && !selected.equipped_slot && slot.accepts.includes(equipmentSubtype(selected)) ? 'compatible' : ''}`}>
               {item ? (
                 <motion.div
                   className="inv-tile in-slot"
@@ -125,50 +129,48 @@ export default function InventoryScreen() {
                   layoutId={`inv-${item.id}`}
                   transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                 >
-                  {item.icon || '❔'}
+                  {item.icon || '❔'}{Number(item.sockets_total)>0 && <span className="inv-socket-markers">{Array.from({length:Number(item.sockets_total)},(_,n)=>n<(item.socketed_fragments||[]).length?'◆':'◇').join('')}</span>}
                   <span className="inv-tile-eq-badge">EQ</span>
                 </motion.div>
               ) : (
-                <span className="inv-slot-empty-icon">{slot.icon}</span>
+                <button type="button" className="inv-slot-empty" title={`Equip ${slot.label}`} onClick={()=>equipSelected(slot.key)} disabled={!selected || !slot.accepts.includes(equipmentSubtype(selected))}><span className="inv-slot-empty-icon">{slot.icon}</span></button>
               )}
               <span className="inv-slot-label">{slot.label}</span>
             </div>
           )
         })}
+            </div>
+          </div>
+        </section>
+        <section className="inv-backpack-panel">
+          <div className="inv-section-heading"><span>BACKPACK</span><small>{unequippedItems.length} ITEMS</small></div>
+          <div className="inv-filters">
+            {['all','weapon','armor','accessory','consumable','material','key'].map(type=>
+              <button key={type} className={filter===type?'active':''} onClick={()=>setFilter(type)}>{type}</button>)}
+          </div>
+          <div className="inv-grid" ref={gridRef}>
+            {filteredItems.map(item => (
+              <motion.div key={item.id} className={`inv-tile ${selectedId===item.id?'selected':''}`}
+                style={{ background: RARITY[item.rarity] || RARITY.common }}
+                drag dragMomentum={false} dragElastic={0.15}
+                onDragEnd={e=>handleDragEnd(item,e)}
+                onClick={()=>setSelectedId(item.id)}
+                whileDrag={{ scale:1.12,zIndex:30 }} whileHover={{scale:1.04}}
+                layoutId={`inv-${item.id}`}
+                transition={{type:'spring',stiffness:500,damping:30}}
+                title={item.name}>
+                {item.icon||'❔'}
+                {(item.quantity||1)>1&&<span className="inv-quantity">×{item.quantity}</span>}
+                {Number(item.sockets_total)>0&&<span className="inv-socket-markers">{(item.socketed_fragments||[]).length}/{item.sockets_total} ◆</span>}
+              </motion.div>
+            ))}
+            {filteredItems.length===0&&<p className="inv-empty">No items in this category yet. Defeat enemies and collect story rewards.</p>}
+          </div>
+        </section>
       </div>
 
       <p className="inv-toast">{message}</p>
 
-      <div>
-        <p className="choices-label" style={{ fontSize: 11, letterSpacing: '.1em', color: '#8a7255', marginBottom: 8 }}>INVENTORY</p>
-        <div className="inv-filters">
-          {['all','weapon','armor','accessory','consumable','material','key'].map(type=>
-            <button key={type} className={filter===type?'active':''} onClick={()=>setFilter(type)}>{type}</button>)}
-        </div>
-        <div className="inv-grid" ref={gridRef}>
-          {filteredItems.map(item => (
-            <motion.div
-              key={item.id}
-              className="inv-tile"
-              style={{ background: RARITY[item.rarity] || RARITY.common }}
-              drag
-              dragMomentum={false}
-              dragElastic={0.15}
-              onDragEnd={(e) => handleDragEnd(item, e)}
-              onClick={() => setSelectedId(item.id)}
-              whileDrag={{ scale: 1.15, zIndex: 30 }}
-              whileHover={{ scale: 1.05 }}
-              layoutId={`inv-${item.id}`}
-              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-              title={item.name}
-            >
-              {item.icon || '❔'}
-              {(item.quantity||1)>1 && <span className="inv-quantity">×{item.quantity}</span>}
-            </motion.div>
-          ))}
-          {filteredItems.length===0 && <p className="inv-empty">No items in this category yet. Defeat enemies and collect story rewards.</p>}
-        </div>
-      </div>
       <section className="inv-detail" aria-live="polite">
         {selected ? <>
           <h3>{selected.icon || '📦'} {isFragment(selected) ? fragmentName(selected.item_key) : selected.name}</h3>
