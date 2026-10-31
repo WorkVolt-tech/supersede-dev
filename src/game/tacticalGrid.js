@@ -6,17 +6,18 @@
 export const TACTICAL_ATTACKS = {
   bareStrike:  { label:'Basic Strike', reach:'short', from:[0], to:[0],
     cols:'near', shape:'single', damage:3, ap:1,
-    description:'Front row only: strike a front-row enemy in your column or an adjacent column.' },
+    description:'Strike an enemy within 2 squares.' },
   improvisedThrow: { label:'Improvised Throw', reach:'long', from:[0,1,2],to:[1,2],
-    cols:'any',shape:'single',damage:2,ap:1, thrown:true,
-    description:'Throw an improvised object at a middle- or rear-row enemy. Retrieve it next round (middle) or after 2 rounds (rear).' },
+    cols:'any',shape:'single',damage:2,ap:1, thrown:true, maxRange:3,
+    description:'Throw an improvised object up to 3 squares away. Retrieval takes 1–2 rounds.' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
   jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1 },
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
   thrust:      { label:'Long Thrust',      reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
   lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
-  throw:       { label:'Dagger Throw',     reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1 },
+  throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, maxRange:2,
+    description:'Throw a dagger at an enemy up to 2 squares away.' },
   quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1 },
   aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1 },
   snapshot:    { label:'Quick Shot',       reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:4, ap:1 },
@@ -127,11 +128,16 @@ export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
 
 // Movement and attack ranges are expressed relative to EACH side's frontline;
 // this works identically for player and enemy grids regardless of orientation.
-export function isTacticalTargetValid(attack, from, target) {
-  const a=typeof attack==='string'?TACTICAL_ATTACKS[attack]:attack;
-  if(!a || !from || !target || !a.from.includes(from.rank) || !a.to.includes(target.rank))return false;
-  const horizontal=Math.abs(from.col-target.col);
-  return a.cols==='any'||(a.cols==='same'?horizontal===0:horizontal<=1);
+export function tacticalDistance(from,target) {
+  if (!from || !target) return Infinity
+  return 1 + from.rank + target.rank + Math.abs(from.col-target.col)
+}
+export function isTacticalTargetValid(attack,from,target) {
+  const a=typeof attack==='string'?TACTICAL_ATTACKS[attack]:attack
+  if (!a || !from || !target) return false
+  const distance=tacticalDistance(from,target)
+  const range=a.maxRange ?? (a.reach==='short'?2:a.reach==='mid'?3:6)
+  return distance<=range && (a.cols!=='same'||from.col===target.col)
 }
 export function getTacticalAffectedSquares(attack, target) {
   const a=typeof attack==='string'?TACTICAL_ATTACKS[attack]:attack;
