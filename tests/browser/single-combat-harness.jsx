@@ -38,6 +38,7 @@ const player={
   weapon_mastery:{sword:0},skill_levels:{},
   skills_unlocked:params.get('scenario')==='loadout'?['ofn1']:[],
   battle_skills:params.get('scenario')==='loadout'?['ofn1']:[],
+  alliance_log:params.get('scenario')==='companions'?['party:marcus','party:lena']:[],
   chapters_unlocked:[1],xp:0,skill_points:1,
 }
 const metrics={saves:0,lastUpdates:null}
