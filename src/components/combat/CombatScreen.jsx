@@ -97,8 +97,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
         onPointerEnter={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
         onPointerLeave={()=>{if(side==='enemy')onHoverAim(null)}}
-        onFocus={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
-        onBlur={()=>{if(side==='enemy')onHoverAim(null)}}
+
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         <span>{ally?ally.icon:occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
