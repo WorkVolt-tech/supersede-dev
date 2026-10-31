@@ -68,9 +68,9 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
       const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
+      const reachable=side==='enemy'&&isTacticalTargetValid(pattern,hero,{col,rank})
       const primary=side==='enemy'&&reachable&&sameBattleSquare(aim,{col,rank})
       const affectedFoe=Boolean(foe&&splash)
-      const reachable=side==='enemy'&&isTacticalTargetValid(pattern,hero,{col,rank})
       const hazard=side==='enemy'&&fields.some(f=>f.squares.some(
         p=>p.rank===rank&&p.col===col))
       const fx=signatureFx?.side===side&&signatureFx.squares.some(
