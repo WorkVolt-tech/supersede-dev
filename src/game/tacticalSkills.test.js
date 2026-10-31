@@ -27,8 +27,8 @@ test('close, mid, long and self have distinct range behavior', () => {
   const front={col:1,rank:0}, far={col:2,rank:2}
   assert.equal(canUseTacticalSkill('fury_slam',front,far),false)
   assert.equal(canUseTacticalSkill('fury_slam',front,{col:1,rank:0}),true)
-  assert.equal(canUseTacticalSkill('water_skill_water_jet',front,far),true)
-  assert.equal(canUseTacticalSkill('water_skill_water_jet',{col:0,rank:0},far),false)
+  assert.equal(canUseTacticalSkill('water_skill_water_jet',front,{col:1,rank:1}),true)
+  assert.equal(canUseTacticalSkill('water_skill_water_jet',front,far),false)
   assert.equal(canUseTacticalSkill('lightning_skill_lightning_strike',front,far),true)
   assert.equal(canUseTacticalSkill('the_throne',far,front),true)
   assert.equal(getTacticalSkillRule('wind_ultimate_tornado_field').target,'self')
