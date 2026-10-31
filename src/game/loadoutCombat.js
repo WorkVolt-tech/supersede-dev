@@ -38,7 +38,7 @@ export function useNotableSkill(id,ctx) {
     case 'arn6':return buff('loadoutMindPierce')
     case 'ar_ks1':return buff('loadoutSixthSense')
     case 'ar_ks2':return Math.random()<.5?{messages:['Chaos Engine erupts.'],damage:atk*2}:buff('loadoutAbsorb')
-    case 'dcn1':return buff('loadoutUntargetable')
+    case 'dcn1':status.loadoutNightshroudCounter=Math.max(1,Math.round(atk*.5));return buff('loadoutUntargetable')
     case 'dcn6':return {messages:['Dread Pulse weakens the enemy attack.'],damage:0,debuff:{attackPenalty:2}}
     case 'dc_ks1':status.loadoutReaperPierce=true;return buff('loadoutReaper')
   }
@@ -101,6 +101,7 @@ export function notableIncomingDamage(status,damage) {
   return damage
 }
 export function consumeNotableReflection(status,damage) {
+  if(status.loadoutNightshroudCounter&&damage>0){const amount=status.loadoutNightshroudCounter;delete status.loadoutNightshroudCounter;return amount}
   if(!status.loadoutReflect||damage<=0)return 0
   const amount=Math.round(damage*status.loadoutReflect)
   delete status.loadoutReflect
