@@ -67,10 +67,10 @@ export function notableAttackMultiplier(status) {
   if(status.loadoutDoubleStrike){delete status.loadoutDoubleStrike;return 2}
   return 1
 }
-export function notableSkillDamage(status,damage) {
+export function notableSkillDamage(status,damage,enemyDefense=0) {
   if(!status.loadoutSpellSurge||damage<=0)return damage
   delete status.loadoutSpellSurge
-  return Math.max(1,Math.round(damage*1.5))
+  return Math.max(1,Math.round((damage+Math.max(0,enemyDefense)*.5)*1.5))
 }
 export function notableCriticalMultiplier(status,base=1.5) {
   if(status.loadoutMindPierce){delete status.loadoutMindPierce;return 1.75}
