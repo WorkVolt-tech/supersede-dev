@@ -91,3 +91,20 @@
 .skills-mastery-track { margin:9px 0; height:7px; border:1px solid #6f5837; background:#100e0c; overflow:hidden; }
 .skills-mastery-track div { height:100%; background:#b99758; }
 .skills-mastery-card small { color:#b7a182; font:10px/1.5 'JetBrains Mono',monospace; }
+
+/* Battle loadout lives near the top of Skills rather than below the tree. */
+.skills-battle-loadout { margin:16px 0 18px; padding:16px; border:1px solid #72583a; background:#1b1510; }
+.skills-battle-loadout h2 { margin:0 0 6px; color:#f0d9ab; font:500 26px 'Cormorant Garamond',serif; }
+.skills-battle-loadout h3 { margin:16px 0 8px; font-size:12px; color:#e5c089; }
+.skills-battle-loadout p { color:#bca88d; font-size:11px; line-height:1.6; }
+.skills-loadout-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:12px; }
+.skills-loadout-slot { min-width:0; min-height:90px; padding:11px; background:#261e16; border:1px solid #6e5537; display:flex; flex-direction:column; gap:8px; }
+.skills-loadout-slot small { font-size:10px; color:#c9a66c; }
+.skills-loadout-slot strong { font-size:12px; color:#f0dec0; overflow-wrap:anywhere; }
+.skills-loadout-slot>span { color:#9d8870; font-size:11px; }
+.skills-loadout-slot button,.skills-loadout-options button { border:1px solid #937347; padding:7px 9px; background:#352719; color:#f0d9ab; cursor:pointer; font-size:11px; }
+.skills-loadout-slot button { margin-top:auto; }
+.skills-loadout-options { display:flex; flex-wrap:wrap; gap:8px; }
+.skills-loadout-options button span { color:#e5c089; margin-left:8px; }
+.skills-loadout-options button:disabled { opacity:.45; cursor:not-allowed; }
+@media(max-width:700px) { .skills-loadout-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
