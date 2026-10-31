@@ -46,7 +46,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onAttack, onHoverAim,
+function Battlefield({ foes, hero, companions=[], heroHp, heroMaxHp, heroMp, heroMaxMp, focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onAttack, onHoverAim,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -92,11 +92,11 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
         onPointerEnter={()=>{if(side==='enemy'&&reachable)onHoverAim({col,rank})}}
         onPointerLeave={()=>{if(side==='enemy')onHoverAim(null)}}
 >
-        <span>{foe?foe.icon:mine?'🧑':member?member.icon:'·'}</span>
+        {(foe||mine||member)?<div className="combat-unit-visual">{foe?foe.icon:mine?'🧑':member.icon}</div>:<span>·</span>}
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(foe||mine||member)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':member?member.name:'YOU'}{effects&&' '+effects}</small>}
+        {(foe||mine||member)&&<div className="combat-unit-hud"><small>{foe?foe.name||'Enemy':member?member.name:'YOU'}{effects&&' '+effects}</small>{(foe||mine)&&<><div className="combat-hp-bar"><div className="combat-hp-fill" style={{width:Math.max(0,Math.min(100,(foe?foe.hp/Math.max(1,foe.maxHp||foe.max_hp||foe.hp):heroHp/Math.max(1,heroMaxHp))*100))+'%'}}/></div><small>{foe?foe.hp+'/'+(foe.maxHp||foe.max_hp||foe.hp):heroHp+'/'+heroMaxHp} HP</small>{mine&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</div>}
       </button>
     }))
   }
@@ -997,7 +997,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
         <p className="combat-aim-legend"><span className="aim-legal">Blue = legal aim</span> · <span className="aim-hit">Gold = cells hit by attack / AoE</span> · White ring = impact center</p>
-    <Battlefield foes={foes} hero={hero} companions={partyPositions} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} companions={partyPositions} heroHp={hp} heroMaxHp={maxHp} heroMp={mp} heroMaxMp={mpMax} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
