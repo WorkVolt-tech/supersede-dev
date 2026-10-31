@@ -1020,8 +1020,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
   const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
   const autoAim=bestTacticalAim(displayPattern,hero,foes,chosen,aim)
+  // Show blue legal squares before input; gold impact is previewed only
+  // once a square is hovered or explicitly selected by the player.
   const legalAim=hoverAim&&isTacticalTargetValid(displayPattern,hero,hoverAim)
-    ?hoverAim:aim&&isTacticalTargetValid(displayPattern,hero,aim)?aim:autoAim
+    ?hoverAim:aim&&isTacticalTargetValid(displayPattern,hero,aim)?aim:null
   const preview=previewGroupAttack(foes,displayPattern,hero,legalAim)
   const attackLegal=Boolean(legalAim&&isTacticalTargetValid(attack,hero,legalAim))
   const canPlay=!busy&&!result
