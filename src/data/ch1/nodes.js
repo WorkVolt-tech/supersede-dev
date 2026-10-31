@@ -1681,7 +1681,7 @@ The Hounds circle you. Waiting for a command.
     text: `They're faster than ordinary Flicker Hounds. Better coordinated. Someone has been working with these creatures long enough to understand how they move.
 
 You work the angles. Take them one at a time. Force them to commit before they're ready.`,
-    enemy: { name:'Lena\'s Flicker Hounds', icon:'🐕', hp:80, atk:7, xp:85, loot:[{itemKey:'scrap_metal',qty:2}] },
+    enemy: { name:'Lena\'s Flicker Hounds', groupSize:3, groupUnitName:'Lena\'s Flicker Hound', groupIcon:'🐕', groupWeapon:'dagger', icon:'🐕', hp:80, atk:7, xp:85, loot:[{itemKey:'scrap_metal',qty:2}] },
     onWin: 'market_b1_aftermath',
     onLose: 'market_b1_aftermath',
     onEscape: 'market_b1_aftermath',
