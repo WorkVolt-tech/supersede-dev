@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -705,7 +705,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       passive.messages.forEach(note)
       if(passive.stun){const effects=foeStatusesRef.current[actor.id]||{};effects.enemyStunTurns=Math.max(1,effects.enemyStunTurns||0);foeStatusesRef.current[actor.id]=effects}
       const reflect=consumeNotableReflection(statusRef.current,damage)+passive.reflect
-      damage=notableIncomingDamage(statusRef.current,damage)
+      notablePassiveBattleStart(learnedNotablePassives(player),statusRef.current,maxHp)
+      damage=notablePassiveResolveHit(learnedNotablePassives(player),statusRef.current,notableIncomingDamage(statusRef.current,damage))
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
       actor.hp=Math.max(0,actor.hp-reflect-(hit?.reflectAmount||0)-(guard.reflected||0)-
@@ -907,6 +908,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       else if(kind==='defend'){
         defendingRef.current=true
         applyStonebornDefend(combatPlayer,statusRef.current)
+        const absorption=notablePassiveDefend(learnedNotablePassives(player),statusRef.current,hpRef.current,maxHp)
+        if(absorption.heal)updateHp(hpRef.current+absorption.heal)
+        absorption.messages.forEach(note)
         note('You prepare your guard.')
       }else if(kind==='end')note('You end the turn.')
 
