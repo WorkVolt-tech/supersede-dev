@@ -9,9 +9,12 @@ import ChoiceList from './ChoiceList'
 import CombatScreen from '../combat/CombatScreen'
 import GroupCombatScreen from '../combat/GroupCombatScreen'
 import ClassChoice from './ClassChoice'
+import { activeCompanions, partyAwareText } from '../../game/storyParty'
 
 export default function StoryNode({ node, player, goTo, judgeCtx }) {
   if (!node) return <p className="story-text">Error: node not found.</p>
+  const companions=activeCompanions(player)
+  const narration=partyAwareText(node.text,player)
 
   if (node.type === 'class_choice') {
     return <ClassChoice player={player} onContinue={() => goTo(node.onContinue)} />
@@ -24,7 +27,7 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
       ? GroupCombatScreen : CombatScreen
     return (
       <div className="story-encounter">
-      {node.text && <p className="story-text">{node.text}</p>}
+      {narration && <p className="story-text">{narration}</p>}
       <Screen
         key={node.id}
         enemyData={node.enemy}
@@ -49,7 +52,8 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
 
   return (
     <div className="story-node">
-      <p className="story-text">{node.text}</p>
+      {companions.length>0&&<p className="story-party-presence">Party: {companions.map(member=>member.name).join(' · ')}</p>}
+      <p className="story-text">{narration}</p>
       <ChoiceList node={node} player={player} goTo={goTo} />
     </div>
   )
