@@ -54,7 +54,7 @@ export function consumeWarboundBonus(status,atk) {
 }
 
 export function advanceNotableTurn(status) {
-  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns'])if(status[key]>0)status[key]--
+  for(const key of ['loadoutDefenseTurns','loadoutFortressTurns','notableIronTideTurns'])if(status[key]>0)status[key]--
   if(status.loadoutPredatorTurns>0) {
     status.loadoutPredatorTurns--
     if(!status.loadoutPredatorTurns)delete status.loadoutPredatorTurns
@@ -79,7 +79,9 @@ export function notableIncomingDamage(status,damage) {
   if(status.loadoutUntargetable){delete status.loadoutUntargetable;return 0}
   if(status.loadoutForesight){delete status.loadoutForesight;return Math.ceil(damage*.1)}
   if(status.loadoutSixthSense){delete status.loadoutSixthSense;return Math.ceil(damage*.2)}
-  if(status.loadoutDefenseTurns>0)damage=Math.max(0,damage-30)
+  if(status.notableIronTideTurns>0)damage=Math.max(0,damage-20)
+ if(status.notableBulwarkReady){damage=Math.floor(damage/2);delete status.notableBulwarkReady}
+ if(status.loadoutDefenseTurns>0)damage=Math.max(0,damage-30)
   else if(status.loadoutFortressTurns>0)damage=Math.max(0,damage-20)
   else if(status.loadoutReflect>0)damage=Math.max(0,damage-15)
   return damage
@@ -137,6 +139,8 @@ export function notablePassiveIncoming(passives,status,damage,atk=0,rng=Math.ran
    if(passives.has('fln4'))status.notableFlickerReady=true
    messages.push('Ghost Step dodges and counters for '+reflect+'.')
  }else if(damage>0){
+   if(passives.has('dfn1')&&!status.notableIronTideUsed&&status.notableCurrentHp>0&&status.notableCurrentHp<status.notableMaxHp*.5){status.notableIronTideTurns=2;status.notableIronTideUsed=true;messages.push('Iron Tide: +20 DEF for 2 turns.')}
+   if(passives.has('dfn6')){status.notableBulwarkHits=(status.notableBulwarkHits||0)+1;if(status.notableBulwarkHits>=2){status.notableBulwarkReady=true;status.notableBulwarkHits=0;messages.push('Bulwark primes the next defense.')}}
    if(passives.has('dfn3')&&rng()<.20){stun=true;messages.push('Thorns stun the attacker.')}
    if(passives.has('dfn5')){
      status.notableConsecutiveHits=(status.notableConsecutiveHits||0)+1
@@ -152,3 +156,18 @@ export function notablePassiveIncoming(passives,status,damage,atk=0,rng=Math.ran
 
 export function notablePassiveStagger(passives,rng=Math.random){return passives.has('fln5')&&rng()<.2}
 export function tickNotableSpellblade(status={}){if(!status.notableSpellbladePoisonTurns)return 0;status.notableSpellbladePoisonTurns--;return 3}
+
+export function notablePassiveStatBonus(passives,player={}) {
+ const insight=Math.max(0,Number(player.insight)||0)
+ const luck=Math.max(0,Number(player.luck)||0)
+ return {attack:(passives.has('arn1')?Math.floor(insight/3):0),
+   speed:passives.has('dcn4')?5:0,
+   criticalDamage:passives.has('arn3')?luck*.005:0,
+   criticalProtection:passives.has('arn4')?Math.min(1,insight*.02):0}
+}
+export function activateNotableIronTide(passives,status,hp,maxHp){
+ if(!passives.has('dfn1')||status.notableIronTideUsed||hp>=maxHp*.5||hp<=0)return false
+ status.notableIronTideUsed=true
+ status.notableIronTideTurns=2
+ return true
+}
