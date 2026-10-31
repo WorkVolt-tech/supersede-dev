@@ -79,3 +79,15 @@
 @media(max-width:980px) { .skills-attribute-stats { grid-template-columns:repeat(3,minmax(0,1fr)); } }
 @media(max-width:650px) { .skills-combat-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .skills-combat-metrics .skills-stat-tile:last-child { grid-column:span 2; } }
 @media(max-width:430px) { .skills-stat-tile { padding:8px 3px; } .skills-stat-tile span { font-size:9px; } }
+
+/* Compact weapon mastery overview, shown only in Skills. */
+.skills-weapon-mastery { margin:14px 0 20px; border-top:1px solid #5c4933; padding-top:14px; }
+.skills-weapon-mastery h2 { margin:0 0 6px; font:500 24px 'Cormorant Garamond',serif; color:#f0d9ab; }
+.skills-weapon-mastery p { color:#c6b59b; font-size:11px; line-height:1.6; margin:5px 0 10px; }
+.skills-mastery-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr)); gap:8px; }
+.skills-mastery-card { min-width:0; padding:12px; border:1px solid #665037; background:#211a14; }
+.skills-mastery-top { display:flex; justify-content:space-between; gap:10px; align-items:center; font-size:12px; color:#ebd4ae; text-transform:capitalize; }
+.skills-mastery-top span { color:#e5bd72; white-space:nowrap; }
+.skills-mastery-track { margin:9px 0; height:7px; border:1px solid #6f5837; background:#100e0c; overflow:hidden; }
+.skills-mastery-track div { height:100%; background:#b99758; }
+.skills-mastery-card small { color:#b7a182; font:10px/1.5 'JetBrains Mono',monospace; }
