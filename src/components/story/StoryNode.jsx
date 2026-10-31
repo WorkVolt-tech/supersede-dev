@@ -9,7 +9,7 @@ import ChoiceList from './ChoiceList'
 import CombatScreen from '../combat/CombatScreen'
 import GroupCombatScreen from '../combat/GroupCombatScreen'
 import ClassChoice from './ClassChoice'
-import { activeCompanions, partyAwareText } from '../../game/storyParty'
+import { activeCompanions, partyAwareText, SOLO_SCENES } from '../../game/storyParty'
 
 export default function StoryNode({ node, player, goTo, judgeCtx }) {
   if (!node) return <p className="story-text">Error: node not found.</p>
@@ -31,6 +31,7 @@ export default function StoryNode({ node, player, goTo, judgeCtx }) {
       <Screen
         key={node.id}
         enemyData={node.enemy}
+        solo={SOLO_SCENES.has(node.id)}
         isBoss={node.type === 'boss' || Boolean(node.bossKey)}
         judgeCtx={node.type === 'boss' ? judgeCtx : undefined}
         onWin={() => goTo(node.onWin)}
