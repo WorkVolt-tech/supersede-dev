@@ -234,11 +234,11 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
   // where possible, but allow them if the formation leaves no other route.
   const visited=new Set([from.col+':'+from.rank]);
   const queue=[{pos:from,first:null}];
-  const options=[];
+  const destinations=[];
   for(let i=0;i<queue.length;i++){
     const {pos,first}=queue[i];
     if(first && attacks.some(a=>isTacticalTargetValid(a,pos,target))){
-      options.push({first,pos,depth:i,risk:hazard.has(first.col+':'+first.rank)?1:0});
+      destinations.push({first,pos,depth:i,risk:hazard.has(first.col+':'+first.rank)?1:0});
     }
     const next=neighbors(pos).filter(p=>!visited.has(p.col+':'+p.rank))
       .sort((a,b)=>Number(hazard.has(a.col+':'+a.rank))-
@@ -248,11 +248,11 @@ export function chooseTacticalEnemyAction(weaponType, from, target, occupied=[],
       queue.push({pos:candidate,first:first||candidate});
     }
   }
-  if(options.length){
+  if(destinations.length){
     // The queue is in increasing step distance. Among equally reachable
     // firing squares, prefer a safe first step.
-    options.sort((a,b)=>a.risk-b.risk||a.depth-b.depth);
-    return {move:options[0].first};
+    destinations.sort((a,b)=>a.risk-b.risk||a.depth-b.depth);
+    return {move:destinations[0].first};
   }
   return {wait:true};
 }
