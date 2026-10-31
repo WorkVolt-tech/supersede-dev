@@ -19,6 +19,7 @@ import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
 import FarmingAreas from './components/farming/FarmingAreas'
 import SkillsScreen from './components/skills/SkillsScreen'
+import WeaponMasteryScreen from './components/mastery/WeaponMasteryScreen'
 import ProfessionScreen from './components/professions/ProfessionScreen'
 import ProfessionHalls from './components/professions/ProfessionHalls'
 import ForgerAdventure from './components/professions/ForgerAdventure'
@@ -178,7 +179,8 @@ export default function App() {
     badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
   }
 
-  if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} />
+  if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} onOpenMastery={() => setView('mastery')} />
+  if (view === 'mastery') return <WeaponMasteryScreen onReturn={() => setView('menu')} onSkills={() => setView('skills')} />
   if (view === 'tests-previews') return <TestsPreviewsPage
     player={player} onPick={navigate} onReturn={()=>setView('menu')} />
   if (view === 'resonance-weaver-adventure') return <BookShell eyebrow="Profession · Resonance Weaver" title="The Shattered Harmony" subtitle="Restore an unstable resonance." left={<ResonanceWeaverAdventure player={player} onReturn={()=>setView('professions')}/>} right={<PlayerRecord player={player} onNavigate={navigate}/>}/>
