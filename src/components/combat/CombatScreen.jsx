@@ -64,7 +64,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, aim, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
+function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim,
   signatureFx,signaturePreview }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -77,13 +77,14 @@ function TacticalBattlefield({ hero, enemy, aim, enemyName, enemyIcon, enemyHp, 
       const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
+      const threat=side==='hero'&&enemyArea.some(c=>c.rank===rank&&c.col===col)
       const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
       const area=signaturePreview?.side===side&&signaturePreview.squares.some(
         p=>p.rank===rank&&p.col===col)
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',move&&canMove?'movable':'',
-          splash?'splash':'',area?'signature-preview-guard':''].join(' ')}
+          splash?'splash':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
         aria-label={labels[col]+' '+names[rank]+(occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
@@ -166,6 +167,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const [aimSquare,setAimSquare]=useState(null)
+  const [enemyArea,setEnemyArea]=useState([])
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
   const [enemyPosition, setEnemyPosition] = useState(()=>{
@@ -673,6 +675,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function positionedEnemyTurn(playerHp, foeHp, defendAction, heroAt=heroPosition) {
     if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
     const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt)
+    if (next.attack) setEnemyArea(getTacticalAffectedSquares(next.attack,heroAt))
     if (next.move) {
       const stunned = consumeEnemyStun(statusEffectsRef.current)
       if (stunned) pushLog(stunned)
@@ -770,6 +773,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         setTurnActor('enemy')
         ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction))
         await pause(650)
+        setEnemyArea([])
         if (playerHp<=0 || foeHp<=0) {
           setTurnActor(null)
           await endCombat(playerHp<=0?'lose':'win',playerHp)
@@ -831,6 +835,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction,
         action==='move'?moveTo:heroPosition))
       await pause(650)
+      setEnemyArea([])
     }
     setTurnActor(null)
     setDefending(false)
@@ -949,6 +954,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               signature.target==='self'?heroPosition:enemyPosition)
           }:null}
           aim={selectedAim}
+          enemyArea={enemyArea}
           canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
           canMove={!busy&&entranceReady&&actionPoints>=1}
           onMove={position=>takeTurn('move',null,position)}
