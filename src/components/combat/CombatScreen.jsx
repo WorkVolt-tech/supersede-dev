@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notablePassiveDefendReflect, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -561,6 +561,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     notablePassiveBattleStart(learnedNotablePassives(player),statusEffectsRef.current,maxPlayerHp)
     finalDmg=notablePassiveResolveHit(learnedNotablePassives(player),statusEffectsRef.current,notableIncomingDamage(statusEffectsRef.current,finalDmg))
     if(notableReflect>0){foeHp=Math.max(0,foeHp-notableReflect);messages.push('Iron Mirror reflects '+notableReflect+' damage.')}
+    const thornwall=notablePassiveDefendReflect(learnedNotablePassives(player),isDefending,Math.max(0,aiDmg-finalDmg))
+    if(thornwall){foeHp=Math.max(0,foeHp-thornwall);messages.push('Thornwall reflects '+thornwall+' damage.')}
     let nextHp = Math.max(0, playerHp - finalDmg)
     setCurrentHp(nextHp)
 
