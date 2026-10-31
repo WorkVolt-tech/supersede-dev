@@ -585,7 +585,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
     const wasCrit = consumeNotableCrit(statusEffectsRef.current) || Boolean(statusEffectsRef.current.cfx_guaranteedCrit) || atkResult?.wasCrit || Math.random() < critChance
-    let dmg = Math.max(0, Math.round(base * notableAttackMultiplier(statusEffectsRef.current) * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) : 1)))
+    let dmg = Math.max(0, Math.round(base * notableAttackMultiplier(statusEffectsRef.current) * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) + notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage : 1)))
     if (legendary.has('legendary_forger') && wasCrit) dmg += 12
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
