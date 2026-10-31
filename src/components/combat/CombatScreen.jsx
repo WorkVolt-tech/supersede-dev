@@ -659,7 +659,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     const skillLevel = getSkillLevel(player, skillId)
-    const skillDamage = notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(r?.enemyDamage, skillLevel))
+    const skillDamage = notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(r?.enemyDamage, skillLevel),enemyData.def||0)
     const skillHeal = scaleSkillAmount(r?.selfHeal, skillLevel)
     if (skillDamage > 0) foeHp = Math.max(0, foeHp - skillDamage)
     if (skillHeal > 0) {
@@ -708,7 +708,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
     const skillLevel = getSkillLevel(player, skillId)
-    foeHp = Math.max(0, foeHp - notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(effect.enemyDamage, skillLevel)))
+    foeHp = Math.max(0, foeHp - notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(effect.enemyDamage, skillLevel),enemyData.def||0))
     playerHp = Math.min(maxPlayerHp, playerHp + scaleSkillAmount(effect.healPlayer, skillLevel))
     if (effect.enemyDamage > 0) showJudgeHit()
     setEnemyHp(foeHp)
@@ -775,7 +775,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:2
     if (cost > actionPointsRef.current) return
-    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId) || (notableTargeting(skillId)&&(!moveTo||!isTacticalTargetValid(notableTargeting(skillId),heroPosition,moveTo)||!tacticalPreview(notableTargeting(skillId),heroPosition,moveTo,[{id:'enemy',...enemyPosition,hp:enemyHp}]).targets.length)))) return
+    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId) || (skillId==='dcn1'&&roundRef.current!==1) || (notableTargeting(skillId)&&(!moveTo||!isTacticalTargetValid(notableTargeting(skillId),heroPosition,moveTo)||!tacticalPreview(notableTargeting(skillId),heroPosition,moveTo,[{id:'enemy',...enemyPosition,hp:enemyHp}]).targets.length)))) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
       !canUseTacticalSkill(skillId,heroPosition,moveTo||enemyPosition))) return
@@ -871,7 +871,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     } else if (action==='signature') {
       ;({foeHp,playerHp}=castSignature(foeHp,playerHp))
     } else if (action==='loadout') {
-      const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0,attack:calcATK(player,equipped),enemyHp:foeHp,enemyMaxHp:enemyData.hp,playerHp,playerMaxHp:maxPlayerHp})
+      const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0,attack:calcATK(player,equipped),enemyHp:foeHp,enemyMaxHp:enemyData.hp,playerHp,playerMaxHp:maxPlayerHp,round:roundRef.current})
       effect.messages.forEach(pushLog)
       applyNotableDebuff(statusEffectsRef.current,effect)
       notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
@@ -1122,7 +1122,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             onClick={() => takeTurn('end')}>End turn</button>
           {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
           {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
-            title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)}
+            title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
             onClick={()=>{if(notableTargeting(skill.id)){setTargetMode({kind:'loadout',id:skill.id,label:skill.label});setAimSquare(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
             {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
             <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
