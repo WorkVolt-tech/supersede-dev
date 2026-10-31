@@ -104,7 +104,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(occupied||ally)&&<div className="combat-unit-hud"><small>{ally?ally.name:side==='enemy'?enemyName:'YOU'}</small>{!ally&&<><HpBar hp={side==='enemy'?enemyHp:heroHp} maxHp={side==='enemy'?enemyMaxHp:heroMaxHp}/><small>{side==='enemy'?`${enemyHp}/${enemyMaxHp} HP`:`${heroHp}/${heroMaxHp} HP`}</small>{side==='hero'&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</div>}
+        {(occupied||ally)&&<div className="combat-unit-hud"><small>{ally?ally.name:side==='enemy'?enemyName:'YOU'}</small>{!ally&&<><HpBar hp={side==='enemy'?enemyHp:heroHp} maxHp={side==='enemy'?enemyMaxHp:heroMaxHp}/><small>{side==='enemy'?`${enemyHp}/${enemyMaxHp} HP`:`${heroHp}/${heroMaxHp} HP`}</small>{side==='hero'&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</>}</div>}
       </button>
     }))
   }
