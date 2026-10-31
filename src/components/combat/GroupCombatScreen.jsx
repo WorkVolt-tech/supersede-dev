@@ -473,7 +473,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
-    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),damage,calcATK(player,equipped),Math.random,foeStatusesRef.current[target.id] || (foeStatusesRef.current[target.id]={}))
+    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),damage,calcATK(player,equipped),Math.random,foeStatusesRef.current[target.id] || (foeStatusesRef.current[target.id]={}),statusRef.current
     passiveHit.messages.forEach(note)
     const affected=applyDamage(units,attack,square,foe=>Math.max(1,passiveHit.damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,target.id)
