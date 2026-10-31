@@ -1,7 +1,7 @@
 import {NOTABLE_SKILLS_REGISTRY} from './skillsRegistry.js'
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting,notableOnKill,notableAttackBonus,notableSkillDamage,notableCriticalMultiplier,notableAttackMultiplier,notableArmorPierce} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming,notablePassiveStagger,tickNotableSpellblade,notablePassiveStatBonus,activateNotableIronTide,advanceNotableTurn,notablePassiveDefend,notablePassiveBattleStart,notablePassiveResolveHit,enforceNotableControlImmunity,notableEnemyCritChance,notableTargeting,notableOnKill,notableAttackBonus,notableSkillDamage,notableCriticalMultiplier,notableAttackMultiplier,notableArmorPierce,consumeNotableCrit} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -182,4 +182,19 @@ test('Reaper Form pierces defense once and maintains attack boost',()=>{
  assert.equal(notableArmorPierce(status,24),24)
  assert.equal(notableArmorPierce(status,24),0)
  assert.equal(notableAttackBonus(status,40),20)
+})
+
+test('Mind Pierce remains a guaranteed critical until its multiplier is consumed',()=>{
+ const status={}
+ useNotableSkill('arn6',{status})
+ assert.equal(consumeNotableCrit(status),true)
+ assert.equal(notableCriticalMultiplier(status),1.75)
+ assert.equal(consumeNotableCrit(status),false)
+})
+test('Nightshroud returns half attack damage after preventing its next hit',()=>{
+ const status={}
+ useNotableSkill('dcn1',{status,attack:30})
+ assert.equal(consumeNotableReflection(status,20),15)
+ assert.equal(notableIncomingDamage(status,20),0)
+ assert.equal(consumeNotableReflection(status,20),0)
 })
