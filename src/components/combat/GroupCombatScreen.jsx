@@ -13,7 +13,7 @@ import { grantXp } from '../../game/progression'
 import { grantLoot } from '../../game/loot'
 import { persistCombatResult } from '../../game/combatPersistence'
 import { equipmentSubtype } from '../../game/equipmentSlots'
-import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import { getSkillLevel, scaleSkillAmount, awardSkillPractice } from '../../game/skillLeveling'
 import { getActiveElement } from '../../game/activeElement'
 import { getFusionSignatureAction, planFusionSignature, canCastFusionSignature } from '../../game/signatureFusion'
 import { resolveElementalTriad, triadArmorPierce } from '../../game/elementalTriad'
@@ -108,6 +108,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   const companions=activeCompanions(player)
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
+  const notableUsesRef=useRef({})
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
@@ -248,6 +249,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       outcome==='win'?'victory':'defeat')
     if(end?.dbUpdates)Object.assign(dbUpdatesRef.current,end.dbUpdates)
     const changes={...dbUpdatesRef.current,hp:outcome==='win'?hpRef.current:Math.max(1,hpRef.current)}
+    if(Object.keys(notableUsesRef.current).length){
+      const practice=awardSkillPractice(player.skill_levels||{},notableUsesRef.current)
+      changes.skill_levels=practice.skill_levels
+      practice.leveled.forEach(({id,level})=>note(id+' reached skill level '+level+'!'))
+    }
     let victoryText=''
     if(outcome==='win'){
       if(masteryHitsRef.current)changes.weapon_mastery=awardWeaponMastery(
@@ -854,6 +860,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       else if(kind==='loadout'){
         const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0})
         effect.messages.forEach(note)
+        notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
         if(effect.damage>0&&target){
           const live=foesRef.current.find(foe=>foe.id===target.id&&foe.hp>0)
           if(live){live.hp=Math.max(0,live.hp-scaleSkillAmount(effect.damage,getSkillLevel(player,id)));updateFoes([...foesRef.current]);if(live.hp===0)onFoeDefeated(live)}
