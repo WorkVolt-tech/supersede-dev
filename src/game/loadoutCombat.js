@@ -203,3 +203,18 @@ export function notablePassiveResolveHit(passives,status,damage) {
 export function notablePassiveResistsControl(passives) {
  return passives.has('dcn5')||passives.has('dc_ks2')
 }
+
+/** Suppress hostile stun/root flags without touching enemy-facing control effects. */
+export function enforceNotableControlImmunity(passives,status={}) {
+ if(!notablePassiveResistsControl(passives))return false
+ let changed=false
+ for(const key of ['playerStunTurns','playerRootTurns','stunnedTurns','rootedTurns','cfx_playerStunTurns','cfx_playerRootTurns']){
+  if(status[key]>0){status[key]=0;changed=true}
+ }
+ return changed
+}
+/** Reduces enemy critical chance, not ordinary attack damage. */
+export function notableEnemyCritChance(passives,player={},baseChance=0) {
+ const protection=notablePassiveStatBonus(passives,player).criticalProtection
+ return Math.max(0,Math.min(1,baseChance-protection))
+}
