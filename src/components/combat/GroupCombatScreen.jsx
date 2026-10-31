@@ -135,6 +135,16 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
   const notableUsesRef=useRef({})
+  const [skillPracticeUses,setSkillPracticeUses]=useState({})
+  function recordSkillUse(id){
+    if(!id)return
+    recordSkillUse(id)
+    setSkillPracticeUses(previous=>({...previous,[id]:(previous[id]||0)+1}))
+  }
+  function skillPracticeLabel(id){
+    const total=Number(player.skill_levels?.['__practice_'+id]||0)+(skillPracticeUses[id]||0)
+    return getSkillLevel(player,id)>=10?'MAX':(total%10)+'/10 uses'
+  }
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
@@ -528,7 +538,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       id,combatPlayer,statusRef.current,target))
     response?.messages?.forEach(note)
     if(response?.dbUpdates)Object.assign(dbUpdatesRef.current,response.dbUpdates)
-    if(response?.consumed!==false)notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
+    if(response?.consumed!==false)recordSkillUse(id)
     if(response?.consumed!==false&&footprint?.valid)
       spreadAreaEffects(before,footprint.targets,target.id)
     const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id)),target?.def||0)
@@ -557,7 +567,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(!effect||mpRef.current<effect.mpCost)return false
     if(footprint?.valid)spreadAreaEffects(before,footprint.targets,target.id)
     updateMp(mpRef.current-effect.mpCost)
-    notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
+    recordSkillUse(id)
     if(id==='fire_ultimate_inferno_zone' && target &&
         effect.setStatus?.infernoTurns>0) {
       // Inferno occupies a fixed pattern of squares. A target can escape
@@ -926,7 +936,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0,attack:calcATK(player,equipped),enemyHp:target?.hp||0,enemyMaxHp:target?.maxHp||1,playerHp:hpRef.current,playerMaxHp:maxHp,round:roundRef.current})
         effect.messages.forEach(note)
         if(effect.debuff&&target){const own=foeStatusesRef.current[target.id]||{};applyNotableDebuff(own,effect);foeStatusesRef.current[target.id]=own}
-        notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
+        recordSkillUse(id)
         if(effect.damage>0&&target){
           const live=foesRef.current.find(foe=>foe.id===target.id&&foe.hp>0)
           if(live){live.hp=Math.max(0,live.hp-scaleSkillAmount(effect.damage,getSkillLevel(player,id)));updateFoes([...foesRef.current]);if(live.hp===0)onFoeDefeated(live)}
@@ -1114,7 +1124,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
           title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
           onClick={()=>{if(notableTargeting(skill.id)){setPreviewSkill({id:skill.id,label:skill.label,kind:'loadout'});setAim(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
-          {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
+          {skill.label} · Lv {getSkillLevel(player,skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
           <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
         </button>)}
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
@@ -1144,7 +1154,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
               setPreviewSkill({id:elemental.id,label:elemental.label,kind:'elemental'});setSignaturePreview(false);setHoverAim(null)
             } else takeTurn('elemental',elemental.id)
           }}>
-          {elemental.label} · Lv {getSkillLevel(player,elemental.id)}
+          {elemental.label} · Lv {getSkillLevel(player,elemental.id)} · {skillPracticeLabel(elemental.id)}
           <span className="combat-action-sub">{groupSpellPattern(elemental.id)?.shape||'Self / support'} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
         </button>}
         {signature&&<button type="button" className="combat-action-btn combat-signature-action"
