@@ -10,6 +10,17 @@ import { resolveCh2HubInterrupt } from '../data/ch2/hubInterrupts'
 import { getChapterResonance } from '../data/ch2/elementalDifficulty'
 import { getActiveElement } from '../game/activeElement'
 
+const CH1_GUARDIANS = ['sentinel', 'surveyor', 'unseen']
+const CH1_FINAL_NODES = new Set([
+  'plaza_allies', 'watcher_sees_final', 'plaza_talk',
+  'pre_boss_check', 'pre_boss_team', 'pre_boss_solo',
+  'pre_boss_betray', 'boss',
+])
+function missingCh1Guardians(player) {
+  const defeated = new Set(player?.defeated_bosses || [])
+  return CH1_GUARDIANS.filter(key => !defeated.has(key))
+}
+
 export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') {
   const player = usePlayerStore(s => s.player)
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
@@ -25,9 +36,12 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
   const savedNode = player?.current_node?.startsWith(chapterPrefix + '_')
     ? player.current_node.slice(chapterPrefix.length + 1)
     : null
-  const startId = savedNode && NODES[savedNode]
+  const selectedStart = savedNode && NODES[savedNode]
     ? savedNode
     : completed && NODES[completedEndId] ? completedEndId : initialNodeId
+  // Recover older saves that reached the finale without clearing all guardians.
+  const startId = chapterPrefix === 'ch1' && CH1_FINAL_NODES.has(selectedStart) &&
+    missingCh1Guardians(player).length ? 'district_hub' : selectedStart
 
   const [currentNodeId, setCurrentNodeId] = useState(startId)
 
@@ -54,6 +68,10 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       ])
     }
     if (!NODES[resolvedId]) return { ok:false, error:`Story route not found: ${resolvedId}` }
+    if (chapterPrefix === 'ch1' && CH1_FINAL_NODES.has(resolvedId) &&
+        missingCh1Guardians(player).length) {
+      resolvedId = 'district_hub'
+    }
 
     const cur = NODES[currentNodeId]
     const updates = { current_node: `${chapterPrefix}_${resolvedId}` }
