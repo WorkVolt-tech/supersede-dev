@@ -16,7 +16,7 @@ export const TACTICAL_ATTACKS = {
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
   thrust:      { label:'Long Thrust',      reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
   lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
-  throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, diagonal:true, maxRange:2,
+  throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, diagonal:true, thrown:true, maxRange:2,
     description:'Throw a dagger at an enemy up to 2 squares away.' },
   quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1, diagonal:true },
   aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1, diagonal:true },
@@ -102,8 +102,9 @@ export function getPlayerTacticalAttacks(hasMainhandWeapon,weaponType,masteryXp=
   return getTacticalAttacks(weaponType,[],masteryXp)
 }
 export function startImprovisedThrowRecovery(currentRound,targetRank) {
-  if(targetRank!==1&&targetRank!==2)return currentRound
-  return currentRound+targetRank
+  // A thrown object always needs recovery, including a diagonal throw at
+  // the opposing front row. The farthest row takes one additional round.
+  return currentRound+(targetRank===2?2:1)
 }
 export function improvisedThrowTurnsRemaining(readyRound,currentRound) {
   return Math.max(0,Math.floor((Number(readyRound)||0)-(Number(currentRound)||0)))
