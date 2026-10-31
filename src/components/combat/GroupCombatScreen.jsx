@@ -812,7 +812,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const skillPattern=targetedSkill?groupSpellPattern(id):null
     const skillHit=skillPattern?previewGroupAttack(foesRef.current,skillPattern,heroRef.current,position):null
     const target=targetedSkill
-      ?skillHit?.targets.find(unit=>unit.id===focus)||skillHit?.targets[0]||null
+      ?skillHit?.targets.find(unit=>unit.col===position?.col&&unit.rank===position?.rank)||skillHit?.targets[0]||null
       :nextAliveTarget(foesRef.current,focus)
     const attackSquare=kind==='attack'?(position||aim):null
     if(targetedSkill&&skillPattern&&(!skillHit?.valid||!skillHit.targets.length))return
@@ -824,7 +824,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
       position.rank>2||Math.abs(position.col-heroRef.current.col)+
         Math.abs(position.rank-heroRef.current.rank)!==1))return
-    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(notableTargeting(id)&&!position)))return
+    if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(notableTargeting(id)&&(!position||!skillHit?.valid||!skillHit.targets.length))))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
       !canUseTacticalSkill(id,heroRef.current,position||target,getSkillLevel(player,id))))return
