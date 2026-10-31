@@ -25,22 +25,22 @@ export const useInventoryStore = create((set, get) => ({
     if (!['weapon','armor','accessory'].includes(item.item_type)) return {ok:false,reason:'Only equipment accepts fragments.'}
     const runeName = fragmentElement(rune.item_key)
     if (!runeName) return {ok:false,reason:'Select a fragment.'}
-    const used = (item.socketed_runes || []).length
+    const used = (item.socketed_fragments || []).length
     if (!item.sockets_total || used>=item.sockets_total) return {ok:false,reason:'No empty sockets.'}
-    const socketed_runes = [...(item.socketed_runes || []),runeName]
-    const rw = findResonance(socketed_runes,item.item_type,item.sockets_total)
-    const { error } = await supabase.from('inventory').update({socketed_runes,sockets_used:socketed_runes.length,runeword_name:rw?.name||null}).eq('id',itemId).eq('player_id',item.player_id)
+    const socketed_fragments = [...(item.socketed_fragments || []),runeName]
+    const rw = findResonance(socketed_fragments,item.item_type,item.sockets_total)
+    const { error } = await supabase.from('inventory').update({socketed_fragments,sockets_used:socketed_fragments.length,resonance_name:rw?.name||null}).eq('id',itemId).eq('player_id',item.player_id)
     if (error) return {ok:false,reason:error.message}
     const qty = rune.quantity || 1
     const { error: consumeError } = qty>1
       ? await supabase.from('inventory').update({quantity:qty-1}).eq('id',runeId).eq('player_id',item.player_id)
       : await supabase.from('inventory').delete().eq('id',runeId).eq('player_id',item.player_id)
     if (consumeError) {
-      await supabase.from('inventory').update({socketed_runes:item.socketed_runes||[],sockets_used:used,runeword_name:item.runeword_name||null}).eq('id',itemId).eq('player_id',item.player_id)
+      await supabase.from('inventory').update({socketed_fragments:item.socketed_fragments||[],sockets_used:used,resonance_name:item.resonance_name||null}).eq('id',itemId).eq('player_id',item.player_id)
       return {ok:false,reason:consumeError.message}
     }
     await get().loadInventory(item.player_id)
-    return {ok:true,reason:rw ? `✦ ${rw.name} Resonance activated!` : `Fragment inserted (${socketed_runes.length}/${item.sockets_total}).`}
+    return {ok:true,reason:rw ? `✦ ${rw.name} Resonance activated!` : `Fragment inserted (${socketed_fragments.length}/${item.sockets_total}).`}
   },
 
   async equipItem(itemId, slotKey) {
