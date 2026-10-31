@@ -47,10 +47,10 @@ test('unarmed rear enemies advance while out of range',()=>{
   const next=chooseTacticalEnemyAction('unarmed',second.move,player)
   assert.equal(next.attack.id,'bareStrike')
 })
-test('blocked middle rank forces fallback instead of moving through allies',()=>{
+test('blocked middle rank forces enemy to wait instead of attacking through allies',()=>{
   const a=chooseTacticalEnemyAction('unarmed',{col:1,rank:2},{col:1,rank:0},
     [{col:0,rank:1},{col:1,rank:1},{col:2,rank:1}])
-  assert.equal(a.attack.fallback,true)
+  assert.equal(a.wait,true)
 })
 
 test('real Wrathborn Fury Slam bleeds only the targeted enemy',()=>{
