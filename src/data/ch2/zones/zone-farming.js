@@ -128,6 +128,8 @@ export function randomizeFarmingWaves() {
       // Awarded through the normal combat loot pipeline, not directly by UI.
       loot: [
         ...(base.loot || []),
+        { itemKey: idx < 2 ? 'reinforced_utility_belt' : 'sentinel_war_belt', chance: isLast ? .12 : .06, qty: 1 },
+        { itemKey: idx < 2 ? 'flicker_necklace' : 'resonance_amulet', chance: isLast ? .12 : .06, qty: 1 },
         { itemKey: 'profession_token_' + ['merchant','miner','forger','alchemist','hunter','pathfinder','engineer','resonance_weaver'][Math.floor(Math.random()*8)], chance: 0.12, qty: 1 },
       ],
       // Wave 5 gets a 15% boost to HP + XP for "boss" feel.
