@@ -39,6 +39,7 @@ jobs:
             src/data/storyRoutes.test.js \
             src/game/combatAp.test.js \
             src/game/loadoutCombat.test.js \
+            src/game/storyParty.test.js \
             src/game/tacticalGrid.test.js \
             src/game/tacticalIntegration.test.js \
             src/game/tacticalGroups.test.js \
