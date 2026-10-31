@@ -28,7 +28,7 @@ import { getEquippedElementalAttack, canUseElementalAttack, getAttackMpCost, res
 import { getMaxCombatMp, getCombatMpRegen, recoverCombatMp, clampCombatMp } from '../../game/combatMp'
 import { advanceKeystoneCooldowns, applyKeystoneStatuses, applyStonebornDefend, stonebornArmorPierce, consumeEnemyStun, resolveKeystoneDefense, resolveKeystoneStrike, resolveKeystoneRegen } from '../../game/keystoneCombat'
 import { equipmentSubtype, RANGED_WEAPONS } from '../../game/equipmentSlots'
-import { getSkillLevel, scaleSkillAmount } from '../../game/skillLeveling'
+import { getSkillLevel, scaleSkillAmount, awardSkillPractice } from '../../game/skillLeveling'
 import { getFusionSignatureAction, canCastFusionSignature } from '../../game/signatureFusion'
 import { resolveElementalTriad, triadArmorPierce } from '../../game/elementalTriad'
 import { getActiveFusion, getFusionSignature,
@@ -130,6 +130,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const companions=activeCompanions(player)
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
+  const notableUsesRef=useRef({})
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
@@ -411,6 +412,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const finalUpdates = {
       ...dbUpdatesRef.current,
       hp: outcome === 'win' ? hpAtEnd : Math.max(1, hpAtEnd),
+    }
+    if(Object.keys(notableUsesRef.current).length){
+      const practice=awardSkillPractice(player.skill_levels||{},notableUsesRef.current)
+      finalUpdates.skill_levels=practice.skill_levels
+      practice.leveled.forEach(({id,level})=>pushLog(id+' reached skill level '+level+'!'))
     }
     let victoryText = ''
     if (outcome === 'win') {
@@ -833,6 +839,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     } else if (action==='loadout') {
       const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0})
       effect.messages.forEach(pushLog)
+      notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
       if(effect.damage>0){foeHp=Math.max(0,foeHp-scaleSkillAmount(effect.damage,getSkillLevel(player,skillId)));setEnemyHp(foeHp);showJudgeHit()}
     } else if (action==='skill') {
       const skillResult=playerSkill(skillId,foeHp,playerHp)
