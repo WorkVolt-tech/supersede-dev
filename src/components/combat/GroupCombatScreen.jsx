@@ -876,15 +876,18 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     :previewSkill?groupSpellPattern(previewSkill.id):attack
   const signaturePlan=signaturePreview?planFusionSignature(signature,foes,chosen,hero):null
   const displayName=signaturePreview?signature?.label:previewSkill?.label||attack.label
-  const preview=previewGroupAttack(foes,displayPattern,hero,aim)
-  const attackLegal=previewGroupAttack(foes,attack,hero,aim).valid
+  const legalAim=aim&&isTacticalTargetValid(displayPattern,hero,aim)?aim:
+    Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))
+      .find(square=>isTacticalTargetValid(displayPattern,hero,square))||null
+  const preview=previewGroupAttack(foes,displayPattern,hero,legalAim)
+  const attackLegal=Boolean(legalAim&&isTacticalTargetValid(attack,hero,legalAim))
   const canPlay=!busy&&!result
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=attack.thrown&&throwTurns>0
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} aim={aim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
