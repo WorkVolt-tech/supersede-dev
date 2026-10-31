@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -473,7 +473,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
-    const affected=applyDamage(units,attack,square,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
+    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),damage,calcATK(player,equipped))
+    passiveHit.messages.forEach(note)
+    const affected=applyDamage(units,attack,square,foe=>Math.max(1,passiveHit.damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,target.id)
     if(keystone.heal)updateHp(hpRef.current+keystone.heal)
     note(attack.label+': '+affected.targets.length+' target(s), '+damage+' damage'+(crit?' · Critical!':'')+'.')
@@ -695,7 +697,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
          }
          if(fusionWardRef.current<=0)fortressCounterRef.current=0
       }
-      const reflect=consumeNotableReflection(statusRef.current,damage)
+      const passive=notablePassiveIncoming(learnedNotablePassives(player),statusRef.current,damage,calcATK(player,equipped))
+      damage=passive.damage
+      passive.messages.forEach(note)
+      if(passive.stun){const effects=foeStatusesRef.current[actor.id]||{};effects.enemyStunTurns=Math.max(1,effects.enemyStunTurns||0);foeStatusesRef.current[actor.id]=effects}
+      const reflect=consumeNotableReflection(statusRef.current,damage)+passive.reflect
       damage=notableIncomingDamage(statusRef.current,damage)
       damage=Math.min(damage,enemyDamageBudgetRef.current)
       enemyDamageBudgetRef.current=Math.max(0,enemyDamageBudgetRef.current-damage)
