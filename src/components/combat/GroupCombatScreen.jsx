@@ -411,6 +411,12 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     const footprint=previewGroupAttack(units,attack,heroRef.current,square)
     const target=footprint.targets[0]
     if(!footprint.valid)return
+    if(attack.thrown){
+      const ready=startImprovisedThrowRecovery(roundRef.current,square.rank)
+      throwReadyRef.current=ready;setThrowReady(ready)
+      setSelectedAttack(null)
+      note('Thrown weapon recovery: '+(square.rank===2?'two rounds.':'next round.'))
+    }
     if(!target){
       applyDamage(units,attack,square,0)
       note(attack.label+': no enemy in the affected squares.')
@@ -438,13 +444,6 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
     const affected=applyDamage(units,attack,square,foe=>Math.max(1,damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,target.id)
-    if(attack.thrown&&affected.targets.length){
-      const ready=startImprovisedThrowRecovery(roundRef.current,target.rank)
-      throwReadyRef.current=ready;setThrowReady(ready)
-      setSelectedAttack(null)
-      note('Your thrown object will be recovered '+(target.rank===1
-        ?'next round.':'in two rounds.'))
-    }
     if(keystone.heal)updateHp(hpRef.current+keystone.heal)
     note(attack.label+': '+affected.targets.length+' target(s), '+damage+' damage'+(crit?' · Critical!':'')+'.')
     mod?.messages?.forEach(note);keystone.messages?.forEach(note)
