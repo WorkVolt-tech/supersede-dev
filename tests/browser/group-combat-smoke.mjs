@@ -132,7 +132,7 @@ async function verifySignatures(page) {
       element+': signature saved player before victory')
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>
-      document.querySelector('.combat-turn-banner')?.textContent.includes('5/5 AP'),
+      document.querySelector('.combat-turn-banner')?.textContent.includes('9/9 AP'),
       null,{timeout:10000})
     check((await signature.textContent()).includes('Cooldown: 3 rounds'),
       element+': signature should start with 3-round cooldown')
@@ -182,7 +182,7 @@ async function verifyClasslessTriad(page) {
     'triad: mastery saved before victory')
   await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
-    ?.textContent.includes('5/5 AP'),null,{timeout:15000})
+    ?.textContent.includes('9/9 AP'),null,{timeout:15000})
   check((await signature.textContent()).includes('Cooldown: 4 rounds'),
     'triad: 4-round cooldown not set')
   check(await page.locator('.combat-grid-board').first()
