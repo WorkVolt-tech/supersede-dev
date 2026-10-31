@@ -98,6 +98,10 @@ async function verifySkills(page,viewport){
   const attack=attrs.find(x=>x.includes('Attack'))
   check(attack.includes('3 gear'),
     'Skills attributes did not reflect equipped weapon bonus')
+  check(await page.locator('.skills-battle-loadout .skills-loadout-slot').count()===4,
+    'Battle loadout must show all four slots')
+  check(await page.getByRole('heading',{name:/Battle loadout/}).count()===1,
+    'Battle loadout must be visible above the skill tree')
   check(await page.locator('.skills-workspace').count()===1,
     'Original skill tree was lost')
   await page.screenshot({path:'test-artifacts/archive-skills-'+viewport+'.png',
