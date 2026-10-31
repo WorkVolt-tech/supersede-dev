@@ -351,6 +351,15 @@ try{
   await loadout.waitFor()
   check(await loadout.isEnabled(),'saved Warbound skill should be available in group combat')
   console.log('PASS group: saved Warbound loadout is visible and usable')
+  await desktop.goto(host+'/tests/browser/group-combat.html?scenario=companions',{waitUntil:'networkidle'})
+  check(await desktop.getByRole('button',{name:'Marcus · party ally'}).count()===1,
+    'Marcus should occupy a group battlefield square')
+  check(await desktop.getByRole('button',{name:'Lena · party ally'}).count()===1,
+    'Lena should occupy a different group battlefield square')
+  await desktop.getByRole('button',{name:'End turn'}).click()
+  await desktop.waitForFunction(()=>document.querySelector('.combat-log')
+    ?.textContent.includes('Marcus attacks'),null,{timeout:12000})
+  console.log('PASS group companions: party occupies battlefield and attacks')
   await inspect(desktop,'desktop',false)
   await verifyMastery(desktop)
   await verifyFusion(desktop)
