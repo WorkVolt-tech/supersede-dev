@@ -32,7 +32,7 @@ export default function InventoryScreen() {
   const unequippedItems = items.filter(i => !i.equipped_slot)
   const selected = items.find(i => i.id===selectedId)
   const displayItem = selected && normalizedItem(selected)
-  const resonance = selected && findResonance(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
+  const resonance = selected && findResonance(selected.socketed_fragments || [],selected.item_type,selected.sockets_total)
   const runes = items.filter(i=>isFragment(i) && (i.quantity||1)>0)
   const fragmentCounts = Object.fromEntries(runes.map(r=>['rune_'+fragmentElement(r.item_key),(runes.filter(other=>fragmentElement(other.item_key)===fragmentElement(r.item_key)).reduce((n,item)=>n+Math.max(0,Number(item.quantity)||0),0))]))
   const codexRecipes = RESONANCES.filter(recipe=>recipe.slot===codexType).map(recipe=>{
@@ -177,18 +177,18 @@ export default function InventoryScreen() {
           {isFragment(selected) && <div className="inv-socket-panel">
             <p><strong>Insert fragment into equipment</strong></p>
             <p>Choose an item with an empty fragment socket. Fragments are inserted into equipment, not worn directly.</p>
-            {items.filter(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_runes||[]).length<Number(item.sockets_total)).map(item=>
+            {items.filter(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_fragments||[]).length<Number(item.sockets_total)).map(item=>
               <button key={item.id} className="inv-action" onClick={()=>insertSelectedFragment(item)}>
-                ◆ {item.name} · {(item.socketed_runes||[]).length}/{item.sockets_total} sockets
+                ◆ {item.name} · {(item.socketed_fragments||[]).length}/{item.sockets_total} sockets
               </button>)}
-            {!items.some(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_runes||[]).length<Number(item.sockets_total))&&
+            {!items.some(item=>['weapon','armor','accessory'].includes(item.item_type)&&Number(item.sockets_total)>0&&(item.socketed_fragments||[]).length<Number(item.sockets_total))&&
               <p>No equipment with empty fragment sockets is available.</p>}
           </div>}
           {Number(selected.sockets_total)>0 && <div className="inv-socket-panel">
-            <p><strong>Fragment slots:</strong> {(selected.socketed_runes||[]).length}/{selected.sockets_total}</p>
-            <p>{Array.from({length:selected.sockets_total},(_,i)=>selected.socketed_runes?.[i] ? `◆ ${fragmentName(selected.socketed_runes[i])}` : '◇ Empty').join(' · ')}</p>
+            <p><strong>Fragment slots:</strong> {(selected.socketed_fragments||[]).length}/{selected.sockets_total}</p>
+            <p>{Array.from({length:selected.sockets_total},(_,i)=>selected.socketed_fragments?.[i] ? `◆ ${fragmentName(selected.socketed_fragments[i])}` : '◇ Empty').join(' · ')}</p>
             {resonance && <><p className="inv-runeword">✦ {resonance.name} Resonance</p><div className="inv-stats">{Object.entries(resonance.stats).map(([key,value])=><span key={key}>{key.replace('_bonus','').replace('_',' ')} +{value}</span>)}</div></>}
-            {(selected.socketed_runes||[]).length<selected.sockets_total && <>
+            {(selected.socketed_fragments||[]).length<selected.sockets_total && <>
               <p>Select a fragment to permanently insert it:</p>
               {runes.map(r=><button className="inv-action" key={r.id} onClick={async()=>{const result=await socketRune(selected.id,r.id);setMessage(result.reason)}}>{r.icon||'◆'} {fragmentName(r.item_key)} ×{r.quantity||1}</button>)}
               {!runes.length && <p>No fragments available. Find them as drops.</p>}
