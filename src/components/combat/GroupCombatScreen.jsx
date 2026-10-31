@@ -617,7 +617,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     let currentHp=hpRef.current
     const speed=calcSPD(player,equipped)+(statusRef.current.playerSPDBonus||0)
     const sorted=next.filter(u=>u.hp>0 &&
-      ((u.speed||5)>speed)===fast).sort((a,b)=>(b.speed||5)-(a.speed||5))
+      ((u.speed||5)-(foeStatusesRef.current[u.id]?.notableSpeedPenalty||0)>speed)===fast).sort((a,b)=>((b.speed||5)-(foeStatusesRef.current[b.id]?.notableSpeedPenalty||0))-((a.speed||5)-(foeStatusesRef.current[a.id]?.notableSpeedPenalty||0)))
     for(const foe of sorted){
       const actor=next.find(u=>u.id===foe.id)
       if(!actor||actor.hp<=0||currentHp<=0)continue
