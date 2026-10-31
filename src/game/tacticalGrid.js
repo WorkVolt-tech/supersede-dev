@@ -8,7 +8,7 @@ export const TACTICAL_ATTACKS = {
     cols:'near', shape:'single', damage:3, ap:1,
     description:'Strike an enemy within 2 squares.' },
   improvisedThrow: { label:'Improvised Throw', reach:'long', from:[0,1,2],to:[1,2],
-    cols:'any',shape:'single',damage:2,ap:1, thrown:true, maxRange:3,
+    cols:'any',shape:'single',damage:2,ap:1, diagonal:true, thrown:true, maxRange:3,
     description:'Throw an improvised object up to 3 squares away. Retrieval takes 1–2 rounds.' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
@@ -16,7 +16,7 @@ export const TACTICAL_ATTACKS = {
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
   thrust:      { label:'Long Thrust',      reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
   lunge:       { label:'Dagger Reach',     reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:5, ap:1 },
-  throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, maxRange:2,
+  throw:       { label:'Dagger Throw',     reach:'mid',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:3, ap:1, diagonal:true, maxRange:2,
     description:'Throw a dagger at an enemy up to 2 squares away.' },
   quickArrow:  { label:'Quick Shot',       reach:'mid',   from:[0,1], to:[0,1],     cols:'near',  shape:'single', damage:4, ap:1, diagonal:true },
   aimed:       { label:'Aimed Shot',       reach:'long',  from:[1,2], to:[0,1,2],   cols:'any',   shape:'single', damage:6, ap:1, diagonal:true },
@@ -32,7 +32,7 @@ export const TACTICAL_ATTACKS = {
   masterArc:   { label:'Master Arc',      reach:'mid',  from:[0,1],to:[0,1],   cols:'near',shape:'row',   damage:8,ap:2,masteryLevel:20 },
   masterLine:  { label:'Master Piercing', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'column',damage:7,ap:2,masteryLevel:40 },
   masterBurst: { label:'Grand Resonance', reach:'long', from:[0,1,2],to:[0,1,2],cols:'any',shape:'cross', damage:9,ap:2, diagonal:true,masteryLevel:80 },
-  pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, fallback:true,
+  pulse:       { label:'Emergency Attack', reach:'long',  from:[0,1,2],to:[0,1,2], cols:'any',   shape:'single', damage:2, ap:0, diagonal:true, fallback:true,
     description:'Basic emergency action (not a skill). Reaches any enemy row; once per round.' },
 };
 
