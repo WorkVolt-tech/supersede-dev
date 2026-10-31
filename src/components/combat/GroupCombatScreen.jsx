@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -670,6 +670,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       actor.hp=Math.min(actor.maxHp,actor.hp+heal)
       const decay=foeStatusesRef.current[actor.id]?.cfx_longDecayStacks||0
       if(decay>0)incoming=Math.max(0,incoming-3*decay)
+      incoming=Math.max(0,incoming-notableEnemyAttackPenalty(foeStatusesRef.current[actor.id]))
       if(statusRef.current.cfx_tornadoTurns>0)
         incoming=Math.round(incoming*.7)
       const hit=ClsCombat.onPlayerHit(combatPlayer,statusRef.current,foeData,incoming,maxHp)
@@ -722,6 +723,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const perFoe=advanceFoeStatuses(units,foeStatusesRef.current,combatPlayer)
     foeStatusesRef.current=perFoe.statuses
     units=perFoe.units
+    for(const foe of units.filter(u=>u.hp>0)){
+      const poison=tickNotableDebuff(foeStatusesRef.current[foe.id]||{})
+      if(poison){foe.hp=Math.max(0,foe.hp-poison);note(foe.name+' suffers '+poison+' Hex Cannon poison damage.');if(foe.hp===0)onFoeDefeated(foe)}
+    }
     const fieldTicks=advanceGroupFields(units,fieldsRef.current)
     fieldsRef.current=fieldTicks.fields
     units=fieldTicks.units
@@ -879,6 +884,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       else if(kind==='loadout'){
         const effect=useNotableSkill(id,{status:statusRef.current,enemyDef:target?.def||0,attack:calcATK(player,equipped),enemyHp:target?.hp||0,enemyMaxHp:target?.maxHp||1,playerHp:hpRef.current,playerMaxHp:maxHp})
         effect.messages.forEach(note)
+        if(effect.debuff&&target){const own=foeStatusesRef.current[target.id]||{};applyNotableDebuff(own,effect);foeStatusesRef.current[target.id]=own}
         notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
         if(effect.damage>0&&target){
           const live=foesRef.current.find(foe=>foe.id===target.id&&foe.hp>0)
