@@ -128,7 +128,7 @@ export function notablePassiveOutgoing(passives,damage,atk=0,rng=Math.random,sta
  let bonus=0;const messages=[]
  if(passives.has('ofn3')&&rng()<.15){status.notableSpellbladePoisonTurns=2;messages.push('Spellblade poisons the enemy.')}
  if(status.notableFlickerReady){bonus+=damage;delete status.notableFlickerReady;messages.push('Flicker doubles damage.')}
- if(passives.has('arn5')&&rng()<.20){bonus=Math.max(1,Math.round(atk*.4));messages.push('Ricochet strikes again for '+bonus+'.')}
+ if(passives.has('arn5')&&rng()<.20){bonus+=Math.max(1,Math.round(atk*.4));messages.push('Ricochet strikes again for '+bonus+'.')}
  return {damage:Math.max(0,damage)+bonus,messages}
 }
 export function notablePassiveIncoming(passives,status,damage,atk=0,rng=Math.random) {
