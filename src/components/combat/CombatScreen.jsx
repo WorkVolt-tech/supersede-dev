@@ -566,7 +566,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     let newEnemyHp = Math.max(0, foeHp - dmg)
     if(attack.thrown&&dmg>0){
-      const ready=startImprovisedThrowRecovery(roundRef.current,enemyPosition.rank)
+      const ready=startImprovisedThrowRecovery(roundRef.current,(aimSquare||enemyPosition).rank)
       throwReadyRef.current=ready;setThrowReady(ready)
       setSelectedAttackId(null)
       pushLog('Your thrown object will be recovered '+(enemyPosition.rank===1
@@ -794,6 +794,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       if (getTacticalAffectedSquares(attack,aimSquare||enemyPosition).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank)) {
         ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
       } else {
+        if(attack.thrown){
+          const ready=startImprovisedThrowRecovery(roundRef.current,(aimSquare||enemyPosition).rank)
+          throwReadyRef.current=ready;setThrowReady(ready)
+          setSelectedAttackId(null)
+          pushLog('Thrown weapon must be recovered before using it again.')
+        }
         pushLog(attack.label+': empty squares hit. No enemy struck.')
       }
     } else if (action==='keystone') {
