@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -203,6 +203,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   function forFoe(id,fn){return withFoeStatus(statusRef.current,foeStatusesRef.current,id,fn)}
   function onFoeDefeated(dead){
     note(dead.name+' defeated.')
+    if(notablePassiveKill(learnedNotablePassives(player),statusRef.current))note('Shade Walk: +15 SPD for 2 turns.')
     const bloodthirst=notableOnKill(statusRef.current,maxHp)
     if(bloodthirst.heal)updateHp(hpRef.current+bloodthirst.heal)
     bloodthirst.messages.forEach(note)
@@ -620,7 +621,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       updateFoes(next)
     }
     let currentHp=hpRef.current
-    const speed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),player).speed+(statusRef.current.playerSPDBonus||0)
+    const speed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),{...player,notableShadeWalkTurns:statusRef.current.notableShadeWalkTurns}).speed+(statusRef.current.playerSPDBonus||0)
     const sorted=next.filter(u=>u.hp>0 &&
       ((u.speed||5)-(foeStatusesRef.current[u.id]?.notableSpeedPenalty||0)>speed)===fast).sort((a,b)=>((b.speed||5)-(foeStatusesRef.current[b.id]?.notableSpeedPenalty||0))-((a.speed||5)-(foeStatusesRef.current[a.id]?.notableSpeedPenalty||0)))
     for(const foe of sorted){
