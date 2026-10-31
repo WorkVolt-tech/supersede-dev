@@ -19,6 +19,7 @@ export default function InventoryScreen() {
   const [filter, setFilter] = useState('all')
   const [codexOpen, setCodexOpen] = useState(false)
   const [codexType, setCodexType] = useState('weapon')
+  const [codexFilter, setCodexFilter] = useState('all')
 
   const [message, setMessage] = useState('')
   const [rejectFlash, setRejectFlash] = useState(false)
@@ -33,6 +34,16 @@ export default function InventoryScreen() {
   const displayItem = selected && normalizedItem(selected)
   const resonance = selected && findResonance(selected.socketed_runes || [],selected.item_type,selected.sockets_total)
   const runes = items.filter(i=>i.item_key?.startsWith('rune_') && (i.quantity||1)>0)
+  const fragmentCounts = Object.fromEntries(runes.map(r=>[r.item_key,(runes.filter(other=>other.item_key===r.item_key).reduce((n,item)=>n+Math.max(0,Number(item.quantity)||0),0))]))
+  const codexRecipes = RESONANCES.filter(recipe=>recipe.slot===codexType).map(recipe=>{
+    const remaining={...fragmentCounts}
+    const missing=recipe.runes.filter(key=>{
+      const fullKey=key.startsWith('rune_')?key:'rune_'+key
+      if((remaining[fullKey]||0)>0){remaining[fullKey]--;return false}
+      return true
+    })
+    return {recipe,missing,owned:recipe.runes.length-missing.length}
+  }).filter(row=>codexFilter==='all'||(codexFilter==='ready'?row.missing.length===0:row.owned>0))
   const filteredItems = unequippedItems.filter(i => filter==='all' || i.item_type===filter)
   const itemStats = selected ? [
     ['Attack',displayItem.atk_bonus],['Defense',displayItem.def_bonus],['Max HP',displayItem.max_hp_bonus],
@@ -60,29 +71,31 @@ export default function InventoryScreen() {
     return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom
   }
 
-  async function handleDragEnd(item, info) {
-    const { x, y } = info.point
-
-    for (const slot of SLOTS) {
-      const el = slotRefs.current[slot.key]
-      if (el && pointInRect(x, y, el.getBoundingClientRect())) {
-        const result = await equipItem(item.id, slot.key)
-        if (!result.ok) {
-          setMessage(result.reason)
-          setRejectFlash(true)
-          setTimeout(() => setRejectFlash(false), 350)
-          setTimeout(() => setMessage(''), 2200)
-        } else {
-          setMessage('')
-        }
-        return
-      }
+  async function handleDragEnd(item, event) {
+    // Framer's info.point is the pointer release position, not the dragged
+    // item's visible destination. Use the rendered tile's rectangle instead.
+    const dragged = event.currentTarget.getBoundingClientRect()
+    const area = rect => Math.max(0,Math.min(dragged.right,rect.right)-Math.max(dragged.left,rect.left)) *
+      Math.max(0,Math.min(dragged.bottom,rect.bottom)-Math.max(dragged.top,rect.top))
+    const ranked = SLOTS.map(slot=>({slot,overlap:slotRefs.current[slot.key]
+      ?area(slotRefs.current[slot.key].getBoundingClientRect()):0}))
+      .sort((a,b)=>b.overlap-a.overlap)
+    const best = ranked[0]
+    // Require meaningful overlap; ignore a mere edge touch or a drag ending
+    // outside the equipment slots.
+    if(best?.overlap > dragged.width*dragged.height*0.2){
+      if(best.slot.key===item.equipped_slot)return
+      const result=await equipItem(item.id,best.slot.key)
+      if(!result.ok){
+        setMessage(result.reason)
+        setRejectFlash(true)
+        setTimeout(()=>setRejectFlash(false),350)
+      }else setMessage('')
+      return
     }
-
-    const gridEl = gridRef.current
-    if (item.equipped_slot && gridEl && pointInRect(x, y, gridEl.getBoundingClientRect())) {
+    const gridEl=gridRef.current
+    if(item.equipped_slot&&gridEl&&area(gridEl.getBoundingClientRect())>dragged.width*dragged.height*0.2)
       await unequipSlot(item.equipped_slot)
-    }
   }
 
   return (
@@ -101,7 +114,7 @@ export default function InventoryScreen() {
                   style={{ background: RARITY[item.rarity] || RARITY.common }}
                   drag
                   dragMomentum={false}
-                  onDragEnd={(e, info) => handleDragEnd(item, info)}
+                  onDragEnd={(e) => handleDragEnd(item, e)}
                   onClick={() => setSelectedId(item.id)}
                   whileDrag={{ scale: 1.15, zIndex: 30 }}
                   layoutId={`inv-${item.id}`}
@@ -136,7 +149,7 @@ export default function InventoryScreen() {
               drag
               dragMomentum={false}
               dragElastic={0.15}
-              onDragEnd={(e, info) => handleDragEnd(item, info)}
+              onDragEnd={(e) => handleDragEnd(item, e)}
               onClick={() => setSelectedId(item.id)}
               whileDrag={{ scale: 1.15, zIndex: 30 }}
               whileHover={{ scale: 1.05 }}
@@ -181,11 +194,15 @@ export default function InventoryScreen() {
         {codexOpen && <>
           <p>Combine fragments in matching equipment. A Resonance activates when every fragment slot is filled.</p>
           <div className="inv-filters">{['weapon','armor','accessory','any'].map(type=><button key={type} className={codexType===type?'active':''} onClick={()=>setCodexType(type)}>{type==='any'?'universal':type}</button>)}</div>
+          <div className="inv-filters" aria-label="Filter Resonances by owned fragments">{[['all','All recipes'],['ready','Can craft now'],['partial','Have fragments']].map(([value,label])=><button key={value} className={codexFilter===value?'active':''} onClick={()=>setCodexFilter(value)}>{label}</button>)}</div>
+          <p>{codexRecipes.length} matching Resonance{codexRecipes.length===1?'':'s'} · checks fragment quantities in your inventory.</p>
           <div className="inv-codex" style={{maxHeight:350,overflowY:'auto'}}>
-            {RESONANCES.filter(recipe=>recipe.slot===codexType).map((recipe,index)=><div key={`${recipe.name}-${index}`} style={{padding:'8px 0',borderBottom:'1px solid #ad9a7755'}}>
+            {codexRecipes.map(({recipe,missing,owned},index)=><div key={`${recipe.name}-${index}`} style={{padding:'8px 0',borderBottom:'1px solid #ad9a7755'}}>
               <strong>{recipe.name}</strong> · {recipe.runes.map(fragmentName).join(' + ')}
+              <div className="inv-codex-availability">{missing.length===0?'✓ All fragments available':`${owned}/${recipe.runes.length} fragments owned · Missing: ${missing.map(fragmentName).join(', ')}`}</div>
               <div className="inv-stats">{Object.entries(recipe.stats).map(([key,value])=><span key={key}>{key.replace('_bonus','').replace('_',' ')} +{value}</span>)}</div>
             </div>)}
+            {codexRecipes.length===0&&<p>No Resonances match this filter and equipment type.</p>}
           </div>
         </>}
       </section>
