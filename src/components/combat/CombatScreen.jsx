@@ -791,9 +791,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setHeroPosition(moveTo)
       pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
     } else if (action==='attack') {
-      if(getTacticalAffectedSquares(attack,aimSquare||enemyPosition).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank))
+      if (getTacticalAffectedSquares(attack,aimSquare||enemyPosition).some(p=>p.col===enemyPosition.col&&p.rank===enemyPosition.rank)) {
         ;({foeHp,playerHp}=playerAttack(foeHp,playerHp,attack))
-      else pushLog(attack.label+': empty squares hit. No enemy struck.')
+      } else {
+        pushLog(attack.label+': empty squares hit. No enemy struck.')
+      }
     } else if (action==='keystone') {
       ;({foeHp,playerHp}=castKeystone(skillId,foeHp,playerHp))
     } else if (action==='elemental') {
