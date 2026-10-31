@@ -44,7 +44,7 @@ async function testGroup(page,distance){
     'group unarmed kit contains the wrong moves: '+names)
   for(const rogue of ['Dagger Stab','Shadow Lunge','Resonance Wave','System Pulse'])
     check(!names.join(' ').includes(rogue),'low-level unarmed player gained '+rogue)
-  await checkMeter(page,5)
+  await checkMeter(page,8)
   check((await choices.nth(1).textContent()).includes('Retrieval'),
     'throw description is missing from visible button')
   check((await page.locator('.combat-tactical-status').textContent())
@@ -56,7 +56,7 @@ async function testGroup(page,distance){
     .nth(middle?4:1).click()
   await page.waitForFunction(()=>document.querySelector('.combat-attack-details[role="status"]')
     ?.textContent.includes('Thrown object recovery'),null,{timeout:12000})
-  await checkMeter(page,4)
+  await checkMeter(page,7)
   check(await choices.nth(1).isDisabled(),
     'thrown object could be used again without retrieval')
   const initial=await page.locator('.combat-attack-details[role="status"]').textContent()
@@ -65,15 +65,15 @@ async function testGroup(page,distance){
   await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-ap-meter')?.dataset.round==='2'&&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-      ?.getAttribute('aria-valuenow')==='5',null,{timeout:12000})
-  await checkMeter(page,5)
+      ?.getAttribute('aria-valuenow')==='8',null,{timeout:12000})
+  await checkMeter(page,8)
   check(await choices.nth(1).isEnabled()===middle,
     'middle must recover next turn; rear must take 2 turns')
   if(!middle){
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>document.querySelector('.combat-ap-meter')?.dataset.round==='3'&&
       document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-        ?.getAttribute('aria-valuenow')==='5',null,{timeout:12000})
+        ?.getAttribute('aria-valuenow')==='8',null,{timeout:12000})
     check(await choices.nth(1).isEnabled(),'rear thrown object not recovered after 2 rounds')
   }
   check(errors.length===0,'group combat errors: '+errors.join(' | '))
@@ -92,7 +92,7 @@ async function testSolo(page,distance){
     names[1].includes('Improvised Throw'),'solo unarmed kit incorrect: '+names)
   check((await page.locator('.combat-tactical-status').textContent())
     .includes('NO WEAPON EQUIPPED'),'solo combat falsely claims a weapon')
-  await checkMeter(page,5)
+  await checkMeter(page,8)
   await choices.nth(1).click()
   const target=page.locator('.combat-grid-board').first().locator('button.occupied')
   check(await target.isEnabled(),'throw cannot reach '+distance+' foe')
@@ -100,21 +100,21 @@ async function testSolo(page,distance){
   await page.waitForFunction(()=>document.querySelector('.combat-attack-details[role="status"]')
     ?.textContent.includes('Thrown object recovery') &&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-      ?.getAttribute('aria-valuenow')==='4',null,{timeout:12000})
-  await checkMeter(page,4)
+      ?.getAttribute('aria-valuenow')==='7',null,{timeout:12000})
+  await checkMeter(page,7)
   check(await choices.nth(1).isDisabled(),'solo thrown object could be reused immediately')
   await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-ap-meter')?.dataset.round==='2'&&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-      ?.getAttribute('aria-valuenow')==='5',null,{timeout:15000})
-  await checkMeter(page,5)
+      ?.getAttribute('aria-valuenow')==='8',null,{timeout:15000})
+  await checkMeter(page,8)
   check(await choices.nth(1).isEnabled()===(distance==='middle'),
     'solo projectile readiness incorrect after first round')
   if(distance==='rear'){
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>document.querySelector('.combat-ap-meter')?.dataset.round==='3'&&
       document.querySelector('[role="progressbar"][aria-label="Action Points"]')
-        ?.getAttribute('aria-valuenow')==='5',null,{timeout:15000})
+        ?.getAttribute('aria-valuenow')==='8',null,{timeout:15000})
     check(await choices.nth(1).isEnabled(),'solo rear throw did not recover in second round')
   }
   check(errors.length===0,'solo combat errors: '+errors.join(' | '))
