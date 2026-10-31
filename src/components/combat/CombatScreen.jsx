@@ -68,7 +68,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, attack, canAttack, canMove, onMove, onAim, onHoverAim,
+function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, attack, canAttack, canMove, onMove, onAim, onHoverAim,
   signatureFx,signaturePreview }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -100,11 +100,11 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
 
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
-        <span>{ally?ally.icon:occupied?(side==='enemy'?enemyIcon||'👹':'🧑'):'·'}</span>
+        {occupied||ally?<div className="combat-unit-visual">{ally?ally.icon:side==='enemy'?enemyVisual||enemyIcon||'👹':'🧑'}</div>:<span>·</span>}
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(occupied||ally)&&<small>{ally?ally.name:side==='enemy'?'FOE':'YOU'}</small>}
+        {(occupied||ally)&&<div className="combat-unit-hud"><small>{ally?ally.name:side==='enemy'?enemyName:'YOU'}</small>{!ally&&<><HpBar hp={side==='enemy'?enemyHp:heroHp} maxHp={side==='enemy'?enemyMaxHp:heroMaxHp}/><small>{side==='enemy'?`${enemyHp}/${enemyMaxHp} HP`:`${heroHp}/${heroMaxHp} HP`}</small>{side==='hero'&&<><div className="combat-mp-bar"><div className="combat-mp-fill" style={{width:(heroMp/Math.max(1,heroMaxMp)*100)+'%'}}/></div><small>{heroMp}/{heroMaxMp} MP</small></>}</>}</div>}
       </button>
     }))
   }
@@ -1009,34 +1009,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
+  const enemyPortrait={enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : ['Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) ? <ChapterOneBossPortrait name={enemyData.name} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} moveKey={enemyMoveKey} phase={guardianPhase} /> : enemyData.name === 'The Watcher' ? <WatcherPortrait attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
   return (
     <div className="combat-screen">
       <div className="combat-encounter-title">{isBoss ? '☠ BOSS ENCOUNTER ☠' : '⚔ ENCOUNTER ⚔'}</div>
       <div className="combat-turn-banner" aria-live="polite">{!entranceReady ? `${enemyData.name} enters the arena…` : turnActor === 'enemy' ? `${enemyData.name} acts` : turnActor === 'player' ? 'Your turn' : 'Choose your move'}</div>
-      <div className="combat-panel">
-        <div className="combat-side">
-          {enemyData.name === 'The Echo Beast' ? <EchoBeastPortrait attacking={turnActor === 'enemy'} /> : enemyData.name === 'The Twin Judges' ? <TwinJudgesPortrait moral={judgeCtx?.playerMoral ?? 0} elements={judgeCtx?.elementsAttempted ?? 1} hpPercent={enemyHp / enemyData.hp} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : ['Sentinel of the First Eye','The Surveyor','The Unseen'].includes(enemyData.name) ? <ChapterOneBossPortrait name={enemyData.name} attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} moveKey={enemyMoveKey} phase={guardianPhase} /> : enemyData.name === 'The Watcher' ? <WatcherPortrait attacking={turnActor === 'enemy'} hit={judgeHit} defeated={result === 'win'} /> : <span className="combat-icon">{enemyData.icon || '👹'}</span>}
-          <span className="combat-name">{enemyData.name}</span>
-          <HpBar hp={enemyHp} maxHp={enemyData.hp} />
-          <span className="combat-hp-num">{enemyHp}/{enemyData.hp}</span>
-        </div>
-        <div className="combat-side">
-          <span className="combat-icon">🧑</span>
-          <span className="combat-name">You</span>
-          <HpBar hp={currentHp} maxHp={maxPlayerHp} />
-          <span className="combat-hp-num">{currentHp}/{maxPlayerHp} HP</span>
-          <div className="combat-mp-label">MP · {currentMp}/{maxCombatMp}</div>
-          <div className="combat-mp-bar" role="progressbar" aria-label="Combat MP" aria-valuemin={0}
-            aria-valuemax={maxCombatMp} aria-valuenow={currentMp}>
-            <div className="combat-mp-fill" style={{ width: (currentMp / maxCombatMp * 100) + '%' }} />
-          </div>
-          {statusChips.length > 0 && (
-            <div className="combat-status-list">
-              {statusChips.map(([k]) => <span key={k} className="combat-status-chip">{k}</span>)}
-            </div>
-          )}
-        </div>
-      </div>
 
       {!result && <>
         <div className="combat-tactical-status">
@@ -1071,7 +1048,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           role="status">{signature?.label}</div>}
         <p className="combat-aim-legend"><span className="aim-legal">Blue = legal aim</span> · <span className="aim-hit">Gold = cells hit by attack / AoE</span> · White ring = impact center</p>
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={partyPositions} enemyName={enemyData.name}
-          enemyIcon={enemyData.icon} enemyHp={enemyHp}
+          enemyIcon={enemyData.icon} enemyVisual={enemyPortrait} enemyHp={enemyHp} enemyMaxHp={enemyData.hp} heroHp={currentHp} heroMaxHp={maxPlayerHp} heroMp={currentMp} heroMaxMp={maxCombatMp}
           attack={displayedAttack}
           signatureFx={signatureFx}
           signaturePreview={signaturePreview&&signature?{
