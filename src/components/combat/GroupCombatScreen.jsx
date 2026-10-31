@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -454,7 +454,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const warboundBonus=consumeWarboundBonus(statusRef.current,calcATK(player,equipped))
-    const base=Math.max(1,warboundBonus+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
+    const base=Math.max(1,warboundBonus+notablePassiveStatBonus(learnedNotablePassives(player),player).attack+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
       combatPlayer,statusRef.current,target,base))
     const crit=consumeNotableCrit(statusRef.current)||Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
@@ -617,7 +617,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       updateFoes(next)
     }
     let currentHp=hpRef.current
-    const speed=calcSPD(player,equipped)+(statusRef.current.playerSPDBonus||0)
+    const speed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),player).speed+(statusRef.current.playerSPDBonus||0)
     const sorted=next.filter(u=>u.hp>0 &&
       ((u.speed||5)-(foeStatusesRef.current[u.id]?.notableSpeedPenalty||0)>speed)===fast).sort((a,b)=>((b.speed||5)-(foeStatusesRef.current[b.id]?.notableSpeedPenalty||0))-((a.speed||5)-(foeStatusesRef.current[a.id]?.notableSpeedPenalty||0)))
     for(const foe of sorted){
@@ -698,6 +698,8 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
          }
          if(fusionWardRef.current<=0)fortressCounterRef.current=0
       }
+      statusRef.current.notableCurrentHp=currentHp;statusRef.current.notableMaxHp=maxHp
+      if(activateNotableIronTide(learnedNotablePassives(player),statusRef.current,currentHp,maxHp))note('Iron Tide activates: +20 DEF for 2 turns.')
       const passive=notablePassiveIncoming(learnedNotablePassives(player),statusRef.current,damage,calcATK(player,equipped))
       damage=passive.damage
       passive.messages.forEach(note)
