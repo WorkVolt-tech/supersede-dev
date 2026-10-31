@@ -119,7 +119,7 @@ async function runScenario(scenario,view){
   // in one swing. Both an AP-spending hit and an immediate victory are valid.
   await view.waitForFunction(()=>
     document.body.dataset.outcome==='win'||
-    document.querySelector('.combat-tactical-status')?.textContent.includes('1/2 AP'),
+    document.querySelector('.combat-tactical-status')?.textContent.includes('8/9 AP'),
     null,{timeout:10000})
   const firstVictory=await view.evaluate(()=>document.body.dataset.outcome==='win')
   if(enabled){
