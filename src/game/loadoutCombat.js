@@ -10,12 +10,16 @@ export function equippedNotableSkills(player={}) {
 
 // These effects have explicit execution support in both battle engines.
 // Other saved notables remain visible, but cannot consume AP without an effect.
-export const SUPPORTED_NOTABLES = new Set(['ofn1','fln6'])
+export const SUPPORTED_NOTABLES = new Set(['ofn1','ofn6','fln6'])
 export function useNotableSkill(id,ctx) {
   if(!SUPPORTED_NOTABLES.has(id)) return null
   if(id==='ofn1'){
     ctx.status.loadoutWarbound=true
     return {messages:['Warbound primed: your next weapon attack deals 15% ATK bonus damage.'],damage:0}
+  }
+  if(id==='ofn6'){
+    ctx.status.loadoutPredatorTurns=2
+    return {messages:['Predator activated: +20 ATK for 2 turns.'],damage:0}
   }
   if(id==='fln6'){
     return {messages:['Momentum launches a ground spike.'],damage:Math.max(1,20-Math.floor((ctx.enemyDef||0)*0.3))}
@@ -26,4 +30,14 @@ export function consumeWarboundBonus(status,atk) {
   if(!status.loadoutWarbound)return 0
   delete status.loadoutWarbound
   return Math.max(1,Math.round(Math.max(1,atk)*0.15))
+}
+
+export function advanceNotableTurn(status) {
+  if(status.loadoutPredatorTurns>0) {
+    status.loadoutPredatorTurns--
+    if(!status.loadoutPredatorTurns)delete status.loadoutPredatorTurns
+  }
+}
+export function notableAttackBonus(status) {
+  return status.loadoutPredatorTurns>0?20:0
 }
