@@ -80,16 +80,18 @@ async function verifySkills(page,viewport){
     .allTextContents()
   const attrs=await page.locator('.skills-attribute-stats .skills-stat-tile')
     .allTextContents()
-  check(metrics.length===6,'Skills missing six record/combat stats')
+  check(metrics.length===7,'Skills missing Max AP in combat stats')
   check(attrs.length===9,'Skills missing all nine attributes')
   const expected=await page.evaluate(()=>window.__archiveExpectedStats)
   for(const [i,label,value] of [
     [0,'Combat ATK',expected.attack],[1,'Combat DEF',expected.defense],
-    [2,'Initiative',expected.initiative],[3,'Insight',expected.core.insight],
-    [4,'PvP Kills',8],[5,'Helps Given',4],
+    [2,'Initiative',expected.initiative],[3,'Max AP',8],
+    [4,'Insight',expected.core.insight],[5,'PvP Kills',8],[6,'Helps Given',4],
   ])
     check(metrics[i].includes(label)&&metrics[i].includes(String(value)),
       'Skills stat mismatch: '+label)
+  check(metrics[3].includes('5 base')&&metrics[3].includes('3 level'),
+    'Skills Max AP breakdown does not reflect level 3')
   const attack=attrs.find(x=>x.includes('Attack'))
   check(attack.includes('3 gear'),
     'Skills attributes did not reflect equipped weapon bonus')
