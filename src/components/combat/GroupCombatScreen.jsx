@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -457,13 +457,13 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const warboundBonus=consumeWarboundBonus(statusRef.current,calcATK(player,equipped))
-    const base=Math.max(1,warboundBonus+notablePassiveStatBonus(learnedNotablePassives(player),player).attack+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+Math.floor(Math.random()*4))
+    const base=Math.max(1,warboundBonus+notablePassiveStatBonus(learnedNotablePassives(player),player).attack+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+notableArmorPierce(statusRef.current,target.def||0)+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
       combatPlayer,statusRef.current,target,base))
     const crit=consumeNotableCrit(statusRef.current)||Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
       Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
         critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
-    const mult=(mod?.dmgMult??1)*(crit?1.5+critDamageBonus(combatPlayer)+notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage:1)
+    const mult=(mod?.dmgMult??1)*(crit?notableCriticalMultiplier(statusRef.current,1.5)+critDamageBonus(combatPlayer)+notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage:1)
     let priorDamage=Math.max(1,Math.round(base*mult*notableAttackMultiplier(statusRef.current)))
     if(legendary.has('legendary_forger')&&crit)priorDamage+=12
     if(legendary.has('legendary_hunter')&&target.hp===target.maxHp)priorDamage+=15
@@ -510,7 +510,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     if(response?.consumed!==false)notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     if(response?.consumed!==false&&footprint?.valid)
       spreadAreaEffects(before,footprint.targets,target.id)
-    const damage=scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id))
+    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(response?.enemyDamage,getSkillLevel(player,id)))
     if(damage>0&&target){
       const affected=applyDamage(foesRef.current,
         pattern||{from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'},aimSquare||target.id,damage)
@@ -550,7 +550,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       statusRef.current.infernoDmg=0
       note('Inferno Zone ignites '+zone.squares.length+' battlefield squares.')
     }
-    const damage=scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id))
+    const damage=notableSkillDamage(statusRef.current,scaleSkillAmount(effect.enemyDamage,getSkillLevel(player,id)))
     if(damage>0&&target){
       const fraction=pattern?.shape!=='single'?0.7:1
       const affected=applyDamage(foesRef.current,pattern,aimSquare||target.id,Math.max(1,Math.round(damage*fraction)))
