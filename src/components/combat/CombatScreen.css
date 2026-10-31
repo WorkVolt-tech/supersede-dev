@@ -103,6 +103,9 @@
 .combat-grid-cell.foe.occupied { background:#38231f; border-color:#a65e53; }
 .combat-grid-cell.splash { background:#99652b; border:2px solid #ffca70; box-shadow:inset 0 0 18px rgba(255,194,91,.7); opacity:1; }
 .combat-grid-cell.targetable { cursor:crosshair; outline:2px solid #dfb260; outline-offset:-2px; }
+/* Every legal aim square is visible before selecting a target; gold fill remains the actual footprint. */
+.combat-grid-cell.foe.reachable:not(.splash) { outline:2px dashed #c8a465; outline-offset:-3px; box-shadow:inset 0 0 0 1px rgba(245,191,102,.22); }
+.combat-grid-cell.foe.reachable.splash { outline:3px solid #ffe0a0; outline-offset:-3px; }
 .combat-grid-cell.movable { cursor:pointer; border-style:dashed; border-color:#88abbb; }
 .combat-grid-cell:disabled { cursor:default; opacity:.72; }
 .combat-tactical-weapons { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
