@@ -1,7 +1,5 @@
-// AP is derived from the persisted character level, and refills every round/fight.
-export function maxCombatAp(level=1) {
-  return 5 + Math.max(1, Math.floor(Number(level) || 1))
-}
+// Keep the existing named export for other consumers of the meter.
+export { maxCombatAp } from '../../game/combatAp'
 
 // Shared action point meter for solo, boss and group encounters.
 export default function CombatActionPoints({ap,max=5,round=1}) {
