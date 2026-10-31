@@ -77,13 +77,14 @@ function TacticalBattlefield({ hero, enemy, aim, enemyArea, enemyName, enemyIcon
       const move=side==='hero'&&!occupied&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
+      const reachable=side==='enemy'&&isTacticalTargetValid(attack,hero,{col,rank})
       const threat=side==='hero'&&enemyArea.some(c=>c.rank===rank&&c.col===col)
       const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
       const area=signaturePreview?.side===side&&signaturePreview.squares.some(
         p=>p.rank===rank&&p.col===col)
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied?'occupied':'',side==='enemy'?'foe':'ally',
-          targetable?'targetable':'',move&&canMove?'movable':'',
+          targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
           splash?'splash':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
@@ -713,9 +714,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // elementalKeystones; leave them available even after spending 1 AP.
     const freeKeystone=action==='keystone' &&
       ['lightning_util_ks','arcane_util_ks','shadow_util_ks','wind_util_ks'].includes(skillId)
+    // Repositioning is free and does not start/advance a combat round.
+    if(action==='move'){
+      setHeroPosition(moveTo)
+      setAimSquare(null)
+      pushLog(`You move to column ${moveTo.col+1}, rank ${moveTo.rank+1}.`)
+      return
+    }
     const cost=freeClassAction||freeKeystone?0:
       action==='end'?actionPointsRef.current:
-      action==='attack'?attack.ap:action==='move'?1:2
+      action==='attack'?attack.ap:2
     if (cost > actionPointsRef.current) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
@@ -964,7 +972,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           aim={selectedAim}
           enemyArea={enemyArea}
           canAttack={!busy&&entranceReady&&!throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed)}
-          canMove={!busy&&entranceReady&&actionPoints>=1}
+          canMove={!busy&&entranceReady}
           onMove={position=>takeTurn('move',null,position)}
           onAim={position=>{
             setAimSquare(position)
