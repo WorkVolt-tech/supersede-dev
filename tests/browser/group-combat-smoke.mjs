@@ -56,6 +56,18 @@ async function inspect(page,name,mobile) {
     viewport:innerWidth}))
   check(viewport.scroll<=viewport.viewport+2,name+': horizontal overflow')
   await page.screenshot({path:'test-artifacts/'+name+'-initial.png',fullPage:true})
+  // Hover previews an alternate legal impact center without spending AP.
+  await page.locator('.combat-tactical-weapons').getByRole('button',
+    {name:/Emergency Attack/}).click()
+  if(!mobile){
+    const distant=enemyBoard.locator('button').nth(8)
+    await distant.hover()
+    check(await distant.evaluate(node=>node.classList.contains('splash')&&
+      node.classList.contains('aim-center')),name+': hover did not move impact highlight')
+    check(await enemyBoard.locator('button.splash').count()===1,
+      name+': single-target hover unexpectedly marked other squares')
+    await page.locator('.combat-tactical-status').hover()
+  }
   // Choosing an attack must show every square of its actual footprint.
   await page.locator('.combat-tactical-weapons').getByRole('button',
     {name:/Sweeping Arc/}).click()
