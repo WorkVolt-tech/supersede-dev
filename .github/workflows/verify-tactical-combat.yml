@@ -36,6 +36,7 @@ jobs:
       - name: Test tactical combat, progression, formations and status isolation
         run: |
           node --test \
+            src/data/storyRoutes.test.js \
             src/game/tacticalGrid.test.js \
             src/game/tacticalIntegration.test.js \
             src/game/tacticalGroups.test.js \
