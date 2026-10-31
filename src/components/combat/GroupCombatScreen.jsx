@@ -457,7 +457,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     }
     const pierce=stonebornArmorPierce(combatPlayer,statusRef.current,target.def||0)
     const warboundBonus=consumeWarboundBonus(statusRef.current,calcATK(player,equipped))
-    const base=Math.max(1,warboundBonus+notablePassiveStatBonus(learnedNotablePassives(player),player).attack+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+notableArmorPierce(statusRef.current,target.def||0)+Math.floor(Math.random()*4))
+    const base=Math.max(1,warboundBonus+notablePassiveStatBonus(learnedNotablePassives(player),{...player,power:effective.core.power}).attack+notableAttackBonus(statusRef.current,calcATK(player,equipped))+calcATK(player,equipped)-(target.def||0)+pierce+notableArmorPierce(statusRef.current,target.def||0)+Math.floor(Math.random()*4))
     const mod=forFoe(target.id,()=>ClsCombat.onPlayerAttack(
       combatPlayer,statusRef.current,target,base))
     const crit=consumeNotableCrit(statusRef.current)||Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
