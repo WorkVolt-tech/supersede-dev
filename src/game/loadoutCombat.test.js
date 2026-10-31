@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty} from './loadoutCombat.js'
+import {equippedNotableSkills,useNotableSkill,consumeWarboundBonus,SUPPORTED_NOTABLES,notableIncomingDamage,consumeNotableReflection,notableFreezeEnemy,applyNotableDebuff,tickNotableDebuff,notableEnemyAttackPenalty,learnedNotablePassives,notablePassiveOutgoing,notablePassiveIncoming} from './loadoutCombat.js'
 test('only saved, learned, active notable skills appear in combat loadout',()=>{
  const p={skills_unlocked:['ofn1','fln6','ofn2'],battle_skills:['ofn1','fln6','ofn2','nonexistent']}
  assert.deepEqual(equippedNotableSkills(p).map(s=>s.id),['ofn1','fln6'])
@@ -56,4 +56,23 @@ test('Lockdown and Dread Pulse track per-enemy status',()=>{
  for(let i=0;i<4;i++)applyNotableDebuff(target,useNotableSkill('dcn6',{status:{}}))
  assert.equal(notableEnemyAttackPenalty(target),6)
  assert.equal(notableEnemyAttackPenalty({}),0)
+})
+
+test('only learned passives trigger, never unlearned tree nodes',()=>{
+ const passives=learnedNotablePassives({skills_unlocked:['arn5','fln2','ofn1']})
+ assert.equal(passives.has('arn5'),true)
+ assert.equal(passives.has('dfn3'),false)
+ assert.equal(notablePassiveOutgoing(passives,10,20,()=>0).damage,18)
+})
+test('Ghost Step avoids damage and counters',()=>{
+ const passive=notablePassiveIncoming(new Set(['fln2']),{},20,30,()=>0)
+ assert.equal(passive.damage,0)
+ assert.equal(passive.reflect,15)
+})
+test('Retaliation requires three consecutive incoming hits',()=>{
+ const status={},passives=new Set(['dfn5'])
+ assert.equal(notablePassiveIncoming(passives,status,9,20).reflect,0)
+ assert.equal(notablePassiveIncoming(passives,status,9,20).reflect,0)
+ assert.equal(notablePassiveIncoming(passives,status,9,20).reflect,10)
+ assert.equal(status.notableConsecutiveHits,0)
 })
