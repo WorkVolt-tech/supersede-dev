@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -556,7 +556,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     messages.push(...passive.messages)
     if(passive.stun)statusEffectsRef.current.enemyStunTurns=Math.max(1,statusEffectsRef.current.enemyStunTurns||0)
     const notableReflect=consumeNotableReflection(statusEffectsRef.current,finalDmg)+passive.reflect
-    finalDmg=notableIncomingDamage(statusEffectsRef.current,finalDmg)
+    notablePassiveBattleStart(learnedNotablePassives(player),statusEffectsRef.current,maxPlayerHp)
+    finalDmg=notablePassiveResolveHit(learnedNotablePassives(player),statusEffectsRef.current,notableIncomingDamage(statusEffectsRef.current,finalDmg))
     if(notableReflect>0){foeHp=Math.max(0,foeHp-notableReflect);messages.push('Iron Mirror reflects '+notableReflect+' damage.')}
     let nextHp = Math.max(0, playerHp - finalDmg)
     setCurrentHp(nextHp)
@@ -838,6 +839,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
 
     setTurnActor('player')
+    if(defendAction){const absorption=notablePassiveDefend(learnedNotablePassives(player),statusEffectsRef.current,playerHp,maxPlayerHp);playerHp=Math.min(maxPlayerHp,playerHp+absorption.heal);setCurrentHp(playerHp);absorption.messages.forEach(pushLog)}
     setDefending(defendAction)
     if (action==='end') {
       pushLog('You end your turn.')
