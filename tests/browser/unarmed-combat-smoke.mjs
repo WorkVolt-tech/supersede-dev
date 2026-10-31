@@ -50,16 +50,16 @@ async function testGroup(page,distance){
   check((await page.locator('.combat-tactical-status').textContent())
     .includes('No weapon equipped'),'group combat falsely claims a weapon')
   await choices.nth(1).click()
-  check((await page.locator('.combat-attack-details').textContent()).includes(
+  check((await page.locator('.combat-attack-details[role="status"]').textContent()).includes(
     '2–4 squares'),'selected throw distance description missing')
   await page.locator('.combat-grid-board').first().locator('button')
     .nth(middle?4:1).click()
-  await page.waitForFunction(()=>document.querySelector('.combat-attack-details')
+  await page.waitForFunction(()=>document.querySelector('.combat-attack-details[role="status"]')
     ?.textContent.includes('Thrown object recovery'),null,{timeout:12000})
   await checkMeter(page,4)
   check(await choices.nth(1).isDisabled(),
     'thrown object could be used again without retrieval')
-  const initial=await page.locator('.combat-attack-details').textContent()
+  const initial=await page.locator('.combat-attack-details[role="status"]').textContent()
   check(initial.includes(middle?'1 round':'2 rounds'),
     'incorrect initial projectile return time')
   await page.getByRole('button',{name:'End turn'}).click()
@@ -97,7 +97,7 @@ async function testSolo(page,distance){
   const target=page.locator('.combat-grid-board').first().locator('button.occupied')
   check(await target.isEnabled(),'throw cannot reach '+distance+' foe')
   await target.click()
-  await page.waitForFunction(()=>document.querySelector('.combat-attack-details')
+  await page.waitForFunction(()=>document.querySelector('.combat-attack-details[role="status"]')
     ?.textContent.includes('Thrown object recovery') &&
     document.querySelector('[role="progressbar"][aria-label="Action Points"]')
       ?.getAttribute('aria-valuenow')==='1',null,{timeout:12000})
