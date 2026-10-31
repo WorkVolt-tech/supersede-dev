@@ -224,6 +224,8 @@ async function verifyTriadVictory(page) {
   await page.locator('.combat-fusion-status').waitFor()
   await page.getByRole('button',{name:'Enable Fusion',exact:true}).click()
   await page.locator('.combat-signature-action').click()
+  if(!(await page.evaluate(()=>document.body.dataset.outcome==='win')))
+    await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.body.dataset.outcome==='win',
     null,{timeout:15000})
   const metrics=await page.evaluate(()=>window.__tacticalTestMetrics)
