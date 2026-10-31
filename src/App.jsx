@@ -41,6 +41,7 @@ import './App.css'
 export default function App() {
   const [session, setSession] = useState(undefined) // undefined = still checking
   const [view, setView] = useState('menu')
+  const [viewRestored, setViewRestored] = useState(false)
   const [resetDialog, setResetDialog] = useState(false)
   const [resetBusy, setResetBusy] = useState(false)
   const [resetError, setResetError] = useState('')
@@ -68,6 +69,21 @@ export default function App() {
     if (session) loadPlayer(session.user.id)
   }, [session, loadPlayer])
 
+  // Restore the open page after a browser refresh, scoped to this character.
+  // Chapter story checkpoints remain sourced from the saved player record.
+  useEffect(() => {
+    if (!player?.id) { setViewRestored(false); return }
+    const saved = window.sessionStorage.getItem(`supersede:view:${player.id}`)
+    setView(saved || 'menu')
+    setViewRestored(true)
+  }, [player?.id])
+
+  useEffect(() => {
+    if (player?.id && viewRestored) {
+      window.sessionStorage.setItem(`supersede:view:${player.id}`, view)
+    }
+  }, [player?.id, viewRestored, view])
+
   // Load the player's REAL inventory (by player id) every time the screen changes,
   // so sample-item demos never leave fake gear behind.
   useEffect(() => {
@@ -75,6 +91,7 @@ export default function App() {
   }, [player?.id, view, loadInventory])
 
   async function signOut() {
+    if (player?.id) window.sessionStorage.removeItem(`supersede:view:${player.id}`)
     await supabase.auth.signOut()
     usePlayerStore.setState({ player: null, loading: true, error: null })
     setView('menu')
@@ -88,6 +105,7 @@ export default function App() {
       await resetOwnCharacter(player)
       await loadPlayer(session.user.id)
       await loadInventory(player.id)
+      if (player?.id) window.sessionStorage.removeItem(`supersede:view:${player.id}`)
       setView('menu')
       setResetDialog(false)
     } catch (error) {
@@ -138,6 +156,7 @@ export default function App() {
   if (loading) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
   if (error) return <p className="story-text" style={{ padding: '2rem' }}>Error: {error}</p>
   if (!player) return <SetupPage session={session} onCreated={() => loadPlayer(session.user.id)} />
+  if (!viewRestored) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
 
   const screens = {
     ch1: <ChapterPage onOpenFarming={() => setView('farming')} />,
