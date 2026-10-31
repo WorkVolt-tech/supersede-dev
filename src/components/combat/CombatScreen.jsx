@@ -900,7 +900,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const elementalAttack = getEquippedElementalAttack(combatPlayer)
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=selectedAttack.thrown&&throwTurns>0
-  const selectedAim=aimSquare||enemyPosition
+  const selectedAim=aimSquare&&isTacticalTargetValid(selectedAttack,heroPosition,aimSquare)
+    ?aimSquare:([enemyPosition,...Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))]
+      .find(square=>isTacticalTargetValid(selectedAttack,heroPosition,square))||enemyPosition)
   const statusChips = Object.entries(statusEffectsRef.current)
     .filter(([k, v]) => !k.startsWith('_') && (v === true || (typeof v === 'number' && v > 0)))
 
