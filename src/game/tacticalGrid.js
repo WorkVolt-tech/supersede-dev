@@ -112,9 +112,8 @@ export function tacticalAttackDescription(attack) {
   if(attack?.description)return attack.description
   if(!attack)return ''
   const shape=attack.shape==='single'?'one enemy':attack.shape+' area'
-  const ranks=attack.to?.map(n=>['front','middle','rear'][n]).join(', ')||'any'
-  return 'Targets '+ranks+' row'+(attack.to?.length===1?'':'s')+
-    ' · '+shape+'.'
+  const range=attack.maxRange??(attack.reach==='short'?2:attack.reach==='mid'?3:6)
+  return 'Range: '+range+' squares · '+shape+'.'
 }
 export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
   const type=tacticalWeaponType(weaponType);
