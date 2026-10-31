@@ -12,7 +12,7 @@ export function getEquipmentBonuses(equippedItems = []) {
   for (const item of equippedItems) {
     if (!item.equipped_slot) continue
     const normalized = normalizedItem(item)
-    const resonance = findResonance(item.socketed_runes || [], item.item_type, item.sockets_total)
+    const resonance = findResonance(item.socketed_fragments || [], item.item_type, item.sockets_total)
     for (const key of Object.keys(bonuses)) {
       const column = key === 'max_hp' ? 'max_hp_bonus' : key + '_bonus'
       bonuses[key] += number(normalized[column]) + number(resonance?.stats[column])
