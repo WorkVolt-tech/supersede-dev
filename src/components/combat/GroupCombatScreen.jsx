@@ -912,8 +912,18 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           if(live){live.hp=Math.max(0,live.hp-scaleSkillAmount(effect.damage,getSkillLevel(player,id)));updateFoes([...foesRef.current]);if(live.hp===0)onFoeDefeated(live)}
         }
       }
-      else if(kind==='skill')resolveSkill(id,liveTarget||target,position)
-      else if(kind==='elemental')resolveElement(id,liveTarget||target,position)
+      else if(kind==='skill'){
+        if(!resolveSkill(id,liveTarget||target,position)){
+          note('Skill did not activate; no AP spent.')
+          return
+        }
+      }
+      else if(kind==='elemental'){
+        if(!resolveElement(id,liveTarget||target,position)){
+          note('Elemental skill did not activate; no AP or MP spent.')
+          return
+        }
+      }
       else if(kind==='signature')castSignature(liveTarget||target)
       else if(kind==='keystone')resolveKeystone(id,liveTarget||target)
       else if(kind==='defend'){
