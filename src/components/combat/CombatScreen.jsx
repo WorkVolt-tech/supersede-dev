@@ -1067,7 +1067,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               :((getFusionSignature(activeFusion)||'')+
                 ' · '+FUSION_MP_COST+' MP per infused hit')}
           </span>
-          <button type="button" className="combat-action-btn"
+          <button type="button" className="combat-action-btn combat-belt-slot"
             disabled={busy || !entranceReady}
             aria-pressed={fusionEnabled}
             onClick={()=>setFusionEnabled(enabled=>!enabled)}>
@@ -1117,9 +1117,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             {' '}{attackFootprint.targets.length} {attackFootprint.targets.length===1?'enemy':'enemies'} affected ·
             {' '}Tap a blue square to preview, then tap it again to {targetMode?'cast':'attack'}
           </p>}
-        <div className="combat-tactical-weapons">
+        <div className="combat-tactical-weapons combat-belt" aria-label="Weapon attack belt">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
-            className={'combat-action-btn'+(selectedAttack.id===attack.id?' selected':'')}
+            className={'combat-action-btn combat-belt-slot'+(selectedAttack.id===attack.id?' selected':'')}
             aria-pressed={selectedAttack.id===attack.id}
             disabled={busy || !entranceReady || actionPoints<attack.ap||
               (attack.fallback&&emergencyUsed)||
@@ -1141,19 +1141,19 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           </p>}
         </div>
         <BattleConsumables items={items} hp={currentHp} maxHp={maxPlayerHp} disabled={busy||!entranceReady||!!result||actionPoints<1} onUse={useBattlePotion}/>
-        <div className="combat-actions">
-          <button className="combat-action-btn" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
-          <button type="button" className="combat-action-btn" disabled={busy || !entranceReady}
+        <div className="combat-actions combat-belt" aria-label="Battle skills and actions">
+          <button className="combat-action-btn combat-belt-slot" disabled={busy || !entranceReady || actionPoints<2} onClick={() => takeTurn('defend')}>Defend · 2 AP</button>
+          <button type="button" className="combat-action-btn combat-belt-slot" disabled={busy || !entranceReady}
             onClick={() => takeTurn('end')}>End turn</button>
           {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
-          {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
+          {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn combat-belt-slot"
             title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
             onClick={()=>{if(notableTargeting(skill.id)){setTargetMode({kind:'loadout',id:skill.id,label:skill.label});setAimSquare(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
             {skill.label} · Lv {skillLevelInFight(skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
             <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
           </button>)}
           {activeSkills.map(skill => (
-            <button key={skill.id} className="combat-action-btn" disabled={busy || !entranceReady ||
+            <button key={skill.id} className="combat-action-btn combat-belt-slot" disabled={busy || !entranceReady ||
               (actionPoints<2 && !isFreeClassAction(skill.id)) ||
               skill.available===false ||
               (getTacticalSkillRule(skill.id)?.target==='enemy'&&
@@ -1174,7 +1174,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               </span>}
             </button>
           ))}
-          {elementalAttack && <button type="button" className="combat-action-btn"
+          {elementalAttack && <button type="button" className="combat-action-btn combat-belt-slot"
             disabled={busy || !entranceReady || actionPoints<2 || (elementalCooldowns[elementalAttack.id] || 0) > 0 ||
               currentMp < getAttackMpCost(combatPlayer, elementalAttack.id, statusEffectsRef.current) ||
               (getTacticalSkillRule(elementalAttack.id)?.target==='enemy'&&
@@ -1196,7 +1196,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
               {!canUseTacticalSkill(elementalAttack.id,heroPosition,enemyPosition) && ' · MOVE TO REACH'}
             </span>
           </button>}
-          {signature&&<button type="button" className="combat-action-btn combat-signature-action"
+          {signature&&<button type="button" className="combat-action-btn combat-belt-slot combat-signature-action"
             disabled={busy || !entranceReady || !canCastFusionSignature(signature,{
               enabled:fusionEnabled,ap:actionPoints,mp:currentMp,
               cooldown:signatureCooldown,target:{hp:enemyHp}
@@ -1209,13 +1209,13 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                   signature.attack.shape:'Fusion inactive'}
             </span>
           </button>}
-          {signature&&<button type="button" className="combat-action-btn combat-preview-btn"
+          {signature&&<button type="button" className="combat-action-btn combat-belt-slot combat-preview-btn"
             disabled={busy || !entranceReady}
             onClick={()=>setSignaturePreview(value=>!value)}>
             {signaturePreview?'Hide':'Preview'} ✦ {signature.label}
           </button>}
           {keystones.map(keystone => (
-            <button key={keystone.id} type="button" className="combat-action-btn"
+            <button key={keystone.id} type="button" className="combat-action-btn combat-belt-slot"
               title={keystone.desc}
               disabled={busy || !entranceReady || !keystone.available ||
                 (actionPoints<2 && !['lightning_util_ks','arcane_util_ks','shadow_util_ks','wind_util_ks'].includes(keystone.id))}
@@ -1227,7 +1227,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             </button>
           ))}
           {onEscape && (
-            <button className="combat-action-btn" disabled={busy || !entranceReady} onClick={() => endCombat('escape')}>Flee</button>
+            <button className="combat-action-btn combat-belt-slot" disabled={busy || !entranceReady} onClick={() => endCombat('escape')}>Flee</button>
           )}
         </div>
       </>}
@@ -1237,7 +1237,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       {result && combatSaveError && (
         <div className="combat-save-error" role="alert">
           <p>{combatSaveError} Your combat outcome is retained here until the save succeeds.</p>
-          <button type="button" className="combat-action-btn" disabled={combatSaving}
+          <button type="button" className="combat-action-btn combat-belt-slot" disabled={combatSaving}
             onClick={saveCombatOutcome}>Retry saving progress</button>
         </div>
       )}
