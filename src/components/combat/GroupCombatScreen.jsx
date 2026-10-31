@@ -871,25 +871,6 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       onFocus={(square,id)=>{setAim(square);if(id)setFocus(id)}}
       onAttack={(square,id)=>{setAim(square);if(id)setFocus(id);if(isTacticalTargetValid(attack,hero,square))takeTurn('attack',null,square)}}
       onMove={point=>takeTurn('move',null,point)} />
-    <div className="combat-group-enemies" aria-live="polite">
-      {foes.map(unit=><button key={unit.id} type="button"
-        className={'combat-group-unit'+(unit.id===chosen?' current':'')}
-        disabled={unit.hp<=0} onClick={()=>{setFocus(unit.id);setAim({col:unit.col,rank:unit.rank})}}>
-        {unit.icon} {unit.name} · {unit.hp}/{unit.maxHp} HP
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_bleedingTurns>0?' 🩸':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_rotTurns>0?' ☣️':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_drownTurns>0?' 💧':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.enemyStunTurns>0?' ⚡':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cls_markTurns>0?' 🎯':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cfx_longDecayStacks>0?' ☠️':''}
-        {unit.hp>0&&foeStatusesRef.current[unit.id]?.cfx_emberStacks>0?' 🔥':''}
-      </button>)}
-    </div>
-    <button type="button" className="combat-action-btn"
-      disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
-      onClick={()=>takeTurn('attack')}>
-      Attack {target?.name||'target'} · {attack.label} · {attack.ap} AP
-    </button>
     <div className="combat-tactical-status">
       <span>{weapon?'Weapon: '+weaponType:'No weapon equipped · Basic combat'}
         {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
@@ -964,9 +945,6 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       </div>
       <BattleConsumables items={inventory} hp={hp} maxHp={maxHp} disabled={!canPlay||ap<1} onUse={useBattlePotion}/>
       <div className="combat-actions">
-        <button type="button" className="combat-action-btn"
-          disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
-          onClick={()=>takeTurn('attack',chosen)}>Use {attack.label} · {attack.ap} AP</button>
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
           onClick={()=>takeTurn('defend')}>Defend · 2 AP</button>
         <button type="button" className="combat-action-btn" disabled={!canPlay}
