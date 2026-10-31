@@ -147,8 +147,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   }
   function skillPracticeLabel(id){
     const practice=awardSkillPractice(player.skill_levels||{},{[id]:skillPracticeUses[id]||0})
-    return skillLevelInFight(id)>=10?'MAX':practice.skill_levels['__practice_'+id]||0
-      ?(practice.skill_levels['__practice_'+id]||0)+'/10 uses':'0/10 uses'
+    return skillLevelInFight(id)>=10?'MAX':(practice.skill_levels['__practice_'+id]||0)+'/10 uses'
   }
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
