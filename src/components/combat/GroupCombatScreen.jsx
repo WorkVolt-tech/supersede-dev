@@ -103,9 +103,9 @@ function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, ene
   </div>
 }
 
-export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }) {
+export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, solo=false }) {
   const player=usePlayerStore(s=>s.player)
-  const companions=activeCompanions(player)
+  const companions=solo?[]:activeCompanions(player)
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
   const notableUsesRef=useRef({})
