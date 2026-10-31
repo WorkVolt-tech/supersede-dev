@@ -358,7 +358,7 @@ try{
     'Lena should occupy a different group battlefield square')
   await desktop.getByRole('button',{name:'End turn'}).click()
   await desktop.waitForFunction(()=>document.querySelector('.combat-log')
-    ?.textContent.includes('Marcus repositions into attack range'),null,{timeout:12000})
+    ?.textContent.includes('Marcus attacks'),null,{timeout:12000})
   console.log('PASS group companions: party occupies battlefield and repositions tactically')
   await inspect(desktop,'desktop',false)
   await verifyMastery(desktop)
