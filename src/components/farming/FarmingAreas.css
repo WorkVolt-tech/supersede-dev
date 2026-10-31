@@ -12,3 +12,15 @@
 .farming-message { color:#557040; border-left:2px solid #557040; padding-left:10px; }
 .farming-encounter-heading h2 { margin:7px 0; }
 .farming-encounter-heading p { margin:0 0 16px; }
+
+/* Original farming flow: choose a specific enemy and preview its rewards. */
+.farming-zone-art {display:block;width:100%;aspect-ratio:16/6;object-fit:cover;border:1px solid rgba(129,91,48,.4);margin-bottom:14px;}
+.farming-enemy-list {display:flex;flex-direction:column;gap:9px;margin:14px 0 18px;}
+.farming-enemy-choice {display:flex;align-items:center;gap:12px;width:100%;padding:12px;text-align:left;cursor:pointer;border:1px solid rgba(129,91,48,.35);border-radius:5px;background:rgba(129,91,48,.08);color:inherit;}
+.farming-enemy-choice:hover,.farming-enemy-choice:focus-visible {border-color:#b58a43;background:rgba(181,138,67,.18);}
+.farming-enemy-choice>img {width:56px;height:56px;object-fit:contain;flex-shrink:0;}
+.farming-enemy-icon {font-size:34px;width:56px;text-align:center;flex-shrink:0;}
+.farming-enemy-details {display:flex;min-width:0;flex-direction:column;gap:5px;}
+.farming-enemy-details strong {font-family:'Cormorant Garamond',Georgia,serif;font-size:21px;}
+.farming-enemy-details>span {font-size:12px;}
+.farming-drop-list {display:flex;flex-wrap:wrap;gap:4px 10px;text-transform:capitalize;opacity:.8;}
