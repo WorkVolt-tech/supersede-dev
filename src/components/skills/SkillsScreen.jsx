@@ -230,6 +230,32 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
         </div>)}
       </div>
     </section>
+    <section className="skills-battle-loadout" aria-labelledby="skills-loadout-heading">
+      <h2 id="skills-loadout-heading">Battle loadout · {slots.length}/4</h2>
+      <p>These four slots are saved to your character. Equip unlocked abilities here; weapon attacks and active class abilities are available automatically during combat.</p>
+      <div className="skills-loadout-grid">
+        {Array.from({length:4},(_,index)=>{
+          const id=slots[index]
+          return <div className="skills-loadout-slot" key={index}>
+            <small>Slot {index+1}</small>
+            {id ? <>
+              <strong>{REGISTRY[id]?.label || id.replaceAll('_',' ')}</strong>
+              <button type="button" disabled={saving} onClick={()=>save({battle_skills:slots.filter((_,i)=>i!==index)},'Battle loadout saved.')}>Unequip</button>
+            </> : <span>Empty</span>}
+          </div>
+        })}
+      </div>
+      <h3>Unlocked skills you can equip</h3>
+      {eligibleSkills.filter(([key])=>!slots.includes(key)).length===0
+        ? <p>No additional learned skills are ready to equip. Unlock abilities in your skill trees or elemental paths first.</p>
+        : <div className="skills-loadout-options">
+          {eligibleSkills.filter(([key])=>!slots.includes(key)).map(([key,skill])=>
+            <button key={key} type="button" disabled={saving||slots.length>=4}
+              onClick={()=>toggleSlot(key)}>{skill.label} <span>Equip +</span></button>)}
+        </div>}
+      {classBattleSkills.length>0&&<p className="skills-loadout-auto">Active class abilities (automatic): {classBattleSkills.map(skill=>skill.label).join(' · ')}</p>}
+      <p className="skills-loadout-auto">Weapon attacks are determined by your equipped weapon and weapon mastery. They do not occupy these four slots.</p>
+    </section>
     <nav className="skills-tabs" aria-label="Skill tree branches">
       {BRANCHES.map(b => <button key={b} className={tab===b?'active':''} onClick={() => choose(b)}>{b}</button>)}
     </nav>
@@ -365,10 +391,6 @@ export default function SkillsScreen({ onReturn, onOpenMastery }) {
             </button>
           </div>
         })}
-        <h3>Battle loadout · {slots.length}/4</h3>
-        <p>Choose up to four unlocked active combat skills.</p>
-        {slots.map(key => <button key={key} className="skills-slot" disabled={saving} onClick={() => isElementalAttack(key) ? save({ battle_skills: slots.filter(s => s !== key) }, 'Elemental attack unequipped.') : toggleSlot(key)}>{REGISTRY[key]?.label || key} <span>Remove ×</span></button>)}
-        {eligibleSkills.filter(([key])=>!slots.includes(key)).map(([key,skill])=><button key={key} className="skills-slot" disabled={saving || slots.length>=4} onClick={() => toggleSlot(key)}>{skill.label} <span>Equip +</span></button>)}
         {message && <p className="skills-message" role="status">{message}</p>}
       </aside>
     </section>
