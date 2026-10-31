@@ -13,7 +13,6 @@ import { BATTLE_SKILLS_REGISTRY, NOTABLE_SKILLS_REGISTRY } from '../../game/skil
 import { getSkillLevel, getSkillUpgrade, skillUpgradeCost, MAX_SKILL_LEVEL } from '../../game/skillLeveling'
 import { getActiveClassSkills } from '../../game/classCombat'
 import { getProgressedTacticalSkillRule } from '../../game/tacticalSkills'
-import { weaponMasteryLevel, nextWeaponMasteryThreshold, weaponMasteryBonus } from '../../game/tacticalGrid'
 import { getElementalTriadAction, getTriadSpecial } from '../../game/elementalTriad'
 import { getFusionEligibility, unlockFusionPair, getElementalTriadEligibility,
   unlockElementalTriad, committedFusionKey, fusionMasteryLevel,
@@ -60,7 +59,7 @@ function TreeMap({ nodes, unlocked, available, selected, onSelect, color }) {
   </div>
 }
 
-export default function SkillsScreen({ onReturn }) {
+export default function SkillsScreen({ onReturn, onOpenMastery }) {
   const player = usePlayerStore(s => s.player)
   const inventory = useInventoryStore(s => s.items)
   const stats = getEffectiveStats(player, inventory.filter(item => item.equipped_slot))
@@ -87,9 +86,6 @@ export default function SkillsScreen({ onReturn }) {
   const shards = player.resonance_shards || 0
   const activeElement = getActiveElement(player)
   const availableElements = Object.values(ELEMENT_TREES).filter(el => isElementUnlocked(el.key,player))
-  const masteryEntries = Object.entries(player.weapon_mastery || {})
-    .filter(([,xp]) => Number(xp) > 0)
-    .sort((a,b) => Number(b[1]||0)-Number(a[1]||0))
   const slots = player.battle_skills || []
   const elementalAttacks = elementKey ? getElementalAttackProgress(player, elementKey) : []
 
@@ -211,7 +207,7 @@ export default function SkillsScreen({ onReturn }) {
     <header className="skills-header">
       <button onClick={onReturn}>← The Archive</button>
       <div><span>CHARACTER PROGRESSION</span><h1>The Living Skill Tree</h1></div>
-      <div className="skills-currency"><span>{points} Skill Points</span><span>{shards} Resonance Shards</span></div>
+      <div className="skills-currency"><span>{points} Skill Points</span><span>{shards} Resonance Shards</span>{onOpenMastery&&<button type="button" onClick={onOpenMastery}>⚔ Weapon Mastery</button>}</div>
     </header>
     <section className="skills-character-stats" aria-labelledby="skills-stats-heading">
       <h2 id="skills-stats-heading">Character stats</h2>
@@ -237,22 +233,6 @@ export default function SkillsScreen({ onReturn }) {
     <nav className="skills-tabs" aria-label="Skill tree branches">
       {BRANCHES.map(b => <button key={b} className={tab===b?'active':''} onClick={() => choose(b)}>{b}</button>)}
     </nav>
-    <section className="skills-weapon-mastery" aria-labelledby="weapon-mastery-heading">
-      <h2 id="weapon-mastery-heading">Weapon mastery</h2>
-      <p>Mastery grows as you land hits with each weapon type. Progress is saved separately for every weapon.</p>
-      {masteryEntries.length===0
-        ? <p className="skills-weapon-empty">No weapon mastery earned yet. Use an equipped weapon in combat to begin.</p>
-        : <div className="skills-mastery-grid">{masteryEntries.map(([weapon,xp])=>{
-          const value=Math.max(0,Number(xp)||0)
-          const level=weaponMasteryLevel(value)
-          const next=nextWeaponMasteryThreshold(value)
-          return <div className="skills-mastery-card" key={weapon}>
-            <div className="skills-mastery-top"><strong>{weapon.replaceAll('_',' ')}</strong><span>Lv {level}/100</span></div>
-            <div className="skills-mastery-track"><div style={{width:`${next===null?100:Math.min(100,value/next*100)}%`}} /></div>
-            <small>{value} mastery XP{next!==null?' · '+Math.max(0,next-value)+' XP to next milestone':' · MAX LEVEL'} · +{weaponMasteryBonus(value)} damage</small>
-          </div>
-        })}</div>}
-    </section>
     <div className="skills-section-label">Elemental paths · unlocked elements only</div>
     <p className="skills-resonance-status">Active combat element: <strong>{activeElement ? ELEMENT_TREES[activeElement]?.sigil+' '+ELEMENT_TREES[activeElement]?.label : 'None selected'}</strong>. Defeat an elemental guardian to reveal its path here.</p>
     {availableElements.length>0
