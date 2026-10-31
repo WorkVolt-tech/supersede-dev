@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -771,7 +771,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       action==='end'?actionPointsRef.current:
       action==='attack'?attack.ap:2
     if (cost > actionPointsRef.current) return
-    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId))) return
+    if (action === 'loadout' && (!equippedNotableSkills(player).some(skill=>skill.id===skillId) || !SUPPORTED_NOTABLES.has(skillId) || (notableTargeting(skillId)&&(!moveTo||!isTacticalTargetValid(notableTargeting(skillId),heroPosition,moveTo))))) return
     if (action === 'skill' && (!ClsCombat.getActiveClassSkills(combatPlayer,statusEffectsRef.current)
       .some(skill=>skill.id===skillId && skill.available!==false) ||
       !canUseTacticalSkill(skillId,heroPosition,moveTo||enemyPosition))) return
@@ -977,7 +977,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const throwTurns=improvisedThrowTurnsRemaining(throwReady,round)
   const throwUnavailable=selectedAttack.thrown&&throwTurns>0
   const aimedSkill=targetMode?.id
-    ?getProgressedTacticalSkillRule(targetMode.id,getSkillLevel(player,targetMode.id)):null
+    ?(targetMode.kind==='loadout'?notableTargeting(targetMode.id):getProgressedTacticalSkillRule(targetMode.id,getSkillLevel(player,targetMode.id))):null
   const displayedAttack=signaturePreview&&signature?.target==='enemy'
     ?signature.attack:aimedSkill?.target==='enemy'?aimedSkill:selectedAttack
   const selectedAim=hoverAim&&isTacticalTargetValid(displayedAttack,heroPosition,hoverAim)
@@ -1118,8 +1118,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             onClick={() => takeTurn('end')}>End turn</button>
           {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
           {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
-            title={skill.desc} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)}
-            onClick={()=>takeTurn('loadout',skill.id)}>
+            title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)}
+            onClick={()=>{if(notableTargeting(skill.id)){setTargetMode({kind:'loadout',id:skill.id,label:skill.label});setAimSquare(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
             {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
             <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
           </button>)}
