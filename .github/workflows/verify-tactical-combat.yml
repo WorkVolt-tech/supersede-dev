@@ -40,6 +40,7 @@ jobs:
             src/game/combatAp.test.js \
             src/game/loadoutCombat.test.js \
             src/game/storyParty.test.js \
+            src/game/skillReset.test.js \
             src/game/companionTactics.test.js \
             src/game/tacticalGrid.test.js \
             src/game/tacticalIntegration.test.js \
