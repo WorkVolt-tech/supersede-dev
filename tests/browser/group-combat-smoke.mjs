@@ -79,11 +79,11 @@ async function inspect(page,name,mobile) {
   if(mobile) {
     const board=page.locator('.combat-grid-board').last()
     await board.locator('button.movable').first().click()
-    check((await page.locator('.combat-turn-banner').textContent()).includes('3/6 AP'),
-      name+': moving did not consume one AP')
+    check((await page.locator('.combat-turn-banner').textContent()).includes('4/6 AP'),
+      name+': movement must not consume AP')
     await board.locator('button.movable').first().click()
-    check((await page.locator('.combat-turn-banner').textContent()).includes('2/6 AP'),
-      name+': second movement did not consume one AP')
+    check((await page.locator('.combat-turn-banner').textContent()).includes('4/6 AP'),
+      name+': second movement must not consume AP')
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
       ?.textContent.includes('6/6 AP'),null,{timeout:10000})
