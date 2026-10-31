@@ -218,3 +218,13 @@ export function notableEnemyCritChance(passives,player={},baseChance=0) {
  const protection=notablePassiveStatBonus(passives,player).criticalProtection
  return Math.max(0,Math.min(1,baseChance-protection))
 }
+
+/** Offensive notable skills use the same legal-aim/area footprint as weapons. */
+export const NOTABLE_TARGETING=Object.freeze({
+ ofn4:{label:'Executioner · close',target:'enemy',from:[0,1],to:[0,1],cols:'near',shape:'single'},
+ ofn5:{label:'Hex Cannon · long',target:'enemy',from:[0,1,2],to:[0,1,2],cols:'any',diagonal:true,shape:'single'},
+ fln3:{label:'Lockdown · long',target:'enemy',from:[0,1,2],to:[0,1,2],cols:'any',diagonal:true,shape:'single'},
+ fln6:{label:'Momentum · mid',target:'enemy',from:[0,1,2],to:[0,1,2],cols:'near',diagonal:true,shape:'single'},
+ dcn6:{label:'Dread Pulse · mid',target:'enemy',from:[0,1,2],to:[0,1,2],cols:'near',diagonal:true,shape:'single'},
+})
+export const notableTargeting=id=>NOTABLE_TARGETING[id]||null
