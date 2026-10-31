@@ -50,7 +50,7 @@ async function inspect(page,name,mobile) {
   check(await page.locator('.combat-group-enemies').count()===0,name+': obsolete enemy cards returned')
   check(await page.getByRole('button',{name:/Use Sword Slash|Attack .*Sword Slash/}).count()===0,
     name+': obsolete attack button returned')
-  check((await page.locator('.combat-turn-banner').textContent()).includes('5/5 AP'),
+  check((await page.locator('.combat-turn-banner').textContent()).includes('6/6 AP'),
     name+': expected five starting AP')
   const viewport=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,
     viewport:innerWidth}))
@@ -73,20 +73,20 @@ async function inspect(page,name,mobile) {
       return match&&Number(match[1])<40
     })
   },null,{timeout:10000})
-  check((await page.locator('.combat-turn-banner').textContent()).includes('3/5 AP'),
+  check((await page.locator('.combat-turn-banner').textContent()).includes('4/6 AP'),
     name+': row attack did not consume two AP')
   await page.screenshot({path:'test-artifacts/'+name+'-after-aoe.png',fullPage:true})
   if(mobile) {
     const board=page.locator('.combat-grid-board').last()
     await board.locator('button.movable').first().click()
-    check((await page.locator('.combat-turn-banner').textContent()).includes('2/5 AP'),
+    check((await page.locator('.combat-turn-banner').textContent()).includes('3/6 AP'),
       name+': moving did not consume one AP')
     await board.locator('button.movable').first().click()
-    check((await page.locator('.combat-turn-banner').textContent()).includes('1/5 AP'),
+    check((await page.locator('.combat-turn-banner').textContent()).includes('2/6 AP'),
       name+': second movement did not consume one AP')
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
-      ?.textContent.includes('5/5 AP'),null,{timeout:10000})
+      ?.textContent.includes('6/6 AP'),null,{timeout:10000})
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)
     check(!overflow,name+': horizontal scrolling after movement')
   }
@@ -132,7 +132,7 @@ async function verifySignatures(page) {
       element+': signature saved player before victory')
     await page.getByRole('button',{name:'End turn'}).click()
     await page.waitForFunction(()=>
-      document.querySelector('.combat-turn-banner')?.textContent.includes('9/9 AP'),
+      document.querySelector('.combat-turn-banner')?.textContent.includes('30/30 AP'),
       null,{timeout:10000})
     check((await signature.textContent()).includes('Cooldown: 3 rounds'),
       element+': signature should start with 3-round cooldown')
@@ -182,7 +182,7 @@ async function verifyClasslessTriad(page) {
     'triad: mastery saved before victory')
   await page.getByRole('button',{name:'End turn'}).click()
   await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
-    ?.textContent.includes('9/9 AP'),null,{timeout:15000})
+    ?.textContent.includes('30/30 AP'),null,{timeout:15000})
   check((await signature.textContent()).includes('Cooldown: 4 rounds'),
     'triad: 4-round cooldown not set')
   check(await page.locator('.combat-grid-board').first()
