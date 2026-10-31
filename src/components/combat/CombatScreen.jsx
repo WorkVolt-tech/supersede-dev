@@ -705,7 +705,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       atk: calcATK(player, equipped), def: calcDEF(player, equipped),
       enemyDef: enemyData.def || 0, currentHp: playerHp, maxHp: maxPlayerHp,
     })
-    if (!effect || mpRef.current < effect.mpCost) return { foeHp, playerHp }
+    if (!effect || mpRef.current < effect.mpCost) return { foeHp, playerHp, consumed:false }
     changeCombatMp(mpRef.current - effect.mpCost)
     notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
     effect.messages.forEach(pushLog)
@@ -870,7 +870,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     } else if (action==='keystone') {
       ;({foeHp,playerHp}=castKeystone(skillId,foeHp,playerHp))
     } else if (action==='elemental') {
-      ;({foeHp,playerHp}=castElementalAttack(skillId,foeHp,playerHp))
+      const elementalResult=castElementalAttack(skillId,foeHp,playerHp)
+      foeHp=elementalResult.foeHp
+      playerHp=elementalResult.playerHp
+      if(elementalResult.consumed===false){
+        pushLog('Elemental skill did not activate; no AP or MP spent.')
+        setBusy(false)
+        return
+      }
     } else if (action==='signature') {
       ;({foeHp,playerHp}=castSignature(foeHp,playerHp))
     } else if (action==='loadout') {
