@@ -155,6 +155,16 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [partyPositions,setPartyPositions]=useState(()=>initialCompanionPositions(companions,{col:1,rank:0}))
   const partyRef=useRef(partyPositions)
   const notableUsesRef=useRef({})
+  const [skillPracticeUses,setSkillPracticeUses]=useState({})
+  function recordSkillUse(id){
+    if(!id)return
+    recordSkillUse(id)
+    setSkillPracticeUses(previous=>({...previous,[id]:(previous[id]||0)+1}))
+  }
+  function skillPracticeLabel(id){
+    const total=Number(player.skill_levels?.['__practice_'+id]||0)+(skillPracticeUses[id]||0)
+    return getSkillLevel(player,id)>=10?'MAX':(total%10)+'/10 uses'
+  }
   const updatePlayer = usePlayerStore(s => s.updatePlayer)
   const items = useInventoryStore(s => s.items)
   const loadInventory = useInventoryStore(s => s.loadInventory)
@@ -676,7 +686,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
 
   function playerSkill(skillId, foeHp, playerHp) {
     const r = ClsCombat.onActiveSkill(skillId, combatPlayer, statusEffectsRef.current, enemyData)
-    if(r?.consumed!==false)notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
+    if(r?.consumed!==false)recordSkillUse(skillId)
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if(!r||r.consumed===false)return {foeHp,playerHp,consumed:false}
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
@@ -726,7 +736,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     })
     if (!effect || mpRef.current < effect.mpCost) return { foeHp, playerHp, consumed:false }
     changeCombatMp(mpRef.current - effect.mpCost)
-    notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
+    recordSkillUse(skillId)
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
     const skillLevel = getSkillLevel(player, skillId)
@@ -903,7 +913,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       const effect=useNotableSkill(skillId,{status:statusEffectsRef.current,enemyDef:enemyData.def||0,attack:calcATK(player,equipped),enemyHp:foeHp,enemyMaxHp:enemyData.hp,playerHp,playerMaxHp:maxPlayerHp,round:roundRef.current})
       effect.messages.forEach(pushLog)
       applyNotableDebuff(statusEffectsRef.current,effect)
-      notableUsesRef.current[skillId]=(notableUsesRef.current[skillId]||0)+1
+      recordSkillUse(skillId)
       if(effect.damage>0){foeHp=Math.max(0,foeHp-scaleSkillAmount(effect.damage,getSkillLevel(player,skillId)));setEnemyHp(foeHp);showJudgeHit()}
     } else if (action==='skill') {
       const skillResult=playerSkill(skillId,foeHp,playerHp)
@@ -1135,7 +1145,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
             title={skill.desc} aria-pressed={targetMode?.id===skill.id} disabled={busy||!entranceReady||!!result||actionPoints<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
             onClick={()=>{if(notableTargeting(skill.id)){setTargetMode({kind:'loadout',id:skill.id,label:skill.label});setAimSquare(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
-            {skill.label} · Lv {getSkillLevel(player,skill.id)} · 2 AP
+            {skill.label} · Lv {getSkillLevel(player,skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
             <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
           </button>)}
           {activeSkills.map(skill => (
@@ -1152,7 +1162,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                   setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
                 }else takeTurn('skill',skill.id)
               }}>
-              {skill.label} · Lv {getSkillLevel(player, skill.id)}
+              {skill.label} · Lv {getSkillLevel(player, skill.id)} · {skillPracticeLabel(skill.id)}
               {skill.sub && <span className="combat-action-sub">{skill.sub}</span>}
               {getTacticalSkillRule(skill.id) && <span className="combat-action-sub">
                 {getTacticalSkillRule(skill.id).label}
@@ -1173,7 +1183,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                 setSignaturePreview(false);setHoverAim(null);setAimSquare(null)
               }else takeTurn('elemental',elementalAttack.id)
             }}>
-            {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)}
+            {elementalAttack.label} · Lv {getSkillLevel(player, elementalAttack.id)} · {skillPracticeLabel(elementalAttack.id)}
             <span className="combat-action-sub">
               {(elementalCooldowns[elementalAttack.id] || 0) > 0
                 ? `Cooldown: ${elementalCooldowns[elementalAttack.id]} rounds`
