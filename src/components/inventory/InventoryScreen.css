@@ -36,3 +36,45 @@
 .inv-toast { text-align: center; font-size: 11px; color: #e08080; min-height: 16px; }
 
 .inv-codex-availability { margin:5px 0; font-size:11px; color:#dec18b; }
+
+/* Paper-doll armory: use actual game equipment slots and existing drag/drop logic. */
+.inv-screen { max-width:1060px; }
+.inv-armory { display:grid;grid-template-columns:minmax(300px,1fr) minmax(290px,1fr);align-items:start;gap:16px; }
+.inv-equipment-panel,.inv-backpack-panel { border:1px solid #725739;background:linear-gradient(150deg,#2a2119,#100e0c 70%);padding:12px;min-width:0; }
+.inv-section-heading { display:flex;justify-content:space-between;align-items:baseline;gap:6px;color:#dfbf82;letter-spacing:.13em;font-size:12px;border-bottom:1px solid #765a3c;padding-bottom:10px;margin-bottom:12px; }
+.inv-section-heading small { color:#917858;font-size:8px;letter-spacing:.02em; }
+.inv-paper-doll { position:relative;min-height:510px;border:1px solid #403526;background:radial-gradient(ellipse at 50% 41%,#53402b 0%,#241d17 42%,#12100d 78%);overflow:hidden; }
+.inv-doll-silhouette { position:absolute;inset:50px 18% 18px;opacity:.32;pointer-events:none;filter:drop-shadow(0 0 18px #ad8556); }
+.inv-doll-silhouette div { position:absolute;background:linear-gradient(90deg,#493928,#9e7f59 50%,#3c3129);border:1px solid #b49b79; }
+.inv-doll-head { width:22%;height:17%;left:39%;top:0;border-radius:45% 45% 38% 38%; }
+.inv-doll-torso { width:39%;height:35%;left:30.5%;top:19%;clip-path:polygon(0 0,100% 0,89% 100%,11% 100%);border-radius:22% 22% 10% 10%; }
+.inv-doll-arm { top:21%;height:36%;width:13%;border-radius:50px; }
+.inv-doll-arm.left { left:17%;transform:rotate(9deg); }
+.inv-doll-arm.right { right:17%;transform:rotate(-9deg); }
+.inv-doll-leg { top:53%;height:44%;width:17%;border-radius:15px 15px 22px 22px; }
+.inv-doll-leg.left { left:32%;transform:rotate(3deg); }
+.inv-doll-leg.right { right:32%;transform:rotate(-3deg); }
+.inv-paper-doll .inv-slots { position:relative;z-index:1;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(7,64px);gap:7px;padding:16px 8px;align-items:stretch; }
+.inv-paper-doll .inv-slot { aspect-ratio:auto;min-width:0;min-height:0;border:1px solid #806545;border-radius:4px;background:linear-gradient(145deg,#342a20ed,#15120fe6);box-shadow:inset 0 0 12px #05040388,0 2px 8px #0008; }
+.inv-paper-doll .inv-slot.filled { border-color:#c7a16b; }
+.inv-paper-doll .inv-slot.compatible { border-color:#a7da8b;box-shadow:0 0 10px #9acf734d,inset 0 0 10px #507c3b66; }
+.inv-slot-helmet { grid-column:3;grid-row:1; }
+.inv-slot-chest { grid-column:3;grid-row:3; }
+.inv-slot-gloves { grid-column:2;grid-row:4; }
+.inv-slot-boots { grid-column:3;grid-row:7; }
+.inv-slot-accessory1 { grid-column:4;grid-row:2; }
+.inv-slot-accessory2 { grid-column:5;grid-row:4; }
+.inv-slot-mainhand { grid-column:1;grid-row:3; }
+.inv-slot-offhand { grid-column:5;grid-row:3; }
+.inv-slot-empty { width:100%;height:100%;border:0;background:none;color:#e6d0a5;cursor:pointer; }
+.inv-slot-empty:disabled { cursor:default;opacity:.65; }
+.inv-paper-doll .inv-slot-label { bottom:1px;left:0;right:0;text-align:center;font-size:8px;color:#d1b68c;text-shadow:0 1px #000; }
+.inv-paper-doll .inv-slot-empty-icon { font-size:23px;opacity:.8; }
+.inv-paper-doll .inv-tile.in-slot { border-radius:3px; }
+.inv-socket-markers { position:absolute;bottom:12px;left:2px;right:2px;text-align:center;color:#ffe09f;text-shadow:0 1px 2px #000;font-size:9px;letter-spacing:-1px;pointer-events:none; }
+.inv-grid { grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;background:#0b0a09;border:1px solid #55442e;padding:8px;min-height:260px; }
+.inv-grid .inv-tile { min-width:0;border:1px solid #92734c; }
+.inv-grid .inv-tile.selected { outline:2px solid #f4d18f;outline-offset:1px; }
+.inv-paper-doll.reject-flash { animation:invReject .35s; }
+@media(max-width:750px) { .inv-armory { grid-template-columns:minmax(0,1fr); } .inv-paper-doll { max-width:460px;margin:auto; } }
+@media(max-width:420px) { .inv-equipment-panel,.inv-backpack-panel { padding:7px; }.inv-paper-doll .inv-slots { grid-template-rows:repeat(7,53px);gap:4px;padding:10px 5px; }.inv-paper-doll { min-height:410px; }.inv-slot-label { font-size:7px; } }
