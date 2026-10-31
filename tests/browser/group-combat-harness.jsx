@@ -39,6 +39,7 @@ const player = {
     fusionScenario?[fusionClass+':'+fusionElement]:[],
   fusion_mastery:triadScenario?{['triad:'+fusionElement]:0}:
     fusionScenario?{[fusionClass+':'+fusionElement]:45}:{},
+  alliance_log:scenario==='companions'?['party:marcus','party:lena']:[],
   chapters_unlocked:[1],xp:0,skill_points:0,
 }
 const metrics={saves:0}
