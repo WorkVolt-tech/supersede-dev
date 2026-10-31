@@ -279,7 +279,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
     if(!rider)return
     updateMp(mpRef.current-FUSION_MP_COST)
     const hitIds=affected.targets.map(unit=>unit.id)
-    const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+    // Signature targets were already validated against the AoE footprint.
+    // Do not reject side squares when resolving each affected foe's damage.
+    const single={from:[0,1,2],to:[0,1,2],cols:'any',diagonal:true,shape:'single'}
     for(const unit of affected.targets) {
       const alive=foesRef.current.find(u=>u.id===unit.id&&u.hp>0)
       if(!alive)continue
