@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -549,6 +549,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       foeHp = Math.max(0, foeHp - keystoneDefense.reflected)
       messages.push(`${keystoneDefense.reflected} keystone damage reflected.`)
     }
+    statusEffectsRef.current.notableCurrentHp=playerHp;statusEffectsRef.current.notableMaxHp=maxPlayerHp
+    if(activateNotableIronTide(learnedNotablePassives(player),statusEffectsRef.current,playerHp,maxPlayerHp))messages.push('Iron Tide activates: +20 DEF for 2 turns.')
     const passive=notablePassiveIncoming(learnedNotablePassives(player),statusEffectsRef.current,finalDmg,calcATK(player,equipped))
     finalDmg=passive.damage
     messages.push(...passive.messages)
@@ -577,7 +579,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   function playerAttack(foeHp, playerHp, attack, attackSquare=aimSquare||enemyPosition) {
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
-    const base = Math.max(1, warboundBonus + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
+    const base = Math.max(1, warboundBonus + notablePassiveStatBonus(learnedNotablePassives(player),player).attack + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
       armorPierce + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
@@ -806,7 +808,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     let playerHp=currentHp
     let foeHp=enemyHp
     const enemySpeed=enemyData.speed??enemyData.spd??enemyData.agility??5
-    const playerSpeed=calcSPD(player,equipped)+(statusEffectsRef.current.playerSPDBonus||0)
+    const playerSpeed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),player).speed+(statusEffectsRef.current.playerSPDBonus||0)
     const enemyFirst=enemySpeed>playerSpeed
     const defendAction=action==='defend'
     const firstAction=!roundStartedRef.current
