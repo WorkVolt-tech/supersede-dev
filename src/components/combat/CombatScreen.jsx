@@ -960,7 +960,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const displayedAttack=signaturePreview&&signature?.target==='enemy'
     ?signature.attack:aimedSkill?.target==='enemy'?aimedSkill:selectedAttack
   const selectedAim=hoverAim&&isTacticalTargetValid(displayedAttack,heroPosition,hoverAim)
-    ?hoverAim:bestTacticalAim(displayedAttack,heroPosition,
+    ?hoverAim:aimSquare&&isTacticalTargetValid(displayedAttack,heroPosition,aimSquare)
+      ?aimSquare:bestTacticalAim(displayedAttack,heroPosition,
       [{id:'enemy',...enemyPosition,hp:enemyHp}], 'enemy',aimSquare)
   const attackFootprint=tacticalPreview(displayedAttack,heroPosition,selectedAim,
     [{id:'enemy',...enemyPosition,hp:enemyHp}])
@@ -1048,8 +1049,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           onMove={position=>{setHoverAim(null);takeTurn('move',null,position)}}
           onHoverAim={setHoverAim}
           onAim={position=>{
-            setAimSquare(position);setHoverAim(null)
             if(signaturePreview||!isTacticalTargetValid(displayedAttack,heroPosition,position))return
+            if(!sameBattleSquare(aimSquare,position)){
+              setAimSquare(position);setHoverAim(null);return
+            }
+            setHoverAim(null)
             if(targetMode){
               if(tacticalPreview(displayedAttack,heroPosition,position,
                 [{id:'enemy',...enemyPosition,hp:enemyHp}]).targets.length)
@@ -1061,7 +1065,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             {(targetMode?.label||selectedAttack.label)} · {displayedAttack.shape} area ·
             {' '}{attackFootprint.squares.length} squares illuminated ·
             {' '}{attackFootprint.targets.length} {attackFootprint.targets.length===1?'enemy':'enemies'} affected ·
-            {' '}Tap a highlighted square to {targetMode?'cast':'attack'}
+            {' '}Tap a blue square to preview, then tap it again to {targetMode?'cast':'attack'}
           </p>}
         <div className="combat-tactical-weapons">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
