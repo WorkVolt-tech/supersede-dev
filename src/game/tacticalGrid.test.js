@@ -99,7 +99,7 @@ test('additional valid class abilities do not remove basic attacks or the fallba
 test('enemy tactical AI attacks when in reach, advances unarmed, and falls back if blocked', () => {
   const front={col:1,rank:0}, back={col:1,rank:2}
   assert.equal(chooseTacticalEnemyAction('sword',front,front).attack.id,'slash')
-  assert.equal(chooseTacticalEnemyAction('bow',front,back).attack.id,'quickArrow')
+  assert.equal(chooseTacticalEnemyAction('bow',front,back).attack.id,'aimed')
   assert.equal(chooseTacticalEnemyAction('sword',front,back).attack.id,'thrust')
   assert.deepEqual(chooseTacticalEnemyAction('unarmed',back,front).move,{col:1,rank:1})
   const blocked=chooseTacticalEnemyAction('unarmed',back,front,
