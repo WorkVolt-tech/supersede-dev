@@ -166,6 +166,15 @@ try{
   await loadout.waitFor()
   check(await loadout.isEnabled(),'saved Warbound skill should be available in solo combat')
   console.log('PASS solo: saved Warbound loadout is visible and usable')
+  await page.goto(host+'/tests/browser/single-combat.html?scenario=companions',{waitUntil:'networkidle'})
+  check(await page.getByRole('button',{name:/Left Front Marcus party ally/}).count()===1,
+    'Marcus should occupy a solo battlefield square')
+  check(await page.getByRole('button',{name:/Right Front Lena party ally/}).count()===1,
+    'Lena should occupy a solo battlefield square')
+  await page.getByRole('button',{name:'End turn'}).click()
+  await page.waitForFunction(()=>document.querySelector('.combat-log')
+    ?.textContent.includes('Marcus strikes'),null,{timeout:12000})
+  console.log('PASS solo companions: party occupies battlefield and attacks')
   await runScenario('regular',page)
   await runScenario('boss',page)
   await runScenario('unfused',page)
