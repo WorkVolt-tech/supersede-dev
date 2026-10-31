@@ -31,6 +31,9 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-meter-label"><span>Moral alignment</span><span>{player.moral_score ?? 0}</span></div>
     <div className="reading-moral-track"><span style={{left:`${getMoralBarPct(player.moral_score)}%`}} /></div>
     <div className="reading-meter-endpoints"><span>Villain</span><span>Hero</span></div>
+    <button type="button" className="reading-action reading-skill-points" onClick={() => onNavigate('skills')}>
+      ✦ Skill points: {player.skill_points ?? 0} available · Open Skills
+    </button>
     <span className="reading-page-heading" style={{marginTop:26}}>Archive &amp; systems</span>
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
