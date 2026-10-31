@@ -42,9 +42,10 @@ test('unarmed rear enemies advance while out of range',()=>{
   const start={col:1,rank:2},player={col:1,rank:0}
   const first=chooseTacticalEnemyAction('unarmed',start,player)
   assert.deepEqual(first.move,{col:1,rank:1})
-  const next=chooseTacticalEnemyAction('unarmed',first.move,player)
-  assert.equal(Boolean(next.attack),true)
-  assert.equal(next.attack.fallback,undefined)
+  const second=chooseTacticalEnemyAction('unarmed',first.move,player)
+  assert.deepEqual(second.move,{col:1,rank:0})
+  const next=chooseTacticalEnemyAction('unarmed',second.move,player)
+  assert.equal(next.attack.id,'bareStrike')
 })
 test('blocked middle rank forces fallback instead of moving through allies',()=>{
   const a=chooseTacticalEnemyAction('unarmed',{col:1,rank:2},{col:1,rank:0},
