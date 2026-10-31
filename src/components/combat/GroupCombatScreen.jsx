@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -473,7 +473,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const damage=attack.fallback?Math.max(1,Math.round(keystone.damage*.25)):
       keystone.damage+Math.max(0,attack.damage-4)+
       Math.floor((weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)-1)/10)
-    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),damage,calcATK(player,equipped))
+    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),damage,calcATK(player,equipped),Math.random,foeStatusesRef.current[target.id] || (foeStatusesRef.current[target.id]={}))
     passiveHit.messages.forEach(note)
     const affected=applyDamage(units,attack,square,foe=>Math.max(1,passiveHit.damage+(target.def||0)-(foe.def||0)))
     if(!attack.fallback)infuseHit(affected,target.id)
@@ -624,6 +624,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       const actor=next.find(u=>u.id===foe.id)
       if(!actor||actor.hp<=0||currentHp<=0)continue
       const ownStatus=foeStatusesRef.current[actor.id]||{}
+      if(notablePassiveStagger(learnedNotablePassives(player))){note('Stagger interrupts '+actor.name+'.');continue}
       const stun=ownStatus.enemyStunTurns||0
       if(stun>0){
         ownStatus.enemyStunTurns=stun-1
@@ -730,7 +731,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     foeStatusesRef.current=perFoe.statuses
     units=perFoe.units
     for(const foe of units.filter(u=>u.hp>0)){
-      const poison=tickNotableDebuff(foeStatusesRef.current[foe.id]||{})
+      const poison=tickNotableDebuff(foeStatusesRef.current[foe.id]||{})+tickNotableSpellblade(foeStatusesRef.current[foe.id]||{})
       if(poison){foe.hp=Math.max(0,foe.hp-poison);note(foe.name+' suffers '+poison+' Hex Cannon poison damage.');if(foe.hp===0)onFoeDefeated(foe)}
     }
     const fieldTicks=advanceGroupFields(units,fieldsRef.current)
