@@ -36,100 +36,64 @@ function parseHps(texts){
     return Number(match[1])
   })
 }
-async function inspect(page,name,mobile){
+async function inspect(page,name,mobile) {
   const errors=[]
   page.on('pageerror',error=>errors.push(error.message))
   await page.goto(host+'/tests/browser/group-combat.html',{waitUntil:'networkidle'})
   await page.locator('.group-combat').waitFor()
-  check(await page.locator('.combat-grid-board').count()===2,name+': missing 2 boards')
-  check(await page.locator('.combat-grid-board').first().locator('button').count()===9,name+': enemy cells != 9')
-  check(await page.locator('.combat-grid-board').last().locator('button').count()===9,name+': ally cells != 9')
-  const units=page.locator('.combat-group-unit')
-  check(await units.count()===3,name+': expected 3 independent foes')
-  check(await page.locator('.combat-grid-board').first().locator('button.occupied').count()===3,
-    name+': occupied squares missing')
-  const initial=parseHps(await units.allTextContents())
-  check(initial.every(value=>value===40),name+': incorrect starting HP: '+initial)
-  check(await page.locator('.combat-turn-banner').textContent().then(t=>t.includes('2/2 AP')),
-    name+': 2 action points missing')
+  const enemyBoard=page.locator('.combat-grid-board').first()
+  check(await page.locator('.combat-grid-board').count()===2,name+': missing boards')
+  check(await enemyBoard.locator('button').count()===9,name+': enemy board is not 3x3')
+  check(await page.locator('.combat-grid-board').last().locator('button').count()===9,
+    name+': hero board is not 3x3')
+  check(await enemyBoard.locator('button.occupied').count()===3,name+': missing foes')
+  check(await page.locator('.combat-group-enemies').count()===0,name+': obsolete enemy cards returned')
+  check(await page.getByRole('button',{name:/Use Sword Slash|Attack .*Sword Slash/}).count()===0,
+    name+': obsolete attack button returned')
+  check((await page.locator('.combat-turn-banner').textContent()).includes('5/5 AP'),
+    name+': expected five starting AP')
   const viewport=await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,
     viewport:innerWidth}))
-  check(viewport.scroll<=viewport.viewport+2,
-    name+': horizontal overflow '+JSON.stringify(viewport))
+  check(viewport.scroll<=viewport.viewport+2,name+': horizontal overflow')
   await page.screenshot({path:'test-artifacts/'+name+'-initial.png',fullPage:true})
-
-  // Selecting an enemy is free; targeting the enemy grid or list should
-  // highlight exactly one foe, and never accidentally spend an AP.
-  await units.nth(1).click()
-  check(await units.nth(1).evaluate(node=>node.classList.contains('current')),
-    name+': target selection not reflected')
-  check((await page.locator('.combat-turn-banner').textContent()).includes('2/2 AP'),
-    name+': target selection spent AP')
-  // Sword Slash hits the same column only. Selecting a foe in another
-  // column should show honest feedback and disable the attack.
-  check(await page.locator('.combat-range-warning').count()===1,
-    name+': out-of-range target did not show a warning')
-  check(await page.getByRole('button',{name:/Use Sword Slash/}).isDisabled(),
-    name+': out-of-range slash remained enabled')
-  await units.first().click()
-  check(await page.locator('.combat-range-warning').count()===0,
-    name+': target range warning did not clear')
-
-  // Sweeping Arc has row AoE and costs both AP. All three front-row rats
-  // must take damage from the actual live weapon handler.
+  // Choosing an attack must show every square of its actual footprint.
   await page.locator('.combat-tactical-weapons').getByRole('button',
     {name:/Sweeping Arc/}).click()
-  check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===3,
-    name+': Sweeping Arc footprint preview misses front row')
+  check(await enemyBoard.locator('button.splash').count()===3,
+    name+': row pattern does not light up all three squares')
   check((await page.locator('.combat-attack-preview').textContent()).includes('3 enemies'),
-    name+': AoE preview hit count is inaccurate')
-  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+    name+': attack preview hit count incorrect')
+  // Tap the centre highlighted square to perform the attack on the whole row.
+  await enemyBoard.locator('button.splash').nth(1).click()
   await page.waitForFunction(()=>{
-    const rows=[...document.querySelectorAll('.combat-group-unit')]
-    return rows.length===3&&rows.every(node=>{
-      const m=node.textContent.match(/(\d+)\/(\d+) HP/)
-      return m&&Number(m[1])<40
+    const foes=[...document.querySelectorAll('.combat-grid-board')][0]
+      ?.querySelectorAll('button.occupied')||[]
+    return foes.length===3&&[...foes].every(cell=>{
+      const match=cell.textContent.match(/#\\d+ (\\d+) HP/)
+      return match&&Number(match[1])<40
     })
   },null,{timeout:10000})
-  const after=parseHps(await units.allTextContents())
-  check(after.every(hp=>hp<40),name+': row AoE missed enemies: '+after)
-  // Damage is rendered before the asynchronous slower-enemy phase finishes.
-  // Wait until combat controls are usable again, not merely until HP changes.
-  await page.waitForFunction(()=>{
-    const banner=document.querySelector('.combat-turn-banner')
-    const end=[...document.querySelectorAll('.combat-actions button')]
-      .find(button=>button.textContent.trim()==='End turn')
-    return banner?.textContent.includes('2/2 AP')&&end&&!end.disabled
-  },null,{timeout:10000})
+  check((await page.locator('.combat-turn-banner').textContent()).includes('3/5 AP'),
+    name+': row attack did not consume two AP')
   await page.screenshot({path:'test-artifacts/'+name+'-after-aoe.png',fullPage:true})
-
-  if(mobile){
-    // A tap on an adjacent unoccupied friendly square moves exactly one
-    // grid step for 1 AP; it must not activate a 2-AP sweep afterward.
-    const move=page.locator('.combat-grid-board').last().locator('button.movable').first()
-    check(await move.count()===1,name+': no legal mobile movement target')
-    await move.click()
-    check((await page.locator('.combat-turn-banner').textContent()).includes('1/2 AP'),
-      name+': moving did not consume exactly 1 AP')
-    check(await page.getByRole('button',{name:/Use Sweeping Arc/}).isDisabled(),
-      name+': 2-AP AoE wrongly enabled with 1 AP')
+  if(mobile) {
+    const board=page.locator('.combat-grid-board').last()
+    await board.locator('button.movable').first().click()
+    check((await page.locator('.combat-turn-banner').textContent()).includes('2/5 AP'),
+      name+': moving did not consume one AP')
+    await board.locator('button.movable').first().click()
+    check((await page.locator('.combat-turn-banner').textContent()).includes('1/5 AP'),
+      name+': second movement did not consume one AP')
     await page.getByRole('button',{name:'End turn'}).click()
-    await page.waitForFunction(()=>{
-      const banner=document.querySelector('.combat-turn-banner')
-      const end=[...document.querySelectorAll('.combat-actions button')]
-        .find(button=>button.textContent.trim()==='End turn')
-      return banner?.textContent.includes('2/2 AP')&&end&&!end.disabled
-    },null,{timeout:10000})
+    await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
+      ?.textContent.includes('5/5 AP'),null,{timeout:10000})
     const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2)
-    check(!overflow,name+': horizontal scroll after combat interaction')
-    await page.screenshot({path:'test-artifacts/'+name+'-after-move.png',fullPage:true})
+    check(!overflow,name+': horizontal scrolling after movement')
   }
   check(errors.length===0,name+': browser exceptions '+errors.join(' | '))
   consoleErrors.push(...errors)
-  process.stdout.write('PASS '+name+': group formation, AoE, AP, selection, viewport'+
-    (mobile?', touch movement':'')+'\n')
+  console.log('PASS '+name+': grid selection, 3-square AoE, 5 AP and no duplicate controls')
 }
-
 async function verifySignatures(page) {
   for(const [element,label,kind] of [
     ['fire','Phantom Inferno','phantom'],
@@ -167,7 +131,7 @@ async function verifySignatures(page) {
     check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
       element+': signature saved player before victory')
     await page.waitForFunction(()=>
-      document.querySelector('.combat-turn-banner')?.textContent.includes('2/2 AP'),
+      document.querySelector('.combat-turn-banner')?.textContent.includes('5/5 AP'),
       null,{timeout:10000})
     check((await signature.textContent()).includes('Cooldown: 3 rounds'),
       element+': signature should start with 3-round cooldown')
@@ -216,7 +180,7 @@ async function verifyClasslessTriad(page) {
   check(await page.evaluate(()=>window.__tacticalTestMetrics.saves)===0,
     'triad: mastery saved before victory')
   await page.waitForFunction(()=>document.querySelector('.combat-turn-banner')
-    ?.textContent.includes('2/2 AP'),null,{timeout:15000})
+    ?.textContent.includes('5/5 AP'),null,{timeout:15000})
   check((await signature.textContent()).includes('Cooldown: 4 rounds'),
     'triad: 4-round cooldown not set')
   check(await page.locator('.combat-grid-board').first()
@@ -277,7 +241,7 @@ async function verifyFusionVictory(page) {
   await page.getByRole('button',{name:'Enable Fusion'}).click()
   await page.locator('.combat-tactical-weapons')
     .getByRole('button',{name:/Sweeping Arc/}).click()
-  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+  await page.locator('.combat-grid-board').first().locator('button.splash').nth(1).click()
   await page.waitForFunction(()=>document.body.dataset.outcome==='win',
     null,{timeout:15000})
   const result=await page.evaluate(()=>{
@@ -298,7 +262,7 @@ async function verifyFusion(page) {
   page.on('pageerror',error=>errors.push(error.message))
   await page.goto(host+'/tests/browser/group-combat.html?scenario=fusion',
     {waitUntil:'networkidle'})
-  await page.locator('.combat-group-unit').first().waitFor()
+  await page.locator('.combat-grid-board').first().locator('button.occupied').first().waitFor()
   const fusion=page.locator('.combat-fusion-status')
   await fusion.waitFor()
   check((await fusion.textContent()).includes('ghostblade + fire'),
@@ -308,8 +272,8 @@ async function verifyFusion(page) {
   await page.getByRole('button',{name:'Enable Fusion'}).click()
   await page.locator('.combat-tactical-weapons')
     .getByRole('button',{name:/Sweeping Arc/}).click()
-  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
-  await page.waitForFunction(()=>[...document.querySelectorAll('.combat-group-unit')]
+  await page.locator('.combat-grid-board').first().locator('button.splash').nth(1).click()
+  await page.waitForFunction(()=>[...document.querySelectorAll('.combat-grid-board')[0]?.querySelectorAll('button.occupied')]
     .filter(unit=>unit.textContent.includes('🔥')).length===3,
     null,{timeout:10000})
   check((await page.locator('.combat-log').textContent()).includes('Phantom Inferno'),
@@ -326,7 +290,7 @@ async function verifyFusion(page) {
 async function verifyMastery(page) {
   await page.goto(host+'/tests/browser/group-combat.html?scenario=mastery',
     {waitUntil:'networkidle'})
-  await page.locator('.combat-group-unit').first().waitFor()
+  await page.locator('.combat-grid-board').first().locator('button.occupied').first().waitFor()
   await page.locator('.combat-tactical-weapons').getByRole('button',
     {name:/Sword Slash/}).click()
   check((await page.locator('.combat-attack-preview').textContent()).includes('diamond2'),
@@ -334,9 +298,9 @@ async function verifyMastery(page) {
   check(await page.locator('.combat-grid-board').first().locator('button.splash').count()===7,
     'mastery: front-centre diamond2 should cover 7 board squares')
   await page.locator('.combat-tactical-weapons').getByRole('button',
-    {name:/System Pulse/}).click()
+    {name:/Emergency Attack/}).click()
   check((await page.locator('.combat-attack-preview').textContent()).includes('single'),
-    'mastery: System Pulse fallback must remain single-target')
+    'mastery: Emergency Attack fallback must remain single-target')
   console.log('PASS mastery: expanded slash and unchanged pulse')
 }
 async function verifyVictory(page) {
@@ -344,15 +308,15 @@ async function verifyVictory(page) {
   page.on('pageerror',error=>errors.push(error.message))
   await page.goto(host+'/tests/browser/group-combat.html?scenario=victory',
     {waitUntil:'networkidle'})
-  await page.locator('.combat-group-unit').first().waitFor()
-  check(await page.locator('.combat-group-unit').count()===3,
+  await page.locator('.combat-grid-board').first().locator('button.occupied').first().waitFor()
+  check(await page.locator('.combat-grid-board').first().locator('button.occupied').count()===3,
     'victory: expected three opponents')
 
   await page.locator('.combat-tactical-weapons')
     .getByRole('button',{name:/Sweeping Arc/}).click()
   check((await page.locator('.combat-attack-preview').textContent())
     .includes('3 enemies'),'victory: wrong area preview')
-  await page.getByRole('button',{name:/Use Sweeping Arc/}).click()
+  await page.locator('.combat-grid-board').first().locator('button.splash').nth(1).click()
 
   // Actual combat completion includes the asynchronous save, followed by
   // the story callback. No real Supabase writes occur in this fixture.
