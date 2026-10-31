@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notablePassiveDefendReflect, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notablePassiveDefendReflect, notableRazorTempo, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -862,6 +862,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         else resolveKeystone(id,target)
         return
       }
+      const razorFirst=kind==='attack'&&!roundStartedRef.current&&notableRazorTempo(learnedNotablePassives(player),attack?.id)
       if(!roundStartedRef.current){
         roundStartedRef.current=true
         enemyDamageBudgetRef.current=enemyActionBudget(enemyData.atk,enemyData.groupSize)
@@ -872,9 +873,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         }
         if(legendary.has('legendary_pathfinder')&&legendaryTurnRef.current===1)
           note('Worldsight Compass reveals the formation.')
-        const alive=await enemyPhase(true,heroRef.current)
-        if(alive<=0){await finish('lose');return}
-        if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
+        if(!razorFirst){
+          const alive=await enemyPhase(true,heroRef.current)
+          if(alive<=0){await finish('lose');return}
+          if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
+        }
       }
       // Fast enemies can reposition or be defeated before the player acts.
       // Revalidate against the CURRENT formation so the player never burns
@@ -923,6 +926,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       }else if(kind==='end')note('You end the turn.')
 
       if(foesRef.current.every(u=>u.hp<=0)){await finish('win');return}
+      if(razorFirst){
+        note('Razor Tempo: your strike takes priority over fast enemies.')
+        const alive=await enemyPhase(true,heroRef.current)
+        if(alive<=0){await finish('lose');return}
+      }
       if(kind==='attack'&&attack.fallback){
         emergencyUsedRef.current=true;setEmergencyUsed(true)
       }
