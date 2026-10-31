@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -549,7 +549,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       foeHp = Math.max(0, foeHp - keystoneDefense.reflected)
       messages.push(`${keystoneDefense.reflected} keystone damage reflected.`)
     }
-    const notableReflect=consumeNotableReflection(statusEffectsRef.current,finalDmg)
+    const passive=notablePassiveIncoming(learnedNotablePassives(player),statusEffectsRef.current,finalDmg,calcATK(player,equipped))
+    finalDmg=passive.damage
+    messages.push(...passive.messages)
+    if(passive.stun)statusEffectsRef.current.enemyStunTurns=Math.max(1,statusEffectsRef.current.enemyStunTurns||0)
+    const notableReflect=consumeNotableReflection(statusEffectsRef.current,finalDmg)+passive.reflect
     finalDmg=notableIncomingDamage(statusEffectsRef.current,finalDmg)
     if(notableReflect>0){foeHp=Math.max(0,foeHp-notableReflect);messages.push('Iron Mirror reflects '+notableReflect+' damage.')}
     let nextHp = Math.max(0, playerHp - finalDmg)
@@ -591,6 +595,9 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       ? Math.max(1, Math.round(dmg * .25))
       : dmg + Math.max(0, attack.damage - 4) +
         weaponMasteryBonus(player.weapon_mastery?.[weaponType] || 0)
+    const passiveHit=notablePassiveOutgoing(learnedNotablePassives(player),dmg,calcATK(player,equipped))
+    dmg=passiveHit.damage
+    passiveHit.messages.forEach(pushLog)
     playerHp = Math.min(maxPlayerHp, playerHp + keystoneHit.heal)
     if (keystoneHit.heal > 0) setCurrentHp(playerHp)
     let newEnemyHp = Math.max(0, foeHp - dmg)
