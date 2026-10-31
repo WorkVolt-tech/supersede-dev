@@ -26,7 +26,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
   weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import { createTacticalGroup, applyGroupAttack, nextAliveTarget,
@@ -460,7 +460,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     const crit=consumeNotableCrit(statusRef.current)||Boolean(statusRef.current.cfx_guaranteedCrit)||mod?.wasCrit||
       Math.random()<Math.min(.5,Math.max(0,effective.core.luck)*.01+
         critChanceBonus(combatPlayer)+(mod?.critChanceAdd||0))
-    const mult=(mod?.dmgMult??1)*(crit?1.5+critDamageBonus(combatPlayer):1)
+    const mult=(mod?.dmgMult??1)*(crit?1.5+critDamageBonus(combatPlayer)+notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage:1)
     let priorDamage=Math.max(1,Math.round(base*mult*notableAttackMultiplier(statusRef.current)))
     if(legendary.has('legendary_forger')&&crit)priorDamage+=12
     if(legendary.has('legendary_hunter')&&target.hp===target.maxHp)priorDamage+=15
@@ -676,7 +676,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       incoming=Math.max(0,incoming-notableEnemyAttackPenalty(foeStatusesRef.current[actor.id]))
       if(statusRef.current.cfx_tornadoTurns>0)
         incoming=Math.round(incoming*.7)
+      enforceNotableControlImmunity(learnedNotablePassives(player),statusRef.current)
       const hit=ClsCombat.onPlayerHit(combatPlayer,statusRef.current,foeData,incoming,maxHp)
+      enforceNotableControlImmunity(learnedNotablePassives(player),statusRef.current)
       let damage=Math.max(0,Math.round(incoming*(hit?.dmgMult??1)*resistMult(combatPlayer)))
       if(damage>0&&Math.random()<Math.min(.25,Math.max(0,effective.core.agility)*.01)){
         damage=0;messages.push('You evade '+actor.name+'.')
