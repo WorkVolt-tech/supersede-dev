@@ -21,10 +21,15 @@ const LEAVE_SCENES={
   market_b4_solo_cross:['lena'],market_b4_gio_cross:['lena'],
   boss_surveyor_fight_lena:['gio'],boss_surveyor_fight_gio:['lena'],
 }
+export const SOLO_SCENES=new Set([
+  'pre_boss_solo','boss','garage_b2_alone','garage_b2_fight_alone',
+  'market_b4_solo_cross','boss_surveyor_fight','tower_b1_solo',
+  'boss_unseen_fight','boss_sentinel_fight',
+])
 export function partyTagsForScene(log=[],scene) {
   let tags=[...log]
   // Zone transitions disband temporary travel companions.
-  if(scene==='district_hub'||scene==='market_approach'||scene==='tower_approach'||
+  if(SOLO_SCENES.has(scene)||scene==='district_hub'||scene==='market_approach'||scene==='tower_approach'||
      scene==='garage_approach'||scene==='plaza_allies')
     tags=tags.filter(tag=>!tag.startsWith('party:'))
   for(const id of LEAVE_SCENES[scene]||[])tags=tags.filter(t=>t!=='party:'+id)
