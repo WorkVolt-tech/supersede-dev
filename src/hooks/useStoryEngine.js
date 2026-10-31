@@ -54,10 +54,14 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
     if (!NODES[nextId]) return { ok:false, error:`Story destination not found: ${nextId}` }
 
     let resolvedId = nextId
-    let hops = 0
-    while (typeof NODES[resolvedId]?.route === 'function' && hops < 10) {
+    const visitedRoutes = new Set()
+    while (typeof NODES[resolvedId]?.route === 'function') {
+      if (visitedRoutes.has(resolvedId) || visitedRoutes.size >= 10)
+        return { ok:false, error:'A story route loops without reaching a scene.' }
+      visitedRoutes.add(resolvedId)
       resolvedId = NODES[resolvedId].route(player)
-      hops++
+      if (typeof resolvedId !== 'string' || !NODES[resolvedId])
+        return { ok:false, error:'A story route points to a missing scene.' }
     }
     // Resolve one-time Chapter 2 faction encounters when returning to the
     // plaza. Include the choice's pending tags: an event's exit choice must
