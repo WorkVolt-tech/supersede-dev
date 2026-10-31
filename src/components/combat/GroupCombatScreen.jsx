@@ -1066,7 +1066,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           :(fusionEnabled?' · Infusion active':' · Infusion inactive')+
             ' · '+FUSION_MP_COST+' MP per infused hit'}
       </span>
-      <button type="button" className="combat-action-btn" disabled={!canPlay}
+      <button type="button" className="combat-action-btn combat-belt-slot" disabled={!canPlay}
         aria-pressed={fusionEnabled} onClick={()=>setFusionEnabled(value=>!value)}>
         {fusionEnabled?'Disable Fusion':'Enable Fusion'}
       </button>
@@ -1095,9 +1095,9 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         {attack.label} cannot reach {target.name} from here. Move, choose a different attack, or select another enemy.
       </p>}
     {!result&&<>
-      <div className="combat-tactical-weapons">
+      <div className="combat-tactical-weapons combat-belt" aria-label="Weapon attack belt">
         {weaponKit.map(item=><button key={item.id} type="button"
-          className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
+          className={'combat-action-btn combat-belt-slot'+(item.id===attack.id?' selected':'')}
           disabled={!canPlay||(item.thrown&&throwTurns>0)||(item.fallback&&emergencyUsed)}
           aria-pressed={item.id===attack.id}
           onClick={()=>{
@@ -1123,19 +1123,19 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         </p>}
       </div>
       <BattleConsumables items={inventory} hp={hp} maxHp={maxHp} disabled={!canPlay||ap<1} onUse={useBattlePotion}/>
-      <div className="combat-actions">
+      <div className="combat-actions combat-belt" aria-label="Battle skills and actions">
         {loadoutSkills.length>0&&<div className="combat-loadout-label">Equipped battle skills</div>}
-        {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
+        {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn combat-belt-slot"
           title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
           onClick={()=>{if(notableTargeting(skill.id)){setPreviewSkill({id:skill.id,label:skill.label,kind:'loadout'});setAim(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
           {skill.label} · Lv {skillLevelInFight(skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
           <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
         </button>)}
-        <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
+        <button type="button" className="combat-action-btn combat-belt-slot" disabled={!canPlay||ap<2}
           onClick={()=>takeTurn('defend')}>Defend · 2 AP</button>
-        <button type="button" className="combat-action-btn" disabled={!canPlay}
+        <button type="button" className="combat-action-btn combat-belt-slot" disabled={!canPlay}
           onClick={()=>takeTurn('end')}>End turn</button>
-        {activeSkills.map(skill=><button key={skill.id} type="button" className="combat-action-btn"
+        {activeSkills.map(skill=><button key={skill.id} type="button" className="combat-action-btn combat-belt-slot"
           disabled={!canPlay||skill.available===false||
             (!isFreeClass(skill.id)&&ap<2)||
             (groupSpellPattern(skill.id)&&!bestTacticalAim(groupSpellPattern(skill.id),hero,foes,chosen))}
@@ -1148,7 +1148,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           {skill.label} · Lv {getSkillLevel(player,skill.id)}
           <span className="combat-action-sub">{groupSpellPattern(skill.id)?.shape||'Self / support'} · 2 AP</span>
         </button>)}
-        {elemental&&<button type="button" className="combat-action-btn"
+        {elemental&&<button type="button" className="combat-action-btn combat-belt-slot"
           disabled={!canPlay||ap<2||(groupSpellPattern(elemental.id)&&!bestTacticalAim(groupSpellPattern(elemental.id),hero,foes,chosen))||
             (elemCooldowns[elemental.id]||0)>0||
             mp<getAttackMpCost(combatPlayer,elemental.id,statusRef.current)}
@@ -1161,7 +1161,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
           {elemental.label} · Lv {skillLevelInFight(elemental.id)} · {skillPracticeLabel(elemental.id)}
           <span className="combat-action-sub">{groupSpellPattern(elemental.id)?.shape||'Self / support'} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
         </button>}
-        {signature&&<button type="button" className="combat-action-btn combat-signature-action"
+        {signature&&<button type="button" className="combat-action-btn combat-belt-slot combat-signature-action"
           disabled={!canPlay||!canCastFusionSignature(signature,{
             enabled:fusionEnabled,ap,mp,cooldown:signatureCooldown,target
           })}
@@ -1173,17 +1173,17 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
                 signature.attack.shape:'Fusion inactive'}
           </span>
         </button>}
-        {signature&&<button type="button" className="combat-action-btn combat-preview-btn"
+        {signature&&<button type="button" className="combat-action-btn combat-belt-slot combat-preview-btn"
           disabled={!canPlay} onClick={()=>{setSignaturePreview(true);setPreviewSkill(null)}}>
           Preview ✦ {signature.label}
         </button>}
-        {keystones.map(k=><button key={k.id} type="button" className="combat-action-btn"
+        {keystones.map(k=><button key={k.id} type="button" className="combat-action-btn combat-belt-slot"
           disabled={!canPlay||!k.available||(!isFreeKey(k.id)&&ap<2)}
           onClick={()=>takeTurn('keystone',k.id)}>{k.label}
           <span className="combat-action-sub">{isFreeKey(k.id)?'Free':'2 AP'} · Keystone
             {['lightning_aggr_ks','wind_aggr_ks'].includes(k.id)?' · 4 positional hits':''}</span>
         </button>)}
-        {onEscape&&<button type="button" className="combat-action-btn" disabled={!canPlay}
+        {onEscape&&<button type="button" className="combat-action-btn combat-belt-slot" disabled={!canPlay}
           onClick={()=>finish('escape')}>Flee</button>}
       </div>
     </>}
@@ -1193,7 +1193,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     {saving&&<p className="combat-save-status">Saving group combat result…</p>}
     {saveError&&<div className="combat-save-error" role="alert">
       <p>{saveError} Your result is kept until the save succeeds.</p>
-      <button type="button" className="combat-action-btn" disabled={saving}
+      <button type="button" className="combat-action-btn combat-belt-slot" disabled={saving}
         onClick={saveOutcome}>Retry save</button>
     </div>}
     <div className="combat-log">{log.map((entry,i)=><p key={i}>{entry}</p>)}</div>
