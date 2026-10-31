@@ -968,7 +968,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           onMove={position=>takeTurn('move',null,position)}
           onAim={position=>{
             setAimSquare(position)
-            if(isTacticalTargetValid(selectedAttack,heroPosition,position))
+            if(!signaturePreview&&isTacticalTargetValid(selectedAttack,heroPosition,position))
               void takeTurn('attack',selectedAttack.id,position)
           }} />
         <div className="combat-tactical-weapons">
