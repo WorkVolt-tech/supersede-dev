@@ -214,3 +214,16 @@ test('Nightshroud cannot activate after the first round',()=>{
  assert.equal(first.damage,0)
  assert.equal(status.loadoutUntargetable,1)
 })
+
+test('Amplifier adds forty percent of effective Power and stacks with Sharp Mind',()=>{
+ const passives=new Set(['ofn2','arn1'])
+ const bonus=notablePassiveStatBonus(passives,{power:25,insight:6})
+ assert.equal(bonus.attack,12)
+ assert.equal(notablePassiveStatBonus(new Set(),{power:25,insight:6}).attack,0)
+})
+test('Spell Surge penetrates half DEF and consumes its bonus on damage',()=>{
+ const status={}
+ useNotableSkill('of_ks2',{status})
+ assert.equal(notableSkillDamage(status,20,10),38)
+ assert.equal(notableSkillDamage(status,20,10),20)
+})
