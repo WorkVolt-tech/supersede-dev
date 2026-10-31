@@ -321,7 +321,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         def:calcDEF(player,equipped),enemyDef:target?.def||0,maxHp}):null
     if(signature.kind==='triad'&&!triad)return false
     updateMp(mpRef.current-signature.mp)
-    const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+    const single={from:[0,1,2],to:[0,1,2],cols:'any',diagonal:true,shape:'single'}
     if(signature.kind==='triad'){
       Object.assign(statusRef.current,triad.playerStatus)
       for(const foe of plan.targets){
@@ -550,7 +550,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         const damages=groupKeystoneHitDamages(
           id,effect.enemyDamage,calcATK(player,equipped))
         const combo=planGroupMultiHits(foesRef.current,target.id,damages)
-        const single={from:[0,1,2],to:[0,1,2],cols:'any',shape:'single'}
+        const single={from:[0,1,2],to:[0,1,2],cols:'any',diagonal:true,shape:'single'}
         for(const hit of combo.hits) {
           // Apply each arc through the normal per-unit damage/kill hooks.
           // No second application of effect.enemyDamage to the primary foe.
