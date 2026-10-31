@@ -42,7 +42,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, canMove, onMove, onFocus,
+function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -73,7 +73,7 @@ function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, can
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
         aria-label={foe?foe.name+' '+foe.hp+' HP · '+
           (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
-        onClick={()=>side==='enemy'?onFocus({col,rank},foe?.id):onMove({col,rank})}>
+        onClick={()=>side==='enemy'?onAttack({col,rank},foe?.id):onMove({col,rank})}>
         <span>{foe?foe.icon:mine?'🧑':'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
@@ -733,7 +733,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   async function takeTurn(kind,id=null,position=null) {
     if(busyRef.current||pendingRef.current)return
     const target=nextAliveTarget(foesRef.current,focus)
-    const attackSquare=kind==='attack'?{...aim}:null
+    const attackSquare=kind==='attack'?(position||aim):null
     const selected=kind==='attack'?attack:null
     if(kind==='attack'&&((selected?.fallback&&emergencyUsedRef.current)||!isTacticalTargetValid(selected,heroRef.current,attackSquare)||
       (selected?.thrown&&improvisedThrowTurnsRemaining(
@@ -869,6 +869,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
       onFocus={(square,id)=>{setAim(square);if(id)setFocus(id)}}
+      onAttack={(square,id)=>{setAim(square);if(id)setFocus(id);if(isTacticalTargetValid(attack,hero,square))takeTurn('attack',null,square)}}
       onMove={point=>takeTurn('move',null,point)} />
     <div className="combat-group-enemies" aria-live="polite">
       {foes.map(unit=><button key={unit.id} type="button"
@@ -939,7 +940,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
           className={'combat-action-btn'+(item.id===attack.id?' selected':'')}
           disabled={!canPlay||(item.thrown&&throwTurns>0)||(item.fallback&&emergencyUsed)}
           aria-pressed={item.id===attack.id}
-          onClick={()=>{setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)}}>
+          onClick={()=>{
+            setSelectedAttack(item.id);setPreviewSkill(null);setSignaturePreview(false)
+            if(!isTacticalTargetValid(item,hero,aim)){
+              const cells=Array.from({length:9},(_,i)=>({col:i%3,rank:Math.floor(i/3)}))
+              const closest=cells.find(cell=>isTacticalTargetValid(item,hero,cell))
+              if(closest)setAim(closest)
+            }
+          }}>
           {item.label}
           <span className="combat-action-sub">{item.ap} AP · {tacticalAttackDescription(item)}
             {item.thrown&&throwTurns>0?' · Recovering ('+throwTurns+' rounds)':''}
