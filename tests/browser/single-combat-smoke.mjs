@@ -129,13 +129,22 @@ async function runScenario(scenario,view){
       equipped:[...document.querySelectorAll('.combat-tactical-weapons button')].map(x=>({
         name:x.textContent,selected:x.getAttribute('aria-pressed'),disabled:x.disabled
       })),
-      targets:[...document.querySelectorAll('.combat-grid-board:first-of-type button')].map(x=>({
+      targets:[...document.querySelectorAll('.combat-grid-board')[0]?.querySelectorAll('button')||[]].map(x=>({
         text:x.textContent,disabled:x.disabled,className:x.className
       })),
       log:document.querySelector('.combat-log')?.textContent?.slice(-1200),
       outcome:document.body.dataset.outcome,
     }))
     console.error('Solo targeting diagnostic '+scenario,JSON.stringify(diagnostic))
+    console.error('Solo page exceptions '+scenario,JSON.stringify(errors))
+    if(scenario==='unfused'){
+      await enemyCell.evaluate(node=>node.click())
+      console.error('Solo direct-click diagnostic',await view.evaluate(()=>({
+        ap:document.querySelector('[aria-label="Action Points"]')?.getAttribute('aria-valuenow'),
+        log:document.querySelector('.combat-log')?.textContent?.slice(-900),
+        banner:document.querySelector('.combat-turn-banner')?.textContent,
+      })))
+    }
     throw error
   }
   const firstVictory=await view.evaluate(()=>document.body.dataset.outcome==='win')
