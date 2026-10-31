@@ -868,6 +868,11 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
         {unit.hp>0&&foeStatusesRef.current[unit.id]?.cfx_emberStacks>0?' 🔥':''}
       </button>)}
     </div>
+    <button type="button" className="combat-action-btn"
+      disabled={!canPlay||!attackLegal||throwUnavailable||ap<attack.ap||(attack.fallback&&emergencyUsed)}
+      onClick={()=>takeTurn('attack',chosen)}>
+      Attack {target?.name||'target'} · {attack.label} · {attack.ap} AP
+    </button>
     <div className="combat-tactical-status">
       <span>{weapon?'Weapon: '+weaponType:'No weapon equipped · Basic combat'}
         {' · '}Mastery Lv {weaponMasteryLevel((player.weapon_mastery||{})[weaponType]||0)}
