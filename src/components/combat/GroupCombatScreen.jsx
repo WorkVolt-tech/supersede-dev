@@ -1,5 +1,6 @@
 // Explicit Chapter 1 multi-enemy encounters. Kept separate from CombatScreen
 // so bosses and existing one-on-one fights retain their mature story scripts.
+import { activeCompanions } from '../../game/storyParty'
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useInventoryStore } from '../../store/useInventoryStore'
@@ -43,7 +44,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
+function Battlefield({ foes, hero, companions=[], focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onFocus, onAttack,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -52,6 +53,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
     return ranks.flatMap(rank=>[0,1,2].map(col=>{
       const foe=side==='enemy'?foes.find(f=>f.hp>0&&f.col===col&&f.rank===rank):null
       const mine=side==='hero'&&hero.rank===rank&&hero.col===col
+      const member=side==='hero'&&!mine?companions.find((_,i)=>[0,2,3,5,6,8][i]===rank*3+col):null
       const status=foe?foeStatuses[foe.id]||{}:{}
       const effects=foe?[
         status.cls_bleedingTurns>0?'🩸':'',status.cls_rotTurns>0?'☣️':'',
@@ -59,7 +61,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
         status.cls_markTurns>0?'🎯':'',status.cfx_longDecayStacks>0?'☠️':'',
         status.cfx_emberStacks>0?'🔥':'',
       ].filter(Boolean).join(''):''
-      const step=side==='hero'&&!mine&&canMove&&
+      const step=side==='hero'&&!mine&&!member&&canMove&&
         Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
       const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
@@ -74,20 +76,20 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
         p=>p.rank===rank&&p.col===col)
       return <button key={side+rank+col} type="button"
         className={['combat-grid-cell',side==='enemy'?'foe':'ally',
-          foe||mine?'occupied':'',selected?'selected-foe':'',
+          foe||mine||member?'occupied':'',selected?'selected-foe':'',
           inRange?'attackable':'',reachable?'reachable':'',
           splash?'splash':'',enemyThreat?'enemy-threat':'',hazard?'hazard':'',step?'movable':'',
           barrier?'signature-preview-guard':''].join(' ')}
         disabled={side==='enemy'?false:!step}
         aria-pressed={side==='enemy'&&foe?foe.id===focused:undefined}
-        aria-label={foe?foe.name+' '+foe.hp+' HP · '+
+        aria-label={member?member.name+' · party ally':foe?foe.name+' '+foe.hp+' HP · '+
           (inRange?'in range':'out of range'):mine?'You':('Empty '+(rank+1)+'-'+(col+1))}
         onClick={()=>side==='enemy'?onAttack({col,rank},foe?.id):onMove({col,rank})}>
-        <span>{foe?foe.icon:mine?'🧑':'·'}</span>
+        <span>{foe?foe.icon:mine?'🧑':member?member.icon:'·'}</span>
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(foe||mine)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':'YOU'}{effects&&' '+effects}</small>}
+        {(foe||mine||member)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':member?member.name:'YOU'}{effects&&' '+effects}</small>}
       </button>
     }))
   }
@@ -102,6 +104,7 @@ function Battlefield({ foes, hero, focused, aim, foeStatuses, enemyArea, pattern
 
 export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }) {
   const player=usePlayerStore(s=>s.player)
+  const companions=activeCompanions(player)
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
   const loadInventory=useInventoryStore(s=>s.loadInventory)
@@ -574,6 +577,16 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
 
   async function enemyPhase(fast,heroAt) {
     let next=foesRef.current.map(u=>({...u}))
+    if(!fast&&companions.length){
+      for(const member of companions){
+        const victim=next.find(foe=>foe.hp>0)
+        if(!victim)break
+        victim.hp=Math.max(0,victim.hp-member.damage)
+        note(member.name+' attacks '+victim.name+' for '+member.damage+' damage.')
+        if(victim.hp===0)onFoeDefeated(victim)
+      }
+      updateFoes(next)
+    }
     let currentHp=hpRef.current
     const speed=calcSPD(player,equipped)+(statusRef.current.playerSPDBonus||0)
     const sorted=next.filter(u=>u.hp>0 &&
@@ -899,7 +912,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape }
   return <div className="combat-screen group-combat">
     <div className="combat-encounter-title">⚔ GROUP ENCOUNTER · {enemyData.name} ⚔</div>
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
-    <Battlefield foes={foes} hero={hero} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
+    <Battlefield foes={foes} hero={hero} companions={companions} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
       fields={fieldsRef.current} canMove={canPlay}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
