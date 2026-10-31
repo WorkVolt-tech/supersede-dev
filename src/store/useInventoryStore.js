@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { supabase } from '../lib/supabaseClient'
 import { SLOTS, equipmentSubtype, isTwoHandedWeapon } from '../game/equipmentSlots'
-import { findResonance, RUNE_NAMES, normalizedItem } from '../game/runes'
+import { findResonance, fragmentElement, normalizedItem } from '../game/runes'
 
 export const useInventoryStore = create((set, get) => ({
   items: [],
