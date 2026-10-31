@@ -1028,6 +1028,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           className={'combat-signature-burst signature-'+signatureFx.kind+
         (signatureFx.element?' triad-'+signatureFx.element:'')}
           role="status">{signature?.label}</div>}
+        <p className="combat-aim-legend"><span className="aim-legal">Blue = legal aim</span> · <span className="aim-hit">Gold = cells hit by attack / AoE</span> · White ring = impact center</p>
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={partyPositions} enemyName={enemyData.name}
           enemyIcon={enemyData.icon} enemyHp={enemyHp}
           attack={displayedAttack}
