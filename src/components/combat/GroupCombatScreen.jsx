@@ -141,9 +141,14 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     notableUsesRef.current[id]=(notableUsesRef.current[id]||0)+1
     setSkillPracticeUses(previous=>({...previous,[id]:(previous[id]||0)+1}))
   }
+  function skillLevelInFight(id){
+    const practice=awardSkillPractice(player.skill_levels||{},{[id]:skillPracticeUses[id]||0})
+    return getSkillLevel({skill_levels:practice.skill_levels},id)
+  }
   function skillPracticeLabel(id){
-    const total=Number(player.skill_levels?.['__practice_'+id]||0)+(skillPracticeUses[id]||0)
-    return getSkillLevel(player,id)>=10?'MAX':(total%10)+'/10 uses'
+    const practice=awardSkillPractice(player.skill_levels||{},{[id]:skillPracticeUses[id]||0})
+    return skillLevelInFight(id)>=10?'MAX':practice.skill_levels['__practice_'+id]||0
+      ?(practice.skill_levels['__practice_'+id]||0)+'/10 uses':'0/10 uses'
   }
   const updatePlayer=usePlayerStore(s=>s.updatePlayer)
   const inventory=useInventoryStore(s=>s.items)
@@ -1124,7 +1129,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         {loadoutSkills.map(skill=><button key={'loadout-'+skill.id} type="button" className="combat-action-btn"
           title={skill.desc} aria-pressed={previewSkill?.id===skill.id} disabled={!canPlay||ap<2||!SUPPORTED_NOTABLES.has(skill.id)||(skill.id==='dcn1'&&round!==1)}
           onClick={()=>{if(notableTargeting(skill.id)){setPreviewSkill({id:skill.id,label:skill.label,kind:'loadout'});setAim(null);setHoverAim(null)}else takeTurn('loadout',skill.id)}}>
-          {skill.label} · Lv {getSkillLevel(player,skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
+          {skill.label} · Lv {skillLevelInFight(skill.id)} · {skillPracticeLabel(skill.id)} · 2 AP
           <span className="combat-action-sub">{SUPPORTED_NOTABLES.has(skill.id)?skill.desc:'Equipped · effect not implemented yet'}</span>
         </button>)}
         <button type="button" className="combat-action-btn" disabled={!canPlay||ap<2}
@@ -1154,7 +1159,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
               setPreviewSkill({id:elemental.id,label:elemental.label,kind:'elemental'});setSignaturePreview(false);setHoverAim(null)
             } else takeTurn('elemental',elemental.id)
           }}>
-          {elemental.label} · Lv {getSkillLevel(player,elemental.id)} · {skillPracticeLabel(elemental.id)}
+          {elemental.label} · Lv {skillLevelInFight(elemental.id)} · {skillPracticeLabel(elemental.id)}
           <span className="combat-action-sub">{groupSpellPattern(elemental.id)?.shape||'Self / support'} · {getAttackMpCost(combatPlayer,elemental.id,statusRef.current)} MP</span>
         </button>}
         {signature&&<button type="button" className="combat-action-btn combat-signature-action"
