@@ -36,7 +36,7 @@ export default function PlayerRecord({ player, onNavigate }) {
     </button>
     <span className="reading-page-heading" style={{marginTop:26}}>Archive &amp; systems</span>
     <div className="reading-quick-nav">
-      {['chapters','inventory','skills','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
+      {['chapters','inventory','skills','mastery','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
     </div>
     <button className="reading-action" onClick={() => onNavigate('farming')}>⚔ Chapter 1 farming areas</button>
     {professionUnlocked(player) && <button className="reading-action" onClick={() => onNavigate('professions')}>⚒ Professions</button>}
