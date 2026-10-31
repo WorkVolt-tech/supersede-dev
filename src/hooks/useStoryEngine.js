@@ -9,6 +9,7 @@ import { ZONE_ELEMENT_MAP } from '../data/ch2/config'
 import { resolveCh2HubInterrupt } from '../data/ch2/hubInterrupts'
 import { getChapterResonance } from '../data/ch2/elementalDifficulty'
 import { getActiveElement } from '../game/activeElement'
+import { partyTagsForScene } from '../game/storyParty'
 
 const CH1_GUARDIANS = ['sentinel', 'surveyor', 'unseen']
 const CH1_FINAL_NODES = new Set([
@@ -121,6 +122,12 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
         log.push('sweep_fired')
       }
       updates.alliance_log = log
+    }
+
+    if(chapterPrefix==='ch1') {
+      const original=updates.alliance_log||player.alliance_log||[]
+      const partyLog=partyTagsForScene(original,resolvedId)
+      if(partyLog.join('|')!==original.join('|')) updates.alliance_log=partyLog
     }
 
     // Record boss victories only on the win route, never on defeat/escape.
