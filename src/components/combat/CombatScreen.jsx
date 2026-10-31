@@ -819,7 +819,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     let foeHp=enemyHp
     const enemySpeed=enemyData.speed??enemyData.spd??enemyData.agility??5
     const playerSpeed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),{...player,notableShadeWalkTurns:statusEffectsRef.current.notableShadeWalkTurns}).speed+(statusEffectsRef.current.playerSPDBonus||0)
-    const enemyFirst=enemySpeed>playerSpeed
+    const enemyFirst=enemySpeed>playerSpeed&&!((action==='attack')&&notableRazorTempo(learnedNotablePassives(player),attack?.id))
     const defendAction=action==='defend'
     const firstAction=!roundStartedRef.current
     if (firstAction) {
