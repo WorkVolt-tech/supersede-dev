@@ -78,7 +78,7 @@ function Battlefield({ foes, hero, focused, aim, enemyArea, pattern, fields, can
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
-        {(foe||mine)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':'YOU'}</small>
+        {(foe||mine)&&<small>{foe?'#'+foe.id.split('-')[1]+' '+foe.hp+' HP':'YOU'}</small>}
       </button>
     }))
   }
