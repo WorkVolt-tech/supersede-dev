@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -645,6 +645,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       playerHp=Math.min(maxPlayerHp,playerHp+bloodthirst.heal)
       setCurrentHp(playerHp)
       bloodthirst.messages.forEach(pushLog)
+      if(notablePassiveKill(learnedNotablePassives(player),statusEffectsRef.current))pushLog('Shade Walk: +15 SPD for 2 turns.')
       const killResult = ClsCombat.onKill(combatPlayer, statusEffectsRef.current, enemyData)
       if (killResult?.messages?.length) killResult.messages.forEach(pushLog)
       if (killResult?.dbUpdates) Object.assign(dbUpdatesRef.current, killResult.dbUpdates)
@@ -815,7 +816,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     let playerHp=currentHp
     let foeHp=enemyHp
     const enemySpeed=enemyData.speed??enemyData.spd??enemyData.agility??5
-    const playerSpeed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),player).speed+(statusEffectsRef.current.playerSPDBonus||0)
+    const playerSpeed=calcSPD(player,equipped)+notablePassiveStatBonus(learnedNotablePassives(player),{...player,notableShadeWalkTurns:statusEffectsRef.current.notableShadeWalkTurns}).speed+(statusEffectsRef.current.playerSPDBonus||0)
     const enemyFirst=enemySpeed>playerSpeed
     const defendAction=action==='defend'
     const firstAction=!roundStartedRef.current
