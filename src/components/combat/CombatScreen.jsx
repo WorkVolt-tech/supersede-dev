@@ -45,7 +45,7 @@ import {
   weaponMasteryLevel, weaponMasteryBonus, awardWeaponMastery,
   nextWeaponMasteryThreshold,
 } from '../../game/tacticalGrid'
-import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill } from '../../game/loadoutCombat'
+import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
 import './CombatScreen.css'
@@ -583,11 +583,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const armorPierce = stonebornArmorPierce(combatPlayer, statusEffectsRef.current, enemyData.def || 0)
     const warboundBonus=consumeWarboundBonus(statusEffectsRef.current,calcATK(player,equipped))
     const base = Math.max(1, warboundBonus + notablePassiveStatBonus(learnedNotablePassives(player),player).attack + notableAttackBonus(statusEffectsRef.current,calcATK(player,equipped)) + calcATK(player, equipped) - (enemyData.def || 0) +
-      armorPierce + Math.floor(Math.random() * 4))
+      armorPierce + notableArmorPierce(statusEffectsRef.current,enemyData.def || 0) + Math.floor(Math.random() * 4))
     const atkResult = ClsCombat.onPlayerAttack(combatPlayer, statusEffectsRef.current, enemyData, base)
     const critChance = Math.min(.5,Math.max(0,effective.core.luck)*.01 + critChanceBonus(combatPlayer) + (atkResult?.critChanceAdd || 0))
     const wasCrit = consumeNotableCrit(statusEffectsRef.current) || Boolean(statusEffectsRef.current.cfx_guaranteedCrit) || atkResult?.wasCrit || Math.random() < critChance
-    let dmg = Math.max(0, Math.round(base * notableAttackMultiplier(statusEffectsRef.current) * (atkResult?.dmgMult ?? 1) * (wasCrit ? 1.5 + critDamageBonus(combatPlayer) + notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage : 1)))
+    let dmg = Math.max(0, Math.round(base * notableAttackMultiplier(statusEffectsRef.current) * (atkResult?.dmgMult ?? 1) * (wasCrit ? notableCriticalMultiplier(statusEffectsRef.current,1.5) + critDamageBonus(combatPlayer) + notablePassiveStatBonus(learnedNotablePassives(player),player).criticalDamage : 1)))
     if (legendary.has('legendary_forger') && wasCrit) dmg += 12
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) dmg += 15
     if (legendary.has('legendary_resonance_weaver')) dmg += 4
@@ -659,7 +659,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (r?.messages?.length) r.messages.forEach(pushLog)
     if (r?.dbUpdates) Object.assign(dbUpdatesRef.current, r.dbUpdates)
     const skillLevel = getSkillLevel(player, skillId)
-    const skillDamage = scaleSkillAmount(r?.enemyDamage, skillLevel)
+    const skillDamage = notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(r?.enemyDamage, skillLevel))
     const skillHeal = scaleSkillAmount(r?.selfHeal, skillLevel)
     if (skillDamage > 0) foeHp = Math.max(0, foeHp - skillDamage)
     if (skillHeal > 0) {
@@ -708,7 +708,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     effect.messages.forEach(pushLog)
     applyKeystoneStatuses(statusEffectsRef.current, effect.setStatus)
     const skillLevel = getSkillLevel(player, skillId)
-    foeHp = Math.max(0, foeHp - scaleSkillAmount(effect.enemyDamage, skillLevel))
+    foeHp = Math.max(0, foeHp - notableSkillDamage(statusEffectsRef.current,scaleSkillAmount(effect.enemyDamage, skillLevel)))
     playerHp = Math.min(maxPlayerHp, playerHp + scaleSkillAmount(effect.healPlayer, skillLevel))
     if (effect.enemyDamage > 0) showJudgeHit()
     setEnemyHp(foeHp)
