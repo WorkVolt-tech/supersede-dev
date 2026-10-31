@@ -171,3 +171,35 @@ export function activateNotableIronTide(passives,status,hp,maxHp){
  status.notableIronTideTurns=2
  return true
 }
+
+/** Defensive passive mitigation and healing are kept independent of class effects. */
+export function notablePassiveDefend(passives,status,hp,maxHp) {
+ const messages=[];let heal=0
+ if(passives.has('dfn2')&&status.notableAbsorptionReady){
+  heal=Math.min(15,Math.max(0,maxHp-hp))
+  delete status.notableAbsorptionReady
+  if(heal)messages.push('Absorption restores '+heal+' HP.')
+ }
+ return {heal,messages}
+}
+export function notablePassiveBattleStart(passives,status,maxHp) {
+ if(passives.has('dc_ks2')&&!status.notableAncientRootInitialized) {
+  status.notableAncientRootInitialized=true
+  status.notableAncientRootShield=Math.round(maxHp*.2)
+ }
+}
+export function notablePassiveResolveHit(passives,status,damage) {
+ if(damage>0&&passives.has('dfn2')){
+  status.notableAbsorptionHits=(status.notableAbsorptionHits||0)+1
+  if(status.notableAbsorptionHits>=3){status.notableAbsorptionHits=0;status.notableAbsorptionReady=true}
+ }
+ if(status.notableAncientRootShield>0){
+  const blocked=Math.min(damage,status.notableAncientRootShield)
+  status.notableAncientRootShield-=blocked
+  damage-=blocked
+ }
+ return damage
+}
+export function notablePassiveResistsControl(passives) {
+ return passives.has('dcn5')||passives.has('dc_ks2')
+}
