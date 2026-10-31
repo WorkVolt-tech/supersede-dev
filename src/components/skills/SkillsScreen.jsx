@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import { CORE_STATS, getEffectiveStats } from '../../game/playerStats'
+import { combatApBreakdown } from '../../game/combatAp'
 import { SKILL_NODES } from '../../game/skillTreeNodes'
 import { ELEMENT_TREES, isElementUnlocked } from '../../game/elementsTree'
 import { getActiveElement, activeElementChange } from '../../game/activeElement'
@@ -62,6 +63,7 @@ export default function SkillsScreen({ onReturn }) {
   const player = usePlayerStore(s => s.player)
   const inventory = useInventoryStore(s => s.items)
   const stats = getEffectiveStats(player, inventory.filter(item => item.equipped_slot))
+  const apCapacity = combatApBreakdown(player, inventory)
   const setPlayerLocal = usePlayerStore(s => s.setPlayerLocal)
   const [tab, setTab] = useState('offense')
   const [selected, setSelected] = useState(null)
@@ -211,10 +213,11 @@ export default function SkillsScreen({ onReturn }) {
       <div className="skills-combat-metrics" aria-label="Combat and player record stats">
         {[
           ['Combat ATK',stats.attack],['Combat DEF',stats.defense],
-          ['Initiative',stats.initiative],['Insight',stats.core.insight],
+          ['Initiative',stats.initiative],['Max AP',apCapacity.max],['Insight',stats.core.insight],
           ['PvP Kills',player.pvp_kills ?? 0],['Helps Given',player.helps_given ?? 0],
         ].map(([label,value])=><div key={label} className="skills-stat-tile">
           <span>{label}</span><strong>{value}</strong>
+          {label==='Max AP'&&<small>{apCapacity.base} base + {apCapacity.level} level + {apCapacity.permanent} permanent + {apCapacity.gear} gear</small>}
         </div>)}
       </div>
       <div className="skills-attribute-stats" aria-label="Character attributes">
