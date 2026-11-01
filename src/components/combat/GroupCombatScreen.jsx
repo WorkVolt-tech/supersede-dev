@@ -713,7 +713,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       let incoming=0,heal=0
       const foeData=enemyCopiesRef.current[actor.id]
       const state=enemyStatesRef.current[actor.id]
-      if(!pulse)forFoe(actor.id,()=>resolveEnemyTurn(foeData,{
+      if(queued&&!occupiedByHero){
+        if(state)state.turnCount++
+        messages.push('You dodge '+actor.name+' by moving outside its marked attack area.')
+      }else if(!pulse)forFoe(actor.id,()=>resolveEnemyTurn(foeData,{
         enemyState:state,enemyHp:actor.hp,maxEnemyHp:actor.maxHp,
         currentHp,maxPlayerHp:maxHp,
         playerDEF:()=>calcDEF(player,equipped),defending:defendingRef.current,
