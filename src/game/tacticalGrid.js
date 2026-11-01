@@ -11,6 +11,9 @@ export const TACTICAL_ATTACKS = {
     cols:'any',shape:'single',damage:2,ap:1, diagonal:true, thrown:true, minRange:2, maxRange:4,
     description:'Throw an improvised object 2–4 squares away. Retrieval takes 1–2 rounds.' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
+  daggerPoke: { label:'Quick Poke', reach:'short',from:[0],to:[0],cols:'near',shape:'single',damage:5,ap:1,description:'A quick precision poke at a nearby enemy.' },
+  doubleStab: { label:'Double Fang',reach:'short',from:[0],to:[0],cols:'near',shape:'single',damage:11,ap:2,masteryLevel:5,description:'Two rapid dagger strikes in one turn. Costs 2 AP.' },
+  shadowPuncture:{ label:'Shadow Puncture',reach:'mid',from:[0,1],to:[0,1],cols:'near',shape:'single',damage:9,ap:2,masteryLevel:15,description:'A committed forward puncture with increased reach.' },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
   jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1, maxRange:2 },
   bash:        { label:'Weapon Bash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:4, ap:1 },
@@ -38,7 +41,7 @@ export const TACTICAL_ATTACKS = {
 
 export const TACTICAL_WEAPONS = {
   sword:    { label:'Sword',         icon:'⚔️', attacks:['slash','thrust','sweep','pulse'] },
-  dagger:   { label:'Dagger',        icon:'🗡️', attacks:['stab','lunge','throw','pulse'] },
+  dagger:   { label:'Dagger',        icon:'🗡️', attacks:['stab','daggerPoke','lunge','throw','pulse'] },
   spear:    { label:'Spear',         icon:'🔱', attacks:['jab','thrust','pierce','pulse'] },
   staff:    { label:'Staff',         icon:'🪄', attacks:['bash','bolt','wave','pulse'] },
   bow:      { label:'Bow',           icon:'🏹', attacks:['bash','quickArrow','aimed','volley','pulse'] },
@@ -55,7 +58,7 @@ export const TACTICAL_WEAPONS = {
 // monsters also use this normalization, rather than requiring their own rules.
 // Mastery adds techniques without removing any base-weapon reach.
 export const MASTERY_TECHNIQUES = {
-  sword:['masterArc','masterBurst'], dagger:['masterArc','masterLine'],
+  sword:['masterArc','masterBurst'], dagger:['doubleStab','shadowPuncture','masterArc','masterLine'],
   spear:['masterArc','masterLine'], staff:['masterLine','masterBurst'],
   bow:['masterLine','masterBurst'], crossbow:['masterLine','masterBurst'],
   pistol:['masterLine','masterBurst'], rifle:['masterLine','masterBurst'],
@@ -96,6 +99,12 @@ export function evolveTacticalWeaponAttack(attack,masteryLevel=1) {
 // A player with no equipped main-hand weapon does not receive dagger,
 // magical-wave or emergency skills just for being "unarmed". Existing
 // enemy AI and equipped-weapon kits still use getTacticalAttacks.
+export function selectedWeaponAttacks(attacks, savedIds, limit=4) {
+  if (!Array.isArray(savedIds)) return attacks.slice(0,limit)
+  const allowed = new Set(attacks.map(a=>a.id))
+  const picked = [...new Set(savedIds)].filter(id=>allowed.has(id)).slice(0,limit)
+  return picked.length ? picked.map(id=>attacks.find(a=>a.id===id)) : attacks.slice(0,limit)
+}
 export function getPlayerTacticalAttacks(hasMainhandWeapon,weaponType,masteryXp=0) {
   if(!hasMainhandWeapon) return ['bareStrike','improvisedThrow']
     .map(id=>({id,...TACTICAL_ATTACKS[id]}))
