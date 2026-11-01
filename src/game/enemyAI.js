@@ -314,6 +314,9 @@ export function resolveEnemyTurn(enemy, ctx) {
   if (name.includes('Dorian')) {
     return _enemy_dorian(enemy, ctx, hpPct)
   }
+  if (ELEMENTAL_GUARDIANS[name]) {
+    return _elementalGuardian(enemy, ctx, hpPct)
+  }
   if (name.includes('Twin Judges') || name.includes('Judge Mercy') || name.includes('Judge Wrath') || name.includes('Verdict')) {
     return _boss_twinJudges(enemy, ctx, hpPct)
   }
@@ -322,6 +325,59 @@ export function resolveEnemyTurn(enemy, ctx) {
   return _genericEnemy(enemy, ctx, hpPct)
 }
 
+
+
+/* Chapter 2: each elemental guardian has a distinct attack rotation and
+   an enraged phase below half health. Keep damage on the standard AI callback
+   path so player defense, dodges and reactions still apply in CombatScreen. */
+const ELEMENTAL_GUARDIANS = {
+  'The Ashen King':       { icon:'🔥', moves:[['Ember Lance','column',1.15],['Cinder Sweep','row',0.9],['Crown of Flame','cross',1.3]] },
+  'The Tide Queen':       { icon:'💧', moves:[['Undertow','column',0.95],['Riptide','row',1.05],['Crushing Tide','all',1.2]], heal:true },
+  'The Fractured Arc':    { icon:'⚡', moves:[['Spark Needle','single',1.35],['Chain Surge','cross',1],['Storm Circuit','row',1.2]] },
+  'The Infinite Archivist':{ icon:'✨', moves:[['Glyph Ray','column',1.1],['Page Storm','cross',0.95],['Forbidden Thesis','all',1.15]] },
+  'The Hollow Reaper':    { icon:'🌑', moves:[['Grave Cut','single',1.4],['Shadow Crescent','row',1],['Nightfall','cross',1.2]] },
+  'The Warden of Ruin':   { icon:'🪨', moves:[['Stone Fist','single',1.25],['Faultline','column',1.1],['Quake','all',1.1]] },
+  'The Stormborn':       { icon:'💨', moves:[['Gale Blade','row',1.05],['Cyclone','cross',1.1],['Tempest Dive','single',1.4]] },
+  'The Root Mother':     { icon:'🌿', moves:[['Thorn Spear','column',1.05],['Vine Lash','row',1],['Bramble Bloom','cross',1.15]], heal:true },
+  'The Iron Sovereign':  { icon:'⚙️', moves:[['Iron Hammer','single',1.4],['Sawline','row',1.05],['Magnetic Crush','column',1.25]] },
+  'The Plague Coil':     { icon:'☠️', moves:[['Venom Fang','single',1.15],['Toxic Spray','row',1],['Miasma Burst','all',1.1]], poison:true },
+}
+function _elementalGuardian(enemy,ctx,hpPct){
+  const {enemyState,messages,triggerAnimation,onEnemyDmgPlayer,onEnemyHealSelf,
+    playerDEF,defending,statusEffects:se}=ctx
+  const kit=ELEMENTAL_GUARDIANS[enemy.name]
+  const enraged=hpPct<=0.5
+  const turn=enemyState.turnCount
+  // Heavy area attacks become frequent in the second phase; the rotation is
+  // deterministic so the player can learn and anticipate the boss's rhythm.
+  const index=enraged ? (turn+1)%3 : (turn-1)%3
+  const [label,pattern,mult]=kit.moves[index]
+  const finalMult=mult*(enraged?1.18:1)
+  const damage=Math.max(1,Math.round(baseDmg(enemy.atk,playerDEF,se,defending)*finalMult))
+  const target=ctx.heroPosition||{col:1,rank:0}
+  const cells=[]
+  for(let rank=0;rank<3;rank++)for(let col=0;col<3;col++){
+    if(pattern==='all'||pattern==='row'&&rank===target.rank||
+       pattern==='column'&&col===target.col||
+       pattern==='cross'&&(rank===target.rank||col===target.col)||
+       pattern==='single'&&rank===target.rank&&col===target.col)cells.push({rank,col})
+  }
+  ctx.onGuardianPattern?.({name:label,pattern,cells,enraged})
+  onEnemyDmgPlayer(damage)
+  messages.push(kit.icon+' '+enemy.name+' uses '+label+' ('+pattern+' pattern) for '+damage+' damage.'+(enraged?' Enraged phase!':''))
+  if(kit.heal&&index===2){
+    const recovery=Math.max(1,Math.round((enemy.hp||100)*0.035))
+    onEnemyHealSelf(recovery)
+    messages.push(kit.icon+' '+enemy.name+' regenerates '+recovery+' HP.')
+  }
+  if(kit.poison&&index===2){
+    se.playerPoisonTurns=Math.max(se.playerPoisonTurns||0,2)
+    se.playerPoisonDmg=Math.max(se.playerPoisonDmg||0,Math.max(1,Math.floor(enemy.atk*0.1)))
+    messages.push('☠ Toxic residue causes poison for 2 turns.')
+  }
+  triggerAnimation(ANIM.FLASH)
+  return {anim:ANIM.FLASH,moveKey:label}
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // STANDARD ENEMIES
