@@ -337,3 +337,38 @@
 .combat-grid-cell.ally.enemy-strike-hit {animation:combat-enemy-hit .55s ease-out;}
 @keyframes combat-enemy-hit {0%,100%{filter:none}25%{filter:brightness(2.1);box-shadow:inset 0 0 20px #d83f3f,0 0 15px #df554b}60%{filter:brightness(1.3)}}
 @media(prefers-reduced-motion:reduce){.combat-grid-cell.ally.enemy-strike-hit{animation:none;outline:3px solid #d76a5b}}
+
+/* Bosses are visually larger than their tactical square. The cell remains
+   the hit target, while the existing animated portrait rises above it. */
+.combat-grid-field,.combat-grid-board { overflow:visible; }
+.combat-grid-cell.foe.boss-occupied { overflow:visible; isolation:auto; z-index:3; }
+.combat-grid-cell.foe.boss-occupied .combat-unit-hud {
+  position:relative;z-index:5;min-height:31px;
+  padding:3px 4px;border-radius:4px;background:rgba(19,16,15,.88);
+}
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual {
+  position:absolute;left:50%;bottom:calc(100% - 25px);
+  width:clamp(135px,34vw,260px);height:clamp(135px,34vw,260px);
+  max-height:none;transform:translateX(-50%);
+  animation:none;pointer-events:none;z-index:4;
+  filter:drop-shadow(0 8px 16px rgba(0,0,0,.7));
+}
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual > *,
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual .watcher-portrait,
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual img {
+  max-width:none;max-height:none;
+}
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual .watcher-portrait {
+  width:100%;height:100%;
+}
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual img {
+  width:100%;height:100%;object-fit:contain;
+}
+.combat-grid-cell.foe.boss-occupied .combat-boss-visual .combat-icon { font-size:65px; }
+.combat-grid-board:first-of-type { position:relative; }
+@media(max-width:480px) {
+ .combat-grid-cell.foe.boss-occupied .combat-boss-visual {
+  width:clamp(125px,41vw,175px);height:clamp(125px,41vw,175px);
+  bottom:calc(100% - 22px);
+ }
+}
