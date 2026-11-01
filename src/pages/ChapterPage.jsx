@@ -2,9 +2,10 @@ import { usePlayerStore } from '../store/usePlayerStore'
 import { useStoryEngine } from '../hooks/useStoryEngine'
 import StoryNode from '../components/story/StoryNode'
 import { NODES as CH1_NODES } from '../data/ch1/nodes'
+import { chapterOneComplete, firstDriveComplete } from '../game/progression'
 
 // Player + inventory are loaded once by App.jsx before any page renders.
-export default function ChapterPage({ onOpenFarming }) {
+export default function ChapterPage({ onOpenFarming, onStartDrive, onOpenChapterTwo }) {
   const player = usePlayerStore(s => s.player)
   const { currentNode, goTo } = useStoryEngine(CH1_NODES, 'ch1')
   if (!player) return <p className="story-text">No player loaded.</p>
@@ -43,6 +44,22 @@ export default function ChapterPage({ onOpenFarming }) {
   return (
     <div className="chapter-page">
       <StoryNode node={displayNode} player={player} goTo={goTo} />
+      {currentNode?.type === 'end' && chapterOneComplete(player) && (
+        <div className="chapter-drive-next">
+          {firstDriveComplete(player) ? (
+            <button type="button" className="reading-action" onClick={onOpenChapterTwo}>
+              Continue to Chapter II ›
+            </button>
+          ) : (
+            <>
+              <p className="story-text">The Watcher is defeated. Your next challenge is the First Drive. Complete it to unlock Chapter II.</p>
+              <button type="button" className="reading-action" onClick={onStartDrive}>
+                🚗 Drive to Chapter II ›
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {currentNode?.id === 'farming_hub' && remaining.length < guardians.length && onOpenFarming && (
         <button className="reading-action" onClick={onOpenFarming}>
           Enter unlocked farming grounds ›
