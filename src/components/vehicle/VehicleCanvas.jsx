@@ -112,12 +112,10 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
       }
 
       spawnTimer--
-      if (spawnTimer <= 0 && !bossSpawned && wave < FINAL_WAVE) { spawnEnemy(); spawnTimer = Math.max(14, 30 - wave * 3) }
-      if (wave < FINAL_WAVE && waveKills >= KILLS_PER_WAVE) {
+      if (spawnTimer <= 0 && !bossSpawned && wave < FINAL_WAVE && waveKills < KILLS_PER_WAVE) { spawnEnemy(); spawnTimer = Math.max(14, 30 - wave * 3) }
+      if (wave < FINAL_WAVE && waveKills >= KILLS_PER_WAVE && enemies.every(enemy => enemy.dead)) {
         wave++
         waveKills=0
-        enemies.length=0
-        bullets.length=0
         spawnTimer=30
         setHud(h=>({...h,wave,waveKills:0}))
       }
