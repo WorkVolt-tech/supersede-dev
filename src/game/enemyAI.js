@@ -342,6 +342,25 @@ const ELEMENTAL_GUARDIANS = {
   'The Iron Sovereign':  { icon:'⚙️', moves:[['Iron Hammer','single',1.4],['Sawline','row',1.05],['Magnetic Crush','column',1.25]] },
   'The Plague Coil':     { icon:'☠️', moves:[['Venom Fang','single',1.15],['Toxic Spray','row',1],['Miasma Burst','all',1.1]], poison:true },
 }
+// Shared boss warning for Chapter 1, Chapter 3 and future chapter bosses.
+// Chapter 2 elemental guardians retain their bespoke rotation below.
+export function previewBossAttack(enemy, turnCount, hp, heroPosition) {
+  const elemental=previewElementalGuardianAttack(enemy,turnCount,hp,heroPosition)
+  if(elemental)return elemental
+  const turn=turnCount+1
+  const enraged=hp <= (enemy.hp||1)*0.5
+  const patterns=['single','column','row','cross']
+  const pattern=patterns[(turn-1+(enraged?1:0))%patterns.length]
+  const target=heroPosition||{col:1,rank:0}
+  const cells=[]
+  for(let rank=0;rank<3;rank++)for(let col=0;col<3;col++)
+    if((pattern==='single'&&rank===target.rank&&col===target.col)||
+       (pattern==='column'&&col===target.col)||
+       (pattern==='row'&&rank===target.rank)||
+       (pattern==='cross'&&(rank===target.rank||col===target.col)))
+      cells.push({rank,col})
+  return {name:(enemy.name||'Boss')+' strike',pattern,cells,enraged}
+}
 export function previewElementalGuardianAttack(enemy, turnCount, hp, heroPosition) {
   const kit = ELEMENTAL_GUARDIANS[enemy?.name]
   if (!kit) return null
