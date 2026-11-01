@@ -38,7 +38,7 @@ import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRege
   initialSingleFusionGuard } from '../../game/singleFusionCombat'
 import { getTacticalSkillRule, getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
-  tacticalWeaponType, getPlayerTacticalAttacks, selectedWeaponAttacks,
+  tacticalWeaponType, getPlayerTacticalAttacks, selectedWeaponAttacks, canTacticalMove, tacticalMovementRange,
   startImprovisedThrowRecovery, improvisedThrowTurnsRemaining,
   tacticalAttackDescription, getTacticalAttacks, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
@@ -68,7 +68,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, bossVisual=false, attack, canAttack, canMove, onMove, onAim, onHoverAim,
+function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, bossVisual=false, attack, canAttack, canMove, moveSpeed, onMove, onAim, onHoverAim,
   signatureFx,signaturePreview,enemyStrikeFx,dualDaggerFx,guardianMove }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -79,7 +79,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
     return rows.flatMap(rank=>[0,1,2].map(col=>{
       const occupied=(side==='enemy'?enemy:hero).col===col&&(side==='enemy'?enemy:hero).rank===rank
       const ally=side==='hero'&&!occupied?companions.find(member=>member.rank===rank&&member.col===col):null
-      const move=side==='hero'&&!occupied&&!ally&&Math.abs(hero.col-col)+Math.abs(hero.rank-rank)===1
+      const move=side==='hero'&&!occupied&&!ally&&canTacticalMove(hero,{col,rank},moveSpeed)
       const targetable=side==='enemy'&&canAttack&&isTacticalTargetValid(attack,hero,{col,rank})
       const splash=side==='enemy'&&affected.some(c=>c.rank===rank&&c.col===col)
       const primary=side==='enemy'&&targetable&&sameBattleSquare(aim,{col,rank})
@@ -216,6 +216,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const dualDaggers = weaponType === 'dagger' && Boolean(offhandItem) &&
     tacticalWeaponType(equipmentSubtype(offhandItem)) === 'dagger'
   const masteryPracticeCap = dualDaggers ? 10 : 6
+  const moveSpeed=calcSPD(player,equipped)
   const unlockedWeaponAttacks = getPlayerTacticalAttacks(Boolean(weaponItem),weaponType,
     (player.weapon_mastery || {})[weaponType] || 0)
   const weaponAttacks = !weaponItem ? unlockedWeaponAttacks : [
@@ -862,7 +863,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         throwReadyRef.current,roundRef.current)>0))) return
     if (action==='move' && (!moveTo || moveTo.col<0||moveTo.col>2 ||
       moveTo.rank<0||moveTo.rank>2 ||
-      Math.abs(heroPosition.col-moveTo.col)+Math.abs(heroPosition.rank-moveTo.rank)!==1)) return
+      !canTacticalMove(heroPosition,moveTo,moveSpeed))) return
     const freeClassAction=action==='skill' && isFreeClassAction(skillId)
     // Keystone utilities that explicitly specify consumesTurn=false in
     // elementalKeystones; leave them available even after spending 1 AP.
@@ -1177,6 +1178,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
                 currentMp>=getAttackMpCost(combatPlayer,targetMode.id,statusEffectsRef.current))):
              !throwUnavailable&&actionPoints>=selectedAttack.ap&&!(selectedAttack.fallback&&emergencyUsed))}
           canMove={!busy&&entranceReady}
+          moveSpeed={moveSpeed}
           onMove={position=>{setHoverAim(null);takeTurn('move',null,position)}}
           onHoverAim={setHoverAim}
           onAim={position=>{
