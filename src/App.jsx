@@ -15,6 +15,8 @@ import JudgesPreviewPage from './pages/JudgesPreviewPage'
 import ChapterOneBossPreviewPage from './pages/ChapterOneBossPreviewPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
+import TraderScreen from './components/trader/TraderScreen'
+import BadgesScreen from './components/badges/BadgesScreen'
 import GarageScreen from './components/vehicle/GarageScreen'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
@@ -178,11 +180,11 @@ export default function App() {
   }
 
   const archivedSections = {
-    trader: ['Trader', 'The original trading and merchant interface has not yet been migrated. No gold or inventory will be spent here.'],
     lobby: ['Lobby', 'Multiplayer lobby and player interactions still need their React and Supabase integration.'],
-    badges: ['Badges', 'Your current reputation and standing are shown on the right. The original badges gallery is awaiting migration.'],
   }
 
+  if (view === 'trader') return <BookShell eyebrow="District · Commerce" title="Trader" subtitle="Buy, sell, and heal." left={<TraderScreen onReturn={()=>setView('menu')} />} right={<PlayerRecord player={player} onNavigate={navigate}/>} />
+  if (view === 'badges') return <BookShell eyebrow="Archive · Achievements" title="Badges" subtitle="Your earned seals and upcoming milestones." left={<BadgesScreen onReturn={()=>setView('menu')} />} right={<PlayerRecord player={player} onNavigate={navigate}/>} />
   if (view === 'skills') return <SkillsScreen onReturn={() => setView('menu')} onOpenMastery={() => setView('mastery')} />
   if (view === 'mastery') return <WeaponMasteryScreen onReturn={() => setView('menu')} onSkills={() => setView('skills')} />
   if (view === 'tests-previews') return <TestsPreviewsPage
