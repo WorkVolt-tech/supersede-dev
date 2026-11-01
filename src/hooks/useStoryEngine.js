@@ -124,6 +124,19 @@ export function useStoryEngine(NODES, chapterPrefix, initialNodeId = 'opening') 
       updates.alliance_log = log
     }
 
+    // Original Chapter 2 district clock: milestone flags are earned when
+    // returning to the hub with six/eight elemental guardians defeated.
+    // These are warnings, not extra gates on the normal Twin Judges finale.
+    if (chapterPrefix === 'ch2' && nextId === 'district_hub') {
+      const cleared = (player.defeated_bosses || []).filter(
+        key => key.startsWith('zone_boss_')).length
+      const log = [...(updates.alliance_log || player.alliance_log || [])]
+      if (cleared >= 6 && !log.includes('clock_6')) log.push('clock_6')
+      if (cleared >= 8 && !log.includes('clock_8')) log.push('clock_8')
+      if (log.length !== (updates.alliance_log || player.alliance_log || []).length)
+        updates.alliance_log = log
+    }
+
     if(chapterPrefix==='ch1') {
       const original=updates.alliance_log||player.alliance_log||[]
       const partyLog=partyTagsForScene(original,resolvedId)
