@@ -18,7 +18,7 @@ import { bestTacticalAim, tacticalPreview, sameBattleSquare } from '../../game/t
 import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
-import { initEnemyState, resolveEnemyTurn, previewElementalGuardianAttack } from '../../game/enemyAI'
+import { initEnemyState, resolveEnemyTurn, previewBossAttack } from '../../game/enemyAI'
 import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStats } from '../../game/playerStats'
 import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
@@ -539,7 +539,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       onGuardianPattern: move => { setEnemyArea(move.cells);setGuardianMove(move) },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const guardianPreview=previewElementalGuardianAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroAt)
+    const guardianPreview=isBoss ? previewBossAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroAt) : null
     const pending=guardianPendingRef.current
     if (guardianPreview && !pending && !forcedPulse) {
       guardianPendingRef.current=guardianPreview
