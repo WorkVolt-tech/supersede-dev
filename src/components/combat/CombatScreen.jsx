@@ -827,6 +827,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         mpRef.current < getAttackMpCost(combatPlayer, skillId, statusEffectsRef.current))) return
     if(action==='skill'||action==='elemental')setTargetMode(null)
     setBusy(true)
+    try {
 
     // Preserve special free actions, including stance toggles and keystones.
     if (action === 'keystone') {
@@ -1005,6 +1006,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     if (playerHp<=0) await endCombat('lose',playerHp)
     else if (foeHp<=0) await endCombat('win',playerHp)
     setBusy(false)
+    } catch (error) {
+      console.error('Combat action failed',error)
+      pushLog('Combat action failed: '+(error?.message||'Unexpected error')+'. You can retry your action.')
+      setTurnActor(null)
+      setBusy(false)
+    }
   }
 
   async function useBattlePotion(item) {
