@@ -23,7 +23,7 @@ export default function StartMenu({ player, onPick, onSignOut, onReset }) {
           return <div className="reading-chapter-row" key={e.view}>
             <div className="reading-chapter-details"><span>{e.label}</span><small>{e.sub}</small><small className="reading-chapter-hint">{driveLocked ? `Complete Chapter ${isCh3 ? 2 : 1} to unlock the drive` : chapterLocked ? `Complete the drive to unlock Chapter ${isCh3 ? 3 : 2}` : isCh3 ? 'Chapter 3 is ready' : 'Chapter 2 is ready'}</small></div>
             <div className="reading-chapter-actions">
-              <button disabled={driveLocked} onClick={() => onPick(isCh3 ? 'drive3' : 'drive')}>{driveLocked ? '🔒 ' : ''}Drive ›</button>
+              <button disabled={driveLocked} onClick={() => onPick(isCh3 ? 'garage3' : 'garage')}>{driveLocked ? '🔒 ' : ''}Garage · Drive ›</button>
               <button disabled={chapterLocked} onClick={() => onPick(e.view)}>{chapterLocked ? '🔒 ' : ''}Chapter ›</button>
             </div>
           </div>
