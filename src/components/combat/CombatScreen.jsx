@@ -756,8 +756,28 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   // One enemy action per round, with level-scaled player AP. Faster enemies act
   // before the first AP; slower enemies act after the last AP.
   function positionedEnemyTurn(playerHp, foeHp, defendAction, heroAt=heroPosition) {
-    if (isBoss) return enemyTurn(playerHp,foeHp,defendAction)
-    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove:enemyData.canMove!==false&&enemyData.mobile!==false})
+    const canMove=enemyData.canMove!==false&&enemyData.mobile!==false
+    // Bosses use their bespoke attacks, but still occupy tactical squares.
+    // They may reposition on alternate rounds without sacrificing their
+    // scripted action or becoming stationary for the whole encounter.
+    if(isBoss){
+      if(canMove&&roundRef.current%2===0){
+        const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove:true})
+        const adjacent=[{col:enemyPosition.col,rank:enemyPosition.rank-1},
+          {col:enemyPosition.col-1,rank:enemyPosition.rank},
+          {col:enemyPosition.col+1,rank:enemyPosition.rank},
+          {col:enemyPosition.col,rank:enemyPosition.rank+1}]
+          .filter(p=>p.col>=0&&p.col<3&&p.rank>=0&&p.rank<3)
+        const destination=next.move||adjacent.find(p=>p.col===heroAt.col&&p.rank===heroAt.rank)||
+          adjacent.find(p=>p.col===heroAt.col)||adjacent[0]
+        if(destination){
+          setEnemyPosition(destination)
+          pushLog(enemyData.name+' moves to column '+(destination.col+1)+', rank '+(destination.rank+1)+'.')
+        }
+      }
+      return enemyTurn(playerHp,foeHp,defendAction)
+    }
+    const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove})
     if (next.attack) setEnemyArea(getTacticalAffectedSquares(next.attack,heroAt))
     if (next.move) {
       const stunned = notableFreezeEnemy(statusEffectsRef.current)?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
