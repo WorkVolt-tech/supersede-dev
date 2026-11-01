@@ -208,7 +208,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [log, setLog] = useState([`A ${enemyData.name} appears.`])
   const [busy, setBusy] = useState(false)
   const weaponItem = equipped.find(item => item.equipped_slot === 'mainhand')
+  const offhandItem = equipped.find(item => item.equipped_slot === 'offhand')
   const weaponType = tacticalWeaponType(weaponItem ? equipmentSubtype(weaponItem) : null)
+  const dualDaggers = weaponType === 'dagger' && Boolean(offhandItem) &&
+    tacticalWeaponType(equipmentSubtype(offhandItem)) === 'dagger'
+  const masteryPracticeCap = dualDaggers ? 10 : 6
   const unlockedWeaponAttacks = getPlayerTacticalAttacks(Boolean(weaponItem),weaponType,
     (player.weapon_mastery || {})[weaponType] || 0)
   const weaponAttacks = !weaponItem ? unlockedWeaponAttacks : [
@@ -465,7 +469,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     }
     let victoryText = ''
     if (outcome === 'win') {
-      // Count a maximum of six meaningful weapon actions per encounter.
+      // Award up to 6 mastery XP normally, or 10 while wielding two daggers.
       // Emergency System Pulse and non-weapon abilities never earn mastery.
       if (masteryHitsRef.current) {
         finalUpdates.weapon_mastery = awardWeaponMastery(player.weapon_mastery || {},
@@ -662,9 +666,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
     const verb = ranged ? 'You shoot' : 'You strike'
     const msgs = [`${attack.label}: ${verb.toLowerCase()} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || []), ...keystoneHit.messages]
-    if (dmg > 0 && !attack.fallback && masteryHitsRef.current < 6) {
-      masteryHitsRef.current++
-      msgs.push(`${weaponType} mastery practice +1 (awarded on victory).`)
+    if (dmg > 0 && !attack.fallback && masteryHitsRef.current < masteryPracticeCap) {
+      // Count successful weapon strikes, not target squares. Single-weapon
+      // techniques award 1; techniques explicitly using both equipped daggers
+      // award one point per landed strike (up to the encounter cap).
+      const strikes = dualDaggers ? Math.max(1, Number(attack.dualStrikes) || 1) : 1
+      const earned = Math.min(strikes, masteryPracticeCap - masteryHitsRef.current)
+      masteryHitsRef.current += earned
+      msgs.push(`${weaponType} mastery practice +${earned} (awarded on victory).`)
     }
     if (legendary.has('legendary_forger') && wasCrit) msgs.push('✦ Masterwork Edge adds 12 critical damage.')
     if (legendary.has('legendary_hunter') && foeHp === enemyData.hp) msgs.push('✦ Predator Instinct: opening shot +15.')
