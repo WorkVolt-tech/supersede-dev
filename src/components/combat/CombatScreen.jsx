@@ -89,7 +89,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
       const fx=signatureFx?.side===side&&signatureFx.squares.some(p=>p.rank===rank&&p.col===col)
       const area=signaturePreview?.side===side&&signaturePreview.squares.some(
         p=>p.rank===rank&&p.col===col)
-      return <button key={side+'-'+col+'-'+rank} type="button"
+      return <button key={side+'-'+col+'-'+rank+(side==='hero'&&occupied?'-'+enemyStrikeFx:'')} type="button"
         className={['combat-grid-cell',occupied||ally?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
           splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':'',occupied&&side==='hero'&&enemyStrikeFx?'enemy-strike-hit':''].join(' ')}
