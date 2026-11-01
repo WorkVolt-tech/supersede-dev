@@ -160,7 +160,7 @@ export default function App() {
   if (!viewRestored) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
 
   const screens = {
-    ch1: <ChapterPage onOpenFarming={() => setView('farming')} />,
+    ch1: <ChapterPage onOpenFarming={() => setView('farming')} onStartDrive={() => navigate('drive')} onOpenChapterTwo={() => navigate('ch2')} />,
     ch2: <Ch2ChapterPage />,
     ch3: <Ch3ChapterPage />,
     farming: <FarmingAreas onReturn={() => setView('menu')} />,
