@@ -68,7 +68,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // 3×3 positions run front (rank 0) to rear (rank 2) on both sides.
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
-function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, attack, canAttack, canMove, onMove, onAim, onHoverAim,
+function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, bossVisual=false, attack, canAttack, canMove, onMove, onAim, onHoverAim,
   signatureFx,signaturePreview,enemyStrikeFx }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
@@ -92,7 +92,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
       return <button key={side+'-'+col+'-'+rank+(side==='hero'&&occupied?'-'+enemyStrikeFx:'')} type="button"
         className={['combat-grid-cell',occupied||ally?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
-          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':'',occupied&&side==='hero'&&enemyStrikeFx?'enemy-strike-hit':''].join(' ')}
+          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':'',occupied&&side==='hero'&&enemyStrikeFx?'enemy-strike-hit':'',occupied&&side==='enemy'&&bossVisual?'boss-occupied':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
         onPointerEnter={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
@@ -100,7 +100,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
 
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
-        {occupied||ally?<div className="combat-unit-visual">{ally?ally.icon:side==='enemy'?enemyVisual||enemyIcon||'👹':'🧑'}</div>:<span>·</span>}
+        {occupied||ally?<div className={side==='enemy'&&bossVisual?'combat-unit-visual combat-boss-visual':'combat-unit-visual'}>{ally?ally.icon:side==='enemy'?enemyVisual||enemyIcon||'👹':'🧑'}</div>:<span>·</span>}
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
@@ -1112,7 +1112,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           role="status">{signature?.label}</div>}
         <p className="combat-aim-legend"><span className="aim-legal">Blue = legal aim</span> · <span className="aim-hit">Gold = cells hit by attack / AoE</span> · White ring = impact center</p>
         <TacticalBattlefield hero={heroPosition} enemy={enemyPosition} companions={partyPositions} enemyName={enemyData.name}
-          enemyIcon={enemyData.icon} enemyVisual={enemyPortrait} enemyHp={enemyHp} enemyMaxHp={enemyData.hp} heroHp={currentHp} heroMaxHp={maxPlayerHp} heroMp={currentMp} heroMaxMp={maxCombatMp}
+          enemyIcon={enemyData.icon} enemyVisual={enemyPortrait} bossVisual={Boolean(isBoss)} enemyHp={enemyHp} enemyMaxHp={enemyData.hp} heroHp={currentHp} heroMaxHp={maxPlayerHp} heroMp={currentMp} heroMaxMp={maxCombatMp}
           attack={displayedAttack}
           signatureFx={signatureFx}
           enemyStrikeFx={enemyStrikeFx}
