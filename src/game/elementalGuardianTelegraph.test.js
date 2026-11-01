@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { previewElementalGuardianAttack } from './enemyAI.js'
+import { previewElementalGuardianAttack, previewBossAttack } from './enemyAI.js'
 
 const names=['The Ashen King','The Tide Queen','The Fractured Arc','The Infinite Archivist','The Hollow Reaper','The Warden of Ruin','The Stormborn','The Root Mother','The Iron Sovereign','The Plague Coil']
 test('all ten Chapter 2 guardians show legal three-by-three attacks',()=>{
@@ -26,4 +26,18 @@ test('enraged guardians switch attack rotation',()=>{
  const enraged=previewElementalGuardianAttack(boss,0,40,{col:1,rank:0})
  assert.equal(enraged.enraged,true)
  assert.notEqual(normal.name,enraged.name)
+})
+
+test('boss warnings are available to other chapters',()=>{
+ for(const name of ['The Watcher','Sentinel of the First Eye','The Surveyor','The Unseen','The Twin Judges','Echo Beast']){
+  const warning=previewBossAttack({name,hp:250},0,250,{col:1,rank:0})
+  assert.ok(warning?.cells.length>0,name)
+  assert.ok(warning.cells.every(c=>c.rank>=0&&c.rank<3&&c.col>=0&&c.col<3),name)
+ }
+})
+test('generic boss warning locks onto hero position when prepared',()=>{
+ const boss={name:'The Watcher',hp:200}
+ const warning=previewBossAttack(boss,0,200,{col:0,rank:0})
+ assert.deepEqual(warning.cells,[{rank:0,col:0}])
+ assert.ok(!warning.cells.some(c=>c.rank===0&&c.col===1))
 })
