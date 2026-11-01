@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { usePlayerStore } from '../store/usePlayerStore'
 import { useStoryEngine } from '../hooks/useStoryEngine'
 import StoryNode from '../components/story/StoryNode'
@@ -6,6 +7,7 @@ import { chapterOneComplete, firstDriveComplete } from '../game/progression'
 
 // Player + inventory are loaded once by App.jsx before any page renders.
 export default function ChapterPage({ onOpenFarming, onStartDrive, onOpenChapterTwo }) {
+  const [endingRead,setEndingRead]=useState(false)
   const player = usePlayerStore(s => s.player)
   const { currentNode, goTo } = useStoryEngine(CH1_NODES, 'ch1')
   if (!player) return <p className="story-text">No player loaded.</p>
@@ -43,8 +45,8 @@ export default function ChapterPage({ onOpenFarming, onStartDrive, onOpenChapter
 
   return (
     <div className="chapter-page">
-      <StoryNode node={displayNode} player={player} goTo={goTo} />
-      {currentNode?.type === 'end' && chapterOneComplete(player) && (
+      <StoryNode node={displayNode} player={player} goTo={goTo} onChapterEndingComplete={()=>setEndingRead(true)} />
+      {currentNode?.type === 'end' && chapterOneComplete(player) && endingRead && (
         <div className="chapter-drive-next">
           {firstDriveComplete(player) ? (
             <button type="button" className="reading-action" onClick={onOpenChapterTwo}>
