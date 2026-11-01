@@ -69,7 +69,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
 function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, attack, canAttack, canMove, onMove, onAim, onHoverAim,
-  signatureFx,signaturePreview }) {
+  signatureFx,signaturePreview,enemyStrikeFx }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
   const labels=['Left','Centre','Right']
@@ -92,7 +92,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
       return <button key={side+'-'+col+'-'+rank} type="button"
         className={['combat-grid-cell',occupied||ally?'occupied':'',side==='enemy'?'foe':'ally',
           targetable?'targetable':'',reachable?'reachable':'',move&&canMove?'movable':'',
-          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':''].join(' ')}
+          splash?'splash':'',primary?'aim-center':'',affectedFoe?'aoe-target':'',threat?'enemy-threat':'',area?'signature-preview-guard':'',occupied&&side==='hero'&&enemyStrikeFx?'enemy-strike-hit':''].join(' ')}
         disabled={side==='enemy'?!targetable:!move||!canMove}
         onClick={()=>side==='enemy'?onAim({col,rank}):onMove({col,rank})}
         onPointerEnter={()=>{if(side==='enemy'&&targetable)onHoverAim({col,rank})}}
@@ -217,6 +217,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [hoverAim,setHoverAim]=useState(null)
   const [targetMode,setTargetMode]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
+  const [enemyStrikeFx,setEnemyStrikeFx]=useState(0)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
   const [enemyPosition, setEnemyPosition] = useState(()=>{
@@ -516,7 +517,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       enemyHp: foeHp, maxEnemyHp: enemyData.hp, currentHp: playerHp, maxPlayerHp,
       playerDEF: () => calcDEF(player, equipped),
       defending: isDefending, statusEffects: statusEffectsRef.current, yara: null, messages,
-      triggerAnimation: () => {},
+      triggerAnimation: () => {setEnemyStrikeFx(value=>value+1)},
       onEnemyDmgPlayer: (d) => { aiDmg += d },
       onEnemyHealSelf: (h) => { healAmt += h },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
@@ -608,6 +609,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       foeHp = Math.max(0,foeHp-elementalReflect)
       messages.push(`${elementalReflect} elemental damage reflected.`)
     }
+    if(finalDmg>0)setEnemyStrikeFx(value=>value+1)
     messages.forEach(pushLog)
 
     return finishEnemyAction(nextHp, foeHp)
@@ -1113,6 +1115,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           enemyIcon={enemyData.icon} enemyVisual={enemyPortrait} enemyHp={enemyHp} enemyMaxHp={enemyData.hp} heroHp={currentHp} heroMaxHp={maxPlayerHp} heroMp={currentMp} heroMaxMp={maxCombatMp}
           attack={displayedAttack}
           signatureFx={signatureFx}
+          enemyStrikeFx={enemyStrikeFx}
           signaturePreview={signaturePreview&&signature?{
             side:signature.target==='self'?'hero':'enemy',
             squares:getTacticalAffectedSquares(signature.attack,
