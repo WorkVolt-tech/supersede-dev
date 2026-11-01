@@ -1103,9 +1103,15 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           onHoverAim={setHoverAim}
           onAim={position=>{
             if(signaturePreview||!isTacticalTargetValid(displayedAttack,heroPosition,position))return
-            if(!sameBattleSquare(aimSquare,position)){
+            // A direct single-enemy hit needs only one click. Keep the
+            // two-step aim confirmation for multi-cell/area techniques.
+            const directHit=tacticalPreview(displayedAttack,heroPosition,position,
+              [{id:'enemy',...enemyPosition,hp:enemyHp}])
+            const singleHit=directHit.squares.length===1&&directHit.targets.length===1
+            if(!singleHit&&!sameBattleSquare(aimSquare,position)){
               setAimSquare(position);setHoverAim(null);return
             }
+            setAimSquare(position)
             setHoverAim(null)
             if(targetMode){
               if(tacticalPreview(displayedAttack,heroPosition,position,
@@ -1118,7 +1124,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
             {(targetMode?.label||selectedAttack.label)} · {displayedAttack.shape} area ·
             {' '}{attackFootprint.squares.length} squares illuminated ·
             {' '}{attackFootprint.targets.length} {attackFootprint.targets.length===1?'enemy':'enemies'} affected ·
-            {' '}Tap a blue square to preview, then tap it again to {targetMode?'cast':'attack'}
+            {' '}Tap a blue square to attack a single target; area attacks require confirmation
           </p>}
         <div className="combat-tactical-weapons combat-belt" aria-label="Weapon attack belt">
           {weaponAttacks.map(attack=><button key={attack.id} type="button"
