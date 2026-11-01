@@ -1,3 +1,4 @@
+import { chapterOneComplete, firstDriveComplete, chapterTwoComplete, secondDriveComplete } from '../../game/progression'
 import { getMoralTier, getMoralBarPct, getBadgeMeta } from '../../game/reputation'
 import { xpProgress } from '../../game/leveling'
 import { useInventoryStore } from '../../store/useInventoryStore'
@@ -38,6 +39,8 @@ export default function PlayerRecord({ player, onNavigate }) {
     <div className="reading-quick-nav">
       {['chapters','inventory','skills','mastery','trader','lobby','badges'].map(view => <button key={view} className="reading-action" onClick={() => onNavigate(view === 'chapters' ? 'menu' : view)}>{view}</button>)}
     </div>
+    {chapterOneComplete(player) && !firstDriveComplete(player) && <button className="reading-action" onClick={() => onNavigate('garage')}>🚗 Garage · First Drive to Chapter II</button>}
+    {chapterTwoComplete(player) && !secondDriveComplete(player) && <button className="reading-action" onClick={() => onNavigate('garage3')}>🚗 Garage · Drive to Chapter III</button>}
     <button className="reading-action" onClick={() => onNavigate('farming')}>⚔ Chapter 1 farming areas</button>
     {professionUnlocked(player) && <button className="reading-action" onClick={() => onNavigate('professions')}>⚒ Professions</button>}
   </>
