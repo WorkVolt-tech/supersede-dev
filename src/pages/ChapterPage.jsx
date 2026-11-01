@@ -45,7 +45,7 @@ export default function ChapterPage({ onOpenFarming, onStartDrive, onOpenChapter
 
   return (
     <div className="chapter-page">
-      <StoryNode node={displayNode} player={player} goTo={goTo} onChapterEndingComplete={()=>setEndingRead(true)} />
+      <StoryNode node={displayNode} player={player} goTo={goTo} onChapterEndingComplete={()=>{setEndingRead(true);onStartDrive?.()}} />
       {currentNode?.type === 'end' && chapterOneComplete(player) && endingRead && (
         <div className="chapter-drive-next">
           {firstDriveComplete(player) ? (
