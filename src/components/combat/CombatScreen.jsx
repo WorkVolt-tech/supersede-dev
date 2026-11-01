@@ -539,7 +539,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       onGuardianPattern: move => { setEnemyArea(move.cells);setGuardianMove(move) },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const guardianPreview=isBoss ? previewBossAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroAt) : null
+    const guardianPreview=previewBossAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroAt)
     const pending=guardianPendingRef.current
     if (guardianPreview && !pending && !forcedPulse) {
       guardianPendingRef.current=guardianPreview
@@ -562,7 +562,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const frozen=notableFreezeEnemy(statusEffectsRef.current)||notablePassiveStagger(learnedNotablePassives(player))
     const stunned = frozen?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
     if (stunned) messages.push(stunned)
-    if(stunned && isBoss){setEnemyArea([]);setGuardianMove(null)}
+    if(stunned){guardianPendingRef.current=null;setEnemyArea([]);setGuardianMove(null)}
     // The emergency pulse must not secretly trigger an enemy AI special
     // attack, including its stun/bleed/status side effects.
     const aiMove = stunned || forcedPulse ? null : resolveEnemyTurn(combatEnemyRef.current, ctx)
@@ -808,8 +808,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     // Bosses use their bespoke attacks, but still occupy tactical squares.
     // They may reposition on alternate rounds without sacrificing their
     // scripted action or becoming stationary for the whole encounter.
-    if(isBoss){
-      if(canMove&&roundRef.current%2===0){
+    if(isBoss || guardianPendingRef.current){
+      if(isBoss && !guardianPendingRef.current && canMove&&roundRef.current%2===0){
         const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove:true})
         const adjacent=[{col:enemyPosition.col,rank:enemyPosition.rank-1},
           {col:enemyPosition.col-1,rank:enemyPosition.rank},
