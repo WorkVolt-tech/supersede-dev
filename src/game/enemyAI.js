@@ -342,6 +342,23 @@ const ELEMENTAL_GUARDIANS = {
   'The Iron Sovereign':  { icon:'⚙️', moves:[['Iron Hammer','single',1.4],['Sawline','row',1.05],['Magnetic Crush','column',1.25]] },
   'The Plague Coil':     { icon:'☠️', moves:[['Venom Fang','single',1.15],['Toxic Spray','row',1],['Miasma Burst','all',1.1]], poison:true },
 }
+export function previewElementalGuardianAttack(enemy, turnCount, hp, heroPosition) {
+  const kit = ELEMENTAL_GUARDIANS[enemy?.name]
+  if (!kit) return null
+  const enraged = hp <= (enemy.hp || 1) * 0.5
+  const turn = turnCount + 1
+  const index = enraged ? (turn + 1) % 3 : (turn - 1) % 3
+  const [name,pattern] = kit.moves[index]
+  const target = heroPosition || {col:1,rank:0}
+  const cells = []
+  for (let rank=0;rank<3;rank++) for (let col=0;col<3;col++)
+    if (pattern==='all' || (pattern==='row' && rank===target.rank) ||
+        (pattern==='column' && col===target.col) ||
+        (pattern==='cross' && (rank===target.rank || col===target.col)) ||
+        (pattern==='single' && rank===target.rank && col===target.col))
+      cells.push({rank,col})
+  return {name,pattern,cells,enraged}
+}
 function _elementalGuardian(enemy,ctx,hpPct){
   const {enemyState,messages,triggerAnimation,onEnemyDmgPlayer,onEnemyHealSelf,
     playerDEF,defending,statusEffects:se}=ctx
