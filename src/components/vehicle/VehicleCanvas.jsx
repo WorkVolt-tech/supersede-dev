@@ -16,7 +16,7 @@ const HUNTER_CAPTAIN = {
   score: 1000, pat: 'zigzag', isBoss: true, spriteKey: 'hunter_captain',
 }
 
-const BOSS_AT_KILLS = 15
+const BOSS_AT_KILLS = 10
 
 export default function VehicleCanvas({ onComplete, vehicle = null, destination = 2, saving = false, saveError = '', onRetrySave }) {
   const canvasRef = useRef(null)
@@ -56,6 +56,8 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
     const enemies = []
     const bullets = []
     let spawnTimer = 0
+    let roadOffset = 0
+    let frames = 0
     let kills = 0
     let score = 0
     let bossSpawned = false
@@ -80,7 +82,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
 
     function spawnEnemy(forced) {
       const t = forced || ETYPES[Math.floor(Math.random() * ETYPES.length)]
-      const rx = canvas.width * 0.15, rw = canvas.width * 0.7
+      const rw = Math.min(360, canvas.width * .82), rx = (canvas.width-rw)/2
       enemies.push({
         ...t, x: rx + t.sz + Math.random() * (rw - t.sz * 2), y: -40,
         vx: (Math.random() - 0.5) * 2, vy: t.spd, mhp: t.hp, zt: 0, zd: 1, dead: false,
@@ -90,30 +92,44 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
     let fireTimer = 0
     function loop() {
       if (cancelled) return
+      frames++
+      roadOffset = (roadOffset + 11) % 96
       raf = requestAnimationFrame(loop)
 
-      const moveSpd = 5 * (vehicle?.speed || 1)
+      const moveSpd = 7 * (vehicle?.speed || 1)
       if (keys.left || touchControlsRef.current.left)  player.x -= moveSpd
       if (keys.right || touchControlsRef.current.right) player.x += moveSpd
-      const rx = canvas.width * 0.15, rw = canvas.width * 0.7
+      const rw = Math.min(360, canvas.width * .82), rx = (canvas.width-rw)/2
       player.x = Math.max(rx + player.w / 2, Math.min(rx + rw - player.w / 2, player.x))
 
       fireTimer--
       if ((keys.shoot || touchControlsRef.current.shoot) && fireTimer <= 0) {
-        bullets.push({ x: player.x, y: player.y - player.h / 2, vy: -9 })
+        bullets.push({ x: player.x, y: player.y - player.h / 2, vy: -15 })
         fireTimer = vehicle?.fireRate || 8
       }
 
       spawnTimer--
-      if (spawnTimer <= 0 && !bossSpawned) { spawnEnemy(); spawnTimer = 55 }
+      if (spawnTimer <= 0 && !bossSpawned) { spawnEnemy(); spawnTimer = 28 }
       if (kills >= BOSS_AT_KILLS && !bossSpawned) {
         bossSpawned = true; bossActive = true
         spawnEnemy(HUNTER_CAPTAIN)
+        const boss = enemies[enemies.length-1]
+        boss.x = canvas.width/2
+        boss.y = canvas.height*.19
+        boss.vy = 0
+        boss.sz = 54
+        boss.hp = 14
+        boss.mhp = 14
         setHud(h => ({ ...h, bossActive: true }))
       }
 
       for (const e of enemies) {
         if (e.dead) continue
+        if(e.isBoss){
+          e.x = canvas.width/2 + Math.sin(frames*.022)*Math.min(65,rw*.20)
+          e.y = canvas.height*.19 + Math.sin(frames*.036)*12
+          continue
+        }
         if (e.pat === 'zigzag') {
           e.zt++
           if (e.zt > 28) { e.zd *= -1; e.zt = 0 }
@@ -128,7 +144,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
         } else {
           e.x += e.vx
         }
-        e.y += e.vy
+        e.y += e.vy + 3.5
         if (e.x < rx + e.sz) { e.x = rx + e.sz; e.vx = Math.abs(e.vx) }
         if (e.x > rx + rw - e.sz) { e.x = rx + rw - e.sz; e.vx = -Math.abs(e.vx) }
 
@@ -164,8 +180,27 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
         }
       }
 
-      ctx.fillStyle = '#0a0805'
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      // Asphalt, shoulders and moving lane markings.
+      ctx.fillStyle = '#12100e'
+      ctx.fillRect(0,0,canvas.width,canvas.height)
+      ctx.fillStyle = '#474746'
+      ctx.fillRect(rx,0,rw,canvas.height)
+      ctx.fillStyle = '#c0a16c'
+      ctx.fillRect(rx+7,0,3,canvas.height)
+      ctx.fillRect(rx+rw-10,0,3,canvas.height)
+      ctx.fillStyle = 'rgba(240,222,174,.7)'
+      for(let y=-96+roadOffset;y<canvas.height;y+=96){
+        ctx.fillRect(rx+rw/3-2,y,4,49)
+        ctx.fillRect(rx+rw*2/3-2,y,4,49)
+      }
+      ctx.fillStyle='#20221f'
+      ctx.fillRect(0,0,Math.max(0,rx-5),canvas.height)
+      ctx.fillRect(rx+rw+5,0,canvas.width-rx-rw,canvas.height)
+      for(let y=-60+roadOffset*1.7;y<canvas.height;y+=135){
+        ctx.fillStyle='#5b5037'
+        ctx.fillRect(rx-14,y,6,28)
+        ctx.fillRect(rx+rw+8,y,6,28)
+      }
       ctx.strokeStyle = 'rgba(200,184,128,.15)'
       ctx.beginPath(); ctx.moveTo(rx, 0); ctx.lineTo(rx, canvas.height); ctx.stroke()
       ctx.beginPath(); ctx.moveTo(rx + rw, 0); ctx.lineTo(rx + rw, canvas.height); ctx.stroke()
@@ -174,7 +209,15 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
         ctx.fillStyle = '#ffcc00'
         ctx.fillRect(b.x - 2, b.y - 6, 4, 12)
       }
-      for (const e of enemies) drawEntity(ctx, e, getSprite(e.spriteKey))
+      for(const e of enemies) {
+        drawEntity(ctx,e,getSprite(e.spriteKey))
+        if(e.isBoss){
+          ctx.fillStyle='#160909';ctx.fillRect(rx+25,54,rw-50,10)
+          ctx.fillStyle='#c34e3b';ctx.fillRect(rx+27,56,(rw-54)*Math.max(0,e.hp/e.mhp),6)
+          ctx.fillStyle='#ffe0a7';ctx.font='bold 13px monospace';ctx.textAlign='center'
+          ctx.fillText('HUNTER CAPTAIN',canvas.width/2,45)
+        }
+      }
       drawEntity(ctx, { ...player, sz: 20, col: '#5eaee0' }, getSprite(vehicle?.key ? 'top_'+vehicle.key : 'default') || getSprite('default'))
 
       if (Math.random() < 0.1) {
@@ -212,12 +255,12 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
   }, [gameOver, onComplete])
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', background: '#000' }}>
+    <div style={{ position: 'relative', width: '100%', height: 'min(100dvh, 850px)', minHeight:'470px', maxWidth:'560px', margin:'0 auto', background: '#000', overflow:'hidden', touchAction:'none' }}>
       <canvas ref={canvasRef} style={{ display: 'block', width: '100%', height: '100%' }} />
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, padding: '.75rem 1rem',
         display: 'flex', justifyContent: 'space-between', color: '#c8b96e',
-        fontFamily: 'monospace', fontSize: 12, pointerEvents: 'none', textShadow: '0 1px 2px #000',
+        fontFamily: 'monospace', fontSize: 10, flexWrap:'wrap', gap:6, pointerEvents: 'none', textShadow: '0 1px 2px #000',
       }}>
         <span>HULL {hud.hp}/{hud.maxHp}</span>
         <span>{hud.bossActive ? '⚠ HUNTER CAPTAIN' : `TO CHAPTER ${destination} · KILLS ${hud.kills}/${BOSS_AT_KILLS}`}</span>
