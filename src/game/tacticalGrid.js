@@ -194,7 +194,7 @@ export function weaponMasteryLevel(xp=0) {
   return level;
 }
 export function weaponMasteryBonus(xp=0) {
-  return Math.floor((weaponMasteryLevel(xp)-1)/10); // +0..+9 base damage
+  return Math.floor((weaponMasteryLevel(xp)-1)*15/99); // +0 at Lv 1, +15 at Lv 100
 }
 export function awardWeaponMastery(mastery, weaponType, successfulHits=1) {
   const type=tacticalWeaponType(weaponType);
