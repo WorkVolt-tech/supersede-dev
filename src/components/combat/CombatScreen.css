@@ -332,3 +332,8 @@
 .combat-belt .combat-belt-slot:disabled { opacity:.4;filter:grayscale(.55); }
 .combat-belt .combat-loadout-label { flex:0 0 100%;display:none; }
 @media(max-width:480px) { .combat-belt .combat-belt-slot { flex-basis:86px;min-width:86px;min-height:70px;font-size:10px; } }
+
+/* Visual feedback for scripted boss attacks and normal enemy hits. */
+.combat-grid-cell.ally.enemy-strike-hit {animation:combat-enemy-hit .55s ease-out;}
+@keyframes combat-enemy-hit {0%,100%{filter:none}25%{filter:brightness(2.1);box-shadow:inset 0 0 20px #d83f3f,0 0 15px #df554b}60%{filter:brightness(1.3)}}
+@media(prefers-reduced-motion:reduce){.combat-grid-cell.ally.enemy-strike-hit{animation:none;outline:3px solid #d76a5b}}
