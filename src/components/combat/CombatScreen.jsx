@@ -69,7 +69,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
 function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, bossVisual=false, attack, canAttack, canMove, onMove, onAim, onHoverAim,
-  signatureFx,signaturePreview,enemyStrikeFx }) {
+  signatureFx,signaturePreview,enemyStrikeFx,dualDaggerFx }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
   const labels=['Left','Centre','Right']
@@ -101,6 +101,8 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         {occupied||ally?<div className={side==='enemy'&&bossVisual?'combat-unit-visual combat-boss-visual':'combat-unit-visual'}>{ally?ally.icon:side==='enemy'?enemyVisual||enemyIcon||'👹':'🧑'}</div>:<span>·</span>}
+        {dualDaggerFx&&occupied&&side==='enemy'&&<span key={dualDaggerFx.id} className={'combat-dual-dagger-impact combat-dual-'+dualDaggerFx.hand} aria-hidden="true"><i/><i/></span>}
+        {dualDaggerFx&&occupied&&side==='hero'&&<span key={dualDaggerFx.id} className={'combat-dual-dagger-swing combat-dual-'+dualDaggerFx.hand} aria-hidden="true">🗡️</span>}
         {fx&&<span key={signatureFx.id} aria-hidden="true"
           className={'signature-grid-flash signature-'+signatureFx.kind+
             (signatureFx.element?' triad-'+signatureFx.element:'')}/>}
@@ -226,6 +228,8 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [targetMode,setTargetMode]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
   const [enemyStrikeFx,setEnemyStrikeFx]=useState(0)
+  const [dualDaggerFx,setDualDaggerFx]=useState(null)
+  const daggerHandRef=useRef(0)
   const selectedAttack = weaponAttacks.find(a=>a.id===selectedAttackId) || weaponAttacks[0]
   const [heroPosition, setHeroPosition] = useState({col:1,rank:0})
   const [enemyPosition, setEnemyPosition] = useState(()=>{
@@ -661,6 +665,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     setEnemyHp(newEnemyHp)
     setCurrentHp(playerHp)
     if (dmg > 0) showJudgeHit()
+    if (dmg > 0 && dualDaggers && !attack.fallback && !attack.thrown) {
+      const hand=daggerHandRef.current++ % 2 === 0 ? 'left' : 'right'
+      setDualDaggerFx({id:daggerHandRef.current,hand})
+    }
 
     const weapon = equipped.find(i=>i.equipped_slot==='mainhand')
     const ranged = weapon && RANGED_WEAPONS.includes(equipmentSubtype(weapon))
@@ -1128,6 +1136,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           attack={displayedAttack}
           signatureFx={signatureFx}
           enemyStrikeFx={enemyStrikeFx}
+          dualDaggerFx={dualDaggerFx}
           signaturePreview={signaturePreview&&signature?{
             side:signature.target==='self'?'hero':'enemy',
             squares:getTacticalAffectedSquares(signature.attack,
