@@ -173,6 +173,10 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const [focus,setFocus]=useState(foesRef.current[0].id)
   const [aim,setAim]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
+  const pendingFoeAttacksRef=useRef({})
+  function showPendingThreats(){
+    setEnemyArea(Object.values(pendingFoeAttacksRef.current).flatMap(move=>move.squares))
+  }
   const [selectedAttack,setSelectedAttack]=useState(null)
   const [fusionEnabled,setFusionEnabled]=useState(false)
   const [signaturePreview,setSignaturePreview]=useState(false)
@@ -667,13 +671,26 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       if(stun>0){
         ownStatus.enemyStunTurns=stun-1
         foeStatusesRef.current[actor.id]=ownStatus
+        if(pendingFoeAttacksRef.current[actor.id]){delete pendingFoeAttacksRef.current[actor.id];showPendingThreats()}
         note(actor.name+' is stunned and loses its turn.')
         continue
       }
       if(notableFreezeEnemy(statusRef.current)) { note(actor.name+' is frozen by Time Lock.');continue }
       const occupied=next.filter(other=>other.id!==actor.id&&other.hp>0)
       const hazards=fieldsRef.current.flatMap(field=>field.squares)
-      const choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards,{canMove:actor.canMove!==false&&actor.mobile!==false&&enemyData.canMove!==false})
+      let choice=chooseTacticalEnemyAction(actor.weapon,actor,heroAt,occupied,hazards,{canMove:actor.canMove!==false&&actor.mobile!==false&&enemyData.canMove!==false})
+      const queued=pendingFoeAttacksRef.current[actor.id]
+      if(queued){
+        choice={attack:queued.attack}
+        delete pendingFoeAttacksRef.current[actor.id]
+        showPendingThreats()
+      }else if(choice.attack&&!choice.attack.fallback){
+        const squares=getTacticalAffectedSquares(choice.attack,heroAt)
+        pendingFoeAttacksRef.current[actor.id]={attack:choice.attack,squares}
+        showPendingThreats()
+        note(actor.name+' prepares '+choice.attack.label+'! Highlighted squares will be hit on its next turn.')
+        continue
+      }
       if(choice.move){
         actor.col=choice.move.col;actor.rank=choice.move.rank
         note(actor.name+' moves to rank '+(actor.rank+1)+', column '+(actor.col+1)+'.')
@@ -687,8 +704,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
         note(actor.name+' holds position while the group regroups.')
         continue
       }
-      const enemySquares=choice.attack?getTacticalAffectedSquares(choice.attack,heroAt):[]
-      setEnemyArea(enemySquares)
+      const enemySquares=queued?.squares || (choice.attack?getTacticalAffectedSquares(choice.attack,heroAt):[])
       await sleep(320)
       const occupiedByHero=enemySquares.some(cell=>cell.col===heroAt.col&&cell.rank===heroAt.rank)
       const pulse=Boolean(choice.attack?.fallback)
@@ -760,7 +776,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       if(guard.mpGain)updateMp(mpRef.current+guard.mpGain)
       if(actor.hp===0&&hpBeforeAction>0)onFoeDefeated(actor)
       await sleep(170)
-      setEnemyArea([])
+      showPendingThreats()
     }
     updateFoes(next)
     updateHp(currentHp)
