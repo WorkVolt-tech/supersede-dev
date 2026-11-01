@@ -15,6 +15,7 @@ import JudgesPreviewPage from './pages/JudgesPreviewPage'
 import ChapterOneBossPreviewPage from './pages/ChapterOneBossPreviewPage'
 import InventoryScreen from './components/inventory/InventoryScreen'
 import VehicleCanvas from './components/vehicle/VehicleCanvas'
+import GarageScreen from './components/vehicle/GarageScreen'
 import BookShell from './components/book/BookShell'
 import PlayerRecord from './components/book/PlayerRecord'
 import FarmingAreas from './components/farming/FarmingAreas'
@@ -46,6 +47,7 @@ export default function App() {
   const [resetDialog, setResetDialog] = useState(false)
   const [resetBusy, setResetBusy] = useState(false)
   const [resetError, setResetError] = useState('')
+  const [selectedVehicle,setSelectedVehicle]=useState(null)
   const [driveSaving, setDriveSaving] = useState(false)
   const [driveSaveError, setDriveSaveError] = useState('')
   const driveSavingRef = useRef(false)
@@ -119,8 +121,8 @@ export default function App() {
   function navigate(nextView) {
     if ((nextView === 'professions' || nextView === 'profession-halls' ||
       nextView.endsWith('-adventure')) && !professionUnlocked(player)) return
-    if (nextView === 'drive' && !chapterOneComplete(player)) return
-    if (nextView === 'drive3' && !chapterTwoComplete(player)) return
+    if ((nextView === 'drive' || nextView === 'garage') && !chapterOneComplete(player)) return
+    if ((nextView === 'drive3' || nextView === 'garage3') && !chapterTwoComplete(player)) return
     if (nextView === 'ch2' && !firstDriveComplete(player)) return
     if (nextView === 'ch3' && !secondDriveComplete(player)) return
     if (nextView === 'drive' || nextView === 'drive3') setDriveSaveError('')
@@ -160,7 +162,7 @@ export default function App() {
   if (!viewRestored) return <p className="story-text" style={{ padding: '2rem' }}>Loading…</p>
 
   const screens = {
-    ch1: <ChapterPage onOpenFarming={() => setView('farming')} onStartDrive={() => navigate('drive')} onOpenChapterTwo={() => navigate('ch2')} />,
+    ch1: <ChapterPage onOpenFarming={() => setView('farming')} onStartDrive={() => navigate('garage')} onOpenChapterTwo={() => navigate('ch2')} />,
     ch2: <Ch2ChapterPage />,
     ch3: <Ch3ChapterPage />,
     farming: <FarmingAreas onReturn={() => setView('menu')} />,
@@ -169,8 +171,10 @@ export default function App() {
     'combat-demo': <CombatDemoPage />,
     'judges-preview': <JudgesPreviewPage onReturn={() => setView('tests-previews')} />,
     'ch1-boss-preview': <ChapterOneBossPreviewPage onReturn={() => setView('tests-previews')} />,
-    drive: <VehicleCanvas destination={2} onComplete={result => finishDrive(result, 2)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 2)} />,
-    drive3: <VehicleCanvas destination={3} onComplete={result => finishDrive(result, 3)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 3)} />,
+    garage: <GarageScreen destination={2} onDrive={vehicle=>{setSelectedVehicle(vehicle);navigate('drive')}} onBack={()=>setView('ch1')} />,
+    garage3: <GarageScreen destination={3} onDrive={vehicle=>{setSelectedVehicle(vehicle);navigate('drive3')}} onBack={()=>setView('ch2')} />,
+    drive: <VehicleCanvas vehicle={selectedVehicle} destination={2} onComplete={result => finishDrive(result, 2)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 2)} />,
+    drive3: <VehicleCanvas vehicle={selectedVehicle} destination={3} onComplete={result => finishDrive(result, 3)} saveError={driveSaveError} saving={driveSaving} onRetrySave={() => finishDrive('win', 3)} />,
   }
 
   const archivedSections = {
@@ -241,7 +245,7 @@ export default function App() {
       <div className="back-bar"><button onClick={() => setView(
         TEST_PREVIEW_ENTRIES.some(entry => entry.view === view) ? 'tests-previews' : 'menu'
       )}>← {TEST_PREVIEW_ENTRIES.some(entry => entry.view === view) ? 'Tests & Previews' : 'Menu'}</button></div>
-      <div style={{ padding: ['drive','drive3'].includes(view) ? 0 : '3rem 1rem 2rem', maxWidth: ['drive','drive3'].includes(view) ? 'none' : 720, margin: '0 auto' }}>
+      <div style={{ padding: ['drive','drive3','garage','garage3'].includes(view) ? 0 : '3rem 1rem 2rem', maxWidth: ['drive','drive3'].includes(view) ? 'none' : 720, margin: '0 auto' }}>
         {screens[view]}
       </div>
     </>
