@@ -18,10 +18,10 @@ const HUNTER_CAPTAIN = {
 
 const BOSS_AT_KILLS = 15
 
-export default function VehicleCanvas({ onComplete, destination = 2, saving = false, saveError = '', onRetrySave }) {
+export default function VehicleCanvas({ onComplete, vehicle = null, destination = 2, saving = false, saveError = '', onRetrySave }) {
   const canvasRef = useRef(null)
   const { getSprite } = useSprites()
-  const [hud, setHud] = useState({ hp: 100, maxHp: 100, kills: 0, score: 0, bossActive: false })
+  const [hud, setHud] = useState({ hp: vehicle?.hull || 100, maxHp: vehicle?.hull || 100, kills: 0, score: 0, bossActive: false })
   const [gameOver, setGameOver] = useState(null)
 
   const stateRef = useRef(null)
@@ -51,7 +51,7 @@ export default function VehicleCanvas({ onComplete, destination = 2, saving = fa
     resize()
     window.addEventListener('resize', resize)
 
-    const player = { x: canvas.width / 2, y: canvas.height * 0.82, w: 28, h: 40, hp: 100, maxHp: 100 }
+    const player = { x: canvas.width / 2, y: canvas.height * 0.82, w: 28, h: 40, hp: vehicle?.hull || 100, maxHp: vehicle?.hull || 100 }
     const keys = { left: false, right: false, shoot: false }
     const enemies = []
     const bullets = []
@@ -92,7 +92,7 @@ export default function VehicleCanvas({ onComplete, destination = 2, saving = fa
       if (cancelled) return
       raf = requestAnimationFrame(loop)
 
-      const moveSpd = 5
+      const moveSpd = 5 * (vehicle?.speed || 1)
       if (keys.left || touchControlsRef.current.left)  player.x -= moveSpd
       if (keys.right || touchControlsRef.current.right) player.x += moveSpd
       const rx = canvas.width * 0.15, rw = canvas.width * 0.7
@@ -101,7 +101,7 @@ export default function VehicleCanvas({ onComplete, destination = 2, saving = fa
       fireTimer--
       if ((keys.shoot || touchControlsRef.current.shoot) && fireTimer <= 0) {
         bullets.push({ x: player.x, y: player.y - player.h / 2, vy: -9 })
-        fireTimer = 8
+        fireTimer = vehicle?.fireRate || 8
       }
 
       spawnTimer--
@@ -175,7 +175,7 @@ export default function VehicleCanvas({ onComplete, destination = 2, saving = fa
         ctx.fillRect(b.x - 2, b.y - 6, 4, 12)
       }
       for (const e of enemies) drawEntity(ctx, e, getSprite(e.spriteKey))
-      drawEntity(ctx, { ...player, sz: 20, col: '#5eaee0' }, getSprite('default'))
+      drawEntity(ctx, { ...player, sz: 20, col: '#5eaee0' }, getSprite(vehicle?.key ? 'top_'+vehicle.key : 'default') || getSprite('default'))
 
       if (Math.random() < 0.1) {
         setHud({ hp: player.hp, maxHp: player.maxHp, kills, score, bossActive })
