@@ -137,6 +137,19 @@ export function getTacticalAttacks(weaponType, classAttackIds=[], masteryXp=0) {
 
 // Movement and attack ranges are expressed relative to EACH side's frontline;
 // this works identically for player and enemy grids regardless of orientation.
+// Movement is free; effective combat Speed determines how far one click may travel.
+// The 3x3 board has a maximum Manhattan distance of four squares.
+export function tacticalMovementRange(speed=0) {
+  const value=Math.max(0,Number(speed)||0)
+  return value>=30 ? 4 : value>=15 ? 2 : 1
+}
+export function canTacticalMove(from,to,speed=0) {
+  if(!from||!to||![from.col,from.rank,to.col,to.rank].every(Number.isInteger))return false
+  if(to.col<0||to.col>2||to.rank<0||to.rank>2)return false
+  const distance=Math.abs(from.col-to.col)+Math.abs(from.rank-to.rank)
+  return distance>0&&distance<=tacticalMovementRange(speed)
+}
+
 export function tacticalDistance(from,target) {
   if (!from || !target) return Infinity
   return 1 + from.rank + target.rank + Math.abs(from.col-target.col)
