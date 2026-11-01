@@ -523,7 +523,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     return { playerHp: nextHp, foeHp }
   }
 
-  function enemyTurn(playerHp, foeHp, isDefending = false, damageLimit = Infinity, forcedPulse = false) {
+  function enemyTurn(playerHp, foeHp, isDefending = false, damageLimit = Infinity, forcedPulse = false, heroAt = heroPosition) {
     const messages = []
     let aiDmg = 0
     let healAmt = 0
@@ -535,11 +535,11 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       triggerAnimation: () => {setEnemyStrikeFx(value=>value+1)},
       onEnemyDmgPlayer: (d) => { aiDmg += d },
       onEnemyHealSelf: (h) => { healAmt += h },
-      heroPosition,
+      heroPosition:heroAt,
       onGuardianPattern: move => { setEnemyArea(move.cells);setGuardianMove(move) },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
-    const guardianPreview=previewElementalGuardianAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroPosition)
+    const guardianPreview=previewElementalGuardianAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroAt)
     const pending=guardianPendingRef.current
     if (guardianPreview && !pending && !forcedPulse) {
       guardianPendingRef.current=guardianPreview
@@ -552,7 +552,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       guardianPendingRef.current=null
       setEnemyArea([])
       setGuardianMove(null)
-      const inDanger=pending.cells.some(cell=>cell.col===heroPosition.col&&cell.rank===heroPosition.rank)
+      const inDanger=pending.cells.some(cell=>cell.col===heroAt.col&&cell.rank===heroAt.rank)
       if(!inDanger){
         enemyStateRef.current.turnCount++
         pushLog('You evade '+enemyData.name+'’s '+pending.name+' by leaving its attack area!')
@@ -823,7 +823,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           pushLog(enemyData.name+' moves to column '+(destination.col+1)+', rank '+(destination.rank+1)+'.')
         }
       }
-      return enemyTurn(playerHp,foeHp,defendAction)
+      return enemyTurn(playerHp,foeHp,defendAction,Infinity,false,heroAt)
     }
     const next=chooseTacticalEnemyAction(enemyWeapon,enemyPosition,heroAt,[],[],{canMove})
     if (next.attack) setEnemyArea(getTacticalAffectedSquares(next.attack,heroAt))
