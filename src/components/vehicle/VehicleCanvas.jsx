@@ -59,6 +59,8 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
     let spawnTimer = 0
     let roadOffset = 0
     let frames = 0
+    let repairTick=0
+    let droneTick=0
     let kills = 0
     let wave = 1
     let waveKills = 0
@@ -96,10 +98,12 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
     function loop() {
       if (cancelled) return
       frames++
+      if(vehicle?.upgrades?.includes('spc_repair') && ++repairTick>=60){repairTick=0;player.hp=Math.min(player.maxHp,player.hp+5)}
+      if(vehicle?.upgrades?.includes('spc_drone') && ++droneTick>=70){droneTick=0;const target=enemies.find(e=>!e.dead);if(target)bullets.push({x:target.x,y:Math.min(player.y-30,target.y+35),vy:-15})}
       roadOffset = (roadOffset + 11) % 96
       raf = requestAnimationFrame(loop)
 
-      const moveSpd = 7 * (vehicle?.speed || 1)
+      const moveSpd = 7 * (vehicle?.speed || 1) * (vehicle?.upgrades?.includes('spc_boost') && (frames%420)<80 ? 1.65 : 1)
       if (keys.left || touchControlsRef.current.left)  player.x -= moveSpd
       if (keys.right || touchControlsRef.current.right) player.x += moveSpd
       const rw = Math.min(360, canvas.width * .82), rx = (canvas.width-rw)/2
@@ -173,7 +177,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
           if (e.dead) continue
           const dx = e.x - b.x, dy = e.y - b.y
           if (Math.sqrt(dx * dx + dy * dy) < e.sz) {
-            e.hp--
+            e.hp -= vehicle?.upgrades?.includes('wpn_cannon') ? 2 : 1
             b.hit = true
             if (e.hp <= 0) { e.dead = true; kills++; if(!e.isBoss)waveKills++; score += e.score; if (e.isBoss) bossDefeated = true }
           }
