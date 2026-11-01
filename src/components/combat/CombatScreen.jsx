@@ -38,7 +38,7 @@ import { applySingleFusionHit, absorbSingleFusionDamage, advanceSingleFusionRege
   initialSingleFusionGuard } from '../../game/singleFusionCombat'
 import { getTacticalSkillRule, getProgressedTacticalSkillRule, canUseTacticalSkill } from '../../game/tacticalSkills'
 import {
-  tacticalWeaponType, getPlayerTacticalAttacks,
+  tacticalWeaponType, getPlayerTacticalAttacks, selectedWeaponAttacks,
   startImprovisedThrowRecovery, improvisedThrowTurnsRemaining,
   tacticalAttackDescription, getTacticalAttacks, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
@@ -209,8 +209,12 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [busy, setBusy] = useState(false)
   const weaponItem = equipped.find(item => item.equipped_slot === 'mainhand')
   const weaponType = tacticalWeaponType(weaponItem ? equipmentSubtype(weaponItem) : null)
-  const weaponAttacks = getPlayerTacticalAttacks(Boolean(weaponItem),weaponType,
+  const unlockedWeaponAttacks = getPlayerTacticalAttacks(Boolean(weaponItem),weaponType,
     (player.weapon_mastery || {})[weaponType] || 0)
+  const weaponAttacks = !weaponItem ? unlockedWeaponAttacks : [
+    ...selectedWeaponAttacks(unlockedWeaponAttacks.filter(a=>!a.fallback),player.weapon_attack_loadout?.[weaponType],4),
+    ...unlockedWeaponAttacks.filter(a=>a.fallback),
+  ]
   const enemyWeapon = tacticalWeaponType(enemyData.weapon_type || enemyData.weapon || enemyData.subtype)
   const [selectedAttackId, setSelectedAttackId] = useState(null)
   const [aimSquare,setAimSquare]=useState(null)
