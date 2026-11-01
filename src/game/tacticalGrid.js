@@ -12,7 +12,7 @@ export const TACTICAL_ATTACKS = {
     description:'Throw an improvised object 2–4 squares away. Retrieval takes 1–2 rounds.' },
   slash:       { label:'Sword Slash',      reach:'short', from:[0],   to:[0],       cols:'same',  shape:'single', damage:7, ap:1 },
   daggerPoke: { label:'Quick Poke', reach:'short',from:[0],to:[0],cols:'near',shape:'single',damage:5,ap:1,description:'A quick precision poke at a nearby enemy.' },
-  doubleStab: { label:'Double Fang',reach:'short',from:[0],to:[0],cols:'near',shape:'single',damage:11,ap:2,masteryLevel:5,description:'Two rapid dagger strikes in one turn. Costs 2 AP.' },
+  doubleStab: { label:'Double Fang',reach:'short',from:[0],to:[0],cols:'near',shape:'single',damage:11,ap:2,masteryLevel:5,dualStrikes:2,description:'Two rapid dagger strikes in one turn. Costs 2 AP.' },
   shadowPuncture:{ label:'Shadow Puncture',reach:'mid',from:[0,1],to:[0,1],cols:'near',shape:'single',damage:9,ap:2,masteryLevel:15,description:'A committed forward puncture with increased reach.' },
   stab:        { label:'Dagger Stab',      reach:'short', from:[0],   to:[0],       cols:'near',  shape:'single', damage:6, ap:1 },
   jab:         { label:'Spear Jab',        reach:'short', from:[0],   to:[0,1],     cols:'same',  shape:'single', damage:6, ap:1, maxRange:2 },
