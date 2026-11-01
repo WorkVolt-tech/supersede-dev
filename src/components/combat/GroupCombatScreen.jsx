@@ -25,7 +25,7 @@ import { getPlayerTacticalAttacks, startImprovisedThrowRecovery,
   improvisedThrowTurnsRemaining, tacticalAttackDescription,
   getTacticalAttacks, tacticalWeaponType, isTacticalTargetValid,
   getTacticalAffectedSquares, chooseTacticalEnemyAction,
-  weaponMasteryLevel, awardWeaponMastery } from '../../game/tacticalGrid'
+  weaponMasteryLevel, awardWeaponMastery, canTacticalMove, tacticalMovementRange } from '../../game/tacticalGrid'
 import { equippedNotableSkills, SUPPORTED_NOTABLES, useNotableSkill, consumeWarboundBonus, advanceNotableTurn, notableAttackBonus, notableAttackMultiplier, consumeNotableCrit, notableIncomingDamage, notableFreezeEnemy, consumeNotableReflection, applyNotableDebuff, tickNotableDebuff, notableEnemyAttackPenalty, learnedNotablePassives, notablePassiveOutgoing, notablePassiveIncoming, tickNotableSpellblade, notablePassiveStagger, notablePassiveStatBonus, activateNotableIronTide, notablePassiveDefend, notablePassiveBattleStart, notablePassiveResolveHit, enforceNotableControlImmunity, notableTargeting, notableOnKill, notablePassiveKill, notablePassiveDefendReflect, notableRazorTempo, notableSkillDamage, notableCriticalMultiplier, notableArmorPierce } from '../../game/loadoutCombat'
 import CombatActionPoints, { maxCombatAp } from './CombatActionPoints'
 import BattleConsumables from './BattleConsumables'
@@ -46,7 +46,7 @@ import './CombatScreen.css'
 // evolve from saved skill levels in tacticalSkills.js.
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 
-function Battlefield({ foes, hero, companions=[], heroHp, heroMaxHp, heroMp, heroMaxMp, focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, onMove, onAttack, onHoverAim,
+function Battlefield({ foes, hero, companions=[], heroHp, heroMaxHp, heroMp, heroMaxMp, focused, aim, foeStatuses, enemyArea, pattern, fields, canMove, moveSpeed, onMove, onAttack, onHoverAim,
   signatureFx,protectedPreview=[] }) {
   const preview=previewGroupAttack(foes,pattern,hero,aim)
   const area=preview.squares
@@ -64,7 +64,7 @@ function Battlefield({ foes, hero, companions=[], heroHp, heroMaxHp, heroMp, her
         status.cfx_emberStacks>0?'🔥':'',
       ].filter(Boolean).join(''):''
       const step=side==='hero'&&!mine&&!member&&canMove&&
-        Math.abs(hero.rank-rank)+Math.abs(hero.col-col)===1
+        canTacticalMove(hero,{col,rank},moveSpeed)
       const inRange=Boolean(foe&&pattern&&isTacticalTargetValid(pattern,hero,foe))
       const selected=Boolean(aim&&aim.col===col&&aim.rank===rank)
       const splash=side==='enemy'&&area.some(p=>p.rank===rank&&p.col===col)
@@ -162,6 +162,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
   const mpRegen=getCombatMpRegen(combatPlayer)
   const weapon=equipped.find(i=>i.equipped_slot==='mainhand')
   const weaponType=tacticalWeaponType(weapon?equipmentSubtype(weapon):null)
+  const moveSpeed=calcSPD(player,equipped)
   const weaponKit=getPlayerTacticalAttacks(Boolean(weapon),weaponType,
     (player.weapon_mastery||{})[weaponType]||0)
   const activeFusion=getActiveFusion(player)
@@ -880,9 +881,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
       (selected?.thrown&&improvisedThrowTurnsRemaining(
         throwReadyRef.current,roundRef.current)>0)))return
     if(kind==='move'&&partyRef.current.some(ally=>ally.col===position?.col&&ally.rank===position?.rank))return
-    if(kind==='move'&&(!position||position.col<0||position.col>2||position.rank<0||
-      position.rank>2||Math.abs(position.col-heroRef.current.col)+
-        Math.abs(position.rank-heroRef.current.rank)!==1))return
+    if(kind==='move'&&!canTacticalMove(heroRef.current,position,moveSpeed))return
     if(kind==='loadout'&&(!equippedNotableSkills(player).some(skill=>skill.id===id)||!SUPPORTED_NOTABLES.has(id)||(id==='dcn1'&&roundRef.current!==1)||(notableTargeting(id)&&(!position||!skillHit?.valid||!skillHit.targets.length))))return
     if(kind==='skill'&&(!ClsCombat.getActiveClassSkills(combatPlayer,statusRef.current)
       .some(skill=>skill.id===id&&skill.available!==false)||
@@ -1053,7 +1052,7 @@ export default function GroupCombatScreen({ enemyData, onWin, onLose, onEscape, 
     <div className="combat-turn-banner">{foes.filter(u=>u.hp>0).length}/{foes.length} enemies remaining · {ap}/{maxAp} AP · {hp}/{maxHp} HP · {mp}/{mpMax} MP</div>
         <p className="combat-aim-legend"><span className="aim-legal">Blue = legal aim</span> · <span className="aim-hit">Gold = cells hit by attack / AoE</span> · White ring = impact center</p>
     <Battlefield foes={foes} hero={hero} companions={partyPositions} heroHp={hp} heroMaxHp={maxHp} heroMp={mp} heroMaxMp={mpMax} focused={chosen} aim={legalAim} foeStatuses={foeStatusesRef.current} enemyArea={enemyArea} pattern={displayPattern}
-      fields={fieldsRef.current} canMove={canPlay}
+      fields={fieldsRef.current} canMove={canPlay} moveSpeed={moveSpeed}
       signatureFx={signatureFx}
       protectedPreview={signaturePreview&&signature?.target==='self'
         ?signaturePlan.squares:[]}
