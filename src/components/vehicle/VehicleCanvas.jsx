@@ -16,12 +16,13 @@ const HUNTER_CAPTAIN = {
   score: 1000, pat: 'zigzag', isBoss: true, spriteKey: 'hunter_captain',
 }
 
-const BOSS_AT_KILLS = 10
+const KILLS_PER_WAVE = 10
+const FINAL_WAVE = 5
 
 export default function VehicleCanvas({ onComplete, vehicle = null, destination = 2, saving = false, saveError = '', onRetrySave }) {
   const canvasRef = useRef(null)
   const { getSprite } = useSprites()
-  const [hud, setHud] = useState({ hp: vehicle?.hull || 100, maxHp: vehicle?.hull || 100, kills: 0, score: 0, bossActive: false })
+  const [hud, setHud] = useState({ hp: vehicle?.hull || 100, maxHp: vehicle?.hull || 100, kills: 0, score: 0, bossActive: false, wave: 1, waveKills: 0 })
   const [gameOver, setGameOver] = useState(null)
 
   const stateRef = useRef(null)
@@ -59,6 +60,8 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
     let roadOffset = 0
     let frames = 0
     let kills = 0
+    let wave = 1
+    let waveKills = 0
     let score = 0
     let bossSpawned = false
     let bossActive = false
@@ -109,8 +112,16 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
       }
 
       spawnTimer--
-      if (spawnTimer <= 0 && !bossSpawned) { spawnEnemy(); spawnTimer = 28 }
-      if (kills >= BOSS_AT_KILLS && !bossSpawned) {
+      if (spawnTimer <= 0 && !bossSpawned && wave < FINAL_WAVE) { spawnEnemy(); spawnTimer = Math.max(14, 30 - wave * 3) }
+      if (wave < FINAL_WAVE && waveKills >= KILLS_PER_WAVE) {
+        wave++
+        waveKills=0
+        enemies.length=0
+        bullets.length=0
+        spawnTimer=30
+        setHud(h=>({...h,wave,waveKills:0}))
+      }
+      if (wave === FINAL_WAVE && !bossSpawned) {
         bossSpawned = true; bossActive = true
         spawnEnemy(HUNTER_CAPTAIN)
         const boss = enemies[enemies.length-1]
@@ -166,7 +177,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
           if (Math.sqrt(dx * dx + dy * dy) < e.sz) {
             e.hp--
             b.hit = true
-            if (e.hp <= 0) { e.dead = true; kills++; score += e.score; if (e.isBoss) bossDefeated = true }
+            if (e.hp <= 0) { e.dead = true; kills++; if(!e.isBoss)waveKills++; score += e.score; if (e.isBoss) bossDefeated = true }
           }
         }
       }
@@ -221,7 +232,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
       drawEntity(ctx, { ...player, sz: 20, col: '#5eaee0' }, getSprite(vehicle?.key ? 'top_'+vehicle.key : 'default') || getSprite('default'))
 
       if (Math.random() < 0.1) {
-        setHud({ hp: player.hp, maxHp: player.maxHp, kills, score, bossActive })
+        setHud({ hp: player.hp, maxHp: player.maxHp, kills, score, bossActive, wave, waveKills })
       }
 
       // Defeat always takes precedence if the final shot and fatal collision
@@ -263,7 +274,7 @@ export default function VehicleCanvas({ onComplete, vehicle = null, destination 
         fontFamily: 'monospace', fontSize: 10, flexWrap:'wrap', gap:6, pointerEvents: 'none', textShadow: '0 1px 2px #000',
       }}>
         <span>HULL {hud.hp}/{hud.maxHp}</span>
-        <span>{hud.bossActive ? '⚠ HUNTER CAPTAIN' : `TO CHAPTER ${destination} · KILLS ${hud.kills}/${BOSS_AT_KILLS}`}</span>
+        <span>{hud.bossActive ? '⚠ HUNTER CAPTAIN' : `WAVE ${hud.wave}/5 · ${hud.wave<5?`${hud.waveKills}/10 KILLS`:'BOSS'}`}</span>
         <span>SCORE {hud.score}</span>
       </div>
       {gameOver && (
