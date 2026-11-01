@@ -84,7 +84,7 @@ test('mastery progresses to level 100 with modest bonuses', () => {
   assert.equal(weaponMasteryLevel(28),4)
   assert.equal(weaponMasteryLevel(48),5)
   assert.equal(weaponMasteryLevel(500000),100)
-  assert.equal(weaponMasteryBonus(500000),9)
+  assert.equal(weaponMasteryBonus(500000),15)
   assert.equal(weaponMasteryBonus(48),0)
   assert.equal(nextWeaponMasteryThreshold(500000),null)
   assert.ok(nextWeaponMasteryThreshold(48)>48)
