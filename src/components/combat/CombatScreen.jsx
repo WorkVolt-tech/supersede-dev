@@ -69,7 +69,7 @@ const pause = ms => new Promise(resolve => setTimeout(resolve, ms))
 // The enemy is rendered at the top, hero at the bottom; blank tiles are
 // tactical space, not extra combatants.
 function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemyName, enemyIcon, enemyHp, enemyMaxHp, heroHp, heroMaxHp, heroMp, heroMaxMp, enemyVisual, bossVisual=false, attack, canAttack, canMove, onMove, onAim, onHoverAim,
-  signatureFx,signaturePreview,enemyStrikeFx,dualDaggerFx }) {
+  signatureFx,signaturePreview,enemyStrikeFx,dualDaggerFx,guardianMove }) {
   const affected = attack && isTacticalTargetValid(attack,hero,aim)
     ? getTacticalAffectedSquares(attack,aim):[]
   const labels=['Left','Centre','Right']
@@ -101,6 +101,7 @@ function TacticalBattlefield({ hero, enemy, companions=[], aim, enemyArea, enemy
         aria-label={labels[col]+' '+names[rank]+(ally?' '+ally.name+' party ally':occupied?(side==='enemy'?' '+enemyName:' You'):' empty')+
           (targetable?' — attack':move&&canMove?' — move':'')}>
         {occupied||ally?<div className={side==='enemy'&&bossVisual?'combat-unit-visual combat-boss-visual':'combat-unit-visual'}>{ally?ally.icon:side==='enemy'?enemyVisual||enemyIcon||'👹':'🧑'}</div>:<span>·</span>}
+        {guardianMove&&side==='hero'&&threat&&<span key={guardianMove.name+'-'+enemyStrikeFx} className={'combat-guardian-pattern'+(guardianMove.enraged?' combat-guardian-enraged':'')} aria-hidden="true"/>}
         {dualDaggerFx&&occupied&&side==='enemy'&&<span key={dualDaggerFx.id} className={'combat-dual-dagger-impact combat-dual-'+dualDaggerFx.hand} aria-hidden="true"><i/><i/></span>}
         {dualDaggerFx&&occupied&&side==='hero'&&<span key={dualDaggerFx.id} className={'combat-dual-dagger-swing combat-dual-'+dualDaggerFx.hand} aria-hidden="true">🗡️</span>}
         {fx&&<span key={signatureFx.id} aria-hidden="true"
@@ -227,6 +228,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [hoverAim,setHoverAim]=useState(null)
   const [targetMode,setTargetMode]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
+  const [guardianMove,setGuardianMove]=useState(null)
   const [enemyStrikeFx,setEnemyStrikeFx]=useState(0)
   const [dualDaggerFx,setDualDaggerFx]=useState(null)
   const daggerHandRef=useRef(0)
@@ -532,11 +534,14 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       triggerAnimation: () => {setEnemyStrikeFx(value=>value+1)},
       onEnemyDmgPlayer: (d) => { aiDmg += d },
       onEnemyHealSelf: (h) => { healAmt += h },
+      heroPosition,
+      onGuardianPattern: move => { setEnemyArea(move.cells);setGuardianMove(move) },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
     }
     const frozen=notableFreezeEnemy(statusEffectsRef.current)||notablePassiveStagger(learnedNotablePassives(player))
     const stunned = frozen?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
     if (stunned) messages.push(stunned)
+    if(stunned && isBoss){setEnemyArea([]);setGuardianMove(null)}
     // The emergency pulse must not secretly trigger an enemy AI special
     // attack, including its stun/bleed/status side effects.
     const aiMove = stunned || forcedPulse ? null : resolveEnemyTurn(combatEnemyRef.current, ctx)
@@ -1136,6 +1141,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
           attack={displayedAttack}
           signatureFx={signatureFx}
           enemyStrikeFx={enemyStrikeFx}
+          guardianMove={guardianMove}
           dualDaggerFx={dualDaggerFx}
           signaturePreview={signaturePreview&&signature?{
             side:signature.target==='self'?'hero':'enemy',
