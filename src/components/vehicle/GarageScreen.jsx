@@ -22,6 +22,17 @@ export const GARAGE_UPGRADES=[
  {id:'spc_drone',slot:'special',name:'Eye Drone',cost:{scrap_metal:5,flashlight:3},stat:{firepower:5},vehicles:['car','van']},
  {id:'spc_repair',slot:'special',name:'Repair Kit',cost:{scrap_metal:8,flashlight:2},stat:{},vehicles:['motorcycle','car','van']},
 ]
+function upgradeStatText(u) {
+ const lines = []
+ if(u.stat.speed) lines.push((u.stat.speed>0?'+':'')+u.stat.speed+' speed')
+ if(u.stat.durability) lines.push((u.stat.durability>0?'+':'')+u.stat.durability+' hull')
+ if(u.stat.firepower) lines.push('+'+u.stat.firepower+' firepower')
+ if(u.id==='spc_boost') lines.push('Nitro speed burst')
+ if(u.id==='spc_drone') lines.push('Automatic drone shots')
+ if(u.id==='spc_repair') lines.push('Regenerates 5 hull per second')
+ if(u.id==='wpn_cannon') lines.push('Double shot damage')
+ return lines.join(' · ') || 'Special upgrade'
+}
 export function vehicleStats(vehicle,ids=[]){
  const stats={...vehicle}
  for(const id of ids){const u=GARAGE_UPGRADES.find(x=>x.id===id);if(!u)continue
@@ -89,15 +100,16 @@ export default function GarageScreen({destination=2,onDrive,onBack}){
    <img src={v.image} alt={v.name}/><strong>{v.name}</strong><span>{v.description}</span>
   </button>)}</div>
   <section className="garage-upgrade-shop"><h2>Vehicle Upgrades · {vehicle.name}</h2>
-   <p>Hull {Math.round(stats.hull)} · Speed {Math.round(stats.speed*100)}% · Fire interval {Math.round(stats.fireRate)}</p>
+   <p>Hull {Math.round(stats.hull)} (base {vehicle.hull}) · Speed {Math.round(stats.speed*100)}% (base {Math.round(vehicle.speed*100)}%) · Fire interval {stats.fireRate.toFixed(1)} (base {vehicle.fireRate})</p>
    <p>Materials: ⚙ Scrap {materials.scrap_metal} · 🗡 Blades {materials.scrap_blade} · 🔦 Flashlights {materials.flashlight}</p>
    <div className="garage-upgrade-grid">{['engine','armor','weapon','special'].map(slot=>{
     const current=GARAGE_UPGRADES.find(u=>installed.includes(u.id)&&u.slot===slot)
     return <div className="garage-upgrade-slot" key={slot}><h3>{slot.toUpperCase()}</h3>
      <p>{current?current.name:'Empty slot'}</p>
+     {current&&<p className="garage-upgrade-effect">Installed: {upgradeStatText(current)}</p>}
      {current&&<button type="button" disabled={busy} onClick={()=>remove(slot)}>Remove</button>}
      {!current&&GARAGE_UPGRADES.filter(u=>u.slot===slot&&u.vehicles.includes(selected)).map(u=><div key={u.id} className="garage-upgrade-option">
-      <strong>{u.name}</strong><small>{Object.entries(u.cost).map(([k,v])=>k.replace('_',' ')+' ×'+v).join(' · ')}</small>
+      <strong>{u.name}</strong><small className="garage-upgrade-effect">{upgradeStatText(u)}</small><small>{Object.entries(u.cost).map(([k,v])=>k.replace('_',' ')+' ×'+v).join(' · ')}</small>
       <button type="button" disabled={busy||Object.entries(u.cost).some(([k,v])=>materials[k]<v)} onClick={()=>install(u)}>Install</button>
      </div>)}
     </div>
