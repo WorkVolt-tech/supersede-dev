@@ -2,11 +2,25 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { usePlayerStore } from '../../store/usePlayerStore'
 import { useInventoryStore } from '../../store/useInventoryStore'
+import { normalizedItem, findResonance, fragmentName } from '../../game/runes'
 
 const VENDORS=[
  {key:'trader',name:'The Trader',intro:'I do not ask questions. I just sell.',items:['knife','jacket','energy_drink','medkit','wooden_shield','leather_gloves','worn_boots','iron_sword','riot_vest','iron_helm','iron_shield','iron_ring']},
  {key:'pell',name:'Pell',intro:'I keep my promises, and I keep supplies.',items:['medkit','energy_drink','leather_gloves','worn_boots','iron_helm','iron_shield','riot_vest','knife','iron_sword','iron_ring']},
 ]
+const STAT_FIELDS=[['Attack','atk_bonus'],['Defense','def_bonus'],['Max HP','max_hp_bonus'],['Power','power_bonus'],['Guard','guard_bonus'],['Speed','speed_bonus'],['Control','control_bonus'],['Insight','insight_bonus'],['Luck','luck_bonus'],['Agility','agility_bonus'],['Max AP','ap_bonus']]
+function SellItemStats({item}){
+ const details=normalizedItem(item)
+ const stats=STAT_FIELDS.filter(([,key])=>Number(details[key])!==0&&Number.isFinite(Number(details[key])))
+ const fragments=Array.isArray(details.socketed_fragments)?details.socketed_fragments:[]
+ const resonance=findResonance(fragments,details.item_type,details.sockets_total)
+ return <div className="trader-item-stats">
+  <small>{details.item_type||'Item'}{details.subtype?' · '+details.subtype:''}{details.rarity?' · '+details.rarity:''}</small>
+  {stats.length>0?<div className="trader-stat-list">{stats.map(([label,key])=><span key={key}>{label} {Number(details[key])>0?'+':''}{details[key]}</span>)}</div>:<small>No combat bonuses recorded</small>}
+  {Number(details.sockets_total)>0&&<small>Slots: {fragments.length}/{details.sockets_total}{fragments.length?' · '+fragments.map(fragmentName).join(', '):''}</small>}
+  {resonance&&<small>✦ {resonance.name} Resonance · {Object.entries(resonance.stats||{}).map(([key,val])=>key.replaceAll('_',' ')+' '+(val>0?'+':'')+val).join(' · ')}</small>}
+ </div>
+}
 export default function TraderScreen({onReturn}){
  const player=usePlayerStore(s=>s.player)
  const updatePlayer=usePlayerStore(s=>s.updatePlayer)
@@ -20,6 +34,7 @@ export default function TraderScreen({onReturn}){
  const [filter,setFilter]=useState('all')
  const [search,setSearch]=useState('')
  const [selected,setSelected]=useState([])
+ const [detailsOpen,setDetailsOpen]=useState([])
  useEffect(()=>{let cancelled=false;supabase.from('items').select('*').then(({data,error})=>{if(!cancelled){setCatalog(data||[]);if(error)setNotice(error.message)}});return()=>{cancelled=true}},[])
  const npc=VENDORS.find(v=>v.key===vendor)
  const unlocked=(player?.chapters_unlocked||[]).includes(2)||(player?.current_chapter||1)>=2
@@ -89,7 +104,10 @@ export default function TraderScreen({onReturn}){
   {tab!=='heal'&&<div className="trader-filters"><input aria-label="Search items" placeholder="Search items…" value={search} onChange={e=>setSearch(e.target.value)}/><select aria-label="Filter items by type" value={filter} onChange={e=>setFilter(e.target.value)}><option value="all">All types</option>{[...new Set([...catalog,...items].map(i=>i.item_type).filter(Boolean))].map(t=><option key={t} value={t}>{t}</option>)}</select></div>}
   {tab==='buy'&&stock.filter(i=>(filter==='all'||i.item_type===filter)&&i.name.toLowerCase().includes(search.toLowerCase())).map(item=><div key={item.item_key} className="garage-upgrade-option"><strong>{item.name}</strong><span>◈ {item.buy_price}</span><button disabled={busy||Number(player.gold)<Number(item.buy_price)} onClick={()=>buy(item)}>Buy</button></div>)}
   {tab==='sell'&&<><div className="trader-batch-actions"><button type="button" onClick={()=>setSelected([...new Set([...selected,...visibleSell.filter(i=>sellPrice(i)>0).map(i=>i.id)])])}>Select visible</button><button type="button" onClick={()=>setSelected([])}>Clear selection</button><strong>{chosen.length} stacks · ◈ {total}</strong><button type="button" disabled={busy||!chosen.length} onClick={sellBatch}>Sell selected stacks</button></div>
-   {visibleSell.map(item=><div key={item.id} className="garage-upgrade-option"><label><input type="checkbox" checked={selected.includes(item.id)} disabled={!sellPrice(item)||busy} onChange={e=>setSelected(ids=>e.target.checked?[...ids,item.id]:ids.filter(id=>id!==item.id))}/> <strong>{item.name} ×{item.quantity||1}</strong></label><span>◈ {sellPrice(item)} each · ◈ {sellPrice(item)*Math.max(1,Number(item.quantity)||1)} stack</span><button disabled={busy||!sellPrice(item)} onClick={()=>sell(item)}>Sell one</button>{!sellPrice(item)&&<small>Not sellable</small>}</div>)}</>}
+   {visibleSell.map(item=><div key={item.id} className="garage-upgrade-option"><label><input type="checkbox" checked={selected.includes(item.id)} disabled={!sellPrice(item)||busy} onChange={e=>setSelected(ids=>e.target.checked?[...ids,item.id]:ids.filter(id=>id!==item.id))}/> <strong>{item.name} ×{item.quantity||1}</strong></label><span>◈ {sellPrice(item)} each · ◈ {sellPrice(item)*Math.max(1,Number(item.quantity)||1)} stack</span>
+   <button type="button" aria-expanded={detailsOpen.includes(item.id)} onClick={()=>setDetailsOpen(ids=>ids.includes(item.id)?ids.filter(id=>id!==item.id):[...ids,item.id])}>{detailsOpen.includes(item.id)?'Hide stats':'View stats'}</button>
+   {detailsOpen.includes(item.id)&&<SellItemStats item={item}/>}
+   <button disabled={busy||!sellPrice(item)} onClick={()=>sell(item)}>Sell one</button>{!sellPrice(item)&&<small>Not sellable</small>}</div>)}</>}
   {tab==='heal'&&<div><p>Doc Mira can restore your health.</p><button className="reading-action" disabled={busy||Number(player.gold)<125} onClick={()=>heal(Math.ceil(Number(player.max_hp||100)*.5),125)}>Partial heal · 125 gold</button><button className="reading-action" disabled={busy||Number(player.gold)<200} onClick={()=>heal(Number(player.max_hp)||100,200)}>Full heal · 200 gold</button></div>}
   {notice&&<p role="status">{notice}</p>}
   <button className="reading-action" onClick={onReturn}>← Return to Archive</button>
