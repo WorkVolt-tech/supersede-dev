@@ -1,6 +1,9 @@
 export const SPRITE_MANIFEST = {
   player: {
     default: 'sprites/player/car_default.png',
+    top_motorcycle: 'assets/ride/top_motorcycle.webp',
+    top_car: 'assets/ride/top_car.webp',
+    top_van: 'assets/ride/top_van.webp',
   },
   enemies: {
     looter:          'sprites/enemies/looter.png',
