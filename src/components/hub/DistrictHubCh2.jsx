@@ -12,6 +12,10 @@ export default function DistrictHubCh2({ player, goTo, text }) {
   const resonance = getChapterResonance(player)
   const difficulty = getElementalDifficulty(player)
   const defeatedCount = ZONES.filter(zone => defeated.includes('zone_boss_' + zone.id.slice(5))).length
+  const log = player.alliance_log || []
+  const moral = Number(player.moral_score) || 0
+  const heroReady = defeatedCount >= 5 && moral >= 60 && log.includes('sweep_builders') && !log.includes('hero_finale_done')
+  const villainReady = defeatedCount >= 5 && moral <= -60 && log.includes('sweep_hunters') && !log.includes('villain_finale_done')
 
   async function enter(nodeId) {
     if (navigating) return
@@ -61,6 +65,8 @@ export default function DistrictHubCh2({ player, goTo, text }) {
           )
         })}
       </div>
+      {defeatedCount >= 8 && <p role="status" className="story-text">EIGHT ZONES CLAIMED. The Twin Judges are summoning. Finish what you intend to finish.</p>}
+      {defeatedCount >= 6 && defeatedCount < 8 && <p role="status" className="story-text">SIX ZONES CLAIMED. The Judges have begun their preparation.</p>}
       <p className="choices-label">District activities</p>
       <button type="button" className="choice" disabled={navigating} onClick={() => enter('trader_intro')} style={{ width: '100%' }}>
         <span className="choice-arrow">→</span><span className="choice-body">Visit Pell's Shop · neutral trader and information</span>
@@ -69,7 +75,7 @@ export default function DistrictHubCh2({ player, goTo, text }) {
         <span className="choice-arrow">→</span><span className="choice-body">Enter Farming Grounds · rare profession discoveries</span>
       </button>
       <button type="button" className="choice" disabled={navigating} onClick={() => enter('pre_boss_gate')} style={{ width: '100%' }}>
-        <span className="choice-arrow">→</span><span className="choice-body">Face the Twin Judges</span>
+        <span className="choice-arrow">→</span><span className="choice-body">Face the Twin Judges<small style={{display:'block'}}>Normal trial available · {heroReady?'Hero finale eligible':villainReady?'Villain finale eligible':`${defeatedCount}/5 guardians toward special finale eligibility`}</small></span>
       </button>
     </div>
   )
