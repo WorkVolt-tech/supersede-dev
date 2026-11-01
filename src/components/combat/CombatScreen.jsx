@@ -667,11 +667,10 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
     const verb = ranged ? 'You shoot' : 'You strike'
     const msgs = [`${attack.label}: ${verb.toLowerCase()} for ${dmg}.${wasCrit ? ' ✦ Critical hit!' : ''}`, ...(atkResult?.messages || []), ...keystoneHit.messages]
     if (dmg > 0 && !attack.fallback && masteryHitsRef.current < masteryPracticeCap) {
-      // Count successful weapon strikes, not target squares. Single-weapon
-      // techniques award 1; techniques explicitly using both equipped daggers
-      // award one point per landed strike (up to the encounter cap).
-      const strikes = dualDaggers ? Math.max(1, Number(attack.dualStrikes) || 1) : 1
-      const earned = Math.min(strikes, masteryPracticeCap - masteryHitsRef.current)
+      // Equipping two daggers grants double mastery practice immediately,
+      // regardless of whether a multi-hit technique has been unlocked.
+      // Count one successful action, not individual hits or AOE targets.
+      const earned = Math.min(dualDaggers ? 2 : 1, masteryPracticeCap - masteryHitsRef.current)
       masteryHitsRef.current += earned
       msgs.push(`${weaponType} mastery practice +${earned} (awarded on victory).`)
     }
