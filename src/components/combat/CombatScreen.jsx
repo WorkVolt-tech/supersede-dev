@@ -18,7 +18,7 @@ import { bestTacticalAim, tacticalPreview, sameBattleSquare } from '../../game/t
 import { decideCompanionAction,initialCompanionPositions } from '../../game/companionTactics'
 import { useInventoryStore } from '../../store/useInventoryStore'
 import * as ClsCombat from '../../game/classCombat'
-import { initEnemyState, resolveEnemyTurn } from '../../game/enemyAI'
+import { initEnemyState, resolveEnemyTurn, previewElementalGuardianAttack } from '../../game/enemyAI'
 import { calcATK, calcDEF, calcSPD, calcMaxHp, getCombatPlayer, getEffectiveStats } from '../../game/playerStats'
 import { resistMult, reflectFraction, critChanceBonus, critDamageBonus } from '../../game/elementalBonuses'
 import { grantXp } from '../../game/progression'
@@ -229,6 +229,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
   const [targetMode,setTargetMode]=useState(null)
   const [enemyArea,setEnemyArea]=useState([])
   const [guardianMove,setGuardianMove]=useState(null)
+  const guardianPendingRef=useRef(null)
   const [enemyStrikeFx,setEnemyStrikeFx]=useState(0)
   const [dualDaggerFx,setDualDaggerFx]=useState(null)
   const daggerHandRef=useRef(0)
@@ -537,6 +538,26 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       heroPosition,
       onGuardianPattern: move => { setEnemyArea(move.cells);setGuardianMove(move) },
       ...(judgeCtx ? { playerMoral: judgeCtx.playerMoral, elementsAttempted: judgeCtx.elementsAttempted } : {}),
+    }
+    const guardianPreview=previewElementalGuardianAttack(enemyData,enemyStateRef.current.turnCount,foeHp,heroPosition)
+    const pending=guardianPendingRef.current
+    if (guardianPreview && !pending && !forcedPulse) {
+      guardianPendingRef.current=guardianPreview
+      setEnemyArea(guardianPreview.cells)
+      setGuardianMove(guardianPreview)
+      pushLog(enemyData.name+' prepares '+guardianPreview.name+'. Move out of the marked squares before its next turn!')
+      return finishEnemyAction(playerHp,foeHp)
+    }
+    if (pending) {
+      guardianPendingRef.current=null
+      setEnemyArea([])
+      setGuardianMove(null)
+      const inDanger=pending.cells.some(cell=>cell.col===heroPosition.col&&cell.rank===heroPosition.rank)
+      if(!inDanger){
+        enemyStateRef.current.turnCount++
+        pushLog('You evade '+enemyData.name+'’s '+pending.name+' by leaving its attack area!')
+        return finishEnemyAction(playerHp,foeHp)
+      }
     }
     const frozen=notableFreezeEnemy(statusEffectsRef.current)||notablePassiveStagger(learnedNotablePassives(player))
     const stunned = frozen?'Time Lock freezes the enemy.':consumeEnemyStun(statusEffectsRef.current)
@@ -918,7 +939,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
         setTurnActor('enemy')
         ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction))
         await pause(650)
-        setEnemyArea([])
+        if (!guardianPendingRef.current) setEnemyArea([])
         if (playerHp<=0 || foeHp<=0) {
           setTurnActor(null)
           await endCombat(playerHp<=0?'lose':'win',playerHp)
@@ -1018,7 +1039,7 @@ export default function CombatScreen({ enemyData, onWin, onLose, onEscape, isBos
       setTurnActor('enemy')
       ;({playerHp,foeHp}=positionedEnemyTurn(playerHp,foeHp,defendAction,heroPosition))
       await pause(650)
-      setEnemyArea([])
+      if (!guardianPendingRef.current) setEnemyArea([])
       if (playerHp<=0 || foeHp<=0) {
         setTurnActor(null)
         await endCombat(playerHp<=0?'lose':'win',playerHp)
